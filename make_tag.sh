@@ -36,7 +36,8 @@ fi
 
 # Re-generate any generated files, to make sure they're fresh.
 
-"$THIS_DIR/generate.sh"
+git submodule update --init --recursive
+"$THIS_DIR/generate.sh" || exit 1
 git add "$THIS_DIR/generated"
 
 # Create the tag
