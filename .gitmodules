@@ -1,0 +1,3 @@
+[submodule "external/application-services"]
+	path = external/application-services
+	url = https://github.com/mozilla/application-services

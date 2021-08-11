@@ -1,0 +1,7 @@
+.DS_Store
+.build
+.swiftpm
+Package.resolved
+
+# From the Glean sdk generator
+.venv
