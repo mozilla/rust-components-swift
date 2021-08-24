@@ -44,31 +44,31 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void crashtest_7e7a_trigger_rust_abort(
+void crashtest_f229_trigger_rust_abort(
       
     RustCallStatus *_Nonnull out_status
     );
-void crashtest_7e7a_trigger_rust_panic(
+void crashtest_f229_trigger_rust_panic(
       
     RustCallStatus *_Nonnull out_status
     );
-void crashtest_7e7a_trigger_rust_error(
+void crashtest_f229_trigger_rust_error(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_crashtest_7e7a_rustbuffer_alloc(
+RustBuffer ffi_crashtest_f229_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_crashtest_7e7a_rustbuffer_from_bytes(
+RustBuffer ffi_crashtest_f229_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_crashtest_7e7a_rustbuffer_free(
+void ffi_crashtest_f229_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_crashtest_7e7a_rustbuffer_reserve(
+RustBuffer ffi_crashtest_f229_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

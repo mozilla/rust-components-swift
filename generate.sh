@@ -40,3 +40,13 @@ cp -r "$THIS_DIR/external/application-services/components/nimbus/ios/Nimbus" "$N
 CRASHTEST_DIR="$THIS_DIR/generated/crashtest"
 rm -rf "$CRASHTEST_DIR" && mkdir -p "$CRASHTEST_DIR"
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$CRASHTEST_DIR" "$THIS_DIR/external/application-services/components/crashtest/src/crashtest.udl"
+
+###
+#
+# FxaClient
+#
+###
+
+FXA_CLIENT_DIR="$THIS_DIR/generated/fxaclient"
+rm -rf "$FXA_CLIENT_DIR" && mkdir -p "$FXA_CLIENT_DIR"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FXA_CLIENT_DIR" "$THIS_DIR/external/application-services/components/fxa-client/src/fxa_client.udl"

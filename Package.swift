@@ -11,14 +11,12 @@ let package = Package(
         .library(name: "CrashTest", targets: ["CrashTest"]),
         // TODO: more of our components here, once they support M1 builds.
         //.library(name: "Logins", targets: ["Logins"]),
-        //.library(name: "FxAClient", targets: ["FxAClient"]),
+        .library(name: "FxAClient", targets: ["FxAClient"]),
     ],
     dependencies: [
         // TODO: ship Glean via this same bundle?
         .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "39.0.4"),
-        // TODO: this external dependency is required for FxAClient,
-        // leaving it here as an example for now.
-        //.package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
+        .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
     ],
     targets: [
         .target(
@@ -51,11 +49,11 @@ let package = Package(
         //    dependencies: ["MozillaRustComponents", "Sync15"],
         //    path: "external/application-services/components/logins/ios"
         //),
-        //.target(
-        //    name: "FxAClient",
-        //    dependencies: ["MozillaRustComponents", "SwiftKeychainWrapper"],
-        //    path: "external/application-services/components/fxa-client/ios"
-        //),
+        .target(
+           name: "FxAClient",
+           dependencies: ["MozillaRustComponents", "SwiftKeychainWrapper"],
+           path: "generated/fxa-client"
+        ),
         .binaryTarget(
             name: "MozillaRustComponents",
             //
