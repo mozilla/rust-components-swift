@@ -47,6 +47,6 @@ rm -rf "$CRASHTEST_DIR" && mkdir -p "$CRASHTEST_DIR"
 #
 ###
 
-FXA_CLIENT_DIR="$THIS_DIR/generated/fxaclient"
+FXA_CLIENT_DIR="$THIS_DIR/generated/fxa-client"
 rm -rf "$FXA_CLIENT_DIR" && mkdir -p "$FXA_CLIENT_DIR"
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FXA_CLIENT_DIR" "$THIS_DIR/external/application-services/components/fxa-client/src/fxa_client.udl"
