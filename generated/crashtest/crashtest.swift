@@ -14,7 +14,7 @@ private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
-            try! rustCall { ffi_crashtest_7e7a_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+            try! rustCall { ffi_crashtest_f229_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
         }
         self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
@@ -22,7 +22,7 @@ private extension RustBuffer {
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_crashtest_7e7a_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_crashtest_f229_rustbuffer_free(self, $0) }
     }
 }
 
@@ -204,7 +204,7 @@ extension String: ViaFfi {
 
     fileprivate static func lift(_ v: FfiType) throws -> Self {
         defer {
-            try! rustCall { ffi_crashtest_7e7a_rustbuffer_free(v, $0) }
+            try! rustCall { ffi_crashtest_f229_rustbuffer_free(v, $0) }
         }
         if v.data == nil {
             return String()
@@ -220,7 +220,7 @@ extension String: ViaFfi {
                 // The swift string gives us a trailing null byte, we don't want it.
                 let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
                 let bytes = ForeignBytes(bufferPointer: buf)
-                return try! rustCall { ffi_crashtest_7e7a_rustbuffer_from_bytes(bytes, $0) }
+                return try! rustCall { ffi_crashtest_f229_rustbuffer_from_bytes(bytes, $0) }
             }
         }
     }
@@ -283,22 +283,27 @@ private extension RustCallStatus {
 }
 
 public enum CrashTestError {
-    case ErrorFromTheRustCode
+    // Simple error enums only carry a message
+    case ErrorFromTheRustCode(message: String)
 }
 
 extension CrashTestError: ViaFfiUsingByteBuffer, ViaFfi {
     fileprivate static func read(from buf: Reader) throws -> CrashTestError {
         let variant: Int32 = try buf.readInt()
         switch variant {
-        case 1: return .ErrorFromTheRustCode
+        case 1: return .ErrorFromTheRustCode(
+                message: try String.read(from: buf)
+            )
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     fileprivate func write(into buf: Writer) {
         switch self {
-        case .ErrorFromTheRustCode:
+        case let .ErrorFromTheRustCode(message):
             buf.writeInt(Int32(1))
+            message.write(into: buf)
         }
     }
 }
@@ -348,7 +353,7 @@ public func triggerRustAbort() {
     try!
 
         rustCall {
-            crashtest_7e7a_trigger_rust_abort($0)
+            crashtest_f229_trigger_rust_abort($0)
         }
 }
 
@@ -356,7 +361,7 @@ public func triggerRustPanic() {
     try!
 
         rustCall {
-            crashtest_7e7a_trigger_rust_panic($0)
+            crashtest_f229_trigger_rust_panic($0)
         }
 }
 
@@ -364,6 +369,6 @@ public func triggerRustError() throws {
     try
 
         rustCallWithError(CrashTestError.self) {
-            crashtest_7e7a_trigger_rust_error($0)
+            crashtest_f229_trigger_rust_error($0)
         }
 }
