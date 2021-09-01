@@ -14,7 +14,7 @@ private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
-            try! rustCall { ffi_nimbus_1c8c_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+            try! rustCall { ffi_nimbus_672f_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
         }
         self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
@@ -22,7 +22,7 @@ private extension RustBuffer {
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_nimbus_1c8c_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_nimbus_672f_rustbuffer_free(self, $0) }
     }
 }
 
@@ -304,7 +304,7 @@ extension String: ViaFfi {
 
     fileprivate static func lift(_ v: FfiType) throws -> Self {
         defer {
-            try! rustCall { ffi_nimbus_1c8c_rustbuffer_free(v, $0) }
+            try! rustCall { ffi_nimbus_672f_rustbuffer_free(v, $0) }
         }
         if v.data == nil {
             return String()
@@ -320,7 +320,7 @@ extension String: ViaFfi {
                 // The swift string gives us a trailing null byte, we don't want it.
                 let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
                 let bytes = ForeignBytes(bufferPointer: buf)
-                return try! rustCall { ffi_nimbus_1c8c_rustbuffer_from_bytes(bytes, $0) }
+                return try! rustCall { ffi_nimbus_672f_rustbuffer_from_bytes(bytes, $0) }
             }
         }
     }
@@ -417,122 +417,227 @@ private extension RustCallStatus {
 }
 
 public enum NimbusError {
-    case InvalidPersistedData
-    case RkvError
-    case IoError
-    case JsonError
-    case EvaluationError
-    case InvalidExpression
-    case InvalidFraction
-    case TryFromSliceError
-    case EmptyRatiosError
-    case OutOfBoundsError
-    case UrlParsingError
-    case RequestError
-    case ResponseError
-    case UuidError
-    case InvalidExperimentFormat
-    case InvalidPath
-    case InternalError
-    case NoSuchExperiment
-    case NoSuchBranch
-    case BackoffError
-    case DatabaseNotReady
+    // Simple error enums only carry a message
+    case InvalidPersistedData(message: String)
+
+    // Simple error enums only carry a message
+    case RkvError(message: String)
+
+    // Simple error enums only carry a message
+    case IoError(message: String)
+
+    // Simple error enums only carry a message
+    case JsonError(message: String)
+
+    // Simple error enums only carry a message
+    case EvaluationError(message: String)
+
+    // Simple error enums only carry a message
+    case InvalidExpression(message: String)
+
+    // Simple error enums only carry a message
+    case InvalidFraction(message: String)
+
+    // Simple error enums only carry a message
+    case TryFromSliceError(message: String)
+
+    // Simple error enums only carry a message
+    case EmptyRatiosError(message: String)
+
+    // Simple error enums only carry a message
+    case OutOfBoundsError(message: String)
+
+    // Simple error enums only carry a message
+    case UrlParsingError(message: String)
+
+    // Simple error enums only carry a message
+    case RequestError(message: String)
+
+    // Simple error enums only carry a message
+    case ResponseError(message: String)
+
+    // Simple error enums only carry a message
+    case UuidError(message: String)
+
+    // Simple error enums only carry a message
+    case InvalidExperimentFormat(message: String)
+
+    // Simple error enums only carry a message
+    case InvalidPath(message: String)
+
+    // Simple error enums only carry a message
+    case InternalError(message: String)
+
+    // Simple error enums only carry a message
+    case NoSuchExperiment(message: String)
+
+    // Simple error enums only carry a message
+    case NoSuchBranch(message: String)
+
+    // Simple error enums only carry a message
+    case BackoffError(message: String)
+
+    // Simple error enums only carry a message
+    case DatabaseNotReady(message: String)
 }
 
 extension NimbusError: ViaFfiUsingByteBuffer, ViaFfi {
     fileprivate static func read(from buf: Reader) throws -> NimbusError {
         let variant: Int32 = try buf.readInt()
         switch variant {
-        case 1: return .InvalidPersistedData
-        case 2: return .RkvError
-        case 3: return .IoError
-        case 4: return .JsonError
-        case 5: return .EvaluationError
-        case 6: return .InvalidExpression
-        case 7: return .InvalidFraction
-        case 8: return .TryFromSliceError
-        case 9: return .EmptyRatiosError
-        case 10: return .OutOfBoundsError
-        case 11: return .UrlParsingError
-        case 12: return .RequestError
-        case 13: return .ResponseError
-        case 14: return .UuidError
-        case 15: return .InvalidExperimentFormat
-        case 16: return .InvalidPath
-        case 17: return .InternalError
-        case 18: return .NoSuchExperiment
-        case 19: return .NoSuchBranch
-        case 20: return .BackoffError
-        case 21: return .DatabaseNotReady
+        case 1: return .InvalidPersistedData(
+                message: try String.read(from: buf)
+            )
+
+        case 2: return .RkvError(
+                message: try String.read(from: buf)
+            )
+
+        case 3: return .IoError(
+                message: try String.read(from: buf)
+            )
+
+        case 4: return .JsonError(
+                message: try String.read(from: buf)
+            )
+
+        case 5: return .EvaluationError(
+                message: try String.read(from: buf)
+            )
+
+        case 6: return .InvalidExpression(
+                message: try String.read(from: buf)
+            )
+
+        case 7: return .InvalidFraction(
+                message: try String.read(from: buf)
+            )
+
+        case 8: return .TryFromSliceError(
+                message: try String.read(from: buf)
+            )
+
+        case 9: return .EmptyRatiosError(
+                message: try String.read(from: buf)
+            )
+
+        case 10: return .OutOfBoundsError(
+                message: try String.read(from: buf)
+            )
+
+        case 11: return .UrlParsingError(
+                message: try String.read(from: buf)
+            )
+
+        case 12: return .RequestError(
+                message: try String.read(from: buf)
+            )
+
+        case 13: return .ResponseError(
+                message: try String.read(from: buf)
+            )
+
+        case 14: return .UuidError(
+                message: try String.read(from: buf)
+            )
+
+        case 15: return .InvalidExperimentFormat(
+                message: try String.read(from: buf)
+            )
+
+        case 16: return .InvalidPath(
+                message: try String.read(from: buf)
+            )
+
+        case 17: return .InternalError(
+                message: try String.read(from: buf)
+            )
+
+        case 18: return .NoSuchExperiment(
+                message: try String.read(from: buf)
+            )
+
+        case 19: return .NoSuchBranch(
+                message: try String.read(from: buf)
+            )
+
+        case 20: return .BackoffError(
+                message: try String.read(from: buf)
+            )
+
+        case 21: return .DatabaseNotReady(
+                message: try String.read(from: buf)
+            )
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     fileprivate func write(into buf: Writer) {
         switch self {
-        case .InvalidPersistedData:
+        case let .InvalidPersistedData(message):
             buf.writeInt(Int32(1))
-
-        case .RkvError:
+            message.write(into: buf)
+        case let .RkvError(message):
             buf.writeInt(Int32(2))
-
-        case .IoError:
+            message.write(into: buf)
+        case let .IoError(message):
             buf.writeInt(Int32(3))
-
-        case .JsonError:
+            message.write(into: buf)
+        case let .JsonError(message):
             buf.writeInt(Int32(4))
-
-        case .EvaluationError:
+            message.write(into: buf)
+        case let .EvaluationError(message):
             buf.writeInt(Int32(5))
-
-        case .InvalidExpression:
+            message.write(into: buf)
+        case let .InvalidExpression(message):
             buf.writeInt(Int32(6))
-
-        case .InvalidFraction:
+            message.write(into: buf)
+        case let .InvalidFraction(message):
             buf.writeInt(Int32(7))
-
-        case .TryFromSliceError:
+            message.write(into: buf)
+        case let .TryFromSliceError(message):
             buf.writeInt(Int32(8))
-
-        case .EmptyRatiosError:
+            message.write(into: buf)
+        case let .EmptyRatiosError(message):
             buf.writeInt(Int32(9))
-
-        case .OutOfBoundsError:
+            message.write(into: buf)
+        case let .OutOfBoundsError(message):
             buf.writeInt(Int32(10))
-
-        case .UrlParsingError:
+            message.write(into: buf)
+        case let .UrlParsingError(message):
             buf.writeInt(Int32(11))
-
-        case .RequestError:
+            message.write(into: buf)
+        case let .RequestError(message):
             buf.writeInt(Int32(12))
-
-        case .ResponseError:
+            message.write(into: buf)
+        case let .ResponseError(message):
             buf.writeInt(Int32(13))
-
-        case .UuidError:
+            message.write(into: buf)
+        case let .UuidError(message):
             buf.writeInt(Int32(14))
-
-        case .InvalidExperimentFormat:
+            message.write(into: buf)
+        case let .InvalidExperimentFormat(message):
             buf.writeInt(Int32(15))
-
-        case .InvalidPath:
+            message.write(into: buf)
+        case let .InvalidPath(message):
             buf.writeInt(Int32(16))
-
-        case .InternalError:
+            message.write(into: buf)
+        case let .InternalError(message):
             buf.writeInt(Int32(17))
-
-        case .NoSuchExperiment:
+            message.write(into: buf)
+        case let .NoSuchExperiment(message):
             buf.writeInt(Int32(18))
-
-        case .NoSuchBranch:
+            message.write(into: buf)
+        case let .NoSuchBranch(message):
             buf.writeInt(Int32(19))
-
-        case .BackoffError:
+            message.write(into: buf)
+        case let .BackoffError(message):
             buf.writeInt(Int32(20))
-
-        case .DatabaseNotReady:
+            message.write(into: buf)
+        case let .DatabaseNotReady(message):
             buf.writeInt(Int32(21))
+            message.write(into: buf)
         }
     }
 }
@@ -1101,25 +1206,25 @@ public class NimbusClient: NimbusClientProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_new(appCtx.lower(), dbpath.lower(), remoteSettingsConfig.lower(), availableRandomizationUnits.lower(), $0)
+                nimbus_672f_NimbusClient_new(appCtx.lower(), dbpath.lower(), remoteSettingsConfig.lower(), availableRandomizationUnits.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_nimbus_1c8c_NimbusClient_object_free(pointer, $0) }
+        try! rustCall { ffi_nimbus_672f_NimbusClient_object_free(pointer, $0) }
     }
 
     public func initialize() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_initialize(self.pointer, $0)
+                nimbus_672f_NimbusClient_initialize(self.pointer, $0)
             }
     }
 
     public func getExperimentBranch(id: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
+                nimbus_672f_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
             }
         return try String?.lift(_retval)
     }
@@ -1127,7 +1232,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getFeatureConfigVariables(featureId: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
+                nimbus_672f_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
             }
         return try String?.lift(_retval)
     }
@@ -1135,7 +1240,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
+                nimbus_672f_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
             }
         return try [ExperimentBranch].lift(_retval)
     }
@@ -1143,7 +1248,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getActiveExperiments() throws -> [EnrolledExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_get_active_experiments(self.pointer, $0)
+                nimbus_672f_NimbusClient_get_active_experiments(self.pointer, $0)
             }
         return try [EnrolledExperiment].lift(_retval)
     }
@@ -1151,7 +1256,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getAvailableExperiments() throws -> [AvailableExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_get_available_experiments(self.pointer, $0)
+                nimbus_672f_NimbusClient_get_available_experiments(self.pointer, $0)
             }
         return try [AvailableExperiment].lift(_retval)
     }
@@ -1159,7 +1264,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getGlobalUserParticipation() throws -> Bool {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_get_global_user_participation(self.pointer, $0)
+                nimbus_672f_NimbusClient_get_global_user_participation(self.pointer, $0)
             }
         return try Bool.lift(_retval)
     }
@@ -1167,7 +1272,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
+                nimbus_672f_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1175,7 +1280,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func updateExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_update_experiments(self.pointer, $0)
+                nimbus_672f_NimbusClient_update_experiments(self.pointer, $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1183,14 +1288,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func fetchExperiments() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_fetch_experiments(self.pointer, $0)
+                nimbus_672f_NimbusClient_fetch_experiments(self.pointer, $0)
             }
     }
 
     public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_apply_pending_experiments(self.pointer, $0)
+                nimbus_672f_NimbusClient_apply_pending_experiments(self.pointer, $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1198,14 +1303,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func setExperimentsLocally(experimentsJson: String) throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
+                nimbus_672f_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
             }
     }
 
     public func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
+                nimbus_672f_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1213,7 +1318,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
+                nimbus_672f_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1221,7 +1326,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_1c8c_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
+                nimbus_672f_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
