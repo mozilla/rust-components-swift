@@ -22,7 +22,7 @@ let package = Package(
     ],
     targets: [
         /*
-        * A placeholder wrapper for our binaryTarget so that XCode will ensure this is
+        * A placeholder wrapper for our binaryTarget so that Xcode will ensure this is
         * downloaded/built before trying to use it in the build process
         * A bit hacky but necessary for now https://github.com/mozilla/application-services/issues/4422
         */
@@ -73,12 +73,12 @@ let package = Package(
         // TODO: other components will go here over time.
         //.target(
         //    name: "Logins",
-        //    dependencies: ["MozillaRustComponents", "Sync15"],
+        //    dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
         //    path: "external/application-services/components/logins/ios"
         //),
         //.target(
         //    name: "FxAClient",
-        //    dependencies: ["MozillaRustComponents", "SwiftKeychainWrapper"],
+        //    dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
         //    path: "external/application-services/components/fxa-client/ios"
         //),
     ]
