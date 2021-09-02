@@ -21,41 +21,18 @@ let package = Package(
         //.package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
     ],
     targets: [
+        /*
+        * A placeholder wrapper for our binaryTarget so that XCode will ensure this is
+        * downloaded/built before trying to use it in the build process
+        * A bit hacky but necessary for now https://github.com/mozilla/application-services/issues/4422
+        */
         .target(
-            name: "Sync15",
-            path: "external/application-services/components/sync15/ios"
+            name: "MozillaRustComponentsWrapper",
+            dependencies: [
+                .target(name: "MozillaRustComponents", condition: .when(platforms: [.iOS]))
+            ],
+            path: "MozillaRustComponentsWrapper"
         ),
-        .target(
-            name: "RustLog",
-            dependencies: ["MozillaRustComponents"],
-            path: "external/application-services/components/rc_log/ios"
-        ),
-        .target(
-            name: "Viaduct",
-            dependencies: ["MozillaRustComponents"],
-            path: "external/application-services/components/viaduct/ios"
-        ),
-        .target(
-            name: "Nimbus",
-            dependencies: ["MozillaRustComponents", "Glean"],
-            path: "generated/nimbus"
-        ),
-        .target(
-            name: "CrashTest",
-            dependencies: ["MozillaRustComponents"],
-            path: "generated/crashtest"
-        ),
-        // TODO: other components will go here over time.
-        //.target(
-        //    name: "Logins",
-        //    dependencies: ["MozillaRustComponents", "Sync15"],
-        //    path: "external/application-services/components/logins/ios"
-        //),
-        //.target(
-        //    name: "FxAClient",
-        //    dependencies: ["MozillaRustComponents", "SwiftKeychainWrapper"],
-        //    path: "external/application-services/components/fxa-client/ios"
-        //),
         .binaryTarget(
             name: "MozillaRustComponents",
             //
@@ -68,6 +45,41 @@ let package = Package(
             // Note that you have to actually check it in and make a tag for it to work correctly.
             //
             //path: "./MozillaRustComponents.xcframework"
+        ),
+        .target(
+            name: "Sync15",
+            path: "external/application-services/components/sync15/ios"
+        ),
+        .target(
+            name: "RustLog",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "external/application-services/components/rc_log/ios"
+        ),
+        .target(
+            name: "Viaduct",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "external/application-services/components/viaduct/ios"
+        ),
+        .target(
+            name: "Nimbus",
+            dependencies: ["MozillaRustComponentsWrapper", "Glean"],
+            path: "generated/nimbus"
+        ),
+        .target(
+            name: "CrashTest",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "generated/crashtest"
         )
+        // TODO: other components will go here over time.
+        //.target(
+        //    name: "Logins",
+        //    dependencies: ["MozillaRustComponents", "Sync15"],
+        //    path: "external/application-services/components/logins/ios"
+        //),
+        //.target(
+        //    name: "FxAClient",
+        //    dependencies: ["MozillaRustComponents", "SwiftKeychainWrapper"],
+        //    path: "external/application-services/components/fxa-client/ios"
+        //),
     ]
 )

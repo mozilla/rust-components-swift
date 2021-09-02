@@ -36,7 +36,7 @@ Key points:
 * The `Package.swift` file references `MozillaRustComponents.xcframework.zip` as a Swift binary target.
 * The `Package.swift` file defines an individual module for the Swift wrapper code of each component.
     * Each module references its Swift source code directly as files in the repo.
-    * Each module depends on `MozillaRustComponents` to provide the pre-compiled Rust code.
+    * Each module depends on `MozillaRustComponentsWrapper` which wraps `MozillaRustComponents` to provide the pre-compiled Rust code.
 
 ## Cutting a new release
 
@@ -62,7 +62,7 @@ To add a new component to be distributed via this repo, you'll need to:
 * Edit `./Package.swift` to add the new component.
     * Add a new library product for the component under "products".
     * Add a corresponding target for the component under "targets".
-        * Make sure it depends on "MozillaRustComponents" to pull in the pre-compiled Rust code,
+        * Make sure it depends on "MozillaRustComponentsWrapper" to pull in the pre-compiled Rust code,
           as well as on any third-party Swift packages that it may require.
 * Follow the instructions below to test it out locally.
 
