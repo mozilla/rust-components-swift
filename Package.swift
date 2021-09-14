@@ -10,7 +10,7 @@ let package = Package(
         .library(name: "Nimbus", targets: ["Nimbus"]),
         .library(name: "CrashTest", targets: ["CrashTest"]),
         // TODO: more of our components here, once they support M1 builds.
-        //.library(name: "Logins", targets: ["Logins"]),
+        .library(name: "Logins", targets: ["Logins"]),
         .library(name: "FxAClient", targets: ["FxAClient"]),
     ],
     dependencies: [
@@ -36,9 +36,9 @@ let package = Package(
             //
             // For release artifacts, reference the MozillaRustComponents as a URL with checksum.
             //
-            url: "https://112912-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "a67cfdab5e9a52eeb93435b20a4fc2813fe0486113c6eab5d7fa77fcbcb4fa07"
-            //
+            url: "https://114992-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "0f4bc0b8b39326e7415e8fc6a56cb61320e192ef0dd3307cb903bc6f80191c83"
+            
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
             //
@@ -67,30 +67,16 @@ let package = Package(
             name: "CrashTest",
             dependencies: ["MozillaRustComponentsWrapper"],
             path: "generated/crashtest"
-        )
-        // TODO: other components will go here over time.
-        //.target(
-        //    name: "Logins",
-        //    dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
-        //    path: "external/application-services/components/logins/ios"
-        //),
+        ),
+        .target(
+           name: "Logins",
+           dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
+           path: "generated/logins"
+        ),
         .target(
            name: "FxAClient",
-           dependencies: ["MozillaRustComponents", "SwiftKeychainWrapper"],
+           dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
            path: "generated/fxa-client"
-        ),
-        .binaryTarget(
-            name: "MozillaRustComponents",
-            //
-            // For release artifacts, reference the MozillaRustComponents as a URL with checksum.
-            //
-            url: "https://113000-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "74f9ef001e2b7eff53ecc9b23871ce96f7a6102aeb022b553ba1726c94dc5a46"
-            //
-            // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
-            // Note that you have to actually check it in and make a tag for it to work correctly.
-            //
-            //path: "./MozillaRustComponents.xcframework"
         )
     ]
 )

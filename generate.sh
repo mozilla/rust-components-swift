@@ -53,3 +53,16 @@ rm -rf "$FXA_CLIENT_DIR" && mkdir -p "$FXA_CLIENT_DIR"
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FXA_CLIENT_DIR/Generated" "$THIS_DIR/external/application-services/components/fxa-client/src/fxa_client.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
 cp -r "$THIS_DIR/external/application-services/components/fxa-client/ios/FxAClient" "$FXA_CLIENT_DIR/FxAClient"
+
+###
+#
+# Logins
+#
+###
+
+LOGINS_DIR="$THIS_DIR/generated/logins"
+rm -rf "$LOGINS_DIR" && mkdir -p "$LOGINS_DIR"
+# UniFFI bindings.
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$LOGINS_DIR/Generated" "$THIS_DIR/external/application-services/components/logins/src/logins.udl"
+# Copy the hand-written Swift, since it all needs to be together in one directory.
+cp -r "$THIS_DIR/external/application-services/components/logins/ios/Logins" "$LOGINS_DIR/Logins"
