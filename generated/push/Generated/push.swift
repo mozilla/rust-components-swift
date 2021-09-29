@@ -6,15 +6,15 @@ import Foundation
 // Depending on the consumer's build setup, the low-level FFI code
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
-#if canImport(loginsFFI)
-    import loginsFFI
+#if canImport(pushFFI)
+    import pushFFI
 #endif
 
 private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
-            try! rustCall { ffi_logins_f90f_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+            try! rustCall { ffi_push_9ca4_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
         }
         self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
@@ -22,7 +22,7 @@ private extension RustBuffer {
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_logins_f90f_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_push_9ca4_rustbuffer_free(self, $0) }
     }
 }
 
@@ -238,8 +238,8 @@ extension Array: ViaFfiUsingByteBuffer, ViaFfi, Serializable where Element: Seri
     }
 }
 
-extension Int64: Primitive, ViaFfi {
-    fileprivate static func read(from buf: Reader) throws -> Int64 {
+extension Int8: Primitive, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> Int8 {
         return try lift(buf.readInt())
     }
 
@@ -273,7 +273,7 @@ extension String: ViaFfi {
 
     fileprivate static func lift(_ v: FfiType) throws -> Self {
         defer {
-            try! rustCall { ffi_logins_f90f_rustbuffer_free(v, $0) }
+            try! rustCall { ffi_push_9ca4_rustbuffer_free(v, $0) }
         }
         if v.data == nil {
             return String()
@@ -289,7 +289,7 @@ extension String: ViaFfi {
                 // The swift string gives us a trailing null byte, we don't want it.
                 let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
                 let bytes = ForeignBytes(bufferPointer: buf)
-                return try! rustCall { ffi_logins_f90f_rustbuffer_from_bytes(bytes, $0) }
+                return try! rustCall { ffi_push_9ca4_rustbuffer_from_bytes(bytes, $0) }
             }
         }
     }
@@ -308,6 +308,45 @@ extension String: ViaFfi {
 
 // Public interface members begin here.
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum BridgeType {
+    case fcm
+    case adm
+    case apns
+    case test
+}
+
+extension BridgeType: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> BridgeType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .fcm
+        case 2: return .adm
+        case 3: return .apns
+        case 4: return .test
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case .fcm:
+            buf.writeInt(Int32(1))
+
+        case .adm:
+            buf.writeInt(Int32(2))
+
+        case .apns:
+            buf.writeInt(Int32(3))
+
+        case .test:
+            buf.writeInt(Int32(4))
+        }
+    }
+}
+
+extension BridgeType: Equatable, Hashable {}
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
 private enum UniffiInternalError: LocalizedError {
@@ -351,72 +390,107 @@ private extension RustCallStatus {
     }
 }
 
-public enum LoginsStorageError {
+public enum PushError {
     // Simple error enums only carry a message
-    case UnexpectedLoginsStorageError(message: String)
+    case GeneralError(message: String)
 
     // Simple error enums only carry a message
-    case SyncAuthInvalid(message: String)
+    case CryptoError(message: String)
 
     // Simple error enums only carry a message
-    case MismatchedLock(message: String)
+    case CommunicationError(message: String)
 
     // Simple error enums only carry a message
-    case NoSuchRecord(message: String)
+    case CommunicationServerError(message: String)
 
     // Simple error enums only carry a message
-    case IdCollision(message: String)
+    case AlreadyRegisteredError(message: String)
 
     // Simple error enums only carry a message
-    case InvalidRecord(message: String)
+    case StorageError(message: String)
 
     // Simple error enums only carry a message
-    case InvalidKey(message: String)
+    case RecordNotFoundError(message: String)
 
     // Simple error enums only carry a message
-    case RequestFailed(message: String)
+    case StorageSqlError(message: String)
 
     // Simple error enums only carry a message
-    case Interrupted(message: String)
+    case MissingRegistrationTokenError(message: String)
+
+    // Simple error enums only carry a message
+    case TranscodingError(message: String)
+
+    // Simple error enums only carry a message
+    case UrlParseError(message: String)
+
+    // Simple error enums only carry a message
+    case JsonDeserializeError(message: String)
+
+    // Simple error enums only carry a message
+    case UaidNotRecognizedError(message: String)
+
+    // Simple error enums only carry a message
+    case RequestError(message: String)
 }
 
-extension LoginsStorageError: ViaFfiUsingByteBuffer, ViaFfi {
-    fileprivate static func read(from buf: Reader) throws -> LoginsStorageError {
+extension PushError: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> PushError {
         let variant: Int32 = try buf.readInt()
         switch variant {
-        case 1: return .UnexpectedLoginsStorageError(
+        case 1: return .GeneralError(
                 message: try String.read(from: buf)
             )
 
-        case 2: return .SyncAuthInvalid(
+        case 2: return .CryptoError(
                 message: try String.read(from: buf)
             )
 
-        case 3: return .MismatchedLock(
+        case 3: return .CommunicationError(
                 message: try String.read(from: buf)
             )
 
-        case 4: return .NoSuchRecord(
+        case 4: return .CommunicationServerError(
                 message: try String.read(from: buf)
             )
 
-        case 5: return .IdCollision(
+        case 5: return .AlreadyRegisteredError(
                 message: try String.read(from: buf)
             )
 
-        case 6: return .InvalidRecord(
+        case 6: return .StorageError(
                 message: try String.read(from: buf)
             )
 
-        case 7: return .InvalidKey(
+        case 7: return .RecordNotFoundError(
                 message: try String.read(from: buf)
             )
 
-        case 8: return .RequestFailed(
+        case 8: return .StorageSqlError(
                 message: try String.read(from: buf)
             )
 
-        case 9: return .Interrupted(
+        case 9: return .MissingRegistrationTokenError(
+                message: try String.read(from: buf)
+            )
+
+        case 10: return .TranscodingError(
+                message: try String.read(from: buf)
+            )
+
+        case 11: return .UrlParseError(
+                message: try String.read(from: buf)
+            )
+
+        case 12: return .JsonDeserializeError(
+                message: try String.read(from: buf)
+            )
+
+        case 13: return .UaidNotRecognizedError(
+                message: try String.read(from: buf)
+            )
+
+        case 14: return .RequestError(
                 message: try String.read(from: buf)
             )
 
@@ -426,40 +500,55 @@ extension LoginsStorageError: ViaFfiUsingByteBuffer, ViaFfi {
 
     fileprivate func write(into buf: Writer) {
         switch self {
-        case let .UnexpectedLoginsStorageError(message):
+        case let .GeneralError(message):
             buf.writeInt(Int32(1))
             message.write(into: buf)
-        case let .SyncAuthInvalid(message):
+        case let .CryptoError(message):
             buf.writeInt(Int32(2))
             message.write(into: buf)
-        case let .MismatchedLock(message):
+        case let .CommunicationError(message):
             buf.writeInt(Int32(3))
             message.write(into: buf)
-        case let .NoSuchRecord(message):
+        case let .CommunicationServerError(message):
             buf.writeInt(Int32(4))
             message.write(into: buf)
-        case let .IdCollision(message):
+        case let .AlreadyRegisteredError(message):
             buf.writeInt(Int32(5))
             message.write(into: buf)
-        case let .InvalidRecord(message):
+        case let .StorageError(message):
             buf.writeInt(Int32(6))
             message.write(into: buf)
-        case let .InvalidKey(message):
+        case let .RecordNotFoundError(message):
             buf.writeInt(Int32(7))
             message.write(into: buf)
-        case let .RequestFailed(message):
+        case let .StorageSqlError(message):
             buf.writeInt(Int32(8))
             message.write(into: buf)
-        case let .Interrupted(message):
+        case let .MissingRegistrationTokenError(message):
             buf.writeInt(Int32(9))
+            message.write(into: buf)
+        case let .TranscodingError(message):
+            buf.writeInt(Int32(10))
+            message.write(into: buf)
+        case let .UrlParseError(message):
+            buf.writeInt(Int32(11))
+            message.write(into: buf)
+        case let .JsonDeserializeError(message):
+            buf.writeInt(Int32(12))
+            message.write(into: buf)
+        case let .UaidNotRecognizedError(message):
+            buf.writeInt(Int32(13))
+            message.write(into: buf)
+        case let .RequestError(message):
+            buf.writeInt(Int32(14))
             message.write(into: buf)
         }
     }
 }
 
-extension LoginsStorageError: Equatable, Hashable {}
+extension PushError: Equatable, Hashable {}
 
-extension LoginsStorageError: Error {}
+extension PushError: Error {}
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
     try makeRustCall(callback, errorHandler: {
@@ -498,169 +587,258 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
     }
 }
 
-public struct Login {
-    public var id: String
-    public var hostname: String
-    public var password: String
-    public var username: String
-    public var httpRealm: String?
-    public var formSubmitUrl: String?
-    public var usernameField: String
-    public var passwordField: String
-    public var timesUsed: Int64
-    public var timeCreated: Int64
-    public var timeLastUsed: Int64
-    public var timePasswordChanged: Int64
+public struct DispatchInfo {
+    public var uaid: String
+    public var scope: String
+    public var endpoint: String
+    public var appServerKey: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: String, hostname: String, password: String, username: String, httpRealm: String?, formSubmitUrl: String?, usernameField: String, passwordField: String, timesUsed: Int64, timeCreated: Int64, timeLastUsed: Int64, timePasswordChanged: Int64) {
-        self.id = id
-        self.hostname = hostname
-        self.password = password
-        self.username = username
-        self.httpRealm = httpRealm
-        self.formSubmitUrl = formSubmitUrl
-        self.usernameField = usernameField
-        self.passwordField = passwordField
-        self.timesUsed = timesUsed
-        self.timeCreated = timeCreated
-        self.timeLastUsed = timeLastUsed
-        self.timePasswordChanged = timePasswordChanged
+    public init(uaid: String, scope: String, endpoint: String, appServerKey: String?) {
+        self.uaid = uaid
+        self.scope = scope
+        self.endpoint = endpoint
+        self.appServerKey = appServerKey
     }
 }
 
-extension Login: Equatable, Hashable {
-    public static func == (lhs: Login, rhs: Login) -> Bool {
-        if lhs.id != rhs.id {
+extension DispatchInfo: Equatable, Hashable {
+    public static func == (lhs: DispatchInfo, rhs: DispatchInfo) -> Bool {
+        if lhs.uaid != rhs.uaid {
             return false
         }
-        if lhs.hostname != rhs.hostname {
+        if lhs.scope != rhs.scope {
             return false
         }
-        if lhs.password != rhs.password {
+        if lhs.endpoint != rhs.endpoint {
             return false
         }
-        if lhs.username != rhs.username {
-            return false
-        }
-        if lhs.httpRealm != rhs.httpRealm {
-            return false
-        }
-        if lhs.formSubmitUrl != rhs.formSubmitUrl {
-            return false
-        }
-        if lhs.usernameField != rhs.usernameField {
-            return false
-        }
-        if lhs.passwordField != rhs.passwordField {
-            return false
-        }
-        if lhs.timesUsed != rhs.timesUsed {
-            return false
-        }
-        if lhs.timeCreated != rhs.timeCreated {
-            return false
-        }
-        if lhs.timeLastUsed != rhs.timeLastUsed {
-            return false
-        }
-        if lhs.timePasswordChanged != rhs.timePasswordChanged {
+        if lhs.appServerKey != rhs.appServerKey {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(hostname)
-        hasher.combine(password)
-        hasher.combine(username)
-        hasher.combine(httpRealm)
-        hasher.combine(formSubmitUrl)
-        hasher.combine(usernameField)
-        hasher.combine(passwordField)
-        hasher.combine(timesUsed)
-        hasher.combine(timeCreated)
-        hasher.combine(timeLastUsed)
-        hasher.combine(timePasswordChanged)
+        hasher.combine(uaid)
+        hasher.combine(scope)
+        hasher.combine(endpoint)
+        hasher.combine(appServerKey)
     }
 }
 
-private extension Login {
-    static func read(from buf: Reader) throws -> Login {
-        return try Login(
-            id: String.read(from: buf),
-            hostname: String.read(from: buf),
-            password: String.read(from: buf),
-            username: String.read(from: buf),
-            httpRealm: String?.read(from: buf),
-            formSubmitUrl: String?.read(from: buf),
-            usernameField: String.read(from: buf),
-            passwordField: String.read(from: buf),
-            timesUsed: Int64.read(from: buf),
-            timeCreated: Int64.read(from: buf),
-            timeLastUsed: Int64.read(from: buf),
-            timePasswordChanged: Int64.read(from: buf)
+private extension DispatchInfo {
+    static func read(from buf: Reader) throws -> DispatchInfo {
+        return try DispatchInfo(
+            uaid: String.read(from: buf),
+            scope: String.read(from: buf),
+            endpoint: String.read(from: buf),
+            appServerKey: String?.read(from: buf)
         )
     }
 
     func write(into buf: Writer) {
-        id.write(into: buf)
-        hostname.write(into: buf)
-        password.write(into: buf)
-        username.write(into: buf)
-        httpRealm.write(into: buf)
-        formSubmitUrl.write(into: buf)
-        usernameField.write(into: buf)
-        passwordField.write(into: buf)
-        timesUsed.write(into: buf)
-        timeCreated.write(into: buf)
-        timeLastUsed.write(into: buf)
-        timePasswordChanged.write(into: buf)
+        uaid.write(into: buf)
+        scope.write(into: buf)
+        endpoint.write(into: buf)
+        appServerKey.write(into: buf)
     }
 }
 
-extension Login: ViaFfiUsingByteBuffer, ViaFfi {}
+extension DispatchInfo: ViaFfiUsingByteBuffer, ViaFfi {}
 
-public func openAndGetSalt(path: String, encryptionKey: String) throws -> String {
-    let _retval = try
+public struct KeyInfo {
+    public var auth: String
+    public var p256dh: String
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_f90f_open_and_get_salt(path.lower(), encryptionKey.lower(), $0)
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(auth: String, p256dh: String) {
+        self.auth = auth
+        self.p256dh = p256dh
+    }
+}
+
+extension KeyInfo: Equatable, Hashable {
+    public static func == (lhs: KeyInfo, rhs: KeyInfo) -> Bool {
+        if lhs.auth != rhs.auth {
+            return false
         }
-    return try String.lift(_retval)
-}
-
-public func openAndMigrateToPlaintextHeader(path: String, encryptionKey: String, salt: String) throws {
-    try
-
-        rustCallWithError(LoginsStorageError.self) {
-            logins_f90f_open_and_migrate_to_plaintext_header(path.lower(), encryptionKey.lower(), salt.lower(), $0)
+        if lhs.p256dh != rhs.p256dh {
+            return false
         }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(auth)
+        hasher.combine(p256dh)
+    }
 }
 
-public protocol LoginStoreProtocol {
-    func checkValidWithNoDupes(login: Login) throws
-    func add(login: Login) throws -> String
-    func delete(id: String) throws -> Bool
-    func wipe() throws
-    func wipeLocal() throws
-    func reset() throws
-    func disableMemSecurity() throws
-    func rekeyDatabase(newEncryptionKey: String) throws
-    func touch(id: String) throws
-    func list() throws -> [Login]
-    func getByBaseDomain(baseDomain: String) throws -> [Login]
-    func potentialDupesIgnoringUsername(login: Login) throws -> [Login]
-    func get(id: String) throws -> Login?
-    func update(login: Login) throws
-    func importMultiple(login: [Login]) throws -> String
-    func registerWithSyncManager()
-    func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String
+private extension KeyInfo {
+    static func read(from buf: Reader) throws -> KeyInfo {
+        return try KeyInfo(
+            auth: String.read(from: buf),
+            p256dh: String.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        auth.write(into: buf)
+        p256dh.write(into: buf)
+    }
 }
 
-public class LoginStore: LoginStoreProtocol {
+extension KeyInfo: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct SubscriptionInfo {
+    public var endpoint: String
+    public var keys: KeyInfo
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(endpoint: String, keys: KeyInfo) {
+        self.endpoint = endpoint
+        self.keys = keys
+    }
+}
+
+extension SubscriptionInfo: Equatable, Hashable {
+    public static func == (lhs: SubscriptionInfo, rhs: SubscriptionInfo) -> Bool {
+        if lhs.endpoint != rhs.endpoint {
+            return false
+        }
+        if lhs.keys != rhs.keys {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(endpoint)
+        hasher.combine(keys)
+    }
+}
+
+private extension SubscriptionInfo {
+    static func read(from buf: Reader) throws -> SubscriptionInfo {
+        return try SubscriptionInfo(
+            endpoint: String.read(from: buf),
+            keys: KeyInfo.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        endpoint.write(into: buf)
+        keys.write(into: buf)
+    }
+}
+
+extension SubscriptionInfo: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct SubscriptionResponse {
+    public var channelId: String
+    public var subscriptionInfo: SubscriptionInfo
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(channelId: String, subscriptionInfo: SubscriptionInfo) {
+        self.channelId = channelId
+        self.subscriptionInfo = subscriptionInfo
+    }
+}
+
+extension SubscriptionResponse: Equatable, Hashable {
+    public static func == (lhs: SubscriptionResponse, rhs: SubscriptionResponse) -> Bool {
+        if lhs.channelId != rhs.channelId {
+            return false
+        }
+        if lhs.subscriptionInfo != rhs.subscriptionInfo {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(channelId)
+        hasher.combine(subscriptionInfo)
+    }
+}
+
+private extension SubscriptionResponse {
+    static func read(from buf: Reader) throws -> SubscriptionResponse {
+        return try SubscriptionResponse(
+            channelId: String.read(from: buf),
+            subscriptionInfo: SubscriptionInfo.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        channelId.write(into: buf)
+        subscriptionInfo.write(into: buf)
+    }
+}
+
+extension SubscriptionResponse: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct PushSubscriptionChanged {
+    public var channelId: String
+    public var scope: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(channelId: String, scope: String) {
+        self.channelId = channelId
+        self.scope = scope
+    }
+}
+
+extension PushSubscriptionChanged: Equatable, Hashable {
+    public static func == (lhs: PushSubscriptionChanged, rhs: PushSubscriptionChanged) -> Bool {
+        if lhs.channelId != rhs.channelId {
+            return false
+        }
+        if lhs.scope != rhs.scope {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(channelId)
+        hasher.combine(scope)
+    }
+}
+
+private extension PushSubscriptionChanged {
+    static func read(from buf: Reader) throws -> PushSubscriptionChanged {
+        return try PushSubscriptionChanged(
+            channelId: String.read(from: buf),
+            scope: String.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        channelId.write(into: buf)
+        scope.write(into: buf)
+    }
+}
+
+extension PushSubscriptionChanged: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public protocol PushManagerProtocol {
+    func subscribe(channelId: String, scope: String, appServerSey: String?) throws -> SubscriptionResponse
+    func unsubscribe(channelId: String) throws -> Bool
+    func unsubscribeAll() throws
+    func update(registrationToken: String) throws -> Bool
+    func verifyConnection() throws -> [PushSubscriptionChanged]
+    func decrypt(channelId: String, body: String, encoding: String, salt: String, dh: String) throws -> [Int8]
+    func dispatchInfoForChid(channelId: String) throws -> DispatchInfo?
+}
+
+public class PushManager: PushManagerProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
@@ -670,155 +848,75 @@ public class LoginStore: LoginStoreProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(path: String, encryptionKey: String) throws {
+    public convenience init(senderId: String, serverHost: String = "updates.push.services.mozilla.com", httpProtocol: String = "https", bridgeType: BridgeType, registrationId: String, databasePath: String = "push.sqlite") throws {
         self.init(unsafeFromRawPointer: try
 
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_new(path.lower(), encryptionKey.lower(), $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_new(senderId.lower(), serverHost.lower(), httpProtocol.lower(), bridgeType.lower(), registrationId.lower(), databasePath.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_logins_f90f_LoginStore_object_free(pointer, $0) }
+        try! rustCall { ffi_push_9ca4_PushManager_object_free(pointer, $0) }
     }
 
-    public static func newWithSalt(path: String, encryptionKey: String, salt: String) throws -> LoginStore {
-        return LoginStore(unsafeFromRawPointer: try
-
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_new_with_salt(path.lower(), encryptionKey.lower(), salt.lower(), $0)
-            })
-    }
-
-    public func checkValidWithNoDupes(login: Login) throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_check_valid_with_no_dupes(self.pointer, login.lower(), $0)
-            }
-    }
-
-    public func add(login: Login) throws -> String {
+    public func subscribe(channelId: String = "", scope: String = "", appServerSey: String? = nil) throws -> SubscriptionResponse {
         let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_add(self.pointer, login.lower(), $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_subscribe(self.pointer, channelId.lower(), scope.lower(), appServerSey.lower(), $0)
             }
-        return try String.lift(_retval)
+        return try SubscriptionResponse.lift(_retval)
     }
 
-    public func delete(id: String) throws -> Bool {
+    public func unsubscribe(channelId: String) throws -> Bool {
         let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_delete(self.pointer, id.lower(), $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_unsubscribe(self.pointer, channelId.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
 
-    public func wipe() throws {
+    public func unsubscribeAll() throws {
         try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_wipe(self.pointer, $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_unsubscribe_all(self.pointer, $0)
             }
     }
 
-    public func wipeLocal() throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_wipe_local(self.pointer, $0)
-            }
-    }
-
-    public func reset() throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_reset(self.pointer, $0)
-            }
-    }
-
-    public func disableMemSecurity() throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_disable_mem_security(self.pointer, $0)
-            }
-    }
-
-    public func rekeyDatabase(newEncryptionKey: String) throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_rekey_database(self.pointer, newEncryptionKey.lower(), $0)
-            }
-    }
-
-    public func touch(id: String) throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_touch(self.pointer, id.lower(), $0)
-            }
-    }
-
-    public func list() throws -> [Login] {
+    public func update(registrationToken: String) throws -> Bool {
         let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_list(self.pointer, $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_update(self.pointer, registrationToken.lower(), $0)
             }
-        return try [Login].lift(_retval)
+        return try Bool.lift(_retval)
     }
 
-    public func getByBaseDomain(baseDomain: String) throws -> [Login] {
+    public func verifyConnection() throws -> [PushSubscriptionChanged] {
         let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_get_by_base_domain(self.pointer, baseDomain.lower(), $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_verify_connection(self.pointer, $0)
             }
-        return try [Login].lift(_retval)
+        return try [PushSubscriptionChanged].lift(_retval)
     }
 
-    public func potentialDupesIgnoringUsername(login: Login) throws -> [Login] {
+    public func decrypt(channelId: String, body: String, encoding: String = "aes128gcm", salt: String = "", dh: String = "") throws -> [Int8] {
         let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_potential_dupes_ignoring_username(self.pointer, login.lower(), $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_decrypt(self.pointer, channelId.lower(), body.lower(), encoding.lower(), salt.lower(), dh.lower(), $0)
             }
-        return try [Login].lift(_retval)
+        return try [Int8].lift(_retval)
     }
 
-    public func get(id: String) throws -> Login? {
+    public func dispatchInfoForChid(channelId: String) throws -> DispatchInfo? {
         let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_get(self.pointer, id.lower(), $0)
+            rustCallWithError(PushError.self) {
+                push_9ca4_PushManager_dispatch_info_for_chid(self.pointer, channelId.lower(), $0)
             }
-        return try Login?.lift(_retval)
-    }
-
-    public func update(login: Login) throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_update(self.pointer, login.lower(), $0)
-            }
-    }
-
-    public func importMultiple(login: [Login]) throws -> String {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_import_multiple(self.pointer, login.lower(), $0)
-            }
-        return try String.lift(_retval)
-    }
-
-    public func registerWithSyncManager() {
-        try!
-            rustCall {
-                logins_f90f_LoginStore_register_with_sync_manager(self.pointer, $0)
-            }
-    }
-
-    public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), $0)
-            }
-        return try String.lift(_retval)
+        return try DispatchInfo?.lift(_retval)
     }
 }
 
-private extension LoginStore {
+private extension PushManager {
     typealias FfiType = UnsafeMutableRawPointer
 
     static func read(from buf: Reader) throws -> Self {
@@ -851,4 +949,4 @@ private extension LoginStore {
 // """
 // 'private' modifier cannot be used with extensions that declare protocol conformances
 // """
-extension LoginStore: ViaFfi, Serializable {}
+extension PushManager: ViaFfi, Serializable {}

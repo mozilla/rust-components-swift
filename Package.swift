@@ -9,9 +9,11 @@ let package = Package(
         .library(name: "Viaduct", targets: ["Viaduct"]),
         .library(name: "Nimbus", targets: ["Nimbus"]),
         .library(name: "CrashTest", targets: ["CrashTest"]),
-        // TODO: more of our components here, once they support M1 builds.
         .library(name: "Logins", targets: ["Logins"]),
         .library(name: "FxAClient", targets: ["FxAClient"]),
+        .library(name: "Autofill", targets: ["Autofill"]),
+        .library(name: "Push", targets: ["Push"]),
+        .library(name: "Tabs", targets: ["Tabs"]),
     ],
     dependencies: [
         // TODO: ship Glean via this same bundle?
@@ -36,9 +38,9 @@ let package = Package(
             //
             // For release artifacts, reference the MozillaRustComponents as a URL with checksum.
             //
-            url: "https://114992-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "0f4bc0b8b39326e7415e8fc6a56cb61320e192ef0dd3307cb903bc6f80191c83"
-            
+            url: "https://116662-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "d3f37b54afe8a8de3a928ddab8a85ddef996916a20f0f9001eef7eeb68d97f30"
+
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
             //
@@ -77,6 +79,21 @@ let package = Package(
            name: "FxAClient",
            dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
            path: "generated/fxa-client"
+        ),
+        .target(
+            name: "Autofill",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "generated/autofill"
+        ),
+        .target(
+            name: "Push",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "generated/push"
+        ),
+        .target(
+            name: "Tabs",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "generated/tabs"
         )
     ]
 )
