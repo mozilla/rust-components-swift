@@ -36,6 +36,9 @@ fi
 
 # Re-generate any generated files, to make sure they're fresh.
 
+# uncomment this and set it to your a-s directory and feed it to the generate script
+#LOCAL_DIR="../application-services"
+
 git submodule update --init --recursive
 "$THIS_DIR/generate.sh" || exit 1
 git add "$THIS_DIR/generated"

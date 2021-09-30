@@ -9,16 +9,16 @@ let package = Package(
         .library(name: "Viaduct", targets: ["Viaduct"]),
         .library(name: "Nimbus", targets: ["Nimbus"]),
         .library(name: "CrashTest", targets: ["CrashTest"]),
-        // TODO: more of our components here, once they support M1 builds.
-        //.library(name: "Logins", targets: ["Logins"]),
-        //.library(name: "FxAClient", targets: ["FxAClient"]),
+        .library(name: "Logins", targets: ["Logins"]),
+        .library(name: "FxAClient", targets: ["FxAClient"]),
+        .library(name: "Autofill", targets: ["Autofill"]),
+        .library(name: "Push", targets: ["Push"]),
+        .library(name: "Tabs", targets: ["Tabs"]),
     ],
     dependencies: [
         // TODO: ship Glean via this same bundle?
         .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "39.0.4"),
-        // TODO: this external dependency is required for FxAClient,
-        // leaving it here as an example for now.
-        //.package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
+        .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
     ],
     targets: [
         /*
@@ -38,9 +38,9 @@ let package = Package(
             //
             // For release artifacts, reference the MozillaRustComponents as a URL with checksum.
             //
-            url: "https://112912-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "a67cfdab5e9a52eeb93435b20a4fc2813fe0486113c6eab5d7fa77fcbcb4fa07"
-            //
+            url: "https://116964-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "87c570f0f14055020263a38cf45726bee0b890a77a3359c76499756905ca30cc"
+
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
             //
@@ -69,17 +69,31 @@ let package = Package(
             name: "CrashTest",
             dependencies: ["MozillaRustComponentsWrapper"],
             path: "generated/crashtest"
+        ),
+        .target(
+           name: "Logins",
+           dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
+           path: "generated/logins"
+        ),
+        .target(
+           name: "FxAClient",
+           dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
+           path: "generated/fxa-client"
+        ),
+        .target(
+            name: "Autofill",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "generated/autofill"
+        ),
+        .target(
+            name: "Push",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "generated/push"
+        ),
+        .target(
+            name: "Tabs",
+            dependencies: ["MozillaRustComponentsWrapper"],
+            path: "generated/tabs"
         )
-        // TODO: other components will go here over time.
-        //.target(
-        //    name: "Logins",
-        //    dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
-        //    path: "external/application-services/components/logins/ios"
-        //),
-        //.target(
-        //    name: "FxAClient",
-        //    dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
-        //    path: "external/application-services/components/fxa-client/ios"
-        //),
     ]
 )
