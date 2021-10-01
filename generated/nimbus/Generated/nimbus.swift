@@ -14,7 +14,7 @@ private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
-            try! rustCall { ffi_nimbus_672f_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+            try! rustCall { ffi_nimbus_b809_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
         }
         self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
@@ -22,7 +22,7 @@ private extension RustBuffer {
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_nimbus_672f_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_nimbus_b809_rustbuffer_free(self, $0) }
     }
 }
 
@@ -279,6 +279,16 @@ extension Int32: Primitive, ViaFfi {
     }
 }
 
+extension Int64: Primitive, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> Int64 {
+        return try lift(buf.readInt())
+    }
+
+    fileprivate func write(into buf: Writer) {
+        buf.writeInt(lower())
+    }
+}
+
 extension Bool: ViaFfi {
     fileprivate typealias FfiType = Int8
 
@@ -304,7 +314,7 @@ extension String: ViaFfi {
 
     fileprivate static func lift(_ v: FfiType) throws -> Self {
         defer {
-            try! rustCall { ffi_nimbus_672f_rustbuffer_free(v, $0) }
+            try! rustCall { ffi_nimbus_b809_rustbuffer_free(v, $0) }
         }
         if v.data == nil {
             return String()
@@ -320,7 +330,7 @@ extension String: ViaFfi {
                 // The swift string gives us a trailing null byte, we don't want it.
                 let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
                 let bytes = ForeignBytes(bufferPointer: buf)
-                return try! rustCall { ffi_nimbus_672f_rustbuffer_from_bytes(bytes, $0) }
+                return try! rustCall { ffi_nimbus_b809_rustbuffer_from_bytes(bytes, $0) }
             }
         }
     }
@@ -697,11 +707,13 @@ public struct AppContext {
     public var osVersion: String?
     public var androidSdkVersion: String?
     public var debugTag: String?
+    public var installationDate: Int64?
+    public var homeDirectory: String?
     public var customTargetingAttributes: [String: String]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(appName: String, appId: String, channel: String, appVersion: String?, appBuild: String?, architecture: String?, deviceManufacturer: String?, deviceModel: String?, locale: String?, os: String?, osVersion: String?, androidSdkVersion: String?, debugTag: String?, customTargetingAttributes: [String: String]?) {
+    public init(appName: String, appId: String, channel: String, appVersion: String?, appBuild: String?, architecture: String?, deviceManufacturer: String?, deviceModel: String?, locale: String?, os: String?, osVersion: String?, androidSdkVersion: String?, debugTag: String?, installationDate: Int64?, homeDirectory: String?, customTargetingAttributes: [String: String]?) {
         self.appName = appName
         self.appId = appId
         self.channel = channel
@@ -715,6 +727,8 @@ public struct AppContext {
         self.osVersion = osVersion
         self.androidSdkVersion = androidSdkVersion
         self.debugTag = debugTag
+        self.installationDate = installationDate
+        self.homeDirectory = homeDirectory
         self.customTargetingAttributes = customTargetingAttributes
     }
 }
@@ -760,6 +774,12 @@ extension AppContext: Equatable, Hashable {
         if lhs.debugTag != rhs.debugTag {
             return false
         }
+        if lhs.installationDate != rhs.installationDate {
+            return false
+        }
+        if lhs.homeDirectory != rhs.homeDirectory {
+            return false
+        }
         if lhs.customTargetingAttributes != rhs.customTargetingAttributes {
             return false
         }
@@ -780,6 +800,8 @@ extension AppContext: Equatable, Hashable {
         hasher.combine(osVersion)
         hasher.combine(androidSdkVersion)
         hasher.combine(debugTag)
+        hasher.combine(installationDate)
+        hasher.combine(homeDirectory)
         hasher.combine(customTargetingAttributes)
     }
 }
@@ -800,6 +822,8 @@ private extension AppContext {
             osVersion: String?.read(from: buf),
             androidSdkVersion: String?.read(from: buf),
             debugTag: String?.read(from: buf),
+            installationDate: Int64?.read(from: buf),
+            homeDirectory: String?.read(from: buf),
             customTargetingAttributes: [String: String]?.read(from: buf)
         )
     }
@@ -818,6 +842,8 @@ private extension AppContext {
         osVersion.write(into: buf)
         androidSdkVersion.write(into: buf)
         debugTag.write(into: buf)
+        installationDate.write(into: buf)
+        homeDirectory.write(into: buf)
         customTargetingAttributes.write(into: buf)
     }
 }
@@ -1206,25 +1232,25 @@ public class NimbusClient: NimbusClientProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_new(appCtx.lower(), dbpath.lower(), remoteSettingsConfig.lower(), availableRandomizationUnits.lower(), $0)
+                nimbus_b809_NimbusClient_new(appCtx.lower(), dbpath.lower(), remoteSettingsConfig.lower(), availableRandomizationUnits.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_nimbus_672f_NimbusClient_object_free(pointer, $0) }
+        try! rustCall { ffi_nimbus_b809_NimbusClient_object_free(pointer, $0) }
     }
 
     public func initialize() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_initialize(self.pointer, $0)
+                nimbus_b809_NimbusClient_initialize(self.pointer, $0)
             }
     }
 
     public func getExperimentBranch(id: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
+                nimbus_b809_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
             }
         return try String?.lift(_retval)
     }
@@ -1232,7 +1258,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getFeatureConfigVariables(featureId: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
+                nimbus_b809_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
             }
         return try String?.lift(_retval)
     }
@@ -1240,7 +1266,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
+                nimbus_b809_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
             }
         return try [ExperimentBranch].lift(_retval)
     }
@@ -1248,7 +1274,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getActiveExperiments() throws -> [EnrolledExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_get_active_experiments(self.pointer, $0)
+                nimbus_b809_NimbusClient_get_active_experiments(self.pointer, $0)
             }
         return try [EnrolledExperiment].lift(_retval)
     }
@@ -1256,7 +1282,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getAvailableExperiments() throws -> [AvailableExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_get_available_experiments(self.pointer, $0)
+                nimbus_b809_NimbusClient_get_available_experiments(self.pointer, $0)
             }
         return try [AvailableExperiment].lift(_retval)
     }
@@ -1264,7 +1290,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getGlobalUserParticipation() throws -> Bool {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_get_global_user_participation(self.pointer, $0)
+                nimbus_b809_NimbusClient_get_global_user_participation(self.pointer, $0)
             }
         return try Bool.lift(_retval)
     }
@@ -1272,7 +1298,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
+                nimbus_b809_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1280,7 +1306,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func updateExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_update_experiments(self.pointer, $0)
+                nimbus_b809_NimbusClient_update_experiments(self.pointer, $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1288,14 +1314,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func fetchExperiments() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_fetch_experiments(self.pointer, $0)
+                nimbus_b809_NimbusClient_fetch_experiments(self.pointer, $0)
             }
     }
 
     public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_apply_pending_experiments(self.pointer, $0)
+                nimbus_b809_NimbusClient_apply_pending_experiments(self.pointer, $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1303,14 +1329,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func setExperimentsLocally(experimentsJson: String) throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
+                nimbus_b809_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
             }
     }
 
     public func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
+                nimbus_b809_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1318,7 +1344,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
+                nimbus_b809_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
@@ -1326,7 +1352,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_672f_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
+                nimbus_b809_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
             }
         return try [EnrollmentChangeEvent].lift(_retval)
     }
