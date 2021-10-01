@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         // TODO: ship Glean via this same bundle?
-        .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "39.0.4"),
+        .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "41.1.1"),
         .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
     ],
     targets: [
