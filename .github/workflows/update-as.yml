@@ -2,12 +2,9 @@ name: Create a PR for release with the newest A-S version available
 
 # Controls when the workflow will run
 on:
-  # schedule:
-  # # Runs every minute of the 3pm UTC hour of each day
-  # - cron: '* 15 * * *'
-  push:
-    branches:
-      - auto-release
+  schedule:
+  # Runs every minute of the 3pm UTC hour of each day
+  - cron: '* 15 * * *'
 
 jobs:
   release-pr:
