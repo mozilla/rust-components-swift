@@ -39,7 +39,7 @@ def update_package_swift(xc_framework_url, checksum):
                 url_start = line.find('"http') + 1
                 # We locate the end of the URL
                 # we add four so we end at the
-                # quoation mark
+                # quotation mark
                 url_end = line.find('.zip"') + 4
                 old_url = line[url_start:url_end]
                 # NOTE: We assume that the next line is the 

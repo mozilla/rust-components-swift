@@ -42,8 +42,9 @@ jobs:
       # prevent us from creating multiple PRs/branches
       - name: Check if job already ran with this release
         run: |
-          echo "ALREADY_CREATED=$(python automation/is_branch_created.py)" >> $GITHUB_ENV
+          echo "ALREADY_CREATED=$(python automation/is_already_updated.py)" >> $GITHUB_ENV
       - name: Setup git information
+        if: env.ALREADY_CREATED == 'false'
         run: |
           git config --global user.email "sync-team@mozilla.com"
           git config --global user.name "Firefox Sync Engineering"
@@ -64,11 +65,16 @@ jobs:
           python automation/update_package_swift.py
           git commit -am "Updates Package.swift with $AS_VERSION release"
           
-      - name: Install Rust to run the make_tag script
+      - name: Install Rust for the make_tag script
         if: env.ALREADY_CREATED == 'false'
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           source $HOME/.cargo/env
+      - name: Install swiftformat to format the uniffi generated bindings
+        if: env.ALREADY_CREATED == 'false'
+        uses: Cyberbeni/install-swift-tool@v2
+        with:
+          url: https://github.com/nicklockwood/SwiftFormat
       # We strip away the `v` in the AS Version and run the make_tag
       # script, which will generate all the code that needs to be generated
       # Note that the tag argument isn't useful here, since we will
