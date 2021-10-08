@@ -30,7 +30,7 @@ def is_branch_created():
 
 def main():
     '''
-    Prints to stdout if rust-components has already
+    Prints to stdout if rust-components-swift has already
     been updated to latest application services or
     if a PR has already been created
     '''

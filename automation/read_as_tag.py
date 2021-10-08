@@ -8,8 +8,8 @@ def get_latest_as_version():
     g = Github(github_access_token)
     repo = g.get_repo(GITHUB_REPO)
     
-    latest_tag = repo.get_tags()[0].name
-    return (str(latest_tag))
+    latest_release = repo.get_releases()[0]
+    return (str(latest_release.tag_name))
 
 def main():
     '''

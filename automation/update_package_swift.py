@@ -33,14 +33,8 @@ def update_package_swift(xc_framework_url, checksum):
             # If this is the line that has the URL to
             # the xcframework
             if XC_FRAMEWORK_NAME in line:
-                # We locate where the start of the
-                # URL is, we add one not to replace the
-                # quotation mark
-                url_start = line.find('"http') + 1
-                # We locate the end of the URL
-                # we add four so we end at the
-                # quotation mark
-                url_end = line.find('.zip"') + 4
+                url_start = line.find('"') + 1
+                url_end = line.find('"', url_start)
                 old_url = line[url_start:url_end]
                 # NOTE: We assume that the next line is the 
                 # checksum, there is a note in Package.swift
@@ -62,7 +56,7 @@ def update_package_swift(xc_framework_url, checksum):
 
 def main():
     '''
-    Updated `Package.swift` with the latest
+    Updates `Package.swift` with the latest
     xcframework
     '''
     if not github_access_token or not as_version:
