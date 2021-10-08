@@ -1,10 +1,13 @@
 // swift-tools-version:5.4
 import PackageDescription
-
+let gleanChecksum = "b46cc53ca927f9de76ff6da9a9e444ac163b4b0abd4fc8dfd5ac0e612ca19254"
+let gleanVersion = "41.1.1"
+let gleanUrl = "https://github.com/mozilla/glean/releases/download/v\(gleanVersion)/Glean.xcframework.zip"
 let package = Package(
     name: "MozillaRustComponentsSwift",
     platforms: [.iOS(.v11)],
     products: [
+        .library(name: "Glean", targets: ["Glean"]),
         .library(name: "RustLog", targets: ["RustLog"]),
         .library(name: "Viaduct", targets: ["Viaduct"]),
         .library(name: "Nimbus", targets: ["Nimbus"]),
@@ -16,8 +19,6 @@ let package = Package(
         .library(name: "Tabs", targets: ["Tabs"]),
     ],
     dependencies: [
-        // TODO: ship Glean via this same bundle?
-        .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "41.1.1"),
         .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
     ],
     targets: [
@@ -46,6 +47,7 @@ let package = Package(
             //
             //path: "./MozillaRustComponents.xcframework"
         ),
+        .binaryTarget(name: "Glean", url: gleanUrl, checksum: gleanChecksum),
         .target(
             name: "Sync15",
             path: "external/application-services/components/sync15/ios"
