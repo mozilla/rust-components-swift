@@ -85,6 +85,6 @@ jobs:
       - name: Create Pull Request
         if: env.ALREADY_CREATED == 'false'
         run: |
-          git push origin update-as-to-${{ env.AS_VERSION }}
+          git push origin update-as-to-${{ env.AS_VERSION }} -f
           gh pr create --title "Auto update with latest AS Release ${{ env.AS_VERSION}}" --body "Updates the swift package with the latest Application Services Release" --base "main"
 
