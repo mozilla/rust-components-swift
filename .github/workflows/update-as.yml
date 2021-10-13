@@ -45,7 +45,6 @@ jobs:
         run: |
           git config user.email "sync-team@mozilla.com"
           git config user.name "Firefox Sync Engineering"
-          git checkout origin/main
           git checkout -b update-as-to-${{ env.AS_VERSION }}
 
       # Update the submodule if we haven't ran those jobs yet
