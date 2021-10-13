@@ -106,3 +106,20 @@ TABS_DIR="$THIS_DIR/generated/tabs"
 rm -rf "$TABS_DIR" && mkdir -p "$TABS_DIR"
 # UniFFI bindings.
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$TABS_DIR/Generated" "$APP_SERVICES_DIR/components/tabs/src/tabs.udl"
+
+###
+#
+# Places
+#
+###
+
+PLACES_DIR="$THIS_DIR/generated/places"
+rm -rf "$PLACES_DIR" && mkdir -p "$PLACES_DIR"
+# UniFFI bindings.
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$PLACES_DIR/Generated" "$APP_SERVICES_DIR/components/places/src/places.udl"
+
+## We need to build the protobuf files and copy them over to the places generated section
+protoc --proto_path="$APP_SERVICES_DIR/components/places/src" --swift_out="$PLACES_DIR/Generated" "places_msg_types.proto"
+
+# Copy the hand-written Swift, since it all needs to be together in one directory.
+cp -r "$APP_SERVICES_DIR/components/places/ios/Places" "$PLACES_DIR/Places"

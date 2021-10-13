@@ -14,11 +14,13 @@ let package = Package(
         .library(name: "Autofill", targets: ["Autofill"]),
         .library(name: "Push", targets: ["Push"]),
         .library(name: "Tabs", targets: ["Tabs"]),
+        .library(name: "Places", targets: ["Places"]),
     ],
     dependencies: [
         // TODO: ship Glean via this same bundle?
         .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "41.1.1"),
-        .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1")
+        .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1"),
+        .package(name: "SwiftProtobuf", url: "https://github.com/apple/swift-protobuf", from: "1.18.0")
     ],
     targets: [
         /*
@@ -38,8 +40,8 @@ let package = Package(
             //
             // For release artifacts, reference the MozillaRustComponents as a URL with checksum.
             //
-            url: "https://116964-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "87c570f0f14055020263a38cf45726bee0b890a77a3359c76499756905ca30cc"
+            url: "https://117909-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "92a66ee992a3848dae8319be996833120e9a86f2bc08354d181b81197bf79e4e"
 
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
@@ -94,6 +96,11 @@ let package = Package(
             name: "Tabs",
             dependencies: ["MozillaRustComponentsWrapper"],
             path: "generated/tabs"
+        ),
+        .target(
+            name: "Places",
+            dependencies: ["MozillaRustComponentsWrapper", "Sync15", "SwiftProtobuf"],
+            path: "generated/places"
         )
     ]
 )
