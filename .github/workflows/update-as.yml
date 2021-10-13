@@ -85,5 +85,6 @@ jobs:
         if: env.ALREADY_CREATED == 'false'
         run: |
           git checkout -b update-as-to-${{ env.AS_VERSION }}
-          gh pr create --title "Auto update with latest AS Release ${{ env.AS_VERSION}}" --body "Updates the swift package with the latest Application Services Release"
+          git push origin update-as-to-${{ env.AS_VERSION }}
+          gh pr create --title "Auto update with latest AS Release ${{ env.AS_VERSION}}" --body "Updates the swift package with the latest Application Services Release" --base "main"
 
