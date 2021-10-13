@@ -19,7 +19,6 @@ jobs:
       # Checks out the rust-components-swift repository
       - uses: actions/checkout@v2
         with:
-          persist-credentials: false
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: 'recursive'
       - name: Setup Python ${{ matrix.python-version }}
@@ -44,8 +43,10 @@ jobs:
       - name: Setup git information
         if: env.ALREADY_CREATED == 'false'
         run: |
-          git config --global user.email "sync-team@mozilla.com"
-          git config --global user.name "Firefox Sync Engineering"
+          git config user.email "sync-team@mozilla.com"
+          git config user.name "Firefox Sync Engineering"
+          git checkout -b update-as-to-${{ env.AS_VERSION }}
+
       # Update the submodule if we haven't ran those jobs yet
       # note that we commit here
       - name: Update the submodule to the release application services
@@ -84,7 +85,6 @@ jobs:
       - name: Create Pull Request
         if: env.ALREADY_CREATED == 'false'
         run: |
-          git checkout -b update-as-to-${{ env.AS_VERSION }}
           git push origin update-as-to-${{ env.AS_VERSION }}
           echo ${{ env.GITHUB_TOKEN }} | gh auth login --with-token
           gh pr create --title "Auto update with latest AS Release ${{ env.AS_VERSION}}" --body "Updates the swift package with the latest Application Services Release" --base "main"
