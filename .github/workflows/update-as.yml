@@ -8,7 +8,7 @@ on:
 
 jobs:
   release-pr:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     strategy:
       max-parallel: 1
       matrix:
@@ -45,6 +45,7 @@ jobs:
         run: |
           git config user.email "sync-team@mozilla.com"
           git config user.name "Firefox Sync Engineering"
+          git checkout main
           git checkout -b update-as-to-${{ env.AS_VERSION }}
 
       # Update the submodule if we haven't ran those jobs yet
@@ -70,9 +71,8 @@ jobs:
           source $HOME/.cargo/env
       - name: Install swiftformat to format the uniffi generated bindings
         if: env.ALREADY_CREATED == 'false'
-        uses: Cyberbeni/install-swift-tool@v2
-        with:
-          url: https://github.com/nicklockwood/SwiftFormat
+        run: |
+          brew install swiftformat
       # We strip away the `v` in the AS Version and run the make_tag
       # script, which will generate all the code that needs to be generated
       # Note that the tag argument isn't useful here, since we will
