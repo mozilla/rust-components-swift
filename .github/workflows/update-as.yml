@@ -86,5 +86,6 @@ jobs:
         run: |
           git checkout -b update-as-to-${{ env.AS_VERSION }}
           git push origin update-as-to-${{ env.AS_VERSION }}
+          echo $ {{ env.GITHUB_TOKEN }} | gh auth login --with-token
           gh pr create --title "Auto update with latest AS Release ${{ env.AS_VERSION}}" --body "Updates the swift package with the latest Application Services Release" --base "main"
 
