@@ -4,7 +4,8 @@ name: Create a PR for release with the newest A-S version available
 on:
   schedule:
   # Runs every minute of the 3pm UTC hour of each day
-  - cron: '* 15 * * *'
+  - cron: '0 15 * * *'
+  workflow_dispatch:
 
 jobs:
   release-pr:
@@ -68,10 +69,12 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           source $HOME/.cargo/env
-      - name: Install swiftformat to format the uniffi generated bindings
+      - name: Install make_tag dependencies
         if: env.ALREADY_CREATED == 'false'
         run: |
           brew install swiftformat
+          brew install protobuf
+          brew install swift-protobuf
       # We strip away the `v` in the AS Version and run the make_tag
       # script, which will generate all the code that needs to be generated
       # Note that the tag argument isn't useful here, since we will
