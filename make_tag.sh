@@ -9,11 +9,16 @@
 
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+AS_VERSION=main
 TAG=
 FORCE=
+AS_PATH=
+IS_LOCAL="false"
 
 while [[ "$#" -gt 0 ]]; do case $1 in
   -f|--force) FORCE="-f"; shift;;
+  -a|--as-version) AS_VERSION=$2; shift; shift;;
+  -l|--local-as) AS_PATH=$2; IS_LOCAL="true"; shift; shift;;
   --) shift; break;;
   -*) echo "Unknown parameter: $1"; exit 1;;
   *) break;;
@@ -36,14 +41,23 @@ fi
 
 # Re-generate any generated files, to make sure they're fresh.
 
-# uncomment this and set it to your a-s directory and feed it to the generate script
-#LOCAL_DIR="../application-services"
 
-git submodule update --init --recursive
-"$THIS_DIR/generate.sh" || exit 1
+if [ "true" = $IS_LOCAL ]; then
+    echo "Running against a local Application services, with path: $AS_PATH"
+else
+    echo "Running against Application Services version: $AS_VERSION";
+    echo "Cloning Application Services"
+    git clone --branch $AS_VERSION --recurse-submodules https://github.com/mozilla/application-services.git
+    AS_PATH="$THIS_DIR/application-services"
+fi
+
+"$THIS_DIR/generate.sh" $AS_PATH || exit 1
 git add "$THIS_DIR/generated"
 
+if [ "false" = $IS_LOCAL ]; then
+    echo "Removing application services repository after generating bindings"
+    rm -rf application-services/
+fi
 # Create the tag
-
 git commit -a -m "Version $TAG"
 git tag $FORCE "$TAG"

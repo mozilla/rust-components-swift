@@ -30,7 +30,6 @@ and its release artifacts:
 
 Key points:
 
-* The `rust-components-swift` repo includes the `application-services` repo as a git submodule.
 * The `application-services` repo publishes a binary artifact `MozillaRustComponents.xcframework.zip` containing
   the Rust code and FFI definitions for all components, compiled together into a single library.
 * The `Package.swift` file references `MozillaRustComponents.xcframework.zip` as a Swift binary target.
@@ -43,9 +42,8 @@ Key points:
 Whenever a new release of the underlying components is availble, we need to tag a new release
 in this repo to make them available to Swift components. To do so:
 
-* Update the git submodule under `./external` to the new release of the underlying components.
 * Edit `Package.swift` to update the URL and checksum of `MozillaRustComponents.xcframework.zip`.
-* Run `./make_tag.sh X.Y.Z` to create the new tag.
+* Run `./make_tag.sh --as-version {APP_SERVICES_VERSION} X.Y.Z` to create the new tag.
 * Run `git push origin X.Y.Z` to publish it to GitHub.
 
 ## Adding a new component
@@ -54,7 +52,6 @@ To add a new component to be distributed via this repo, you'll need to:
 
 * Add its Rust code and `.h` files to the build for the `MozillaRustComponents.xcframework.zip` bundle,
   following the docs for the [`ios-rust` crate](https://github.com/mozilla/application-services/tree/main/megazords/ios).
-* Add the source for the component to this repository as a git submodule under `./external`.
 * If the component needs to dynamically generate any Swift code (e.g. for UniFFI bindings, or Glean metrics),
   add logic for doing so to the `./generate.sh` script in this repository.
     * Swift packages can't dynamically generate code at build time, so we use the `./generate.sh` script
@@ -85,6 +82,12 @@ To test out some local changes to this repo:
       any adverse consequences if it does accidentally escape your local machine).
 * In a consuming application, delete the Swift Package dependency on `https://github.com/mozilla/rust-components-swift`
   and replace it with a dependency on `file:///path/to/your/local/checkout/rust-components-swift` at the `0.0.` release.
+
+### Testing against a local application-services checkout
+To run against a local application services checkout, the `make_tag.sh` script supports setting a local path using a `-l` flag, for example:
+```sh
+./make_tag -l ../application-services 0.0.1
+```
 
 That's it! The consuming application should be able to import the package from your local checkout.
 

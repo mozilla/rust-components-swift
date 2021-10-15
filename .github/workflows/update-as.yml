@@ -47,17 +47,6 @@ jobs:
           git config user.email "sync-team@mozilla.com"
           git config user.name "Firefox Sync Engineering"
           git checkout -b update-as-to-${{ env.AS_VERSION }}
-
-      # Update the submodule if we haven't ran those jobs yet
-      # note that we commit here
-      - name: Update the submodule to the release application services
-        if: env.ALREADY_CREATED == 'false'
-        run: |
-          cd external/application-services
-          git fetch --all --tags
-          git checkout $AS_VERSION
-          cd ../..
-          git commit -am "Updates application services submodule to $AS_VERSION"
       - name: Update Package.swift with new xcframework URL and checksum
         if: env.ALREADY_CREATED == 'false'
         run: |
@@ -83,7 +72,7 @@ jobs:
       - name: Runs make_tag script
         if: env.ALREADY_CREATED == 'false'
         run: |
-          ./make_tag.sh ${AS_VERSION:1}
+          ./make_tag.sh --as-version ${{ env.AS_VERSION }} ${AS_VERSION:1}
       - name: Create Pull Request
         if: env.ALREADY_CREATED == 'false'
         run: |
