@@ -51,17 +51,17 @@ let package = Package(
         ),
         .target(
             name: "Sync15",
-            path: "external/application-services/components/sync15/ios"
+            path: "generated/sync15"
         ),
         .target(
             name: "RustLog",
             dependencies: ["MozillaRustComponentsWrapper"],
-            path: "external/application-services/components/rc_log/ios"
+            path: "generated/rc_log"
         ),
         .target(
             name: "Viaduct",
             dependencies: ["MozillaRustComponentsWrapper"],
-            path: "external/application-services/components/viaduct/ios"
+            path: "generated/viaduct"
         ),
         .target(
             name: "Nimbus",

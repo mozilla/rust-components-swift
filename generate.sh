@@ -13,7 +13,7 @@ THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 if [ -n "$1" ]; then
 APP_SERVICES_DIR=$1
 else
-APP_SERVICES_DIR="$THIS_DIR/external/application-services"
+APP_SERVICES_DIR="$THIS_DIR/application-services"
 fi
 
 UNIFFI_BINDGEN=(cargo run --manifest-path "$APP_SERVICES_DIR/tools/embedded-uniffi-bindgen/Cargo.toml")
@@ -123,3 +123,40 @@ protoc --proto_path="$APP_SERVICES_DIR/components/places/src" --swift_out="$PLAC
 
 # Copy the hand-written Swift, since it all needs to be together in one directory.
 cp -r "$APP_SERVICES_DIR/components/places/ios/Places" "$PLACES_DIR/Places"
+
+###
+#
+# Sync15
+#
+###
+
+SYNC15_DIR="$THIS_DIR/generated/sync15"
+rm -rf "$SYNC15_DIR" && mkdir -p "$SYNC15_DIR"
+
+# We only need to copy the hand-written Swift, sync15 does not use `uniffi` yet
+cp -r "$APP_SERVICES_DIR/components/sync15/ios/" $SYNC15_DIR
+
+###
+#
+# RustLog
+#
+###
+
+RUST_LOG_DIR="$THIS_DIR/generated/rc_log"
+rm -rf "$RUST_LOG_DIR" && mkdir -p "$RUST_LOG_DIR"
+
+# We only need to copy the hand-written Swift, RustLog does not use `uniffi` yet
+cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $RUST_LOG_DIR
+
+
+###
+#
+# Viaduct
+#
+###
+
+VIADUCT_DIR="$THIS_DIR/generated/viaduct"
+rm -rf "$VIADUCT_DIR" && mkdir -p "$VIADUCT_DIR"
+
+# We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
+cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $VIADUCT_DIR
