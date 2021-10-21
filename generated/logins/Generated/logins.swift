@@ -14,7 +14,7 @@ private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
-            try! rustCall { ffi_logins_f90f_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+            try! rustCall { ffi_logins_5236_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
         }
         self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
@@ -22,7 +22,7 @@ private extension RustBuffer {
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_logins_f90f_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_logins_5236_rustbuffer_free(self, $0) }
     }
 }
 
@@ -273,7 +273,7 @@ extension String: ViaFfi {
 
     fileprivate static func lift(_ v: FfiType) throws -> Self {
         defer {
-            try! rustCall { ffi_logins_f90f_rustbuffer_free(v, $0) }
+            try! rustCall { ffi_logins_5236_rustbuffer_free(v, $0) }
         }
         if v.data == nil {
             return String()
@@ -289,7 +289,7 @@ extension String: ViaFfi {
                 // The swift string gives us a trailing null byte, we don't want it.
                 let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
                 let bytes = ForeignBytes(bufferPointer: buf)
-                return try! rustCall { ffi_logins_f90f_rustbuffer_from_bytes(bytes, $0) }
+                return try! rustCall { ffi_logins_5236_rustbuffer_from_bytes(bytes, $0) }
             }
         }
     }
@@ -365,10 +365,10 @@ public enum LoginsStorageError {
     case NoSuchRecord(message: String)
 
     // Simple error enums only carry a message
-    case IdCollision(message: String)
+    case InvalidRecord(message: String)
 
     // Simple error enums only carry a message
-    case InvalidRecord(message: String)
+    case CryptoError(message: String)
 
     // Simple error enums only carry a message
     case InvalidKey(message: String)
@@ -400,11 +400,11 @@ extension LoginsStorageError: ViaFfiUsingByteBuffer, ViaFfi {
                 message: try String.read(from: buf)
             )
 
-        case 5: return .IdCollision(
+        case 5: return .InvalidRecord(
                 message: try String.read(from: buf)
             )
 
-        case 6: return .InvalidRecord(
+        case 6: return .CryptoError(
                 message: try String.read(from: buf)
             )
 
@@ -438,10 +438,10 @@ extension LoginsStorageError: ViaFfiUsingByteBuffer, ViaFfi {
         case let .NoSuchRecord(message):
             buf.writeInt(Int32(4))
             message.write(into: buf)
-        case let .IdCollision(message):
+        case let .InvalidRecord(message):
             buf.writeInt(Int32(5))
             message.write(into: buf)
-        case let .InvalidRecord(message):
+        case let .CryptoError(message):
             buf.writeInt(Int32(6))
             message.write(into: buf)
         case let .InvalidKey(message):
@@ -498,15 +498,122 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
     }
 }
 
-public struct Login {
-    public var id: String
-    public var hostname: String
-    public var password: String
-    public var username: String
+public struct LoginFields {
+    public var origin: String
     public var httpRealm: String?
-    public var formSubmitUrl: String?
+    public var formActionOrigin: String?
     public var usernameField: String
     public var passwordField: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(origin: String, httpRealm: String?, formActionOrigin: String?, usernameField: String, passwordField: String) {
+        self.origin = origin
+        self.httpRealm = httpRealm
+        self.formActionOrigin = formActionOrigin
+        self.usernameField = usernameField
+        self.passwordField = passwordField
+    }
+}
+
+extension LoginFields: Equatable, Hashable {
+    public static func == (lhs: LoginFields, rhs: LoginFields) -> Bool {
+        if lhs.origin != rhs.origin {
+            return false
+        }
+        if lhs.httpRealm != rhs.httpRealm {
+            return false
+        }
+        if lhs.formActionOrigin != rhs.formActionOrigin {
+            return false
+        }
+        if lhs.usernameField != rhs.usernameField {
+            return false
+        }
+        if lhs.passwordField != rhs.passwordField {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(origin)
+        hasher.combine(httpRealm)
+        hasher.combine(formActionOrigin)
+        hasher.combine(usernameField)
+        hasher.combine(passwordField)
+    }
+}
+
+private extension LoginFields {
+    static func read(from buf: Reader) throws -> LoginFields {
+        return try LoginFields(
+            origin: String.read(from: buf),
+            httpRealm: String?.read(from: buf),
+            formActionOrigin: String?.read(from: buf),
+            usernameField: String.read(from: buf),
+            passwordField: String.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        origin.write(into: buf)
+        httpRealm.write(into: buf)
+        formActionOrigin.write(into: buf)
+        usernameField.write(into: buf)
+        passwordField.write(into: buf)
+    }
+}
+
+extension LoginFields: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct SecureLoginFields {
+    public var password: String
+    public var username: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(password: String, username: String) {
+        self.password = password
+        self.username = username
+    }
+}
+
+extension SecureLoginFields: Equatable, Hashable {
+    public static func == (lhs: SecureLoginFields, rhs: SecureLoginFields) -> Bool {
+        if lhs.password != rhs.password {
+            return false
+        }
+        if lhs.username != rhs.username {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(password)
+        hasher.combine(username)
+    }
+}
+
+private extension SecureLoginFields {
+    static func read(from buf: Reader) throws -> SecureLoginFields {
+        return try SecureLoginFields(
+            password: String.read(from: buf),
+            username: String.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        password.write(into: buf)
+        username.write(into: buf)
+    }
+}
+
+extension SecureLoginFields: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct RecordFields {
+    public var id: String
     public var timesUsed: Int64
     public var timeCreated: Int64
     public var timeLastUsed: Int64
@@ -514,15 +621,8 @@ public struct Login {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: String, hostname: String, password: String, username: String, httpRealm: String?, formSubmitUrl: String?, usernameField: String, passwordField: String, timesUsed: Int64, timeCreated: Int64, timeLastUsed: Int64, timePasswordChanged: Int64) {
+    public init(id: String, timesUsed: Int64, timeCreated: Int64, timeLastUsed: Int64, timePasswordChanged: Int64) {
         self.id = id
-        self.hostname = hostname
-        self.password = password
-        self.username = username
-        self.httpRealm = httpRealm
-        self.formSubmitUrl = formSubmitUrl
-        self.usernameField = usernameField
-        self.passwordField = passwordField
         self.timesUsed = timesUsed
         self.timeCreated = timeCreated
         self.timeLastUsed = timeLastUsed
@@ -530,30 +630,9 @@ public struct Login {
     }
 }
 
-extension Login: Equatable, Hashable {
-    public static func == (lhs: Login, rhs: Login) -> Bool {
+extension RecordFields: Equatable, Hashable {
+    public static func == (lhs: RecordFields, rhs: RecordFields) -> Bool {
         if lhs.id != rhs.id {
-            return false
-        }
-        if lhs.hostname != rhs.hostname {
-            return false
-        }
-        if lhs.password != rhs.password {
-            return false
-        }
-        if lhs.username != rhs.username {
-            return false
-        }
-        if lhs.httpRealm != rhs.httpRealm {
-            return false
-        }
-        if lhs.formSubmitUrl != rhs.formSubmitUrl {
-            return false
-        }
-        if lhs.usernameField != rhs.usernameField {
-            return false
-        }
-        if lhs.passwordField != rhs.passwordField {
             return false
         }
         if lhs.timesUsed != rhs.timesUsed {
@@ -573,13 +652,6 @@ extension Login: Equatable, Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
-        hasher.combine(hostname)
-        hasher.combine(password)
-        hasher.combine(username)
-        hasher.combine(httpRealm)
-        hasher.combine(formSubmitUrl)
-        hasher.combine(usernameField)
-        hasher.combine(passwordField)
         hasher.combine(timesUsed)
         hasher.combine(timeCreated)
         hasher.combine(timeLastUsed)
@@ -587,17 +659,10 @@ extension Login: Equatable, Hashable {
     }
 }
 
-private extension Login {
-    static func read(from buf: Reader) throws -> Login {
-        return try Login(
+private extension RecordFields {
+    static func read(from buf: Reader) throws -> RecordFields {
+        return try RecordFields(
             id: String.read(from: buf),
-            hostname: String.read(from: buf),
-            password: String.read(from: buf),
-            username: String.read(from: buf),
-            httpRealm: String?.read(from: buf),
-            formSubmitUrl: String?.read(from: buf),
-            usernameField: String.read(from: buf),
-            passwordField: String.read(from: buf),
             timesUsed: Int64.read(from: buf),
             timeCreated: Int64.read(from: buf),
             timeLastUsed: Int64.read(from: buf),
@@ -607,13 +672,6 @@ private extension Login {
 
     func write(into buf: Writer) {
         id.write(into: buf)
-        hostname.write(into: buf)
-        password.write(into: buf)
-        username.write(into: buf)
-        httpRealm.write(into: buf)
-        formSubmitUrl.write(into: buf)
-        usernameField.write(into: buf)
-        passwordField.write(into: buf)
         timesUsed.write(into: buf)
         timeCreated.write(into: buf)
         timeLastUsed.write(into: buf)
@@ -621,43 +679,249 @@ private extension Login {
     }
 }
 
+extension RecordFields: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct LoginEntry {
+    public var fields: LoginFields
+    public var secFields: SecureLoginFields
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(fields: LoginFields, secFields: SecureLoginFields) {
+        self.fields = fields
+        self.secFields = secFields
+    }
+}
+
+extension LoginEntry: Equatable, Hashable {
+    public static func == (lhs: LoginEntry, rhs: LoginEntry) -> Bool {
+        if lhs.fields != rhs.fields {
+            return false
+        }
+        if lhs.secFields != rhs.secFields {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(fields)
+        hasher.combine(secFields)
+    }
+}
+
+private extension LoginEntry {
+    static func read(from buf: Reader) throws -> LoginEntry {
+        return try LoginEntry(
+            fields: LoginFields.read(from: buf),
+            secFields: SecureLoginFields.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        fields.write(into: buf)
+        secFields.write(into: buf)
+    }
+}
+
+extension LoginEntry: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct Login {
+    public var record: RecordFields
+    public var fields: LoginFields
+    public var secFields: SecureLoginFields
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(record: RecordFields, fields: LoginFields, secFields: SecureLoginFields) {
+        self.record = record
+        self.fields = fields
+        self.secFields = secFields
+    }
+}
+
+extension Login: Equatable, Hashable {
+    public static func == (lhs: Login, rhs: Login) -> Bool {
+        if lhs.record != rhs.record {
+            return false
+        }
+        if lhs.fields != rhs.fields {
+            return false
+        }
+        if lhs.secFields != rhs.secFields {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(record)
+        hasher.combine(fields)
+        hasher.combine(secFields)
+    }
+}
+
+private extension Login {
+    static func read(from buf: Reader) throws -> Login {
+        return try Login(
+            record: RecordFields.read(from: buf),
+            fields: LoginFields.read(from: buf),
+            secFields: SecureLoginFields.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        record.write(into: buf)
+        fields.write(into: buf)
+        secFields.write(into: buf)
+    }
+}
+
 extension Login: ViaFfiUsingByteBuffer, ViaFfi {}
 
-public func openAndGetSalt(path: String, encryptionKey: String) throws -> String {
+public struct EncryptedLogin {
+    public var record: RecordFields
+    public var fields: LoginFields
+    public var secFields: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(record: RecordFields, fields: LoginFields, secFields: String) {
+        self.record = record
+        self.fields = fields
+        self.secFields = secFields
+    }
+}
+
+extension EncryptedLogin: Equatable, Hashable {
+    public static func == (lhs: EncryptedLogin, rhs: EncryptedLogin) -> Bool {
+        if lhs.record != rhs.record {
+            return false
+        }
+        if lhs.fields != rhs.fields {
+            return false
+        }
+        if lhs.secFields != rhs.secFields {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(record)
+        hasher.combine(fields)
+        hasher.combine(secFields)
+    }
+}
+
+private extension EncryptedLogin {
+    static func read(from buf: Reader) throws -> EncryptedLogin {
+        return try EncryptedLogin(
+            record: RecordFields.read(from: buf),
+            fields: LoginFields.read(from: buf),
+            secFields: String.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        record.write(into: buf)
+        fields.write(into: buf)
+        secFields.write(into: buf)
+    }
+}
+
+extension EncryptedLogin: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public func createKey() throws -> String {
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_f90f_open_and_get_salt(path.lower(), encryptionKey.lower(), $0)
+            logins_5236_create_key($0)
         }
     return try String.lift(_retval)
 }
 
-public func openAndMigrateToPlaintextHeader(path: String, encryptionKey: String, salt: String) throws {
-    try
+public func decryptLogin(login: EncryptedLogin, encryptionKey: String) throws -> Login {
+    let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_f90f_open_and_migrate_to_plaintext_header(path.lower(), encryptionKey.lower(), salt.lower(), $0)
+            logins_5236_decrypt_login(login.lower(), encryptionKey.lower(), $0)
         }
+    return try Login.lift(_retval)
+}
+
+public func encryptLogin(login: Login, encryptionKey: String) throws -> EncryptedLogin {
+    let _retval = try
+
+        rustCallWithError(LoginsStorageError.self) {
+            logins_5236_encrypt_login(login.lower(), encryptionKey.lower(), $0)
+        }
+    return try EncryptedLogin.lift(_retval)
+}
+
+public func decryptFields(secFields: String, encryptionKey: String) throws -> SecureLoginFields {
+    let _retval = try
+
+        rustCallWithError(LoginsStorageError.self) {
+            logins_5236_decrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
+        }
+    return try SecureLoginFields.lift(_retval)
+}
+
+public func encryptFields(secFields: SecureLoginFields, encryptionKey: String) throws -> String {
+    let _retval = try
+
+        rustCallWithError(LoginsStorageError.self) {
+            logins_5236_encrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
+        }
+    return try String.lift(_retval)
+}
+
+public func createCanary(text: String, encryptionKey: String) throws -> String {
+    let _retval = try
+
+        rustCallWithError(LoginsStorageError.self) {
+            logins_5236_create_canary(text.lower(), encryptionKey.lower(), $0)
+        }
+    return try String.lift(_retval)
+}
+
+public func checkCanary(canary: String, text: String, encryptionKey: String) throws -> Bool {
+    let _retval = try
+
+        rustCallWithError(LoginsStorageError.self) {
+            logins_5236_check_canary(canary.lower(), text.lower(), encryptionKey.lower(), $0)
+        }
+    return try Bool.lift(_retval)
+}
+
+public func migrateLogins(path: String, newEncryptionKey: String, sqlcipherPath: String, sqlcipherKey: String, salt: String?) throws -> String {
+    let _retval = try
+
+        rustCallWithError(LoginsStorageError.self) {
+            logins_5236_migrate_logins(path.lower(), newEncryptionKey.lower(), sqlcipherPath.lower(), sqlcipherKey.lower(), salt.lower(), $0)
+        }
+    return try String.lift(_retval)
 }
 
 public protocol LoginStoreProtocol {
-    func checkValidWithNoDupes(login: Login) throws
-    func add(login: Login) throws -> String
+    func checkValidWithNoDupes(id: String, login: LoginEntry, encryptionKey: String) throws
+    func add(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin
+    func update(id: String, login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin
+    func addOrUpdate(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin
     func delete(id: String) throws -> Bool
     func wipe() throws
     func wipeLocal() throws
     func reset() throws
-    func disableMemSecurity() throws
-    func rekeyDatabase(newEncryptionKey: String) throws
     func touch(id: String) throws
-    func list() throws -> [Login]
-    func getByBaseDomain(baseDomain: String) throws -> [Login]
-    func potentialDupesIgnoringUsername(login: Login) throws -> [Login]
-    func get(id: String) throws -> Login?
-    func update(login: Login) throws
-    func importMultiple(login: [Login]) throws -> String
+    func list() throws -> [EncryptedLogin]
+    func getByBaseDomain(baseDomain: String) throws -> [EncryptedLogin]
+    func findLoginToUpdate(look: LoginEntry, encryptionKey: String) throws -> Login?
+    func potentialDupesIgnoringUsername(id: String, login: LoginEntry) throws -> [EncryptedLogin]
+    func get(id: String) throws -> EncryptedLogin?
+    func importMultiple(login: [Login], encryptionKey: String) throws -> String
     func registerWithSyncManager()
-    func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String
+    func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localEncryptionKey: String) throws -> String
 }
 
 public class LoginStore: LoginStoreProtocol {
@@ -670,45 +934,53 @@ public class LoginStore: LoginStoreProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(path: String, encryptionKey: String) throws {
+    public convenience init(path: String) throws {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_new(path.lower(), encryptionKey.lower(), $0)
+                logins_5236_LoginStore_new(path.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_logins_f90f_LoginStore_object_free(pointer, $0) }
+        try! rustCall { ffi_logins_5236_LoginStore_object_free(pointer, $0) }
     }
 
-    public static func newWithSalt(path: String, encryptionKey: String, salt: String) throws -> LoginStore {
-        return LoginStore(unsafeFromRawPointer: try
-
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_new_with_salt(path.lower(), encryptionKey.lower(), salt.lower(), $0)
-            })
-    }
-
-    public func checkValidWithNoDupes(login: Login) throws {
+    public func checkValidWithNoDupes(id: String, login: LoginEntry, encryptionKey: String) throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_check_valid_with_no_dupes(self.pointer, login.lower(), $0)
+                logins_5236_LoginStore_check_valid_with_no_dupes(self.pointer, id.lower(), login.lower(), encryptionKey.lower(), $0)
             }
     }
 
-    public func add(login: Login) throws -> String {
+    public func add(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_add(self.pointer, login.lower(), $0)
+                logins_5236_LoginStore_add(self.pointer, login.lower(), encryptionKey.lower(), $0)
             }
-        return try String.lift(_retval)
+        return try EncryptedLogin.lift(_retval)
+    }
+
+    public func update(id: String, login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
+        let _retval = try
+            rustCallWithError(LoginsStorageError.self) {
+                logins_5236_LoginStore_update(self.pointer, id.lower(), login.lower(), encryptionKey.lower(), $0)
+            }
+        return try EncryptedLogin.lift(_retval)
+    }
+
+    public func addOrUpdate(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
+        let _retval = try
+            rustCallWithError(LoginsStorageError.self) {
+                logins_5236_LoginStore_add_or_update(self.pointer, login.lower(), encryptionKey.lower(), $0)
+            }
+        return try EncryptedLogin.lift(_retval)
     }
 
     public func delete(id: String) throws -> Bool {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_delete(self.pointer, id.lower(), $0)
+                logins_5236_LoginStore_delete(self.pointer, id.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -716,88 +988,75 @@ public class LoginStore: LoginStoreProtocol {
     public func wipe() throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_wipe(self.pointer, $0)
+                logins_5236_LoginStore_wipe(self.pointer, $0)
             }
     }
 
     public func wipeLocal() throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_wipe_local(self.pointer, $0)
+                logins_5236_LoginStore_wipe_local(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_reset(self.pointer, $0)
-            }
-    }
-
-    public func disableMemSecurity() throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_disable_mem_security(self.pointer, $0)
-            }
-    }
-
-    public func rekeyDatabase(newEncryptionKey: String) throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_rekey_database(self.pointer, newEncryptionKey.lower(), $0)
+                logins_5236_LoginStore_reset(self.pointer, $0)
             }
     }
 
     public func touch(id: String) throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_touch(self.pointer, id.lower(), $0)
+                logins_5236_LoginStore_touch(self.pointer, id.lower(), $0)
             }
     }
 
-    public func list() throws -> [Login] {
+    public func list() throws -> [EncryptedLogin] {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_list(self.pointer, $0)
+                logins_5236_LoginStore_list(self.pointer, $0)
             }
-        return try [Login].lift(_retval)
+        return try [EncryptedLogin].lift(_retval)
     }
 
-    public func getByBaseDomain(baseDomain: String) throws -> [Login] {
+    public func getByBaseDomain(baseDomain: String) throws -> [EncryptedLogin] {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_get_by_base_domain(self.pointer, baseDomain.lower(), $0)
+                logins_5236_LoginStore_get_by_base_domain(self.pointer, baseDomain.lower(), $0)
             }
-        return try [Login].lift(_retval)
+        return try [EncryptedLogin].lift(_retval)
     }
 
-    public func potentialDupesIgnoringUsername(login: Login) throws -> [Login] {
+    public func findLoginToUpdate(look: LoginEntry, encryptionKey: String) throws -> Login? {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_potential_dupes_ignoring_username(self.pointer, login.lower(), $0)
-            }
-        return try [Login].lift(_retval)
-    }
-
-    public func get(id: String) throws -> Login? {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_get(self.pointer, id.lower(), $0)
+                logins_5236_LoginStore_find_login_to_update(self.pointer, look.lower(), encryptionKey.lower(), $0)
             }
         return try Login?.lift(_retval)
     }
 
-    public func update(login: Login) throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_update(self.pointer, login.lower(), $0)
-            }
-    }
-
-    public func importMultiple(login: [Login]) throws -> String {
+    public func potentialDupesIgnoringUsername(id: String, login: LoginEntry) throws -> [EncryptedLogin] {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_import_multiple(self.pointer, login.lower(), $0)
+                logins_5236_LoginStore_potential_dupes_ignoring_username(self.pointer, id.lower(), login.lower(), $0)
+            }
+        return try [EncryptedLogin].lift(_retval)
+    }
+
+    public func get(id: String) throws -> EncryptedLogin? {
+        let _retval = try
+            rustCallWithError(LoginsStorageError.self) {
+                logins_5236_LoginStore_get(self.pointer, id.lower(), $0)
+            }
+        return try EncryptedLogin?.lift(_retval)
+    }
+
+    public func importMultiple(login: [Login], encryptionKey: String) throws -> String {
+        let _retval = try
+            rustCallWithError(LoginsStorageError.self) {
+                logins_5236_LoginStore_import_multiple(self.pointer, login.lower(), encryptionKey.lower(), $0)
             }
         return try String.lift(_retval)
     }
@@ -805,14 +1064,14 @@ public class LoginStore: LoginStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                logins_f90f_LoginStore_register_with_sync_manager(self.pointer, $0)
+                logins_5236_LoginStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
-    public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String {
+    public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localEncryptionKey: String) throws -> String {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_f90f_LoginStore_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), $0)
+                logins_5236_LoginStore_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), localEncryptionKey.lower(), $0)
             }
         return try String.lift(_retval)
     }

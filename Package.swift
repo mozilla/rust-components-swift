@@ -41,8 +41,8 @@ let package = Package(
             // For release artifacts, reference the MozillaRustComponents as a URL with checksum.
             // IMPORTANT: The checksum has to be on the line directly after the `url`
             // this is important for our release script so that all values are updated correctly
-            url: "https://117909-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "92a66ee992a3848dae8319be996833120e9a86f2bc08354d181b81197bf79e4e"
+            url: "https://118551-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "2195ff4b9f942cf8dc66461514af57be56e7c663f37e3e5d5b7f9a3adc5cf71f"
 
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
