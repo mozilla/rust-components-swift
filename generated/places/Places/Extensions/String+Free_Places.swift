@@ -3,9 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import Foundation
-#if canImport(MozillaRustComponents)
-    import MozillaRustComponents
-#endif
 
 extension String {
     init(freeingPlacesString rustString: UnsafeMutablePointer<CChar>) {

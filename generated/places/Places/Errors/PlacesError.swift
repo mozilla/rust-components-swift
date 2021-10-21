@@ -4,9 +4,6 @@
 
 import Foundation
 import os.log
-#if canImport(MozillaRustComponents)
-    import MozillaRustComponents
-#endif
 
 /// Indicates an error occurred while calling into the places storage layer
 public enum PlacesError: LocalizedError {
@@ -148,7 +145,7 @@ public enum PlacesError: LocalizedError {
     @discardableResult
     static func unwrap<T>(_ callback: (UnsafeMutablePointer<PlacesRustError>) throws -> T?) throws -> T {
         guard let result = try PlacesError.tryUnwrap(callback) else {
-            throw PlacesError.unexpected(message: "Unexpected error after unwrapping")
+            throw ResultError.empty
         }
         return result
     }

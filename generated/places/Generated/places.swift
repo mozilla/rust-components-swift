@@ -6,8 +6,8 @@ import Foundation
 // Depending on the consumer's build setup, the low-level FFI code
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
-#if canImport(MozillaRustComponents)
-    import MozillaRustComponents
+#if canImport(placesFFI)
+    import placesFFI
 #endif
 
 private extension RustBuffer {
