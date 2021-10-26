@@ -14,7 +14,7 @@ private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
-            try! rustCall { ffi_logins_5236_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+            try! rustCall { ffi_logins_42e6_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
         }
         self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
@@ -22,7 +22,7 @@ private extension RustBuffer {
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_logins_5236_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_logins_42e6_rustbuffer_free(self, $0) }
     }
 }
 
@@ -273,7 +273,7 @@ extension String: ViaFfi {
 
     fileprivate static func lift(_ v: FfiType) throws -> Self {
         defer {
-            try! rustCall { ffi_logins_5236_rustbuffer_free(v, $0) }
+            try! rustCall { ffi_logins_42e6_rustbuffer_free(v, $0) }
         }
         if v.data == nil {
             return String()
@@ -289,7 +289,7 @@ extension String: ViaFfi {
                 // The swift string gives us a trailing null byte, we don't want it.
                 let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
                 let bytes = ForeignBytes(bufferPointer: buf)
-                return try! rustCall { ffi_logins_5236_rustbuffer_from_bytes(bytes, $0) }
+                return try! rustCall { ffi_logins_42e6_rustbuffer_from_bytes(bytes, $0) }
             }
         }
     }
@@ -836,7 +836,7 @@ public func createKey() throws -> String {
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_create_key($0)
+            logins_42e6_create_key($0)
         }
     return try String.lift(_retval)
 }
@@ -845,7 +845,7 @@ public func decryptLogin(login: EncryptedLogin, encryptionKey: String) throws ->
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_decrypt_login(login.lower(), encryptionKey.lower(), $0)
+            logins_42e6_decrypt_login(login.lower(), encryptionKey.lower(), $0)
         }
     return try Login.lift(_retval)
 }
@@ -854,7 +854,7 @@ public func encryptLogin(login: Login, encryptionKey: String) throws -> Encrypte
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_encrypt_login(login.lower(), encryptionKey.lower(), $0)
+            logins_42e6_encrypt_login(login.lower(), encryptionKey.lower(), $0)
         }
     return try EncryptedLogin.lift(_retval)
 }
@@ -863,7 +863,7 @@ public func decryptFields(secFields: String, encryptionKey: String) throws -> Se
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_decrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
+            logins_42e6_decrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
         }
     return try SecureLoginFields.lift(_retval)
 }
@@ -872,7 +872,7 @@ public func encryptFields(secFields: SecureLoginFields, encryptionKey: String) t
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_encrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
+            logins_42e6_encrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
         }
     return try String.lift(_retval)
 }
@@ -881,7 +881,7 @@ public func createCanary(text: String, encryptionKey: String) throws -> String {
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_create_canary(text.lower(), encryptionKey.lower(), $0)
+            logins_42e6_create_canary(text.lower(), encryptionKey.lower(), $0)
         }
     return try String.lift(_retval)
 }
@@ -890,7 +890,7 @@ public func checkCanary(canary: String, text: String, encryptionKey: String) thr
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_check_canary(canary.lower(), text.lower(), encryptionKey.lower(), $0)
+            logins_42e6_check_canary(canary.lower(), text.lower(), encryptionKey.lower(), $0)
         }
     return try Bool.lift(_retval)
 }
@@ -899,13 +899,12 @@ public func migrateLogins(path: String, newEncryptionKey: String, sqlcipherPath:
     let _retval = try
 
         rustCallWithError(LoginsStorageError.self) {
-            logins_5236_migrate_logins(path.lower(), newEncryptionKey.lower(), sqlcipherPath.lower(), sqlcipherKey.lower(), salt.lower(), $0)
+            logins_42e6_migrate_logins(path.lower(), newEncryptionKey.lower(), sqlcipherPath.lower(), sqlcipherKey.lower(), salt.lower(), $0)
         }
     return try String.lift(_retval)
 }
 
 public protocol LoginStoreProtocol {
-    func checkValidWithNoDupes(id: String, login: LoginEntry, encryptionKey: String) throws
     func add(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin
     func update(id: String, login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin
     func addOrUpdate(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin
@@ -917,7 +916,6 @@ public protocol LoginStoreProtocol {
     func list() throws -> [EncryptedLogin]
     func getByBaseDomain(baseDomain: String) throws -> [EncryptedLogin]
     func findLoginToUpdate(look: LoginEntry, encryptionKey: String) throws -> Login?
-    func potentialDupesIgnoringUsername(id: String, login: LoginEntry) throws -> [EncryptedLogin]
     func get(id: String) throws -> EncryptedLogin?
     func importMultiple(login: [Login], encryptionKey: String) throws -> String
     func registerWithSyncManager()
@@ -938,25 +936,18 @@ public class LoginStore: LoginStoreProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_new(path.lower(), $0)
+                logins_42e6_LoginStore_new(path.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_logins_5236_LoginStore_object_free(pointer, $0) }
-    }
-
-    public func checkValidWithNoDupes(id: String, login: LoginEntry, encryptionKey: String) throws {
-        try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_check_valid_with_no_dupes(self.pointer, id.lower(), login.lower(), encryptionKey.lower(), $0)
-            }
+        try! rustCall { ffi_logins_42e6_LoginStore_object_free(pointer, $0) }
     }
 
     public func add(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_add(self.pointer, login.lower(), encryptionKey.lower(), $0)
+                logins_42e6_LoginStore_add(self.pointer, login.lower(), encryptionKey.lower(), $0)
             }
         return try EncryptedLogin.lift(_retval)
     }
@@ -964,7 +955,7 @@ public class LoginStore: LoginStoreProtocol {
     public func update(id: String, login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_update(self.pointer, id.lower(), login.lower(), encryptionKey.lower(), $0)
+                logins_42e6_LoginStore_update(self.pointer, id.lower(), login.lower(), encryptionKey.lower(), $0)
             }
         return try EncryptedLogin.lift(_retval)
     }
@@ -972,7 +963,7 @@ public class LoginStore: LoginStoreProtocol {
     public func addOrUpdate(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_add_or_update(self.pointer, login.lower(), encryptionKey.lower(), $0)
+                logins_42e6_LoginStore_add_or_update(self.pointer, login.lower(), encryptionKey.lower(), $0)
             }
         return try EncryptedLogin.lift(_retval)
     }
@@ -980,7 +971,7 @@ public class LoginStore: LoginStoreProtocol {
     public func delete(id: String) throws -> Bool {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_delete(self.pointer, id.lower(), $0)
+                logins_42e6_LoginStore_delete(self.pointer, id.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -988,35 +979,35 @@ public class LoginStore: LoginStoreProtocol {
     public func wipe() throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_wipe(self.pointer, $0)
+                logins_42e6_LoginStore_wipe(self.pointer, $0)
             }
     }
 
     public func wipeLocal() throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_wipe_local(self.pointer, $0)
+                logins_42e6_LoginStore_wipe_local(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_reset(self.pointer, $0)
+                logins_42e6_LoginStore_reset(self.pointer, $0)
             }
     }
 
     public func touch(id: String) throws {
         try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_touch(self.pointer, id.lower(), $0)
+                logins_42e6_LoginStore_touch(self.pointer, id.lower(), $0)
             }
     }
 
     public func list() throws -> [EncryptedLogin] {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_list(self.pointer, $0)
+                logins_42e6_LoginStore_list(self.pointer, $0)
             }
         return try [EncryptedLogin].lift(_retval)
     }
@@ -1024,7 +1015,7 @@ public class LoginStore: LoginStoreProtocol {
     public func getByBaseDomain(baseDomain: String) throws -> [EncryptedLogin] {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_get_by_base_domain(self.pointer, baseDomain.lower(), $0)
+                logins_42e6_LoginStore_get_by_base_domain(self.pointer, baseDomain.lower(), $0)
             }
         return try [EncryptedLogin].lift(_retval)
     }
@@ -1032,23 +1023,15 @@ public class LoginStore: LoginStoreProtocol {
     public func findLoginToUpdate(look: LoginEntry, encryptionKey: String) throws -> Login? {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_find_login_to_update(self.pointer, look.lower(), encryptionKey.lower(), $0)
+                logins_42e6_LoginStore_find_login_to_update(self.pointer, look.lower(), encryptionKey.lower(), $0)
             }
         return try Login?.lift(_retval)
-    }
-
-    public func potentialDupesIgnoringUsername(id: String, login: LoginEntry) throws -> [EncryptedLogin] {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_potential_dupes_ignoring_username(self.pointer, id.lower(), login.lower(), $0)
-            }
-        return try [EncryptedLogin].lift(_retval)
     }
 
     public func get(id: String) throws -> EncryptedLogin? {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_get(self.pointer, id.lower(), $0)
+                logins_42e6_LoginStore_get(self.pointer, id.lower(), $0)
             }
         return try EncryptedLogin?.lift(_retval)
     }
@@ -1056,7 +1039,7 @@ public class LoginStore: LoginStoreProtocol {
     public func importMultiple(login: [Login], encryptionKey: String) throws -> String {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_import_multiple(self.pointer, login.lower(), encryptionKey.lower(), $0)
+                logins_42e6_LoginStore_import_multiple(self.pointer, login.lower(), encryptionKey.lower(), $0)
             }
         return try String.lift(_retval)
     }
@@ -1064,14 +1047,14 @@ public class LoginStore: LoginStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                logins_5236_LoginStore_register_with_sync_manager(self.pointer, $0)
+                logins_42e6_LoginStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localEncryptionKey: String) throws -> String {
         let _retval = try
             rustCallWithError(LoginsStorageError.self) {
-                logins_5236_LoginStore_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), localEncryptionKey.lower(), $0)
+                logins_42e6_LoginStore_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), localEncryptionKey.lower(), $0)
             }
         return try String.lift(_retval)
     }
