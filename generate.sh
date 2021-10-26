@@ -69,6 +69,10 @@ cp -r "$APP_SERVICES_DIR/components/fxa-client/ios/FxAClient" "$FXA_CLIENT_DIR/F
 
 LOGINS_DIR="$THIS_DIR/generated/logins"
 rm -rf "$LOGINS_DIR" && mkdir -p "$LOGINS_DIR"
+# Glean metrics.
+# Run this first, because it appears to delete any other .swift files in the output directory.
+# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
+SOURCE_ROOT="$THIS_DIR" PROJECT="logins" "$GLEAN_GENERATOR" -o "$LOGINS_DIR/Generated" "$APP_SERVICES_DIR/components/logins/ios/metrics.yaml"
 # UniFFI bindings.
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$LOGINS_DIR/Generated" "$APP_SERVICES_DIR/components/logins/src/logins.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
