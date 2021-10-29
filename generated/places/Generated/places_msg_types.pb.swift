@@ -561,24 +561,28 @@ extension MsgTypes_HistoryVisitInfo: SwiftProtobuf.Message, SwiftProtobuf._Messa
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._url {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._url {
       try visitor.visitSingularStringField(value: v, fieldNumber: 1)
-    }
-    if let v = self._title {
+    } }()
+    try { if let v = self._title {
       try visitor.visitSingularStringField(value: v, fieldNumber: 2)
-    }
-    if let v = self._timestamp {
+    } }()
+    try { if let v = self._timestamp {
       try visitor.visitSingularInt64Field(value: v, fieldNumber: 3)
-    }
-    if let v = self._visitType {
+    } }()
+    try { if let v = self._visitType {
       try visitor.visitSingularInt32Field(value: v, fieldNumber: 4)
-    }
-    if let v = self._isHidden {
+    } }()
+    try { if let v = self._isHidden {
       try visitor.visitSingularBoolField(value: v, fieldNumber: 5)
-    }
-    if let v = self._previewImageURL {
+    } }()
+    try { if let v = self._previewImageURL {
       try visitor.visitSingularStringField(value: v, fieldNumber: 6)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -661,15 +665,19 @@ extension MsgTypes_HistoryVisitInfosWithBound: SwiftProtobuf.Message, SwiftProto
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
     if !self.infos.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.infos, fieldNumber: 1)
     }
-    if let v = self._bound {
+    try { if let v = self._bound {
       try visitor.visitSingularInt64Field(value: v, fieldNumber: 2)
-    }
-    if let v = self._offset {
+    } }()
+    try { if let v = self._offset {
       try visitor.visitSingularInt64Field(value: v, fieldNumber: 3)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -721,39 +729,43 @@ extension MsgTypes_BookmarkNode: SwiftProtobuf.Message, SwiftProtobuf._MessageIm
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._nodeType {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._nodeType {
       try visitor.visitSingularInt32Field(value: v, fieldNumber: 1)
-    }
-    if let v = self._guid {
+    } }()
+    try { if let v = self._guid {
       try visitor.visitSingularStringField(value: v, fieldNumber: 2)
-    }
-    if let v = self._dateAdded {
+    } }()
+    try { if let v = self._dateAdded {
       try visitor.visitSingularInt64Field(value: v, fieldNumber: 3)
-    }
-    if let v = self._lastModified {
+    } }()
+    try { if let v = self._lastModified {
       try visitor.visitSingularInt64Field(value: v, fieldNumber: 4)
-    }
-    if let v = self._parentGuid {
+    } }()
+    try { if let v = self._parentGuid {
       try visitor.visitSingularStringField(value: v, fieldNumber: 5)
-    }
-    if let v = self._position {
+    } }()
+    try { if let v = self._position {
       try visitor.visitSingularUInt32Field(value: v, fieldNumber: 6)
-    }
-    if let v = self._title {
+    } }()
+    try { if let v = self._title {
       try visitor.visitSingularStringField(value: v, fieldNumber: 7)
-    }
-    if let v = self._url {
+    } }()
+    try { if let v = self._url {
       try visitor.visitSingularStringField(value: v, fieldNumber: 8)
-    }
+    } }()
     if !self.childGuids.isEmpty {
       try visitor.visitRepeatedStringField(value: self.childGuids, fieldNumber: 9)
     }
     if !self.childNodes.isEmpty {
       try visitor.visitRepeatedMessageField(value: self.childNodes, fieldNumber: 10)
     }
-    if let v = self._haveChildNodes {
+    try { if let v = self._haveChildNodes {
       try visitor.visitSingularBoolField(value: v, fieldNumber: 11)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -838,15 +850,19 @@ extension MsgTypes_SearchResultMessage: SwiftProtobuf.Message, SwiftProtobuf._Me
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._url {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._url {
       try visitor.visitSingularStringField(value: v, fieldNumber: 1)
-    }
-    if let v = self._title {
+    } }()
+    try { if let v = self._title {
       try visitor.visitSingularStringField(value: v, fieldNumber: 2)
-    }
-    if let v = self._frecency {
+    } }()
+    try { if let v = self._frecency {
       try visitor.visitSingularInt64Field(value: v, fieldNumber: 3)
-    }
+    } }()
     if !self.reasons.isEmpty {
       try visitor.visitPackedEnumField(value: self.reasons, fieldNumber: 4)
     }
@@ -926,12 +942,16 @@ extension MsgTypes_TopFrecentSiteInfo: SwiftProtobuf.Message, SwiftProtobuf._Mes
   }
 
   func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._url {
+    // The use of inline closures is to circumvent an issue where the compiler
+    // allocates stack space for every if/case branch local when no optimizations
+    // are enabled. https://github.com/apple/swift-protobuf/issues/1034 and
+    // https://github.com/apple/swift-protobuf/issues/1182
+    try { if let v = self._url {
       try visitor.visitSingularStringField(value: v, fieldNumber: 1)
-    }
-    if let v = self._title {
+    } }()
+    try { if let v = self._title {
       try visitor.visitSingularStringField(value: v, fieldNumber: 2)
-    }
+    } }()
     try unknownFields.traverse(visitor: &visitor)
   }
 
