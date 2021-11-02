@@ -14,7 +14,7 @@ private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
-            try! rustCall { ffi_push_b1b4_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+            try! rustCall { ffi_push_6d2f_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
         }
         self.init(capacity: rbuf.capacity, len: rbuf.len, data: rbuf.data)
     }
@@ -22,7 +22,7 @@ private extension RustBuffer {
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_push_b1b4_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_push_6d2f_rustbuffer_free(self, $0) }
     }
 }
 
@@ -273,7 +273,7 @@ extension String: ViaFfi {
 
     fileprivate static func lift(_ v: FfiType) throws -> Self {
         defer {
-            try! rustCall { ffi_push_b1b4_rustbuffer_free(v, $0) }
+            try! rustCall { ffi_push_6d2f_rustbuffer_free(v, $0) }
         }
         if v.data == nil {
             return String()
@@ -289,7 +289,7 @@ extension String: ViaFfi {
                 // The swift string gives us a trailing null byte, we don't want it.
                 let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
                 let bytes = ForeignBytes(bufferPointer: buf)
-                return try! rustCall { ffi_push_b1b4_rustbuffer_from_bytes(bytes, $0) }
+                return try! rustCall { ffi_push_6d2f_rustbuffer_from_bytes(bytes, $0) }
             }
         }
     }
@@ -598,15 +598,13 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
 }
 
 public struct DispatchInfo {
-    public var uaid: String
     public var scope: String
     public var endpoint: String
     public var appServerKey: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(uaid: String, scope: String, endpoint: String, appServerKey: String?) {
-        self.uaid = uaid
+    public init(scope: String, endpoint: String, appServerKey: String?) {
         self.scope = scope
         self.endpoint = endpoint
         self.appServerKey = appServerKey
@@ -615,9 +613,6 @@ public struct DispatchInfo {
 
 extension DispatchInfo: Equatable, Hashable {
     public static func == (lhs: DispatchInfo, rhs: DispatchInfo) -> Bool {
-        if lhs.uaid != rhs.uaid {
-            return false
-        }
         if lhs.scope != rhs.scope {
             return false
         }
@@ -631,7 +626,6 @@ extension DispatchInfo: Equatable, Hashable {
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(uaid)
         hasher.combine(scope)
         hasher.combine(endpoint)
         hasher.combine(appServerKey)
@@ -641,7 +635,6 @@ extension DispatchInfo: Equatable, Hashable {
 private extension DispatchInfo {
     static func read(from buf: Reader) throws -> DispatchInfo {
         return try DispatchInfo(
-            uaid: String.read(from: buf),
             scope: String.read(from: buf),
             endpoint: String.read(from: buf),
             appServerKey: String?.read(from: buf)
@@ -649,7 +642,6 @@ private extension DispatchInfo {
     }
 
     func write(into buf: Writer) {
-        uaid.write(into: buf)
         scope.write(into: buf)
         endpoint.write(into: buf)
         appServerKey.write(into: buf)
@@ -858,22 +850,22 @@ public class PushManager: PushManagerProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(senderId: String, serverHost: String = "updates.push.services.mozilla.com", httpProtocol: String = "https", bridgeType: BridgeType, registrationId: String, databasePath: String = "push.sqlite") throws {
+    public convenience init(senderId: String, serverHost: String = "updates.push.services.mozilla.com", httpProtocol: String = "https", bridgeType: BridgeType, registrationId: String = "", databasePath: String = "push.sqlite") throws {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_new(senderId.lower(), serverHost.lower(), httpProtocol.lower(), bridgeType.lower(), registrationId.lower(), databasePath.lower(), $0)
+                push_6d2f_PushManager_new(senderId.lower(), serverHost.lower(), httpProtocol.lower(), bridgeType.lower(), registrationId.lower(), databasePath.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_push_b1b4_PushManager_object_free(pointer, $0) }
+        try! rustCall { ffi_push_6d2f_PushManager_object_free(pointer, $0) }
     }
 
     public func subscribe(channelId: String = "", scope: String = "", appServerSey: String? = nil) throws -> SubscriptionResponse {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_subscribe(self.pointer, channelId.lower(), scope.lower(), appServerSey.lower(), $0)
+                push_6d2f_PushManager_subscribe(self.pointer, channelId.lower(), scope.lower(), appServerSey.lower(), $0)
             }
         return try SubscriptionResponse.lift(_retval)
     }
@@ -881,7 +873,7 @@ public class PushManager: PushManagerProtocol {
     public func unsubscribe(channelId: String) throws -> Bool {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_unsubscribe(self.pointer, channelId.lower(), $0)
+                push_6d2f_PushManager_unsubscribe(self.pointer, channelId.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -889,14 +881,14 @@ public class PushManager: PushManagerProtocol {
     public func unsubscribeAll() throws {
         try
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_unsubscribe_all(self.pointer, $0)
+                push_6d2f_PushManager_unsubscribe_all(self.pointer, $0)
             }
     }
 
     public func update(registrationToken: String) throws -> Bool {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_update(self.pointer, registrationToken.lower(), $0)
+                push_6d2f_PushManager_update(self.pointer, registrationToken.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -904,7 +896,7 @@ public class PushManager: PushManagerProtocol {
     public func verifyConnection() throws -> [PushSubscriptionChanged] {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_verify_connection(self.pointer, $0)
+                push_6d2f_PushManager_verify_connection(self.pointer, $0)
             }
         return try [PushSubscriptionChanged].lift(_retval)
     }
@@ -912,7 +904,7 @@ public class PushManager: PushManagerProtocol {
     public func decrypt(channelId: String, body: String, encoding: String = "aes128gcm", salt: String = "", dh: String = "") throws -> [Int8] {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_decrypt(self.pointer, channelId.lower(), body.lower(), encoding.lower(), salt.lower(), dh.lower(), $0)
+                push_6d2f_PushManager_decrypt(self.pointer, channelId.lower(), body.lower(), encoding.lower(), salt.lower(), dh.lower(), $0)
             }
         return try [Int8].lift(_retval)
     }
@@ -920,7 +912,7 @@ public class PushManager: PushManagerProtocol {
     public func dispatchInfoForChid(channelId: String) throws -> DispatchInfo? {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_b1b4_PushManager_dispatch_info_for_chid(self.pointer, channelId.lower(), $0)
+                push_6d2f_PushManager_dispatch_info_for_chid(self.pointer, channelId.lower(), $0)
             }
         return try DispatchInfo?.lift(_retval)
     }
