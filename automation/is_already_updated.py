@@ -2,7 +2,6 @@ import os
 from github import Github
 
 GITHUB_REPO = "mozilla/rust-components-swift"
-XC_FRAMEWORK_NAME = "MozillaRustComponents.xcframework.zip"
 github_access_token = os.getenv("GITHUB_TOKEN")
 as_version = os.getenv("AS_VERSION")
 PACKAGE_SWIFT = "Package.swift"
@@ -13,10 +12,10 @@ def is_already_at_version():
         while line:
             line = fp.readline()
             
-            # If this is the line that has the URL to
-            # the xcframework
-            if XC_FRAMEWORK_NAME in line:
-                return as_version in line
+            # If this is the line that has version
+            # of the xcframework
+            if "let version =" in line:
+                return line.strip() == f"let version = \"{as_version}\""
     return False
 
 def is_branch_created():
