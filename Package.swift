@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "Push", targets: ["Push"]),
         .library(name: "Tabs", targets: ["Tabs"]),
         .library(name: "Places", targets: ["Places"]),
+        .library(name: "Sync15", targets: ["Sync15"]),
     ],
     dependencies: [
         .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1"),
@@ -53,6 +54,7 @@ let package = Package(
         ),
         .target(
             name: "Sync15",
+            dependencies: ["MozillaRustComponentsWrapper"],
             path: "generated/sync15"
         ),
         .target(
