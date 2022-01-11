@@ -47,7 +47,7 @@ let package = Package(
             //url: url,
             //checksum: checksum
             url: "https://125490-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "https://125490-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip"
+            checksum: "c3d5bd34733f9a2bd977e0a8ed4e81839ea2503b4652e7317d3e9a8507f518cc"
 
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
