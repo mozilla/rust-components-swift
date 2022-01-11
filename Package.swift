@@ -46,8 +46,8 @@ let package = Package(
             // this is important for our release script so that all values are updated correctly
             //url: url,
             //checksum: checksum
-            url: "https://125494-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "10f9999a4eb17593f299052678248f6653332936b43e917585a96acb920b7734"
+            url: "https://125490-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "https://125490-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip"
 
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
