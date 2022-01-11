@@ -81,7 +81,7 @@ let package = Package(
         ),
         .target(
            name: "Logins",
-           dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
+           dependencies: ["MozillaRustComponentsWrapper"],
            path: "generated/logins"
         ),
         .target(
@@ -106,7 +106,7 @@ let package = Package(
         ),
         .target(
             name: "Places",
-            dependencies: ["MozillaRustComponentsWrapper", "Sync15", "SwiftProtobuf"],
+            dependencies: ["MozillaRustComponentsWrapper", "SwiftProtobuf"],
             path: "generated/places"
         )
     ]
