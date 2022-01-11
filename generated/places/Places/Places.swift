@@ -4,9 +4,6 @@
 
 import Foundation
 import os.log
-#if canImport(Sync15)
-    import Sync15
-#endif
 #if canImport(MozillaRustComponents)
     import MozillaRustComponents
 #endif
@@ -166,7 +163,7 @@ public class PlacesAPI {
      *     - `PlacesError.panic`: If the rust code panics while completing this
      *                            operation. (If this occurs, please let us know).
      */
-    open func syncBookmarks(unlockInfo: SyncUnlockInfo) throws -> String {
+    open func syncBookmarks(unlockInfo: SyncPlacesUnlockInfo) throws -> String {
         return try queue.sync {
             let pingStr = try PlacesError.unwrap { err in
                 sync15_bookmarks_sync(handle,

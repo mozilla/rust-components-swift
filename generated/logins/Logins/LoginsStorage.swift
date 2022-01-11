@@ -4,9 +4,6 @@
 
 import Foundation
 import UIKit
-#if canImport(Sync15)
-    import Sync15
-#endif
 #if canImport(MozillaRustComponents)
     import MozillaRustComponents
 #endif
@@ -112,7 +109,7 @@ open class LoginsStorage {
         }
     }
 
-    open func sync(unlockInfo: SyncUnlockInfo) throws -> String {
+    open func sync(unlockInfo: SyncLoginsUnlockInfo) throws -> String {
         return try queue.sync {
             return try self.store
                 .sync(

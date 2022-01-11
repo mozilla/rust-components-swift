@@ -6,7 +6,7 @@ import Foundation
 import UIKit
 
 /// Set of arguments required to sync.
-open class SyncUnlockInfo {
+open class SyncLoginsUnlockInfo {
     public var kid: String
     public var fxaAccessToken: String
     public var syncKey: String
