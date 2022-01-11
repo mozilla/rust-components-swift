@@ -14,7 +14,7 @@ let package = Package(
         .library(name: "Nimbus", targets: ["Nimbus"]),
         .library(name: "CrashTest", targets: ["CrashTest"]),
         .library(name: "Logins", targets: ["Logins"]),
-        .library(name: "FxAClient", type: .dynamic, targets: ["FxAClient"]),
+        .library(name: "FxAClient", targets: ["FxAClient"]),
         .library(name: "Autofill", targets: ["Autofill"]),
         .library(name: "Push", targets: ["Push"]),
         .library(name: "Tabs", targets: ["Tabs"]),
@@ -46,8 +46,8 @@ let package = Package(
             // this is important for our release script so that all values are updated correctly
             //url: url,
             //checksum: checksum
-            url: "https://125504-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "d7fecf49db7c71a959c07904e64e4534e2cc15c1d69da332cfb253d63fc4cf29"
+            url: "https://125513-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "4113c7f02aa604175fb103be12ec39f9bca9aa250e219b3e0d8b7a0efdfd5bcf"
 
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
