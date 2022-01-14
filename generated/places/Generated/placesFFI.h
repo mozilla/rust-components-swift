@@ -28,8 +28,6 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef RustBuffer (*ForeignCallback)(uint64_t, int32_t, RustBuffer);
-
 typedef struct ForeignBytes
 {
     int32_t len;
@@ -46,51 +44,51 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-RustBuffer places_60f6_places_get_latest_history_metadata_for_url(
+RustBuffer places_219d_places_get_latest_history_metadata_for_url(
       int64_t handle,RustBuffer url,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_60f6_places_get_history_metadata_between(
+RustBuffer places_219d_places_get_history_metadata_between(
       int64_t handle,int64_t start,int64_t end,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_60f6_places_get_history_metadata_since(
+RustBuffer places_219d_places_get_history_metadata_since(
       int64_t handle,int64_t start,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_60f6_places_query_history_metadata(
+RustBuffer places_219d_places_query_history_metadata(
       int64_t handle,RustBuffer query,int32_t limit,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_60f6_places_get_history_highlights(
+RustBuffer places_219d_places_get_history_highlights(
       int64_t handle,RustBuffer weights,int32_t limit,
     RustCallStatus *_Nonnull out_status
     );
-void places_60f6_places_note_history_metadata_observation(
+void places_219d_places_note_history_metadata_observation(
       int64_t handle,RustBuffer data,
     RustCallStatus *_Nonnull out_status
     );
-void places_60f6_places_metadata_delete(
+void places_219d_places_metadata_delete(
       int64_t handle,RustBuffer url,RustBuffer referrer_url,RustBuffer search_term,
     RustCallStatus *_Nonnull out_status
     );
-void places_60f6_places_metadata_delete_older_than(
+void places_219d_places_metadata_delete_older_than(
       int64_t handle,int64_t older_than,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_places_60f6_rustbuffer_alloc(
+RustBuffer ffi_places_219d_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_places_60f6_rustbuffer_from_bytes(
+RustBuffer ffi_places_219d_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_places_60f6_rustbuffer_free(
+void ffi_places_219d_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_places_60f6_rustbuffer_reserve(
+RustBuffer ffi_places_219d_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

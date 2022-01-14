@@ -28,8 +28,6 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef RustBuffer (*ForeignCallback)(uint64_t, int32_t, RustBuffer);
-
 typedef struct ForeignBytes
 {
     int32_t len;
@@ -46,39 +44,39 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_tabs_145a_TabsStore_object_free(
+void ffi_tabs_beeb_TabsStore_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull tabs_145a_TabsStore_new(
+void*_Nonnull tabs_beeb_TabsStore_new(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer tabs_145a_TabsStore_get_all(
+RustBuffer tabs_beeb_TabsStore_get_all(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_145a_TabsStore_set_local_tabs(
+void tabs_beeb_TabsStore_set_local_tabs(
       void*_Nonnull ptr,RustBuffer remote_tabs,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_145a_TabsStore_register_with_sync_manager(
+void tabs_beeb_TabsStore_register_with_sync_manager(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_145a_rustbuffer_alloc(
+RustBuffer ffi_tabs_beeb_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_145a_rustbuffer_from_bytes(
+RustBuffer ffi_tabs_beeb_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_tabs_145a_rustbuffer_free(
+void ffi_tabs_beeb_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_145a_rustbuffer_reserve(
+RustBuffer ffi_tabs_beeb_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

@@ -28,8 +28,6 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef RustBuffer (*ForeignCallback)(uint64_t, int32_t, RustBuffer);
-
 typedef struct ForeignBytes
 {
     int32_t len;
@@ -46,55 +44,55 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_push_7ba2_PushManager_object_free(
+void ffi_push_6d2f_PushManager_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull push_7ba2_PushManager_new(
+void*_Nonnull push_6d2f_PushManager_new(
       RustBuffer sender_id,RustBuffer server_host,RustBuffer http_protocol,RustBuffer bridge_type,RustBuffer registration_id,RustBuffer database_path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_7ba2_PushManager_subscribe(
+RustBuffer push_6d2f_PushManager_subscribe(
       void*_Nonnull ptr,RustBuffer channel_id,RustBuffer scope,RustBuffer app_server_sey,
     RustCallStatus *_Nonnull out_status
     );
-int8_t push_7ba2_PushManager_unsubscribe(
+int8_t push_6d2f_PushManager_unsubscribe(
       void*_Nonnull ptr,RustBuffer channel_id,
     RustCallStatus *_Nonnull out_status
     );
-void push_7ba2_PushManager_unsubscribe_all(
+void push_6d2f_PushManager_unsubscribe_all(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-int8_t push_7ba2_PushManager_update(
+int8_t push_6d2f_PushManager_update(
       void*_Nonnull ptr,RustBuffer registration_token,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_7ba2_PushManager_verify_connection(
+RustBuffer push_6d2f_PushManager_verify_connection(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_7ba2_PushManager_decrypt(
+RustBuffer push_6d2f_PushManager_decrypt(
       void*_Nonnull ptr,RustBuffer channel_id,RustBuffer body,RustBuffer encoding,RustBuffer salt,RustBuffer dh,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_7ba2_PushManager_dispatch_info_for_chid(
+RustBuffer push_6d2f_PushManager_dispatch_info_for_chid(
       void*_Nonnull ptr,RustBuffer channel_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_7ba2_rustbuffer_alloc(
+RustBuffer ffi_push_6d2f_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_7ba2_rustbuffer_from_bytes(
+RustBuffer ffi_push_6d2f_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_push_7ba2_rustbuffer_free(
+void ffi_push_6d2f_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_7ba2_rustbuffer_reserve(
+RustBuffer ffi_push_6d2f_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );
