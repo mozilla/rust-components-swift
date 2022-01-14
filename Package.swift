@@ -22,6 +22,7 @@ let package = Package(
         // .library(name: "Sync15", targets: ["Sync15"]),
     ],
     dependencies: [
+        .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1"),
         .package(name: "SwiftProtobuf", url: "https://github.com/apple/swift-protobuf", from: "1.18.0")
     ],
     targets: [
@@ -85,7 +86,7 @@ let package = Package(
         ),
         .target(
            name: "FxAClient",
-           dependencies: ["MozillaRustComponentsWrapper"],
+           dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
            path: "generated/fxa-client"
         ),
         .target(
