@@ -42,13 +42,13 @@ private let SecReturnAttributes: String = kSecReturnAttributes as String
 private let SecAttrSynchronizable: String = kSecAttrSynchronizable as String
 
 /// KeychainWrapper is a class to help make Keychain access in Swift more straightforward. It is designed to make accessing the Keychain services more like using NSUserDefaults, which is much more familiar to people.
-open class KeychainWrapper {
+open class MZKeychainWrapper {
     
     @available(*, deprecated, message: "KeychainWrapper.defaultKeychainWrapper is deprecated since version 2.2.1, use KeychainWrapper.standard instead")
-    public static let defaultKeychainWrapper = KeychainWrapper.standard
+    public static let defaultKeychainWrapper = MZKeychainWrapper.standard
     
     /// Default keychain wrapper access
-    public static let standard = KeychainWrapper()
+    public static let standard = MZKeychainWrapper()
     
     /// ServiceName is used for the kSecAttrService property to uniquely identify this keychain accessor. If no service name is specified, KeychainWrapper will default to using the bundleIdentifier.
     private (set) public var serviceName: String
@@ -61,7 +61,7 @@ open class KeychainWrapper {
     }()
 
     private convenience init() {
-        self.init(serviceName: KeychainWrapper.defaultServiceName)
+        self.init(serviceName: MZKeychainWrapper.defaultServiceName)
     }
     
     /// Create a custom instance of KeychainWrapper with a custom Service Name and optional custom access group.
@@ -81,7 +81,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when retrieving the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: True if a value exists for the key. False otherwise.
-    open func hasValue(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+    open func hasValue(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
         if let _ = data(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable) {
             return true
         } else {
@@ -89,7 +89,7 @@ open class KeychainWrapper {
         }
     }
     
-    open func accessibilityOfKey(_ key: String) -> KeychainItemAccessibility? {
+    open func accessibilityOfKey(_ key: String) -> MZKeychainItemAccessibility? {
         var keychainQueryDictionary = setupKeychainQueryDictionary(forKey: key)
 
         // Remove accessibility attribute
@@ -109,7 +109,7 @@ open class KeychainWrapper {
             return nil
         }
     
-        return KeychainItemAccessibility.accessibilityForAttributeValue(accessibilityAttrValue as CFString)
+        return MZKeychainItemAccessibility.accessibilityForAttributeValue(accessibilityAttrValue as CFString)
     }
 
     /// Get the keys of all keychain entries matching the current ServiceName and AccessGroup if one is set.
@@ -147,7 +147,7 @@ open class KeychainWrapper {
     
     // MARK: Public Getters
     
-    open func integer(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Int? {
+    open func integer(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Int? {
         guard let numberValue = object(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable) as? NSNumber else {
             return nil
         }
@@ -155,7 +155,7 @@ open class KeychainWrapper {
         return numberValue.intValue
     }
     
-    open func float(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Float? {
+    open func float(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Float? {
         guard let numberValue = object(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable) as? NSNumber else {
             return nil
         }
@@ -163,7 +163,7 @@ open class KeychainWrapper {
         return numberValue.floatValue
     }
     
-    open func double(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Double? {
+    open func double(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Double? {
         guard let numberValue = object(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable) as? NSNumber else {
             return nil
         }
@@ -171,7 +171,7 @@ open class KeychainWrapper {
         return numberValue.doubleValue
     }
     
-    open func bool(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool? {
+    open func bool(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool? {
         guard let numberValue = object(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable) as? NSNumber else {
             return nil
         }
@@ -185,7 +185,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when retrieving the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: The String associated with the key if it exists. If no data exists, or the data found cannot be encoded as a string, returns nil.
-    open func string(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> String? {
+    open func string(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> String? {
         guard let keychainData = data(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable) else {
             return nil
         }
@@ -199,7 +199,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when retrieving the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: The decoded object associated with the key if it exists. If no data exists, or the data found cannot be decoded, returns nil.
-    open func object(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> NSCoding? {
+    open func object(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> NSCoding? {
         guard let keychainData = data(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable) else {
             return nil
         }
@@ -214,7 +214,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when retrieving the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: The Data object associated with the key if it exists. If no data exists, returns nil.
-    open func data(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Data? {
+    open func data(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Data? {
         var keychainQueryDictionary = setupKeychainQueryDictionary(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
         
         // Limit search results to one
@@ -237,7 +237,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when retrieving the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: The persistent data reference object associated with the key if it exists. If no data exists, returns nil.
-    open func dataRef(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Data? {
+    open func dataRef(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Data? {
         var keychainQueryDictionary = setupKeychainQueryDictionary(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
         
         // Limit search results to one
@@ -255,20 +255,20 @@ open class KeychainWrapper {
     
     // MARK: Public Setters
     
-    @discardableResult open func set(_ value: Int, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
-        return set(NSNumber(value: value), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
+    @discardableResult open func set(_ value: Int, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+        return set(Int(NSNumber(value: value)), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
     }
     
-    @discardableResult open func set(_ value: Float, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
-        return set(NSNumber(value: value), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
+    @discardableResult open func set(_ value: Float, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+        return set(Int(NSNumber(value: value)), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
     }
     
-    @discardableResult open func set(_ value: Double, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
-        return set(NSNumber(value: value), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
+    @discardableResult open func set(_ value: Double, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+        return set(Int(NSNumber(value: value)), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
     }
     
-    @discardableResult open func set(_ value: Bool, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
-        return set(NSNumber(value: value), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
+    @discardableResult open func set(_ value: Bool, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+        return set(Int(NSNumber(value: value)), forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
     }
 
     /// Save a String value to the keychain associated with a specified key. If a String value already exists for the given key, the string will be overwritten with the new value.
@@ -278,7 +278,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when setting the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: True if the save was successful, false otherwise.
-    @discardableResult open func set(_ value: String, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+    @discardableResult open func set(_ value: String, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
         if let data = value.data(using: .utf8) {
             return set(data, forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
         } else {
@@ -293,7 +293,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when setting the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: True if the save was successful, false otherwise.
-    @discardableResult open func set(_ value: NSCoding, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+    @discardableResult open func set(_ value: NSCoding, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
         let data = NSKeyedArchiver.archivedData(withRootObject: value)
         
         return set(data, forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
@@ -306,7 +306,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when setting the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: True if the save was successful, false otherwise.
-    @discardableResult open func set(_ value: Data, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+    @discardableResult open func set(_ value: Data, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
         var keychainQueryDictionary: [String:Any] = setupKeychainQueryDictionary(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
         
         keychainQueryDictionary[SecValueData] = value
@@ -315,7 +315,7 @@ open class KeychainWrapper {
             keychainQueryDictionary[SecAttrAccessible] = accessibility.keychainAttrValue
         } else {
             // Assign default protection - Protect the keychain entry so it's only valid when the device is unlocked
-            keychainQueryDictionary[SecAttrAccessible] = KeychainItemAccessibility.whenUnlocked.keychainAttrValue
+            keychainQueryDictionary[SecAttrAccessible] = MZKeychainItemAccessibility.whenUnlocked.keychainAttrValue
         }
         
         let status: OSStatus = SecItemAdd(keychainQueryDictionary as CFDictionary, nil)
@@ -330,7 +330,7 @@ open class KeychainWrapper {
     }
 
     @available(*, deprecated, message: "remove is deprecated since version 2.2.1, use removeObject instead")
-    @discardableResult open func remove(key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+    @discardableResult open func remove(key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
         return removeObject(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
     }
     
@@ -340,7 +340,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility level to use when looking up the keychain item.
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: True if successful, false otherwise.
-    @discardableResult open func removeObject(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+    @discardableResult open func removeObject(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
         let keychainQueryDictionary: [String:Any] = setupKeychainQueryDictionary(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
 
         // Delete
@@ -404,7 +404,7 @@ open class KeychainWrapper {
     }
     
     /// Update existing data associated with a specified key name. The existing data will be overwritten by the new data.
-    private func update(_ value: Data, forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
+    private func update(_ value: Data, forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> Bool {
         var keychainQueryDictionary: [String:Any] = setupKeychainQueryDictionary(forKey: key, withAccessibility: accessibility, isSynchronizable: isSynchronizable)
         let updateDictionary = [SecValueData:value]
         
@@ -429,7 +429,7 @@ open class KeychainWrapper {
     /// - parameter withAccessibility: Optional accessibility to use when setting the keychain item. If none is provided, will default to .WhenUnlocked
     /// - parameter isSynchronizable: A bool that describes if the item should be synchronizable, to be synched with the iCloud. If none is provided, will default to false
     /// - returns: A dictionary with all the needed properties setup to access the keychain on iOS
-    private func setupKeychainQueryDictionary(forKey key: String, withAccessibility accessibility: KeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> [String:Any] {
+    private func setupKeychainQueryDictionary(forKey key: String, withAccessibility accessibility: MZKeychainItemAccessibility? = nil, isSynchronizable: Bool = false) -> [String:Any] {
         // Setup default access as generic password (rather than a certificate, internet password, etc)
         var keychainQueryDictionary: [String:Any] = [SecClass:kSecClassGenericPassword]
         

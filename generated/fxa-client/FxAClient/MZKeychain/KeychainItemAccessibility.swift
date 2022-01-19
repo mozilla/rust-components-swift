@@ -27,12 +27,12 @@
 
 import Foundation
 
-protocol KeychainAttrRepresentable {
+protocol MZKeychainAttrRepresentable {
     var keychainAttrValue: CFString { get }
 }
 
 // MARK: - KeychainItemAccessibility
-public enum KeychainItemAccessibility {
+public enum MZKeychainItemAccessibility {
     /**
      The data in the keychain item cannot be accessed after a restart until the device has been unlocked once by the user.
      
@@ -91,7 +91,7 @@ public enum KeychainItemAccessibility {
     @available(iOS 4, *)
     case whenUnlockedThisDeviceOnly
     
-    static func accessibilityForAttributeValue(_ keychainAttrValue: CFString) -> KeychainItemAccessibility? {
+    static func accessibilityForAttributeValue(_ keychainAttrValue: CFString) -> MZKeychainItemAccessibility? {
         for (key, value) in keychainItemAccessibilityLookup {
             if value == keychainAttrValue {
                 return key
@@ -102,8 +102,8 @@ public enum KeychainItemAccessibility {
     }
 }
 
-private let keychainItemAccessibilityLookup: [KeychainItemAccessibility:CFString] = {
-    var lookup: [KeychainItemAccessibility:CFString] = [
+private let keychainItemAccessibilityLookup: [MZKeychainItemAccessibility:CFString] = {
+    var lookup: [MZKeychainItemAccessibility:CFString] = [
         .afterFirstUnlock: kSecAttrAccessibleAfterFirstUnlock,
         .afterFirstUnlockThisDeviceOnly: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
         .always: kSecAttrAccessibleAlways,
@@ -116,7 +116,7 @@ private let keychainItemAccessibilityLookup: [KeychainItemAccessibility:CFString
     return lookup
 }()
 
-extension KeychainItemAccessibility : KeychainAttrRepresentable {
+extension MZKeychainItemAccessibility : MZKeychainAttrRepresentable {
     internal var keychainAttrValue: CFString {
         return keychainItemAccessibilityLookup[self]!
     }

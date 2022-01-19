@@ -12,7 +12,7 @@ import Foundation
 import CoreGraphics
 #endif
 
-public extension KeychainWrapper {
+public extension MZKeychainWrapper {
         
     func remove(forKey key: Key) {
         removeObject(forKey: key.rawValue)
@@ -20,7 +20,7 @@ public extension KeychainWrapper {
     
 }
 
-public extension KeychainWrapper {
+public extension MZKeychainWrapper {
     
     subscript(key: Key) -> String? {
         get { return string(forKey: key) }
@@ -84,7 +84,7 @@ public extension KeychainWrapper {
 }
 
 
-public extension KeychainWrapper {
+public extension MZKeychainWrapper {
     
     func data(forKey key: Key) -> Data? {
         if let value = data(forKey: key.rawValue) {
@@ -146,7 +146,7 @@ public extension KeychainWrapper {
 }
 
 
-public extension KeychainWrapper {
+public extension MZKeychainWrapper {
     
     struct Key: Hashable, RawRepresentable, ExpressibleByStringLiteral {
 
