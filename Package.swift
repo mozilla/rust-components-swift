@@ -19,10 +19,8 @@ let package = Package(
         .library(name: "Push", targets: ["Push"]),
         .library(name: "Tabs", targets: ["Tabs"]),
         .library(name: "Places", targets: ["Places"]),
-        // .library(name: "Sync15", targets: ["Sync15"]),
     ],
     dependencies: [
-        .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1"),
         .package(name: "SwiftProtobuf", url: "https://github.com/apple/swift-protobuf", from: "1.18.0")
     ],
     targets: [
@@ -46,8 +44,8 @@ let package = Package(
             // this is important for our release script so that all values are updated correctly
             //url: url,
             //checksum: checksum
-            url: "https://125513-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
-            checksum: "4113c7f02aa604175fb103be12ec39f9bca9aa250e219b3e0d8b7a0efdfd5bcf"
+            url: "https://125966-129966583-gh.circle-artifacts.com/0/dist/MozillaRustComponents.xcframework.zip",
+            checksum: "5e94351bcee43c497fa195683e6c613b0c85d874f5a1d0c894afa57163ef4cd6"
 
             // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
             // Note that you have to actually check it in and make a tag for it to work correctly.
@@ -86,7 +84,7 @@ let package = Package(
         ),
         .target(
            name: "FxAClient",
-           dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
+           dependencies: ["MozillaRustComponentsWrapper"],
            path: "generated/fxa-client"
         ),
         .target(
