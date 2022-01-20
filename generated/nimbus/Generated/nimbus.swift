@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_nimbus_dc5d_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_nimbus_b925_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_nimbus_dc5d_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_nimbus_b925_rustbuffer_free(self, $0) }
     }
 }
 
@@ -449,25 +449,25 @@ public class NimbusClient: NimbusClientProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_new(appCtx.lower(), dbpath.lower(), FfiConverterOptionRecordRemoteSettingsConfig.lower(remoteSettingsConfig), availableRandomizationUnits.lower(), $0)
+                nimbus_b925_NimbusClient_new(appCtx.lower(), dbpath.lower(), FfiConverterOptionRecordRemoteSettingsConfig.lower(remoteSettingsConfig), availableRandomizationUnits.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_nimbus_dc5d_NimbusClient_object_free(pointer, $0) }
+        try! rustCall { ffi_nimbus_b925_NimbusClient_object_free(pointer, $0) }
     }
 
     public func initialize() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_initialize(self.pointer, $0)
+                nimbus_b925_NimbusClient_initialize(self.pointer, $0)
             }
     }
 
     public func getExperimentBranch(id: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
+                nimbus_b925_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
             }
         return try FfiConverterOptionString.lift(_retval)
     }
@@ -475,7 +475,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getFeatureConfigVariables(featureId: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
+                nimbus_b925_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
             }
         return try FfiConverterOptionString.lift(_retval)
     }
@@ -483,7 +483,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
+                nimbus_b925_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
             }
         return try FfiConverterSequenceRecordExperimentBranch.lift(_retval)
     }
@@ -491,7 +491,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getActiveExperiments() throws -> [EnrolledExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_get_active_experiments(self.pointer, $0)
+                nimbus_b925_NimbusClient_get_active_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordEnrolledExperiment.lift(_retval)
     }
@@ -499,7 +499,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getAvailableExperiments() throws -> [AvailableExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_get_available_experiments(self.pointer, $0)
+                nimbus_b925_NimbusClient_get_available_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordAvailableExperiment.lift(_retval)
     }
@@ -507,7 +507,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getGlobalUserParticipation() throws -> Bool {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_get_global_user_participation(self.pointer, $0)
+                nimbus_b925_NimbusClient_get_global_user_participation(self.pointer, $0)
             }
         return try Bool.lift(_retval)
     }
@@ -515,7 +515,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
+                nimbus_b925_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -523,7 +523,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func updateExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_update_experiments(self.pointer, $0)
+                nimbus_b925_NimbusClient_update_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -531,14 +531,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func fetchExperiments() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_fetch_experiments(self.pointer, $0)
+                nimbus_b925_NimbusClient_fetch_experiments(self.pointer, $0)
             }
     }
 
     public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_apply_pending_experiments(self.pointer, $0)
+                nimbus_b925_NimbusClient_apply_pending_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -546,14 +546,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func setExperimentsLocally(experimentsJson: String) throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
+                nimbus_b925_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
             }
     }
 
     public func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
+                nimbus_b925_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -561,7 +561,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
+                nimbus_b925_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -569,7 +569,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_dc5d_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
+                nimbus_b925_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -1180,6 +1180,9 @@ public enum NimbusError {
 
     // Simple error enums only carry a message
     case DatabaseNotReady(message: String)
+
+    // Simple error enums only carry a message
+    case VersionParsingError(message: String)
 }
 
 extension NimbusError: ViaFfiUsingByteBuffer, ViaFfi {
@@ -1270,6 +1273,10 @@ extension NimbusError: ViaFfiUsingByteBuffer, ViaFfi {
                 message: try String.read(from: buf)
             )
 
+        case 22: return .VersionParsingError(
+                message: try String.read(from: buf)
+            )
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
@@ -1338,6 +1345,9 @@ extension NimbusError: ViaFfiUsingByteBuffer, ViaFfi {
             message.write(into: buf)
         case let .DatabaseNotReady(message):
             buf.writeInt(Int32(21))
+            message.write(into: buf)
+        case let .VersionParsingError(message):
+            buf.writeInt(Int32(22))
             message.write(into: buf)
         }
     }

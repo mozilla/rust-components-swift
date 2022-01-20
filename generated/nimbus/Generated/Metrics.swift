@@ -17,6 +17,14 @@ import Glean
 // swiftlint:disable force_try
 
 extension GleanMetrics {
+    class GleanBuild {
+        private init() {
+            // Intentionally left private, no external user can instantiate a new global object.
+        }
+
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 1, day: 20, hour: 15, minute: 7, second: 28))
+    }
+
     enum NimbusEvents {
         struct EnrollmentExtra: EventExtras {
             var branch: String?
