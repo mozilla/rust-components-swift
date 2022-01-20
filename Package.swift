@@ -22,7 +22,7 @@ let package = Package(
     ],
     dependencies: [
         // TODO: ship Glean via this same bundle?
-        .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "42.0.1"),
+        .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "43.0.2"),
         .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1"),
         .package(name: "SwiftProtobuf", url: "https://github.com/apple/swift-protobuf", from: "1.18.0")
     ],
