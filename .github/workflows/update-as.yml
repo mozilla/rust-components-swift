@@ -62,8 +62,6 @@ jobs:
         if: env.ALREADY_CREATED == 'false'
         run: |
           brew install swiftformat
-          brew install protobuf
-          brew install swift-protobuf
       # We strip away the `v` in the AS Version and run the make_tag
       # script, which will generate all the code that needs to be generated
       # Note that the tag argument isn't useful here, since we will
