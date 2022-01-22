@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_autofill_b5da_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_autofill_8c34_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_autofill_b5da_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_autofill_8c34_rustbuffer_free(self, $0) }
     }
 }
 
@@ -385,7 +385,7 @@ public func createKey() throws -> String {
     let _retval = try
 
         rustCallWithError(AutofillError.self) {
-            autofill_b5da_create_key($0)
+            autofill_8c34_create_key($0)
         }
     return try String.lift(_retval)
 }
@@ -394,7 +394,7 @@ public func encryptString(key: String, cleartext: String) throws -> String {
     let _retval = try
 
         rustCallWithError(AutofillError.self) {
-            autofill_b5da_encrypt_string(key.lower(), cleartext.lower(), $0)
+            autofill_8c34_encrypt_string(key.lower(), cleartext.lower(), $0)
         }
     return try String.lift(_retval)
 }
@@ -403,7 +403,7 @@ public func decryptString(key: String, ciphertext: String) throws -> String {
     let _retval = try
 
         rustCallWithError(AutofillError.self) {
-            autofill_b5da_decrypt_string(key.lower(), ciphertext.lower(), $0)
+            autofill_8c34_decrypt_string(key.lower(), ciphertext.lower(), $0)
         }
     return try String.lift(_retval)
 }
@@ -439,18 +439,18 @@ public class Store: StoreProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_new(dbpath.lower(), $0)
+                autofill_8c34_Store_new(dbpath.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_autofill_b5da_Store_object_free(pointer, $0) }
+        try! rustCall { ffi_autofill_8c34_Store_object_free(pointer, $0) }
     }
 
     public func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_add_credit_card(self.pointer, cc.lower(), $0)
+                autofill_8c34_Store_add_credit_card(self.pointer, cc.lower(), $0)
             }
         return try CreditCard.lift(_retval)
     }
@@ -458,7 +458,7 @@ public class Store: StoreProtocol {
     public func getCreditCard(guid: String) throws -> CreditCard {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_get_credit_card(self.pointer, guid.lower(), $0)
+                autofill_8c34_Store_get_credit_card(self.pointer, guid.lower(), $0)
             }
         return try CreditCard.lift(_retval)
     }
@@ -466,7 +466,7 @@ public class Store: StoreProtocol {
     public func getAllCreditCards() throws -> [CreditCard] {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_get_all_credit_cards(self.pointer, $0)
+                autofill_8c34_Store_get_all_credit_cards(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordCreditCard.lift(_retval)
     }
@@ -474,14 +474,14 @@ public class Store: StoreProtocol {
     public func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws {
         try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_update_credit_card(self.pointer, guid.lower(), cc.lower(), $0)
+                autofill_8c34_Store_update_credit_card(self.pointer, guid.lower(), cc.lower(), $0)
             }
     }
 
     public func deleteCreditCard(guid: String) throws -> Bool {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_delete_credit_card(self.pointer, guid.lower(), $0)
+                autofill_8c34_Store_delete_credit_card(self.pointer, guid.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -489,14 +489,14 @@ public class Store: StoreProtocol {
     public func touchCreditCard(guid: String) throws {
         try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_touch_credit_card(self.pointer, guid.lower(), $0)
+                autofill_8c34_Store_touch_credit_card(self.pointer, guid.lower(), $0)
             }
     }
 
     public func addAddress(a: UpdatableAddressFields) throws -> Address {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_add_address(self.pointer, a.lower(), $0)
+                autofill_8c34_Store_add_address(self.pointer, a.lower(), $0)
             }
         return try Address.lift(_retval)
     }
@@ -504,7 +504,7 @@ public class Store: StoreProtocol {
     public func getAddress(guid: String) throws -> Address {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_get_address(self.pointer, guid.lower(), $0)
+                autofill_8c34_Store_get_address(self.pointer, guid.lower(), $0)
             }
         return try Address.lift(_retval)
     }
@@ -512,7 +512,7 @@ public class Store: StoreProtocol {
     public func getAllAddresses() throws -> [Address] {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_get_all_addresses(self.pointer, $0)
+                autofill_8c34_Store_get_all_addresses(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordAddress.lift(_retval)
     }
@@ -520,14 +520,14 @@ public class Store: StoreProtocol {
     public func updateAddress(guid: String, a: UpdatableAddressFields) throws {
         try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_update_address(self.pointer, guid.lower(), a.lower(), $0)
+                autofill_8c34_Store_update_address(self.pointer, guid.lower(), a.lower(), $0)
             }
     }
 
     public func deleteAddress(guid: String) throws -> Bool {
         let _retval = try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_delete_address(self.pointer, guid.lower(), $0)
+                autofill_8c34_Store_delete_address(self.pointer, guid.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -535,21 +535,21 @@ public class Store: StoreProtocol {
     public func touchAddress(guid: String) throws {
         try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_touch_address(self.pointer, guid.lower(), $0)
+                autofill_8c34_Store_touch_address(self.pointer, guid.lower(), $0)
             }
     }
 
     public func scrubEncryptedData() throws {
         try
             rustCallWithError(AutofillError.self) {
-                autofill_b5da_Store_scrub_encrypted_data(self.pointer, $0)
+                autofill_8c34_Store_scrub_encrypted_data(self.pointer, $0)
             }
     }
 
     public func registerWithSyncManager() {
         try!
             rustCall {
-                autofill_b5da_Store_register_with_sync_manager(self.pointer, $0)
+                autofill_8c34_Store_register_with_sync_manager(self.pointer, $0)
             }
     }
 }

@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_places_60f6_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_places_3a3_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_places_60f6_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_places_3a3_rustbuffer_free(self, $0) }
     }
 }
 
@@ -384,6 +384,124 @@ private enum FfiConverterDictionary {
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
+public enum ConnectionType {
+    case readOnly
+    case readWrite
+    case sync
+}
+
+extension ConnectionType: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> ConnectionType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .readOnly
+        case 2: return .readWrite
+        case 3: return .sync
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case .readOnly:
+            buf.writeInt(Int32(1))
+
+        case .readWrite:
+            buf.writeInt(Int32(2))
+
+        case .sync:
+            buf.writeInt(Int32(3))
+        }
+    }
+}
+
+extension ConnectionType: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum FrecencyThresholdOption {
+    case none
+    case skipOneTimePages
+}
+
+extension FrecencyThresholdOption: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> FrecencyThresholdOption {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .none
+        case 2: return .skipOneTimePages
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case .none:
+            buf.writeInt(Int32(1))
+
+        case .skipOneTimePages:
+            buf.writeInt(Int32(2))
+        }
+    }
+}
+
+extension FrecencyThresholdOption: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum MatchReason {
+    case keyword
+    case origin
+    case urlMatch
+    case previousUse
+    case bookmark
+    case tags
+}
+
+extension MatchReason: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> MatchReason {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .keyword
+        case 2: return .origin
+        case 3: return .urlMatch
+        case 4: return .previousUse
+        case 5: return .bookmark
+        case 6: return .tags
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case .keyword:
+            buf.writeInt(Int32(1))
+
+        case .origin:
+            buf.writeInt(Int32(2))
+
+        case .urlMatch:
+            buf.writeInt(Int32(3))
+
+        case .previousUse:
+            buf.writeInt(Int32(4))
+
+        case .bookmark:
+            buf.writeInt(Int32(5))
+
+        case .tags:
+            buf.writeInt(Int32(6))
+        }
+    }
+}
+
+extension MatchReason: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 public enum DocumentType {
     case regular
     case media
@@ -412,74 +530,846 @@ extension DocumentType: ViaFfiUsingByteBuffer, ViaFfi {
 
 extension DocumentType: Equatable, Hashable {}
 
-public func placesGetLatestHistoryMetadataForUrl(handle: Int64, url: String) throws -> HistoryMetadata? {
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum VisitTransition {
+    case link
+    case typed
+    case bookmark
+    case embed
+    case redirectPermanent
+    case redirectTemporary
+    case download
+    case framedLink
+    case reload
+}
+
+extension VisitTransition: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> VisitTransition {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .link
+        case 2: return .typed
+        case 3: return .bookmark
+        case 4: return .embed
+        case 5: return .redirectPermanent
+        case 6: return .redirectTemporary
+        case 7: return .download
+        case 8: return .framedLink
+        case 9: return .reload
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case .link:
+            buf.writeInt(Int32(1))
+
+        case .typed:
+            buf.writeInt(Int32(2))
+
+        case .bookmark:
+            buf.writeInt(Int32(3))
+
+        case .embed:
+            buf.writeInt(Int32(4))
+
+        case .redirectPermanent:
+            buf.writeInt(Int32(5))
+
+        case .redirectTemporary:
+            buf.writeInt(Int32(6))
+
+        case .download:
+            buf.writeInt(Int32(7))
+
+        case .framedLink:
+            buf.writeInt(Int32(8))
+
+        case .reload:
+            buf.writeInt(Int32(9))
+        }
+    }
+}
+
+extension VisitTransition: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum BookmarkItem {
+    case bookmark(b: BookmarkData)
+    case separator(s: BookmarkSeparator)
+    case folder(f: BookmarkFolder)
+}
+
+extension BookmarkItem: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> BookmarkItem {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .bookmark(
+                b: try BookmarkData.read(from: buf)
+            )
+        case 2: return .separator(
+                s: try BookmarkSeparator.read(from: buf)
+            )
+        case 3: return .folder(
+                f: try BookmarkFolder.read(from: buf)
+            )
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case let .bookmark(b):
+            buf.writeInt(Int32(1))
+            b.write(into: buf)
+
+        case let .separator(s):
+            buf.writeInt(Int32(2))
+            s.write(into: buf)
+
+        case let .folder(f):
+            buf.writeInt(Int32(3))
+            f.write(into: buf)
+        }
+    }
+}
+
+extension BookmarkItem: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum BookmarkPosition {
+    case specific(pos: UInt32)
+    case append
+}
+
+extension BookmarkPosition: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> BookmarkPosition {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .specific(
+                pos: try UInt32.read(from: buf)
+            )
+        case 2: return .append
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case let .specific(pos):
+            buf.writeInt(Int32(1))
+            pos.write(into: buf)
+
+        case .append:
+            buf.writeInt(Int32(2))
+        }
+    }
+}
+
+extension BookmarkPosition: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum InsertableBookmarkItem {
+    case bookmark(b: InsertableBookmark)
+    case folder(f: InsertableBookmarkFolder)
+    case separator(s: InsertableBookmarkSeparator)
+}
+
+extension InsertableBookmarkItem: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> InsertableBookmarkItem {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .bookmark(
+                b: try InsertableBookmark.read(from: buf)
+            )
+        case 2: return .folder(
+                f: try InsertableBookmarkFolder.read(from: buf)
+            )
+        case 3: return .separator(
+                s: try InsertableBookmarkSeparator.read(from: buf)
+            )
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    fileprivate func write(into buf: Writer) {
+        switch self {
+        case let .bookmark(b):
+            buf.writeInt(Int32(1))
+            b.write(into: buf)
+
+        case let .folder(f):
+            buf.writeInt(Int32(2))
+            f.write(into: buf)
+
+        case let .separator(s):
+            buf.writeInt(Int32(3))
+            s.write(into: buf)
+        }
+    }
+}
+
+extension InsertableBookmarkItem: Equatable, Hashable {}
+
+public func placesApiNew(dbPath: String) throws -> PlacesApi {
     let _retval = try
 
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_get_latest_history_metadata_for_url(handle.lower(), url.lower(), $0)
+        rustCallWithError(PlacesError.self) {
+            places_3a3_places_api_new(dbPath.lower(), $0)
         }
-    return try FfiConverterOptionRecordHistoryMetadata.lift(_retval)
+    return try PlacesApi.lift(_retval)
 }
 
-public func placesGetHistoryMetadataBetween(handle: Int64, start: Int64, end: Int64) throws -> [HistoryMetadata] {
-    let _retval = try
-
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_get_history_metadata_between(handle.lower(), start.lower(), end.lower(), $0)
-        }
-    return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
+public protocol SqlInterruptHandleProtocol {
+    func interrupt()
 }
 
-public func placesGetHistoryMetadataSince(handle: Int64, start: Int64) throws -> [HistoryMetadata] {
-    let _retval = try
+public class SqlInterruptHandle: SqlInterruptHandleProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
 
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_get_history_metadata_since(handle.lower(), start.lower(), $0)
-        }
-    return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `ViaFfi` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { ffi_places_3a3_SqlInterruptHandle_object_free(pointer, $0) }
+    }
+
+    public func interrupt() {
+        try!
+            rustCall {
+                places_3a3_SqlInterruptHandle_interrupt(self.pointer, $0)
+            }
+    }
 }
 
-public func placesQueryHistoryMetadata(handle: Int64, query: String, limit: Int32) throws -> [HistoryMetadata] {
-    let _retval = try
+private extension SqlInterruptHandle {
+    typealias FfiType = UnsafeMutableRawPointer
 
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_query_history_metadata(handle.lower(), query.lower(), limit.lower(), $0)
+    static func read(from buf: Reader) throws -> Self {
+        let v: UInt64 = try buf.readInt()
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
         }
-    return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
+        return try lift(ptr!)
+    }
+
+    func write(into buf: Writer) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower()))))
+    }
+
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Self {
+        return Self(unsafeFromRawPointer: pointer)
+    }
+
+    func lower() -> UnsafeMutableRawPointer {
+        return pointer
+    }
 }
 
-public func placesGetHistoryHighlights(handle: Int64, weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight] {
-    let _retval = try
+// Ideally this would be `fileprivate`, but Swift says:
+// """
+// 'private' modifier cannot be used with extensions that declare protocol conformances
+// """
+extension SqlInterruptHandle: ViaFfi, Serializable {}
 
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_get_history_highlights(handle.lower(), weights.lower(), limit.lower(), $0)
-        }
-    return try FfiConverterSequenceRecordHistoryHighlight.lift(_retval)
+public protocol PlacesApiProtocol {
+    func newConnection(connType: ConnectionType) throws -> PlacesConnection
+    func newSyncConnInterruptHandle() throws -> SqlInterruptHandle
+    func registerWithSyncManager()
+    func resetHistory() throws
+    func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String
+    func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String
+    func placesPinnedSitesImportFromFennec(dbPath: String) throws -> [BookmarkItem]
+    func placesHistoryImportFromFennec(dbPath: String) throws -> String
+    func placesBookmarksImportFromFennec(dbPath: String) throws -> String
+    func placesBookmarksImportFromIos(dbPath: String) throws
+    func bookmarksReset() throws
 }
 
-public func placesNoteHistoryMetadataObservation(handle: Int64, data: HistoryMetadataObservation) throws {
-    try
+public class PlacesApi: PlacesApiProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
 
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_note_history_metadata_observation(handle.lower(), data.lower(), $0)
-        }
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `ViaFfi` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { ffi_places_3a3_PlacesApi_object_free(pointer, $0) }
+    }
+
+    public func newConnection(connType: ConnectionType) throws -> PlacesConnection {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_new_connection(self.pointer, connType.lower(), $0)
+            }
+        return try PlacesConnection.lift(_retval)
+    }
+
+    public func newSyncConnInterruptHandle() throws -> SqlInterruptHandle {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_new_sync_conn_interrupt_handle(self.pointer, $0)
+            }
+        return try SqlInterruptHandle.lift(_retval)
+    }
+
+    public func registerWithSyncManager() {
+        try!
+            rustCall {
+                places_3a3_PlacesApi_register_with_sync_manager(self.pointer, $0)
+            }
+    }
+
+    public func resetHistory() throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_reset_history(self.pointer, $0)
+            }
+    }
+
+    public func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_history_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), $0)
+            }
+        return try String.lift(_retval)
+    }
+
+    public func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_bookmarks_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), $0)
+            }
+        return try String.lift(_retval)
+    }
+
+    public func placesPinnedSitesImportFromFennec(dbPath: String) throws -> [BookmarkItem] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_places_pinned_sites_import_from_fennec(self.pointer, dbPath.lower(), $0)
+            }
+        return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
+    }
+
+    public func placesHistoryImportFromFennec(dbPath: String) throws -> String {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_places_history_import_from_fennec(self.pointer, dbPath.lower(), $0)
+            }
+        return try String.lift(_retval)
+    }
+
+    public func placesBookmarksImportFromFennec(dbPath: String) throws -> String {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_places_bookmarks_import_from_fennec(self.pointer, dbPath.lower(), $0)
+            }
+        return try String.lift(_retval)
+    }
+
+    public func placesBookmarksImportFromIos(dbPath: String) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_places_bookmarks_import_from_ios(self.pointer, dbPath.lower(), $0)
+            }
+    }
+
+    public func bookmarksReset() throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesApi_bookmarks_reset(self.pointer, $0)
+            }
+    }
 }
 
-public func placesMetadataDelete(handle: Int64, url: String, referrerUrl: String?, searchTerm: String?) throws {
-    try
+private extension PlacesApi {
+    typealias FfiType = UnsafeMutableRawPointer
 
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_metadata_delete(handle.lower(), url.lower(), FfiConverterOptionString.lower(referrerUrl), FfiConverterOptionString.lower(searchTerm), $0)
+    static func read(from buf: Reader) throws -> Self {
+        let v: UInt64 = try buf.readInt()
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
         }
+        return try lift(ptr!)
+    }
+
+    func write(into buf: Writer) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower()))))
+    }
+
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Self {
+        return Self(unsafeFromRawPointer: pointer)
+    }
+
+    func lower() -> UnsafeMutableRawPointer {
+        return pointer
+    }
 }
 
-public func placesMetadataDeleteOlderThan(handle: Int64, olderThan: Int64) throws {
-    try
+// Ideally this would be `fileprivate`, but Swift says:
+// """
+// 'private' modifier cannot be used with extensions that declare protocol conformances
+// """
+extension PlacesApi: ViaFfi, Serializable {}
 
-        rustCallWithError(ErrorWrapper.self) {
-            places_60f6_places_metadata_delete_older_than(handle.lower(), olderThan.lower(), $0)
-        }
+public protocol PlacesConnectionProtocol {
+    func newInterruptHandle() throws -> SqlInterruptHandle
+    func getLatestHistoryMetadataForUrl(url: String) throws -> HistoryMetadata?
+    func getHistoryMetadataBetween(start: Int64, end: Int64) throws -> [HistoryMetadata]
+    func getHistoryMetadataSince(since: Int64) throws -> [HistoryMetadata]
+    func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult]
+    func acceptResult(searchString: String, url: String) throws
+    func matchUrl(query: String) throws -> String?
+    func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata]
+    func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight]
+    func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws
+    func metadataDelete(url: String, referrerUrl: String?, searchTerm: String?) throws
+    func metadataDeleteOlderThan(olderThan: Int64) throws
+    func applyObservation(visit: VisitObservation) throws
+    func getVisitedUrlsInRange(start: Int64, end: Int64, includeRemote: Bool) throws -> [String]
+    func getVisitInfos(startDate: Int64, endDate: Int64, excludeTypes: Int32) throws -> [HistoryVisitInfo]
+    func getVisitCount(excludeTypes: Int32) throws -> Int64
+    func getVisitPage(offset: Int64, count: Int64, excludeTypes: Int32) throws -> [HistoryVisitInfo]
+    func getVisitPageWithBound(bound: Int64, offset: Int64, count: Int64, excludeTypes: Int32) throws -> HistoryVisitInfosWithBound
+    func getVisited(urls: [String]) throws -> [Bool]
+    func deleteVisitsFor(url: String) throws
+    func deleteVisitsBetween(start: Int64, end: Int64) throws
+    func deleteVisit(url: String, timestamp: Int64) throws
+    func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo]
+    func wipeLocalHistory() throws
+    func deleteEverythingHistory() throws
+    func pruneDestructively() throws
+    func runMaintenance() throws
+    func bookmarksGetTree(itemGuid: String) throws -> BookmarkItem?
+    func bookmarksGetByGuid(guid: String, getDirectChildren: Bool) throws -> BookmarkItem?
+    func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem]
+    func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem]
+    func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem]
+    func bookmarksDelete(id: String) throws -> Bool
+    func bookmarksDeleteEverything() throws
+    func bookmarksGetUrlForKeyword(keyword: String) throws -> String?
+    func bookmarksUpdate(data: BookmarkUpdateInfo) throws
+    func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> String
 }
+
+public class PlacesConnection: PlacesConnectionProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `ViaFfi` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { ffi_places_3a3_PlacesConnection_object_free(pointer, $0) }
+    }
+
+    public func newInterruptHandle() throws -> SqlInterruptHandle {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_new_interrupt_handle(self.pointer, $0)
+            }
+        return try SqlInterruptHandle.lift(_retval)
+    }
+
+    public func getLatestHistoryMetadataForUrl(url: String) throws -> HistoryMetadata? {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_latest_history_metadata_for_url(self.pointer, url.lower(), $0)
+            }
+        return try FfiConverterOptionRecordHistoryMetadata.lift(_retval)
+    }
+
+    public func getHistoryMetadataBetween(start: Int64, end: Int64) throws -> [HistoryMetadata] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_history_metadata_between(self.pointer, start.lower(), end.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
+    }
+
+    public func getHistoryMetadataSince(since: Int64) throws -> [HistoryMetadata] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_history_metadata_since(self.pointer, since.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
+    }
+
+    public func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_query_autocomplete(self.pointer, search.lower(), limit.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordSearchResult.lift(_retval)
+    }
+
+    public func acceptResult(searchString: String, url: String) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_accept_result(self.pointer, searchString.lower(), url.lower(), $0)
+            }
+    }
+
+    public func matchUrl(query: String) throws -> String? {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_match_url(self.pointer, query.lower(), $0)
+            }
+        return try FfiConverterOptionUrl.lift(_retval)
+    }
+
+    public func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_query_history_metadata(self.pointer, query.lower(), limit.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
+    }
+
+    public func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_history_highlights(self.pointer, weights.lower(), limit.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordHistoryHighlight.lift(_retval)
+    }
+
+    public func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_note_history_metadata_observation(self.pointer, data.lower(), $0)
+            }
+    }
+
+    public func metadataDelete(url: String, referrerUrl: String?, searchTerm: String?) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_metadata_delete(self.pointer, url.lower(), FfiConverterOptionUrl.lower(referrerUrl), FfiConverterOptionString.lower(searchTerm), $0)
+            }
+    }
+
+    public func metadataDeleteOlderThan(olderThan: Int64) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_metadata_delete_older_than(self.pointer, olderThan.lower(), $0)
+            }
+    }
+
+    public func applyObservation(visit: VisitObservation) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_apply_observation(self.pointer, visit.lower(), $0)
+            }
+    }
+
+    public func getVisitedUrlsInRange(start: Int64, end: Int64, includeRemote: Bool) throws -> [String] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_visited_urls_in_range(self.pointer, start.lower(), end.lower(), includeRemote.lower(), $0)
+            }
+        return try FfiConverterSequenceUrl.lift(_retval)
+    }
+
+    public func getVisitInfos(startDate: Int64, endDate: Int64, excludeTypes: Int32) throws -> [HistoryVisitInfo] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_visit_infos(self.pointer, startDate.lower(), endDate.lower(), excludeTypes.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordHistoryVisitInfo.lift(_retval)
+    }
+
+    public func getVisitCount(excludeTypes: Int32) throws -> Int64 {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_visit_count(self.pointer, excludeTypes.lower(), $0)
+            }
+        return try Int64.lift(_retval)
+    }
+
+    public func getVisitPage(offset: Int64, count: Int64, excludeTypes: Int32) throws -> [HistoryVisitInfo] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_visit_page(self.pointer, offset.lower(), count.lower(), excludeTypes.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordHistoryVisitInfo.lift(_retval)
+    }
+
+    public func getVisitPageWithBound(bound: Int64, offset: Int64, count: Int64, excludeTypes: Int32) throws -> HistoryVisitInfosWithBound {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_visit_page_with_bound(self.pointer, bound.lower(), offset.lower(), count.lower(), excludeTypes.lower(), $0)
+            }
+        return try HistoryVisitInfosWithBound.lift(_retval)
+    }
+
+    public func getVisited(urls: [String]) throws -> [Bool] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_visited(self.pointer, FfiConverterSequenceString.lower(urls), $0)
+            }
+        return try FfiConverterSequenceBool.lift(_retval)
+    }
+
+    public func deleteVisitsFor(url: String) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_delete_visits_for(self.pointer, url.lower(), $0)
+            }
+    }
+
+    public func deleteVisitsBetween(start: Int64, end: Int64) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_delete_visits_between(self.pointer, start.lower(), end.lower(), $0)
+            }
+    }
+
+    public func deleteVisit(url: String, timestamp: Int64) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_delete_visit(self.pointer, url.lower(), timestamp.lower(), $0)
+            }
+    }
+
+    public func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_get_top_frecent_site_infos(self.pointer, numItems.lower(), thresholdOption.lower(), $0)
+            }
+        return try FfiConverterSequenceRecordTopFrecentSiteInfo.lift(_retval)
+    }
+
+    public func wipeLocalHistory() throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_wipe_local_history(self.pointer, $0)
+            }
+    }
+
+    public func deleteEverythingHistory() throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_delete_everything_history(self.pointer, $0)
+            }
+    }
+
+    public func pruneDestructively() throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_prune_destructively(self.pointer, $0)
+            }
+    }
+
+    public func runMaintenance() throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_run_maintenance(self.pointer, $0)
+            }
+    }
+
+    public func bookmarksGetTree(itemGuid: String) throws -> BookmarkItem? {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_get_tree(self.pointer, itemGuid.lower(), $0)
+            }
+        return try FfiConverterOptionEnumBookmarkItem.lift(_retval)
+    }
+
+    public func bookmarksGetByGuid(guid: String, getDirectChildren: Bool) throws -> BookmarkItem? {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_get_by_guid(self.pointer, guid.lower(), getDirectChildren.lower(), $0)
+            }
+        return try FfiConverterOptionEnumBookmarkItem.lift(_retval)
+    }
+
+    public func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_get_all_with_url(self.pointer, url.lower(), $0)
+            }
+        return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
+    }
+
+    public func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_search(self.pointer, query.lower(), limit.lower(), $0)
+            }
+        return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
+    }
+
+    public func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem] {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_get_recent(self.pointer, limit.lower(), $0)
+            }
+        return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
+    }
+
+    public func bookmarksDelete(id: String) throws -> Bool {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_delete(self.pointer, id.lower(), $0)
+            }
+        return try Bool.lift(_retval)
+    }
+
+    public func bookmarksDeleteEverything() throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
+            }
+    }
+
+    public func bookmarksGetUrlForKeyword(keyword: String) throws -> String? {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer, keyword.lower(), $0)
+            }
+        return try FfiConverterOptionUrl.lift(_retval)
+    }
+
+    public func bookmarksUpdate(data: BookmarkUpdateInfo) throws {
+        try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_update(self.pointer, data.lower(), $0)
+            }
+    }
+
+    public func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> String {
+        let _retval = try
+            rustCallWithError(PlacesError.self) {
+                places_3a3_PlacesConnection_bookmarks_insert(self.pointer, bookmark.lower(), $0)
+            }
+        return try String.lift(_retval)
+    }
+}
+
+private extension PlacesConnection {
+    typealias FfiType = UnsafeMutableRawPointer
+
+    static func read(from buf: Reader) throws -> Self {
+        let v: UInt64 = try buf.readInt()
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    func write(into buf: Writer) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower()))))
+    }
+
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Self {
+        return Self(unsafeFromRawPointer: pointer)
+    }
+
+    func lower() -> UnsafeMutableRawPointer {
+        return pointer
+    }
+}
+
+// Ideally this would be `fileprivate`, but Swift says:
+// """
+// 'private' modifier cannot be used with extensions that declare protocol conformances
+// """
+extension PlacesConnection: ViaFfi, Serializable {}
+
+public struct SearchResult {
+    public var url: String
+    public var title: String
+    public var frecency: Int64
+    public var reasons: [MatchReason]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(url: String, title: String, frecency: Int64, reasons: [MatchReason]) {
+        self.url = url
+        self.title = title
+        self.frecency = frecency
+        self.reasons = reasons
+    }
+}
+
+extension SearchResult: Equatable, Hashable {
+    public static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.frecency != rhs.frecency {
+            return false
+        }
+        if lhs.reasons != rhs.reasons {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(frecency)
+        hasher.combine(reasons)
+    }
+}
+
+private extension SearchResult {
+    static func read(from buf: Reader) throws -> SearchResult {
+        return try SearchResult(
+            url: String.read(from: buf),
+            title: String.read(from: buf),
+            frecency: Int64.read(from: buf),
+            reasons: FfiConverterSequenceEnumMatchReason.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        url.write(into: buf)
+        title.write(into: buf)
+        frecency.write(into: buf)
+        FfiConverterSequenceEnumMatchReason.write(reasons, into: buf)
+    }
+}
+
+extension SearchResult: ViaFfiUsingByteBuffer, ViaFfi {}
 
 public struct HistoryMetadataObservation {
     public var url: String
@@ -773,6 +1663,245 @@ private extension HistoryHighlight {
 
 extension HistoryHighlight: ViaFfiUsingByteBuffer, ViaFfi {}
 
+public struct HistoryVisitInfo {
+    public var url: String
+    public var title: String?
+    public var timestamp: Int64
+    public var visitType: VisitTransition
+    public var isHidden: Bool
+    public var previewImageUrl: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(url: String, title: String?, timestamp: Int64, visitType: VisitTransition, isHidden: Bool, previewImageUrl: String?) {
+        self.url = url
+        self.title = title
+        self.timestamp = timestamp
+        self.visitType = visitType
+        self.isHidden = isHidden
+        self.previewImageUrl = previewImageUrl
+    }
+}
+
+extension HistoryVisitInfo: Equatable, Hashable {
+    public static func == (lhs: HistoryVisitInfo, rhs: HistoryVisitInfo) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.timestamp != rhs.timestamp {
+            return false
+        }
+        if lhs.visitType != rhs.visitType {
+            return false
+        }
+        if lhs.isHidden != rhs.isHidden {
+            return false
+        }
+        if lhs.previewImageUrl != rhs.previewImageUrl {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(timestamp)
+        hasher.combine(visitType)
+        hasher.combine(isHidden)
+        hasher.combine(previewImageUrl)
+    }
+}
+
+private extension HistoryVisitInfo {
+    static func read(from buf: Reader) throws -> HistoryVisitInfo {
+        return try HistoryVisitInfo(
+            url: String.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            timestamp: Int64.read(from: buf),
+            visitType: VisitTransition.read(from: buf),
+            isHidden: Bool.read(from: buf),
+            previewImageUrl: FfiConverterOptionUrl.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        url.write(into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+        timestamp.write(into: buf)
+        visitType.write(into: buf)
+        isHidden.write(into: buf)
+        FfiConverterOptionUrl.write(previewImageUrl, into: buf)
+    }
+}
+
+extension HistoryVisitInfo: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct HistoryVisitInfosWithBound {
+    public var infos: [HistoryVisitInfo]
+    public var bound: Int64
+    public var offset: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(infos: [HistoryVisitInfo], bound: Int64, offset: Int64) {
+        self.infos = infos
+        self.bound = bound
+        self.offset = offset
+    }
+}
+
+extension HistoryVisitInfosWithBound: Equatable, Hashable {
+    public static func == (lhs: HistoryVisitInfosWithBound, rhs: HistoryVisitInfosWithBound) -> Bool {
+        if lhs.infos != rhs.infos {
+            return false
+        }
+        if lhs.bound != rhs.bound {
+            return false
+        }
+        if lhs.offset != rhs.offset {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(infos)
+        hasher.combine(bound)
+        hasher.combine(offset)
+    }
+}
+
+private extension HistoryVisitInfosWithBound {
+    static func read(from buf: Reader) throws -> HistoryVisitInfosWithBound {
+        return try HistoryVisitInfosWithBound(
+            infos: FfiConverterSequenceRecordHistoryVisitInfo.read(from: buf),
+            bound: Int64.read(from: buf),
+            offset: Int64.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        FfiConverterSequenceRecordHistoryVisitInfo.write(infos, into: buf)
+        bound.write(into: buf)
+        offset.write(into: buf)
+    }
+}
+
+extension HistoryVisitInfosWithBound: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct VisitObservation {
+    public var url: String
+    public var title: String?
+    public var visitType: VisitTransition?
+    public var isError: Bool?
+    public var isRedirectSource: Bool?
+    public var isPermanentRedirectSource: Bool?
+    public var at: Int64?
+    public var referrer: String?
+    public var isRemote: Bool?
+    public var previewImageUrl: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(url: String, title: String? = nil, visitType: VisitTransition?, isError: Bool? = nil, isRedirectSource: Bool? = nil, isPermanentRedirectSource: Bool? = nil, at: Int64? = nil, referrer: String? = nil, isRemote: Bool? = nil, previewImageUrl: String? = nil) {
+        self.url = url
+        self.title = title
+        self.visitType = visitType
+        self.isError = isError
+        self.isRedirectSource = isRedirectSource
+        self.isPermanentRedirectSource = isPermanentRedirectSource
+        self.at = at
+        self.referrer = referrer
+        self.isRemote = isRemote
+        self.previewImageUrl = previewImageUrl
+    }
+}
+
+extension VisitObservation: Equatable, Hashable {
+    public static func == (lhs: VisitObservation, rhs: VisitObservation) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.visitType != rhs.visitType {
+            return false
+        }
+        if lhs.isError != rhs.isError {
+            return false
+        }
+        if lhs.isRedirectSource != rhs.isRedirectSource {
+            return false
+        }
+        if lhs.isPermanentRedirectSource != rhs.isPermanentRedirectSource {
+            return false
+        }
+        if lhs.at != rhs.at {
+            return false
+        }
+        if lhs.referrer != rhs.referrer {
+            return false
+        }
+        if lhs.isRemote != rhs.isRemote {
+            return false
+        }
+        if lhs.previewImageUrl != rhs.previewImageUrl {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(visitType)
+        hasher.combine(isError)
+        hasher.combine(isRedirectSource)
+        hasher.combine(isPermanentRedirectSource)
+        hasher.combine(at)
+        hasher.combine(referrer)
+        hasher.combine(isRemote)
+        hasher.combine(previewImageUrl)
+    }
+}
+
+private extension VisitObservation {
+    static func read(from buf: Reader) throws -> VisitObservation {
+        return try VisitObservation(
+            url: String.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            visitType: FfiConverterOptionEnumVisitTransition.read(from: buf),
+            isError: FfiConverterOptionBool.read(from: buf),
+            isRedirectSource: FfiConverterOptionBool.read(from: buf),
+            isPermanentRedirectSource: FfiConverterOptionBool.read(from: buf),
+            at: FfiConverterOptionTimestamp.read(from: buf),
+            referrer: FfiConverterOptionUrl.read(from: buf),
+            isRemote: FfiConverterOptionBool.read(from: buf),
+            previewImageUrl: FfiConverterOptionUrl.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        url.write(into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+        FfiConverterOptionEnumVisitTransition.write(visitType, into: buf)
+        FfiConverterOptionBool.write(isError, into: buf)
+        FfiConverterOptionBool.write(isRedirectSource, into: buf)
+        FfiConverterOptionBool.write(isPermanentRedirectSource, into: buf)
+        FfiConverterOptionTimestamp.write(at, into: buf)
+        FfiConverterOptionUrl.write(referrer, into: buf)
+        FfiConverterOptionBool.write(isRemote, into: buf)
+        FfiConverterOptionUrl.write(previewImageUrl, into: buf)
+    }
+}
+
+extension VisitObservation: ViaFfiUsingByteBuffer, ViaFfi {}
+
 public struct Dummy {
     public var md: [HistoryMetadata]?
 
@@ -810,16 +1939,693 @@ private extension Dummy {
 
 extension Dummy: ViaFfiUsingByteBuffer, ViaFfi {}
 
-public enum ErrorWrapper {
-    // Simple error enums only carry a message
-    case Wrapped(message: String)
+public struct TopFrecentSiteInfo {
+    public var url: String
+    public var title: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(url: String, title: String?) {
+        self.url = url
+        self.title = title
+    }
 }
 
-extension ErrorWrapper: ViaFfiUsingByteBuffer, ViaFfi {
-    fileprivate static func read(from buf: Reader) throws -> ErrorWrapper {
+extension TopFrecentSiteInfo: Equatable, Hashable {
+    public static func == (lhs: TopFrecentSiteInfo, rhs: TopFrecentSiteInfo) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+        hasher.combine(title)
+    }
+}
+
+private extension TopFrecentSiteInfo {
+    static func read(from buf: Reader) throws -> TopFrecentSiteInfo {
+        return try TopFrecentSiteInfo(
+            url: String.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        url.write(into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+    }
+}
+
+extension TopFrecentSiteInfo: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct BookmarkData {
+    public var guid: String
+    public var parentGuid: String
+    public var position: UInt32
+    public var dateAdded: Int64
+    public var lastModified: Int64
+    public var url: String
+    public var title: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: String, parentGuid: String, position: UInt32, dateAdded: Int64, lastModified: Int64, url: String, title: String?) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.url = url
+        self.title = title
+    }
+}
+
+extension BookmarkData: Equatable, Hashable {
+    public static func == (lhs: BookmarkData, rhs: BookmarkData) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(url)
+        hasher.combine(title)
+    }
+}
+
+private extension BookmarkData {
+    static func read(from buf: Reader) throws -> BookmarkData {
+        return try BookmarkData(
+            guid: String.read(from: buf),
+            parentGuid: String.read(from: buf),
+            position: UInt32.read(from: buf),
+            dateAdded: Int64.read(from: buf),
+            lastModified: Int64.read(from: buf),
+            url: String.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        guid.write(into: buf)
+        parentGuid.write(into: buf)
+        position.write(into: buf)
+        dateAdded.write(into: buf)
+        lastModified.write(into: buf)
+        url.write(into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+    }
+}
+
+extension BookmarkData: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct BookmarkSeparator {
+    public var guid: String
+    public var dateAdded: Int64
+    public var lastModified: Int64
+    public var parentGuid: String
+    public var position: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: String, dateAdded: Int64, lastModified: Int64, parentGuid: String, position: UInt32) {
+        self.guid = guid
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.parentGuid = parentGuid
+        self.position = position
+    }
+}
+
+extension BookmarkSeparator: Equatable, Hashable {
+    public static func == (lhs: BookmarkSeparator, rhs: BookmarkSeparator) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+    }
+}
+
+private extension BookmarkSeparator {
+    static func read(from buf: Reader) throws -> BookmarkSeparator {
+        return try BookmarkSeparator(
+            guid: String.read(from: buf),
+            dateAdded: Int64.read(from: buf),
+            lastModified: Int64.read(from: buf),
+            parentGuid: String.read(from: buf),
+            position: UInt32.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        guid.write(into: buf)
+        dateAdded.write(into: buf)
+        lastModified.write(into: buf)
+        parentGuid.write(into: buf)
+        position.write(into: buf)
+    }
+}
+
+extension BookmarkSeparator: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct BookmarkFolder {
+    public var guid: String
+    public var dateAdded: Int64
+    public var lastModified: Int64
+    public var parentGuid: String?
+    public var position: UInt32
+    public var title: String?
+    public var childGuids: [String]?
+    public var childNodes: [BookmarkItem]?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: String, dateAdded: Int64, lastModified: Int64, parentGuid: String?, position: UInt32, title: String?, childGuids: [String]?, childNodes: [BookmarkItem]?) {
+        self.guid = guid
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.parentGuid = parentGuid
+        self.position = position
+        self.title = title
+        self.childGuids = childGuids
+        self.childNodes = childNodes
+    }
+}
+
+extension BookmarkFolder: Equatable, Hashable {
+    public static func == (lhs: BookmarkFolder, rhs: BookmarkFolder) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.childGuids != rhs.childGuids {
+            return false
+        }
+        if lhs.childNodes != rhs.childNodes {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(title)
+        hasher.combine(childGuids)
+        hasher.combine(childNodes)
+    }
+}
+
+private extension BookmarkFolder {
+    static func read(from buf: Reader) throws -> BookmarkFolder {
+        return try BookmarkFolder(
+            guid: String.read(from: buf),
+            dateAdded: Int64.read(from: buf),
+            lastModified: Int64.read(from: buf),
+            parentGuid: FfiConverterOptionGuid.read(from: buf),
+            position: UInt32.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            childGuids: FfiConverterOptionSequenceGuid.read(from: buf),
+            childNodes: FfiConverterOptionSequenceEnumBookmarkItem.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        guid.write(into: buf)
+        dateAdded.write(into: buf)
+        lastModified.write(into: buf)
+        FfiConverterOptionGuid.write(parentGuid, into: buf)
+        position.write(into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+        FfiConverterOptionSequenceGuid.write(childGuids, into: buf)
+        FfiConverterOptionSequenceEnumBookmarkItem.write(childNodes, into: buf)
+    }
+}
+
+extension BookmarkFolder: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct BookmarkUpdateInfo {
+    public var guid: String
+    public var title: String?
+    public var url: String?
+    public var parentGuid: String?
+    public var position: UInt32?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: String, title: String?, url: String?, parentGuid: String?, position: UInt32?) {
+        self.guid = guid
+        self.title = title
+        self.url = url
+        self.parentGuid = parentGuid
+        self.position = position
+    }
+}
+
+extension BookmarkUpdateInfo: Equatable, Hashable {
+    public static func == (lhs: BookmarkUpdateInfo, rhs: BookmarkUpdateInfo) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(title)
+        hasher.combine(url)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+    }
+}
+
+private extension BookmarkUpdateInfo {
+    static func read(from buf: Reader) throws -> BookmarkUpdateInfo {
+        return try BookmarkUpdateInfo(
+            guid: String.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            url: FfiConverterOptionString.read(from: buf),
+            parentGuid: FfiConverterOptionGuid.read(from: buf),
+            position: FfiConverterOptionUInt32.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        guid.write(into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+        FfiConverterOptionString.write(url, into: buf)
+        FfiConverterOptionGuid.write(parentGuid, into: buf)
+        FfiConverterOptionUInt32.write(position, into: buf)
+    }
+}
+
+extension BookmarkUpdateInfo: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct InsertableBookmark {
+    public var guid: String?
+    public var parentGuid: String
+    public var position: BookmarkPosition
+    public var dateAdded: Int64?
+    public var lastModified: Int64?
+    public var url: String
+    public var title: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: String? = nil, parentGuid: String, position: BookmarkPosition, dateAdded: Int64? = nil, lastModified: Int64? = nil, url: String, title: String? = nil) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.url = url
+        self.title = title
+    }
+}
+
+extension InsertableBookmark: Equatable, Hashable {
+    public static func == (lhs: InsertableBookmark, rhs: InsertableBookmark) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(url)
+        hasher.combine(title)
+    }
+}
+
+private extension InsertableBookmark {
+    static func read(from buf: Reader) throws -> InsertableBookmark {
+        return try InsertableBookmark(
+            guid: FfiConverterOptionGuid.read(from: buf),
+            parentGuid: String.read(from: buf),
+            position: BookmarkPosition.read(from: buf),
+            dateAdded: FfiConverterOptionTimestamp.read(from: buf),
+            lastModified: FfiConverterOptionTimestamp.read(from: buf),
+            url: String.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        FfiConverterOptionGuid.write(guid, into: buf)
+        parentGuid.write(into: buf)
+        position.write(into: buf)
+        FfiConverterOptionTimestamp.write(dateAdded, into: buf)
+        FfiConverterOptionTimestamp.write(lastModified, into: buf)
+        url.write(into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+    }
+}
+
+extension InsertableBookmark: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct InsertableBookmarkSeparator {
+    public var guid: String?
+    public var parentGuid: String
+    public var position: BookmarkPosition
+    public var dateAdded: Int64?
+    public var lastModified: Int64?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: String? = nil, parentGuid: String, position: BookmarkPosition, dateAdded: Int64? = nil, lastModified: Int64? = nil) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+    }
+}
+
+extension InsertableBookmarkSeparator: Equatable, Hashable {
+    public static func == (lhs: InsertableBookmarkSeparator, rhs: InsertableBookmarkSeparator) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+    }
+}
+
+private extension InsertableBookmarkSeparator {
+    static func read(from buf: Reader) throws -> InsertableBookmarkSeparator {
+        return try InsertableBookmarkSeparator(
+            guid: FfiConverterOptionGuid.read(from: buf),
+            parentGuid: String.read(from: buf),
+            position: BookmarkPosition.read(from: buf),
+            dateAdded: FfiConverterOptionTimestamp.read(from: buf),
+            lastModified: FfiConverterOptionTimestamp.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        FfiConverterOptionGuid.write(guid, into: buf)
+        parentGuid.write(into: buf)
+        position.write(into: buf)
+        FfiConverterOptionTimestamp.write(dateAdded, into: buf)
+        FfiConverterOptionTimestamp.write(lastModified, into: buf)
+    }
+}
+
+extension InsertableBookmarkSeparator: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public struct InsertableBookmarkFolder {
+    public var guid: String?
+    public var parentGuid: String
+    public var position: BookmarkPosition
+    public var dateAdded: Int64?
+    public var lastModified: Int64?
+    public var title: String?
+    public var children: [InsertableBookmarkItem]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: String? = nil, parentGuid: String, position: BookmarkPosition, dateAdded: Int64? = nil, lastModified: Int64? = nil, title: String? = nil, children: [InsertableBookmarkItem]) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.title = title
+        self.children = children
+    }
+}
+
+extension InsertableBookmarkFolder: Equatable, Hashable {
+    public static func == (lhs: InsertableBookmarkFolder, rhs: InsertableBookmarkFolder) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.children != rhs.children {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(title)
+        hasher.combine(children)
+    }
+}
+
+private extension InsertableBookmarkFolder {
+    static func read(from buf: Reader) throws -> InsertableBookmarkFolder {
+        return try InsertableBookmarkFolder(
+            guid: FfiConverterOptionGuid.read(from: buf),
+            parentGuid: String.read(from: buf),
+            position: BookmarkPosition.read(from: buf),
+            dateAdded: FfiConverterOptionTimestamp.read(from: buf),
+            lastModified: FfiConverterOptionTimestamp.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            children: FfiConverterSequenceEnumInsertableBookmarkItem.read(from: buf)
+        )
+    }
+
+    func write(into buf: Writer) {
+        FfiConverterOptionGuid.write(guid, into: buf)
+        parentGuid.write(into: buf)
+        position.write(into: buf)
+        FfiConverterOptionTimestamp.write(dateAdded, into: buf)
+        FfiConverterOptionTimestamp.write(lastModified, into: buf)
+        FfiConverterOptionString.write(title, into: buf)
+        FfiConverterSequenceEnumInsertableBookmarkItem.write(children, into: buf)
+    }
+}
+
+extension InsertableBookmarkFolder: ViaFfiUsingByteBuffer, ViaFfi {}
+
+public enum PlacesError {
+    // Simple error enums only carry a message
+    case UnexpectedPlacesException(message: String)
+
+    // Simple error enums only carry a message
+    case UrlParseFailed(message: String)
+
+    // Simple error enums only carry a message
+    case JsonParseFailed(message: String)
+
+    // Simple error enums only carry a message
+    case PlacesConnectionBusy(message: String)
+
+    // Simple error enums only carry a message
+    case OperationInterrupted(message: String)
+
+    // Simple error enums only carry a message
+    case BookmarksCorruption(message: String)
+
+    // Simple error enums only carry a message
+    case InvalidParent(message: String)
+
+    // Simple error enums only carry a message
+    case UnknownBookmarkItem(message: String)
+
+    // Simple error enums only carry a message
+    case UrlTooLong(message: String)
+
+    // Simple error enums only carry a message
+    case InvalidBookmarkUpdate(message: String)
+
+    // Simple error enums only carry a message
+    case CannotUpdateRoot(message: String)
+
+    // Simple error enums only carry a message
+    case InternalPanic(message: String)
+}
+
+extension PlacesError: ViaFfiUsingByteBuffer, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> PlacesError {
         let variant: Int32 = try buf.readInt()
         switch variant {
-        case 1: return .Wrapped(
+        case 1: return .UnexpectedPlacesException(
+                message: try String.read(from: buf)
+            )
+
+        case 2: return .UrlParseFailed(
+                message: try String.read(from: buf)
+            )
+
+        case 3: return .JsonParseFailed(
+                message: try String.read(from: buf)
+            )
+
+        case 4: return .PlacesConnectionBusy(
+                message: try String.read(from: buf)
+            )
+
+        case 5: return .OperationInterrupted(
+                message: try String.read(from: buf)
+            )
+
+        case 6: return .BookmarksCorruption(
+                message: try String.read(from: buf)
+            )
+
+        case 7: return .InvalidParent(
+                message: try String.read(from: buf)
+            )
+
+        case 8: return .UnknownBookmarkItem(
+                message: try String.read(from: buf)
+            )
+
+        case 9: return .UrlTooLong(
+                message: try String.read(from: buf)
+            )
+
+        case 10: return .InvalidBookmarkUpdate(
+                message: try String.read(from: buf)
+            )
+
+        case 11: return .CannotUpdateRoot(
+                message: try String.read(from: buf)
+            )
+
+        case 12: return .InternalPanic(
                 message: try String.read(from: buf)
             )
 
@@ -829,16 +2635,59 @@ extension ErrorWrapper: ViaFfiUsingByteBuffer, ViaFfi {
 
     fileprivate func write(into buf: Writer) {
         switch self {
-        case let .Wrapped(message):
+        case let .UnexpectedPlacesException(message):
             buf.writeInt(Int32(1))
+            message.write(into: buf)
+        case let .UrlParseFailed(message):
+            buf.writeInt(Int32(2))
+            message.write(into: buf)
+        case let .JsonParseFailed(message):
+            buf.writeInt(Int32(3))
+            message.write(into: buf)
+        case let .PlacesConnectionBusy(message):
+            buf.writeInt(Int32(4))
+            message.write(into: buf)
+        case let .OperationInterrupted(message):
+            buf.writeInt(Int32(5))
+            message.write(into: buf)
+        case let .BookmarksCorruption(message):
+            buf.writeInt(Int32(6))
+            message.write(into: buf)
+        case let .InvalidParent(message):
+            buf.writeInt(Int32(7))
+            message.write(into: buf)
+        case let .UnknownBookmarkItem(message):
+            buf.writeInt(Int32(8))
+            message.write(into: buf)
+        case let .UrlTooLong(message):
+            buf.writeInt(Int32(9))
+            message.write(into: buf)
+        case let .InvalidBookmarkUpdate(message):
+            buf.writeInt(Int32(10))
+            message.write(into: buf)
+        case let .CannotUpdateRoot(message):
+            buf.writeInt(Int32(11))
+            message.write(into: buf)
+        case let .InternalPanic(message):
+            buf.writeInt(Int32(12))
             message.write(into: buf)
         }
     }
 }
 
-extension ErrorWrapper: Equatable, Hashable {}
+extension PlacesError: Equatable, Hashable {}
 
-extension ErrorWrapper: Error {}
+extension PlacesError: Error {}
+extension UInt32: Primitive, ViaFfi {
+    fileprivate static func read(from buf: Reader) throws -> Self {
+        return try lift(buf.readInt())
+    }
+
+    fileprivate func write(into buf: Writer) {
+        buf.writeInt(lower())
+    }
+}
+
 extension Int32: Primitive, ViaFfi {
     fileprivate static func read(from buf: Reader) throws -> Self {
         return try lift(buf.readInt())
@@ -866,6 +2715,26 @@ extension Double: Primitive, ViaFfi {
 
     fileprivate func write(into buf: Writer) {
         buf.writeDouble(lower())
+    }
+}
+
+extension Bool: ViaFfi {
+    fileprivate typealias FfiType = Int8
+
+    fileprivate static func read(from buf: Reader) throws -> Self {
+        return try lift(buf.readInt())
+    }
+
+    fileprivate func write(into buf: Writer) {
+        buf.writeInt(lower())
+    }
+
+    fileprivate static func lift(_ v: FfiType) throws -> Self {
+        return v != 0
+    }
+
+    fileprivate func lower() -> FfiType {
+        return self ? 1 : 0
     }
 }
 
@@ -906,13 +2775,51 @@ extension String: ViaFfi {
     }
 }
 
+// Helper code for PlacesApi class is found in ObjectTemplate.swift
+// Helper code for PlacesConnection class is found in ObjectTemplate.swift
+// Helper code for SqlInterruptHandle class is found in ObjectTemplate.swift
+// Helper code for BookmarkData record is found in RecordTemplate.swift
+// Helper code for BookmarkFolder record is found in RecordTemplate.swift
+// Helper code for BookmarkSeparator record is found in RecordTemplate.swift
+// Helper code for BookmarkUpdateInfo record is found in RecordTemplate.swift
 // Helper code for Dummy record is found in RecordTemplate.swift
 // Helper code for HistoryHighlight record is found in RecordTemplate.swift
 // Helper code for HistoryHighlightWeights record is found in RecordTemplate.swift
 // Helper code for HistoryMetadata record is found in RecordTemplate.swift
 // Helper code for HistoryMetadataObservation record is found in RecordTemplate.swift
+// Helper code for HistoryVisitInfo record is found in RecordTemplate.swift
+// Helper code for HistoryVisitInfosWithBound record is found in RecordTemplate.swift
+// Helper code for InsertableBookmark record is found in RecordTemplate.swift
+// Helper code for InsertableBookmarkFolder record is found in RecordTemplate.swift
+// Helper code for InsertableBookmarkSeparator record is found in RecordTemplate.swift
+// Helper code for SearchResult record is found in RecordTemplate.swift
+// Helper code for TopFrecentSiteInfo record is found in RecordTemplate.swift
+// Helper code for VisitObservation record is found in RecordTemplate.swift
+// Helper code for BookmarkItem enum is found in EnumTemplate.swift
+// Helper code for BookmarkPosition enum is found in EnumTemplate.swift
+// Helper code for ConnectionType enum is found in EnumTemplate.swift
 // Helper code for DocumentType enum is found in EnumTemplate.swift
-// Helper code for ErrorWrapper error is found in ErrorTemplate.swift
+// Helper code for FrecencyThresholdOption enum is found in EnumTemplate.swift
+// Helper code for InsertableBookmarkItem enum is found in EnumTemplate.swift
+// Helper code for MatchReason enum is found in EnumTemplate.swift
+// Helper code for VisitTransition enum is found in EnumTemplate.swift
+// Helper code for PlacesError error is found in ErrorTemplate.swift
+
+private enum FfiConverterOptionUInt32: FfiConverterUsingByteBuffer {
+    typealias SwiftType = UInt32?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try UInt32.read(from: buf)
+        }
+    }
+}
 
 private enum FfiConverterOptionInt32: FfiConverterUsingByteBuffer {
     typealias SwiftType = Int32?
@@ -926,6 +2833,22 @@ private enum FfiConverterOptionInt32: FfiConverterUsingByteBuffer {
     static func read(from buf: Reader) throws -> SwiftType {
         try FfiConverterOptional.read(from: buf) { buf in
             try Int32.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterOptionBool: FfiConverterUsingByteBuffer {
+    typealias SwiftType = Bool?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try Bool.read(from: buf)
         }
     }
 }
@@ -962,6 +2885,22 @@ private enum FfiConverterOptionRecordHistoryMetadata: FfiConverterUsingByteBuffe
     }
 }
 
+private enum FfiConverterOptionEnumBookmarkItem: FfiConverterUsingByteBuffer {
+    typealias SwiftType = BookmarkItem?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try BookmarkItem.read(from: buf)
+        }
+    }
+}
+
 private enum FfiConverterOptionEnumDocumentType: FfiConverterUsingByteBuffer {
     typealias SwiftType = DocumentType?
 
@@ -978,6 +2917,22 @@ private enum FfiConverterOptionEnumDocumentType: FfiConverterUsingByteBuffer {
     }
 }
 
+private enum FfiConverterOptionEnumVisitTransition: FfiConverterUsingByteBuffer {
+    typealias SwiftType = VisitTransition?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try VisitTransition.read(from: buf)
+        }
+    }
+}
+
 private enum FfiConverterOptionSequenceRecordHistoryMetadata: FfiConverterUsingByteBuffer {
     typealias SwiftType = [HistoryMetadata]?
 
@@ -990,6 +2945,118 @@ private enum FfiConverterOptionSequenceRecordHistoryMetadata: FfiConverterUsingB
     static func read(from buf: Reader) throws -> SwiftType {
         try FfiConverterOptional.read(from: buf) { buf in
             try FfiConverterSequenceRecordHistoryMetadata.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterOptionSequenceEnumBookmarkItem: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [BookmarkItem]?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            FfiConverterSequenceEnumBookmarkItem.write(item, into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try FfiConverterSequenceEnumBookmarkItem.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterOptionSequenceGuid: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [String]?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            FfiConverterSequenceGuid.write(item, into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try FfiConverterSequenceGuid.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterOptionGuid: FfiConverterUsingByteBuffer {
+    typealias SwiftType = String?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try String.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterOptionTimestamp: FfiConverterUsingByteBuffer {
+    typealias SwiftType = Int64?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try Int64.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterOptionUrl: FfiConverterUsingByteBuffer {
+    typealias SwiftType = String?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try String.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceBool: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [Bool]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try Bool.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceString: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [String]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try String.read(from: buf)
         }
     }
 }
@@ -1022,6 +3089,134 @@ private enum FfiConverterSequenceRecordHistoryMetadata: FfiConverterUsingByteBuf
     static func read(from buf: Reader) throws -> SwiftType {
         try FfiConverterSequence.read(from: buf) { buf in
             try HistoryMetadata.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceRecordHistoryVisitInfo: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [HistoryVisitInfo]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try HistoryVisitInfo.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceRecordSearchResult: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [SearchResult]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try SearchResult.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceRecordTopFrecentSiteInfo: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [TopFrecentSiteInfo]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try TopFrecentSiteInfo.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceEnumBookmarkItem: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [BookmarkItem]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try BookmarkItem.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceEnumInsertableBookmarkItem: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [InsertableBookmarkItem]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try InsertableBookmarkItem.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceEnumMatchReason: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [MatchReason]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try MatchReason.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceGuid: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [String]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try String.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterSequenceUrl: FfiConverterUsingByteBuffer {
+    typealias SwiftType = [String]
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterSequence.write(value, into: buf) { item, buf in
+            item.write(into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterSequence.read(from: buf) { buf in
+            try String.read(from: buf)
         }
     }
 }

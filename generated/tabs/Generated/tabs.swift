@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_145a_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_68a6_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_145a_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_68a6_rustbuffer_free(self, $0) }
     }
 }
 
@@ -447,18 +447,18 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_145a_TabsStore_new($0)
+                tabs_68a6_TabsStore_new($0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_145a_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_68a6_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         let _retval = try!
             rustCall {
-                tabs_145a_TabsStore_get_all(self.pointer, $0)
+                tabs_68a6_TabsStore_get_all(self.pointer, $0)
             }
         return try! FfiConverterSequenceRecordClientRemoteTabs.lift(_retval)
     }
@@ -466,14 +466,14 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTab]) {
         try!
             rustCall {
-                tabs_145a_TabsStore_set_local_tabs(self.pointer, FfiConverterSequenceRecordRemoteTab.lower(remoteTabs), $0)
+                tabs_68a6_TabsStore_set_local_tabs(self.pointer, FfiConverterSequenceRecordRemoteTab.lower(remoteTabs), $0)
             }
     }
 
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_145a_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_68a6_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 }

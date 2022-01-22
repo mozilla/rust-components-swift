@@ -11,15 +11,15 @@
 // We ensure they are declared exactly once, with a header guard, UNIFFI_SHARED_H.
 #ifdef UNIFFI_SHARED_H
     // We also try to prevent mixing versions of shared uniffi header structs.
-    // If you add anything to the #else block, you must increment the version suffix in UNIFFI_SHARED_HEADER_V3
-    #ifndef UNIFFI_SHARED_HEADER_V3
+    // If you add anything to the #else block, you must increment the version suffix in UNIFFI_SHARED_HEADER_V4
+    #ifndef UNIFFI_SHARED_HEADER_V4
         #error Combining helper code from multiple versions of uniffi is not supported
-    #endif // ndef UNIFFI_SHARED_HEADER_V3
+    #endif // ndef UNIFFI_SHARED_HEADER_V4
 #else
 #define UNIFFI_SHARED_H
-#define UNIFFI_SHARED_HEADER_V3
+#define UNIFFI_SHARED_HEADER_V4
 // ⚠️ Attention: If you change this #else block (ending in `#endif // def UNIFFI_SHARED_H`) you *must* ⚠️
-// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
+// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 
 typedef struct RustBuffer
 {
@@ -28,7 +28,7 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef RustBuffer (*ForeignCallback)(uint64_t, int32_t, RustBuffer);
+typedef int32_t (*ForeignCallback)(uint64_t, int32_t, RustBuffer, RustBuffer *_Nonnull);
 
 typedef struct ForeignBytes
 {
@@ -43,98 +43,98 @@ typedef struct RustCallStatus {
 } RustCallStatus;
 
 // ⚠️ Attention: If you change this #else block (ending in `#endif // def UNIFFI_SHARED_H`) you *must* ⚠️
-// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
+// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_autofill_b5da_Store_object_free(
+void ffi_autofill_8c34_Store_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull autofill_b5da_Store_new(
+void*_Nonnull autofill_8c34_Store_new(
       RustBuffer dbpath,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_Store_add_credit_card(
+RustBuffer autofill_8c34_Store_add_credit_card(
       void*_Nonnull ptr,RustBuffer cc,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_Store_get_credit_card(
+RustBuffer autofill_8c34_Store_get_credit_card(
       void*_Nonnull ptr,RustBuffer guid,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_Store_get_all_credit_cards(
+RustBuffer autofill_8c34_Store_get_all_credit_cards(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void autofill_b5da_Store_update_credit_card(
+void autofill_8c34_Store_update_credit_card(
       void*_Nonnull ptr,RustBuffer guid,RustBuffer cc,
     RustCallStatus *_Nonnull out_status
     );
-int8_t autofill_b5da_Store_delete_credit_card(
+int8_t autofill_8c34_Store_delete_credit_card(
       void*_Nonnull ptr,RustBuffer guid,
     RustCallStatus *_Nonnull out_status
     );
-void autofill_b5da_Store_touch_credit_card(
+void autofill_8c34_Store_touch_credit_card(
       void*_Nonnull ptr,RustBuffer guid,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_Store_add_address(
+RustBuffer autofill_8c34_Store_add_address(
       void*_Nonnull ptr,RustBuffer a,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_Store_get_address(
+RustBuffer autofill_8c34_Store_get_address(
       void*_Nonnull ptr,RustBuffer guid,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_Store_get_all_addresses(
+RustBuffer autofill_8c34_Store_get_all_addresses(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void autofill_b5da_Store_update_address(
+void autofill_8c34_Store_update_address(
       void*_Nonnull ptr,RustBuffer guid,RustBuffer a,
     RustCallStatus *_Nonnull out_status
     );
-int8_t autofill_b5da_Store_delete_address(
+int8_t autofill_8c34_Store_delete_address(
       void*_Nonnull ptr,RustBuffer guid,
     RustCallStatus *_Nonnull out_status
     );
-void autofill_b5da_Store_touch_address(
+void autofill_8c34_Store_touch_address(
       void*_Nonnull ptr,RustBuffer guid,
     RustCallStatus *_Nonnull out_status
     );
-void autofill_b5da_Store_scrub_encrypted_data(
+void autofill_8c34_Store_scrub_encrypted_data(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void autofill_b5da_Store_register_with_sync_manager(
+void autofill_8c34_Store_register_with_sync_manager(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_create_key(
+RustBuffer autofill_8c34_create_key(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_encrypt_string(
+RustBuffer autofill_8c34_encrypt_string(
       RustBuffer key,RustBuffer cleartext,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer autofill_b5da_decrypt_string(
+RustBuffer autofill_8c34_decrypt_string(
       RustBuffer key,RustBuffer ciphertext,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_autofill_b5da_rustbuffer_alloc(
+RustBuffer ffi_autofill_8c34_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_autofill_b5da_rustbuffer_from_bytes(
+RustBuffer ffi_autofill_8c34_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_autofill_b5da_rustbuffer_free(
+void ffi_autofill_8c34_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_autofill_b5da_rustbuffer_reserve(
+RustBuffer ffi_autofill_8c34_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

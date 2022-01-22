@@ -17,6 +17,14 @@ import Glean
 // swiftlint:disable force_try
 
 extension GleanMetrics {
+    class GleanBuild {
+        private init() {
+            // Intentionally left private, no external user can instantiate a new global object.
+        }
+
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 1, day: 22, hour: 2, minute: 51, second: 52))
+    }
+
     enum LoginsStoreMigration {
         /// The total number of login records processed by the migration
         static let numProcessed = CounterMetricType( // generated from logins_store_migration.num_processed
