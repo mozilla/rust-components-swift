@@ -1,8 +1,8 @@
 // swift-tools-version:5.4
 import PackageDescription
 
-let checksum = "f23a1eb4bcb2d5493c4a5d445bf35af41b1a78f201f539edaed4cc2ca990a8f6"
-let version = "v87.2.0"
+let checksum = "397f09236f031fe614bfdbc5ba4b8953bfd98e1df640e442962a5d7e2b96d006"
+let version = "v90.0.0"
 let url = "https://github.com/mozilla/application-services/releases/download/\(version)/MozillaRustComponents.xcframework.zip"
 
 let package = Package(
@@ -24,7 +24,6 @@ let package = Package(
         // TODO: ship Glean via this same bundle?
         .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "43.0.2"),
         .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1"),
-        .package(name: "SwiftProtobuf", url: "https://github.com/apple/swift-protobuf", from: "1.18.0")
     ],
     targets: [
         /*
@@ -104,7 +103,7 @@ let package = Package(
         ),
         .target(
             name: "Places",
-            dependencies: ["MozillaRustComponentsWrapper", "Sync15", "SwiftProtobuf"],
+            dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
             path: "generated/places"
         )
     ]

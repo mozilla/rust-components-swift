@@ -11,15 +11,15 @@
 // We ensure they are declared exactly once, with a header guard, UNIFFI_SHARED_H.
 #ifdef UNIFFI_SHARED_H
     // We also try to prevent mixing versions of shared uniffi header structs.
-    // If you add anything to the #else block, you must increment the version suffix in UNIFFI_SHARED_HEADER_V3
-    #ifndef UNIFFI_SHARED_HEADER_V3
+    // If you add anything to the #else block, you must increment the version suffix in UNIFFI_SHARED_HEADER_V4
+    #ifndef UNIFFI_SHARED_HEADER_V4
         #error Combining helper code from multiple versions of uniffi is not supported
-    #endif // ndef UNIFFI_SHARED_HEADER_V3
+    #endif // ndef UNIFFI_SHARED_HEADER_V4
 #else
 #define UNIFFI_SHARED_H
-#define UNIFFI_SHARED_HEADER_V3
+#define UNIFFI_SHARED_HEADER_V4
 // ⚠️ Attention: If you change this #else block (ending in `#endif // def UNIFFI_SHARED_H`) you *must* ⚠️
-// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
+// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 
 typedef struct RustBuffer
 {
@@ -28,7 +28,7 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef RustBuffer (*ForeignCallback)(uint64_t, int32_t, RustBuffer);
+typedef int32_t (*ForeignCallback)(uint64_t, int32_t, RustBuffer, RustBuffer *_Nonnull);
 
 typedef struct ForeignBytes
 {
@@ -43,90 +43,90 @@ typedef struct RustCallStatus {
 } RustCallStatus;
 
 // ⚠️ Attention: If you change this #else block (ending in `#endif // def UNIFFI_SHARED_H`) you *must* ⚠️
-// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V3 in this file.           ⚠️
+// ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_nimbus_dc5d_NimbusClient_object_free(
+void ffi_nimbus_59ee_NimbusClient_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull nimbus_dc5d_NimbusClient_new(
+void*_Nonnull nimbus_59ee_NimbusClient_new(
       RustBuffer app_ctx,RustBuffer dbpath,RustBuffer remote_settings_config,RustBuffer available_randomization_units,
     RustCallStatus *_Nonnull out_status
     );
-void nimbus_dc5d_NimbusClient_initialize(
+void nimbus_59ee_NimbusClient_initialize(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_get_experiment_branch(
+RustBuffer nimbus_59ee_NimbusClient_get_experiment_branch(
       void*_Nonnull ptr,RustBuffer id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_get_feature_config_variables(
+RustBuffer nimbus_59ee_NimbusClient_get_feature_config_variables(
       void*_Nonnull ptr,RustBuffer feature_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_get_experiment_branches(
+RustBuffer nimbus_59ee_NimbusClient_get_experiment_branches(
       void*_Nonnull ptr,RustBuffer experiment_slug,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_get_active_experiments(
+RustBuffer nimbus_59ee_NimbusClient_get_active_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_get_available_experiments(
+RustBuffer nimbus_59ee_NimbusClient_get_available_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-int8_t nimbus_dc5d_NimbusClient_get_global_user_participation(
+int8_t nimbus_59ee_NimbusClient_get_global_user_participation(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_set_global_user_participation(
+RustBuffer nimbus_59ee_NimbusClient_set_global_user_participation(
       void*_Nonnull ptr,int8_t opt_in,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_update_experiments(
+RustBuffer nimbus_59ee_NimbusClient_update_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void nimbus_dc5d_NimbusClient_fetch_experiments(
+void nimbus_59ee_NimbusClient_fetch_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_apply_pending_experiments(
+RustBuffer nimbus_59ee_NimbusClient_apply_pending_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void nimbus_dc5d_NimbusClient_set_experiments_locally(
+void nimbus_59ee_NimbusClient_set_experiments_locally(
       void*_Nonnull ptr,RustBuffer experiments_json,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_opt_in_with_branch(
+RustBuffer nimbus_59ee_NimbusClient_opt_in_with_branch(
       void*_Nonnull ptr,RustBuffer experiment_slug,RustBuffer branch,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_opt_out(
+RustBuffer nimbus_59ee_NimbusClient_opt_out(
       void*_Nonnull ptr,RustBuffer experiment_slug,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_dc5d_NimbusClient_reset_telemetry_identifiers(
+RustBuffer nimbus_59ee_NimbusClient_reset_telemetry_identifiers(
       void*_Nonnull ptr,RustBuffer new_randomization_units,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_nimbus_dc5d_rustbuffer_alloc(
+RustBuffer ffi_nimbus_59ee_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_nimbus_dc5d_rustbuffer_from_bytes(
+RustBuffer ffi_nimbus_59ee_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_nimbus_dc5d_rustbuffer_free(
+void ffi_nimbus_59ee_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_nimbus_dc5d_rustbuffer_reserve(
+RustBuffer ffi_nimbus_59ee_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );
