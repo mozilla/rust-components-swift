@@ -109,7 +109,7 @@ open class LoginsStorage {
         }
     }
 
-    open func sync(unlockInfo: SyncLoginsUnlockInfo) throws -> String {
+    open func sync(unlockInfo: SyncUnlockInfo) throws -> String {
         return try queue.sync {
             return try self.store
                 .sync(
