@@ -52,11 +52,10 @@ let package = Package(
             //
             //path: "./MozillaRustComponents.xcframework"
         ),
-        // .target(
-        //     name: "Sync15",
-        //     dependencies: ["MozillaRustComponentsWrapper"],
-        //     path: "generated/sync15"
-        // ),
+        .target(
+            name: "Sync15",
+            path: "generated/sync15"
+        ),
         .target(
             name: "RustLog",
             dependencies: ["MozillaRustComponentsWrapper"],
@@ -79,7 +78,7 @@ let package = Package(
         ),
         .target(
            name: "Logins",
-           dependencies: ["MozillaRustComponentsWrapper"],
+           dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
            path: "generated/logins"
         ),
         .target(
@@ -104,7 +103,7 @@ let package = Package(
         ),
         .target(
             name: "Places",
-            dependencies: ["MozillaRustComponentsWrapper", "SwiftProtobuf"],
+            dependencies: ["MozillaRustComponentsWrapper", "SwiftProtobuf", "Sync15"],
             path: "generated/places"
         )
     ]
