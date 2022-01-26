@@ -161,3 +161,5 @@ rm -rf "$VIADUCT_DIR" && mkdir -p "$VIADUCT_DIR"
 
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $VIADUCT_DIR
+
+echo "Successfully generated uniffi code!"
