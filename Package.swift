@@ -67,7 +67,7 @@ let package = Package(
         ),
         .target(
             name: "Nimbus",
-            dependencies: ["MozillaRustComponentsWrapper", "Glean"],
+            dependencies: ["MozillaRustComponentsWrapper"],
             path: "generated/nimbus"
         ),
         .target(
