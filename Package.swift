@@ -82,7 +82,7 @@ let package = Package(
         ),
         .target(
            name: "FxAClient",
-           dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
+           dependencies: ["MozillaRustComponentsWrapper"],
            path: "generated/fxa-client"
         ),
         .target(
