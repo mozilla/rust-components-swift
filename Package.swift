@@ -21,9 +21,6 @@ let package = Package(
         .library(name: "Places", targets: ["Places"]),
     ],
     dependencies: [
-        // TODO: ship Glean via this same bundle?
-        .package(name: "Glean", url: "https://github.com/mozilla/glean-swift", from: "43.0.2"),
-        .package(name: "SwiftKeychainWrapper", url: "https://github.com/jrendel/SwiftKeychainWrapper", from: "4.0.1"),
     ],
     targets: [
         /*
@@ -68,7 +65,7 @@ let package = Package(
         ),
         .target(
             name: "Nimbus",
-            dependencies: ["MozillaRustComponentsWrapper", "Glean"],
+            dependencies: ["MozillaRustComponentsWrapper"],
             path: "generated/nimbus"
         ),
         .target(
@@ -83,7 +80,7 @@ let package = Package(
         ),
         .target(
            name: "FxAClient",
-           dependencies: ["MozillaRustComponentsWrapper", "SwiftKeychainWrapper"],
+           dependencies: ["MozillaRustComponentsWrapper"],
            path: "generated/fxa-client"
         ),
         .target(
