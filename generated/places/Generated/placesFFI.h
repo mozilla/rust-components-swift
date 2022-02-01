@@ -46,231 +46,231 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_places_3a3_SqlInterruptHandle_object_free(
+void ffi_places_ce49_SqlInterruptHandle_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_SqlInterruptHandle_interrupt(
+void places_ce49_SqlInterruptHandle_interrupt(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_places_3a3_PlacesApi_object_free(
+void ffi_places_ce49_PlacesApi_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull places_3a3_PlacesApi_new_connection(
+void*_Nonnull places_ce49_PlacesApi_new_connection(
       void*_Nonnull ptr,RustBuffer conn_type,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull places_3a3_PlacesApi_new_sync_conn_interrupt_handle(
+void*_Nonnull places_ce49_PlacesApi_new_sync_conn_interrupt_handle(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesApi_register_with_sync_manager(
+void places_ce49_PlacesApi_register_with_sync_manager(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesApi_reset_history(
+void places_ce49_PlacesApi_reset_history(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesApi_history_sync(
+RustBuffer places_ce49_PlacesApi_history_sync(
       void*_Nonnull ptr,RustBuffer key_id,RustBuffer access_token,RustBuffer sync_key,RustBuffer tokenserver_url,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesApi_bookmarks_sync(
+RustBuffer places_ce49_PlacesApi_bookmarks_sync(
       void*_Nonnull ptr,RustBuffer key_id,RustBuffer access_token,RustBuffer sync_key,RustBuffer tokenserver_url,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesApi_places_pinned_sites_import_from_fennec(
+RustBuffer places_ce49_PlacesApi_places_pinned_sites_import_from_fennec(
       void*_Nonnull ptr,RustBuffer db_path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesApi_places_history_import_from_fennec(
+RustBuffer places_ce49_PlacesApi_places_history_import_from_fennec(
       void*_Nonnull ptr,RustBuffer db_path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesApi_places_bookmarks_import_from_fennec(
+RustBuffer places_ce49_PlacesApi_places_bookmarks_import_from_fennec(
       void*_Nonnull ptr,RustBuffer db_path,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesApi_places_bookmarks_import_from_ios(
+void places_ce49_PlacesApi_places_bookmarks_import_from_ios(
       void*_Nonnull ptr,RustBuffer db_path,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesApi_bookmarks_reset(
+void places_ce49_PlacesApi_bookmarks_reset(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_places_3a3_PlacesConnection_object_free(
+void ffi_places_ce49_PlacesConnection_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull places_3a3_PlacesConnection_new_interrupt_handle(
+void*_Nonnull places_ce49_PlacesConnection_new_interrupt_handle(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_latest_history_metadata_for_url(
+RustBuffer places_ce49_PlacesConnection_get_latest_history_metadata_for_url(
       void*_Nonnull ptr,RustBuffer url,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_history_metadata_between(
+RustBuffer places_ce49_PlacesConnection_get_history_metadata_between(
       void*_Nonnull ptr,int64_t start,int64_t end,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_history_metadata_since(
+RustBuffer places_ce49_PlacesConnection_get_history_metadata_since(
       void*_Nonnull ptr,int64_t since,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_query_autocomplete(
+RustBuffer places_ce49_PlacesConnection_query_autocomplete(
       void*_Nonnull ptr,RustBuffer search,int32_t limit,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_accept_result(
+void places_ce49_PlacesConnection_accept_result(
       void*_Nonnull ptr,RustBuffer search_string,RustBuffer url,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_match_url(
+RustBuffer places_ce49_PlacesConnection_match_url(
       void*_Nonnull ptr,RustBuffer query,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_query_history_metadata(
+RustBuffer places_ce49_PlacesConnection_query_history_metadata(
       void*_Nonnull ptr,RustBuffer query,int32_t limit,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_history_highlights(
+RustBuffer places_ce49_PlacesConnection_get_history_highlights(
       void*_Nonnull ptr,RustBuffer weights,int32_t limit,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_note_history_metadata_observation(
+void places_ce49_PlacesConnection_note_history_metadata_observation(
       void*_Nonnull ptr,RustBuffer data,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_metadata_delete(
+void places_ce49_PlacesConnection_metadata_delete(
       void*_Nonnull ptr,RustBuffer url,RustBuffer referrer_url,RustBuffer search_term,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_metadata_delete_older_than(
+void places_ce49_PlacesConnection_metadata_delete_older_than(
       void*_Nonnull ptr,int64_t older_than,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_apply_observation(
+void places_ce49_PlacesConnection_apply_observation(
       void*_Nonnull ptr,RustBuffer visit,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_visited_urls_in_range(
+RustBuffer places_ce49_PlacesConnection_get_visited_urls_in_range(
       void*_Nonnull ptr,int64_t start,int64_t end,int8_t include_remote,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_visit_infos(
+RustBuffer places_ce49_PlacesConnection_get_visit_infos(
       void*_Nonnull ptr,int64_t start_date,int64_t end_date,int32_t exclude_types,
     RustCallStatus *_Nonnull out_status
     );
-int64_t places_3a3_PlacesConnection_get_visit_count(
+int64_t places_ce49_PlacesConnection_get_visit_count(
       void*_Nonnull ptr,int32_t exclude_types,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_visit_page(
+RustBuffer places_ce49_PlacesConnection_get_visit_page(
       void*_Nonnull ptr,int64_t offset,int64_t count,int32_t exclude_types,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_visit_page_with_bound(
+RustBuffer places_ce49_PlacesConnection_get_visit_page_with_bound(
       void*_Nonnull ptr,int64_t bound,int64_t offset,int64_t count,int32_t exclude_types,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_visited(
+RustBuffer places_ce49_PlacesConnection_get_visited(
       void*_Nonnull ptr,RustBuffer urls,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_delete_visits_for(
+void places_ce49_PlacesConnection_delete_visits_for(
       void*_Nonnull ptr,RustBuffer url,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_delete_visits_between(
+void places_ce49_PlacesConnection_delete_visits_between(
       void*_Nonnull ptr,int64_t start,int64_t end,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_delete_visit(
+void places_ce49_PlacesConnection_delete_visit(
       void*_Nonnull ptr,RustBuffer url,int64_t timestamp,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_get_top_frecent_site_infos(
+RustBuffer places_ce49_PlacesConnection_get_top_frecent_site_infos(
       void*_Nonnull ptr,int32_t num_items,RustBuffer threshold_option,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_wipe_local_history(
+void places_ce49_PlacesConnection_wipe_local_history(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_delete_everything_history(
+void places_ce49_PlacesConnection_delete_everything_history(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_prune_destructively(
+void places_ce49_PlacesConnection_prune_destructively(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_run_maintenance(
+void places_ce49_PlacesConnection_run_maintenance(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_bookmarks_get_tree(
+RustBuffer places_ce49_PlacesConnection_bookmarks_get_tree(
       void*_Nonnull ptr,RustBuffer item_guid,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_bookmarks_get_by_guid(
+RustBuffer places_ce49_PlacesConnection_bookmarks_get_by_guid(
       void*_Nonnull ptr,RustBuffer guid,int8_t get_direct_children,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_bookmarks_get_all_with_url(
+RustBuffer places_ce49_PlacesConnection_bookmarks_get_all_with_url(
       void*_Nonnull ptr,RustBuffer url,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_bookmarks_search(
+RustBuffer places_ce49_PlacesConnection_bookmarks_search(
       void*_Nonnull ptr,RustBuffer query,int32_t limit,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_bookmarks_get_recent(
+RustBuffer places_ce49_PlacesConnection_bookmarks_get_recent(
       void*_Nonnull ptr,int32_t limit,
     RustCallStatus *_Nonnull out_status
     );
-int8_t places_3a3_PlacesConnection_bookmarks_delete(
+int8_t places_ce49_PlacesConnection_bookmarks_delete(
       void*_Nonnull ptr,RustBuffer id,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_bookmarks_delete_everything(
+void places_ce49_PlacesConnection_bookmarks_delete_everything(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_bookmarks_get_url_for_keyword(
+RustBuffer places_ce49_PlacesConnection_bookmarks_get_url_for_keyword(
       void*_Nonnull ptr,RustBuffer keyword,
     RustCallStatus *_Nonnull out_status
     );
-void places_3a3_PlacesConnection_bookmarks_update(
+void places_ce49_PlacesConnection_bookmarks_update(
       void*_Nonnull ptr,RustBuffer data,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer places_3a3_PlacesConnection_bookmarks_insert(
+RustBuffer places_ce49_PlacesConnection_bookmarks_insert(
       void*_Nonnull ptr,RustBuffer bookmark,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull places_3a3_places_api_new(
+void*_Nonnull places_ce49_places_api_new(
       RustBuffer db_path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_places_3a3_rustbuffer_alloc(
+RustBuffer ffi_places_ce49_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_places_3a3_rustbuffer_from_bytes(
+RustBuffer ffi_places_ce49_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_places_3a3_rustbuffer_free(
+void ffi_places_ce49_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_places_3a3_rustbuffer_reserve(
+RustBuffer ffi_places_ce49_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );
