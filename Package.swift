@@ -9,16 +9,7 @@ let package = Package(
     name: "MozillaRustComponentsSwift",
     platforms: [.iOS(.v11)],
     products: [
-        .library(name: "RustLog", targets: ["RustLog"]),
-        .library(name: "Viaduct", targets: ["Viaduct"]),
-        .library(name: "Nimbus", targets: ["Nimbus"]),
-        .library(name: "CrashTest", targets: ["CrashTest"]),
-        .library(name: "Logins", targets: ["Logins"]),
-        .library(name: "FxAClient", targets: ["FxAClient"]),
-        .library(name: "Autofill", targets: ["Autofill"]),
-        .library(name: "Push", targets: ["Push"]),
-        .library(name: "Tabs", targets: ["Tabs"]),
-        .library(name: "Places", targets: ["Places"]),
+        .library(name: "MozillaAppServices", targets: ["MozillaAppServices"]),
     ],
     dependencies: [
     ],
@@ -50,58 +41,9 @@ let package = Package(
             //path: "./MozillaRustComponents.xcframework"
         ),
         .target(
-            name: "Sync15",
-            path: "generated/sync15"
-        ),
-        .target(
-            name: "RustLog",
+            name: "MozillaAppServices",
             dependencies: ["MozillaRustComponentsWrapper"],
-            path: "generated/rc_log"
+            path: "swift-source"
         ),
-        .target(
-            name: "Viaduct",
-            dependencies: ["MozillaRustComponentsWrapper"],
-            path: "generated/viaduct"
-        ),
-        .target(
-            name: "Nimbus",
-            dependencies: ["MozillaRustComponentsWrapper"],
-            path: "generated/nimbus"
-        ),
-        .target(
-            name: "CrashTest",
-            dependencies: ["MozillaRustComponentsWrapper"],
-            path: "generated/crashtest"
-        ),
-        .target(
-           name: "Logins",
-           dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
-           path: "generated/logins"
-        ),
-        .target(
-           name: "FxAClient",
-           dependencies: ["MozillaRustComponentsWrapper"],
-           path: "generated/fxa-client"
-        ),
-        .target(
-            name: "Autofill",
-            dependencies: ["MozillaRustComponentsWrapper"],
-            path: "generated/autofill"
-        ),
-        .target(
-            name: "Push",
-            dependencies: ["MozillaRustComponentsWrapper"],
-            path: "generated/push"
-        ),
-        .target(
-            name: "Tabs",
-            dependencies: ["MozillaRustComponentsWrapper"],
-            path: "generated/tabs"
-        ),
-        .target(
-            name: "Places",
-            dependencies: ["MozillaRustComponentsWrapper", "Sync15"],
-            path: "generated/places"
-        )
     ]
 )
