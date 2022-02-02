@@ -25,15 +25,18 @@ OUT_DIR="$THIS_DIR/swift-source"
 
 rm -rf "$OUT_DIR" && mkdir -p "$OUT_DIR"
 
+# Glean metrics.
+# Run this first, because it appears to delete any other .swift files in the output directory.
+# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
+SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml" "$APP_SERVICES_DIR/components/logins/ios/metrics.yaml"
+
+
+
 ###
 #
 # Nimbus
 #
 ###
-# Glean metrics.
-# Run this first, because it appears to delete any other .swift files in the output directory.
-# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="nimbus" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
 # UniFFI bindings.
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/nimbus/src/nimbus.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
@@ -46,9 +49,6 @@ cp -r "$APP_SERVICES_DIR/components/nimbus/ios/Nimbus" "$OUT_DIR"
 # CrashTest
 #
 ###
-
-# CRASHTEST_DIR="$THIS_DIR/generated/crashtest"
-# rm -rf "$CRASHTEST_DIR" && mkdir -p "$CRASHTEST_DIR"
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR" "$APP_SERVICES_DIR/components/crashtest/src/crashtest.udl"
 
 ###
@@ -57,8 +57,6 @@ cp -r "$APP_SERVICES_DIR/components/nimbus/ios/Nimbus" "$OUT_DIR"
 #
 ###
 
-# FXA_CLIENT_DIR="$THIS_DIR/generated/fxa-client"
-# rm -rf "$FXA_CLIENT_DIR" && mkdir -p "$FXA_CLIENT_DIR"
 # UniFFI bindings.
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/fxa-client/src/fxa_client.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
@@ -69,13 +67,6 @@ cp -r "$APP_SERVICES_DIR/components/fxa-client/ios/FxAClient" "$OUT_DIR"
 # Logins
 #
 ###
-
-# LOGINS_DIR="$THIS_DIR/generated/logins"
-# rm -rf "$LOGINS_DIR" && mkdir -p "$LOGINS_DIR"
-# Glean metrics.
-# Run this first, because it appears to delete any other .swift files in the output directory.
-# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-# UniFFI bindings.
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/logins/src/logins.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
 cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$OUT_DIR"
