@@ -21,32 +21,35 @@ GLEAN_GENERATOR="$APP_SERVICES_DIR/components/external/glean/glean-core/ios/sdk_
 
 set -euvx
 
+OUT_DIR="$THIS_DIR/swift-source"
+
+rm -rf "$OUT_DIR" && mkdir -p "$OUT_DIR"
+
+# Glean metrics.
+# Run this first, because it appears to delete any other .swift files in the output directory.
+# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
+SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml" "$APP_SERVICES_DIR/components/logins/ios/metrics.yaml"
+
+
+
 ###
 #
 # Nimbus
 #
 ###
-
-NIMBUS_DIR="$THIS_DIR/generated/nimbus"
-rm -rf "$NIMBUS_DIR" && mkdir -p "$NIMBUS_DIR"
-# Glean metrics.
-# Run this first, because it appears to delete any other .swift files in the output directory.
-# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="nimbus" "$GLEAN_GENERATOR" -o "$NIMBUS_DIR/Generated" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
 # UniFFI bindings.
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$NIMBUS_DIR/Generated" "$APP_SERVICES_DIR/components/nimbus/src/nimbus.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/nimbus/src/nimbus.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
-cp -r "$APP_SERVICES_DIR/components/nimbus/ios/Nimbus" "$NIMBUS_DIR/Nimbus"
+cp -r "$APP_SERVICES_DIR/components/nimbus/ios/Nimbus" "$OUT_DIR"
+
+
 
 ###
 #
 # CrashTest
 #
 ###
-
-CRASHTEST_DIR="$THIS_DIR/generated/crashtest"
-rm -rf "$CRASHTEST_DIR" && mkdir -p "$CRASHTEST_DIR"
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$CRASHTEST_DIR" "$APP_SERVICES_DIR/components/crashtest/src/crashtest.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR" "$APP_SERVICES_DIR/components/crashtest/src/crashtest.udl"
 
 ###
 #
@@ -54,40 +57,29 @@ rm -rf "$CRASHTEST_DIR" && mkdir -p "$CRASHTEST_DIR"
 #
 ###
 
-FXA_CLIENT_DIR="$THIS_DIR/generated/fxa-client"
-rm -rf "$FXA_CLIENT_DIR" && mkdir -p "$FXA_CLIENT_DIR"
 # UniFFI bindings.
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FXA_CLIENT_DIR/Generated" "$APP_SERVICES_DIR/components/fxa-client/src/fxa_client.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/fxa-client/src/fxa_client.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
-cp -r "$APP_SERVICES_DIR/components/fxa-client/ios/FxAClient" "$FXA_CLIENT_DIR/FxAClient"
+cp -r "$APP_SERVICES_DIR/components/fxa-client/ios/FxAClient" "$OUT_DIR"
 
 ###
 #
 # Logins
 #
 ###
-
-LOGINS_DIR="$THIS_DIR/generated/logins"
-rm -rf "$LOGINS_DIR" && mkdir -p "$LOGINS_DIR"
-# Glean metrics.
-# Run this first, because it appears to delete any other .swift files in the output directory.
-# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="logins" "$GLEAN_GENERATOR" -o "$LOGINS_DIR/Generated" "$APP_SERVICES_DIR/components/logins/ios/metrics.yaml"
-# UniFFI bindings.
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$LOGINS_DIR/Generated" "$APP_SERVICES_DIR/components/logins/src/logins.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/logins/src/logins.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
-cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$LOGINS_DIR/Logins"
+cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$OUT_DIR"
 
 ###
 #
 # Autofill
 #
 ###
+## Not of our consumers currently use autofill, and the swift code has a name conflict with
+## another component, so for now, commented out.
 
-AUTOFILL_DIR="generated/autofill"
-rm -rf "$AUTOFILL_DIR" && mkdir -p "$AUTOFILL_DIR"
-# UniFFI bindings.
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$AUTOFILL_DIR/Generated" "$APP_SERVICES_DIR/components/autofill/src/autofill.udl"
+# "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/autofill/src/autofill.udl"
 
 ###
 #
@@ -95,21 +87,18 @@ rm -rf "$AUTOFILL_DIR" && mkdir -p "$AUTOFILL_DIR"
 #
 ###
 
-PUSH_DIR="$THIS_DIR/generated/push"
-rm -rf "$PUSH_DIR" && mkdir -p "$PUSH_DIR"
 # UniFFI bindings.
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$PUSH_DIR/Generated" "$APP_SERVICES_DIR/components/push/src/push.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/push/src/push.udl"
 
 ###
 #
 # Tabs
 #
 ###
+## Not of our consumers currently use tabs, and the swift code has a name conflict with
+## another component, so for now, commented out.
 
-TABS_DIR="$THIS_DIR/generated/tabs"
-rm -rf "$TABS_DIR" && mkdir -p "$TABS_DIR"
-# UniFFI bindings.
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$TABS_DIR/Generated" "$APP_SERVICES_DIR/components/tabs/src/tabs.udl"
+# "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/tabs/src/tabs.udl"
 
 ###
 #
@@ -117,13 +106,10 @@ rm -rf "$TABS_DIR" && mkdir -p "$TABS_DIR"
 #
 ###
 
-PLACES_DIR="$THIS_DIR/generated/places"
-rm -rf "$PLACES_DIR" && mkdir -p "$PLACES_DIR"
-# UniFFI bindings.
-"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$PLACES_DIR/Generated" "$APP_SERVICES_DIR/components/places/src/places.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/places/src/places.udl"
 
 # Copy the hand-written Swift, since it all needs to be together in one directory.
-cp -r "$APP_SERVICES_DIR/components/places/ios/Places" "$PLACES_DIR/Places"
+cp -r "$APP_SERVICES_DIR/components/places/ios/Places" "$OUT_DIR"
 
 ###
 #
@@ -131,11 +117,8 @@ cp -r "$APP_SERVICES_DIR/components/places/ios/Places" "$PLACES_DIR/Places"
 #
 ###
 
-SYNC15_DIR="$THIS_DIR/generated/sync15"
-rm -rf "$SYNC15_DIR" && mkdir -p "$SYNC15_DIR"
-
 # We only need to copy the hand-written Swift, sync15 does not use `uniffi` yet
-cp -r "$APP_SERVICES_DIR/components/sync15/ios/" $SYNC15_DIR
+cp -r "$APP_SERVICES_DIR/components/sync15/ios/" $OUT_DIR
 
 ###
 #
@@ -143,11 +126,8 @@ cp -r "$APP_SERVICES_DIR/components/sync15/ios/" $SYNC15_DIR
 #
 ###
 
-RUST_LOG_DIR="$THIS_DIR/generated/rc_log"
-rm -rf "$RUST_LOG_DIR" && mkdir -p "$RUST_LOG_DIR"
-
 # We only need to copy the hand-written Swift, RustLog does not use `uniffi` yet
-cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $RUST_LOG_DIR
+cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $OUT_DIR
 
 
 ###
@@ -156,10 +136,7 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $RUST_LOG_DIR
 #
 ###
 
-VIADUCT_DIR="$THIS_DIR/generated/viaduct"
-rm -rf "$VIADUCT_DIR" && mkdir -p "$VIADUCT_DIR"
-
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
-cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $VIADUCT_DIR
+cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
 
 echo "Successfully generated uniffi code!"
