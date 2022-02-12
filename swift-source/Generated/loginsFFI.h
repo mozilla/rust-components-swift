@@ -46,119 +46,119 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_logins_6d43_LoginStore_object_free(
+void ffi_logins_5de8_LoginStore_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull logins_6d43_LoginStore_new(
+void*_Nonnull logins_5de8_LoginStore_new(
       RustBuffer path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_add(
+RustBuffer logins_5de8_LoginStore_add(
       void*_Nonnull ptr,RustBuffer login,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_update(
+RustBuffer logins_5de8_LoginStore_update(
       void*_Nonnull ptr,RustBuffer id,RustBuffer login,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_add_or_update(
+RustBuffer logins_5de8_LoginStore_add_or_update(
       void*_Nonnull ptr,RustBuffer login,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-int8_t logins_6d43_LoginStore_delete(
+int8_t logins_5de8_LoginStore_delete(
       void*_Nonnull ptr,RustBuffer id,
     RustCallStatus *_Nonnull out_status
     );
-void logins_6d43_LoginStore_wipe(
+void logins_5de8_LoginStore_wipe(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void logins_6d43_LoginStore_wipe_local(
+void logins_5de8_LoginStore_wipe_local(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void logins_6d43_LoginStore_reset(
+void logins_5de8_LoginStore_reset(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void logins_6d43_LoginStore_touch(
+void logins_5de8_LoginStore_touch(
       void*_Nonnull ptr,RustBuffer id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_list(
+RustBuffer logins_5de8_LoginStore_list(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_get_by_base_domain(
+RustBuffer logins_5de8_LoginStore_get_by_base_domain(
       void*_Nonnull ptr,RustBuffer base_domain,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_find_login_to_update(
+RustBuffer logins_5de8_LoginStore_find_login_to_update(
       void*_Nonnull ptr,RustBuffer look,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_get(
+RustBuffer logins_5de8_LoginStore_get(
       void*_Nonnull ptr,RustBuffer id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_import_multiple(
+RustBuffer logins_5de8_LoginStore_import_multiple(
       void*_Nonnull ptr,RustBuffer login,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-void logins_6d43_LoginStore_register_with_sync_manager(
+void logins_5de8_LoginStore_register_with_sync_manager(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_LoginStore_sync(
+RustBuffer logins_5de8_LoginStore_sync(
       void*_Nonnull ptr,RustBuffer key_id,RustBuffer access_token,RustBuffer sync_key,RustBuffer tokenserver_url,RustBuffer local_encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_create_key(
+RustBuffer logins_5de8_create_key(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_decrypt_login(
+RustBuffer logins_5de8_decrypt_login(
       RustBuffer login,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_encrypt_login(
+RustBuffer logins_5de8_encrypt_login(
       RustBuffer login,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_decrypt_fields(
+RustBuffer logins_5de8_decrypt_fields(
       RustBuffer sec_fields,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_encrypt_fields(
+RustBuffer logins_5de8_encrypt_fields(
       RustBuffer sec_fields,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_create_canary(
+RustBuffer logins_5de8_create_canary(
       RustBuffer text,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-int8_t logins_6d43_check_canary(
+int8_t logins_5de8_check_canary(
       RustBuffer canary,RustBuffer text,RustBuffer encryption_key,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer logins_6d43_migrate_logins(
+RustBuffer logins_5de8_migrate_logins(
       RustBuffer path,RustBuffer new_encryption_key,RustBuffer sqlcipher_path,RustBuffer sqlcipher_key,RustBuffer salt,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_logins_6d43_rustbuffer_alloc(
+RustBuffer ffi_logins_5de8_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_logins_6d43_rustbuffer_from_bytes(
+RustBuffer ffi_logins_5de8_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_logins_6d43_rustbuffer_free(
+void ffi_logins_5de8_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_logins_6d43_rustbuffer_reserve(
+RustBuffer ffi_logins_5de8_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

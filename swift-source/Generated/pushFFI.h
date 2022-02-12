@@ -46,55 +46,55 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_push_e1ba_PushManager_object_free(
+void ffi_push_f28b_PushManager_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull push_e1ba_PushManager_new(
+void*_Nonnull push_f28b_PushManager_new(
       RustBuffer sender_id,RustBuffer server_host,RustBuffer http_protocol,RustBuffer bridge_type,RustBuffer registration_id,RustBuffer database_path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_e1ba_PushManager_subscribe(
+RustBuffer push_f28b_PushManager_subscribe(
       void*_Nonnull ptr,RustBuffer channel_id,RustBuffer scope,RustBuffer app_server_sey,
     RustCallStatus *_Nonnull out_status
     );
-int8_t push_e1ba_PushManager_unsubscribe(
+int8_t push_f28b_PushManager_unsubscribe(
       void*_Nonnull ptr,RustBuffer channel_id,
     RustCallStatus *_Nonnull out_status
     );
-void push_e1ba_PushManager_unsubscribe_all(
+void push_f28b_PushManager_unsubscribe_all(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-int8_t push_e1ba_PushManager_update(
+int8_t push_f28b_PushManager_update(
       void*_Nonnull ptr,RustBuffer registration_token,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_e1ba_PushManager_verify_connection(
+RustBuffer push_f28b_PushManager_verify_connection(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_e1ba_PushManager_decrypt(
+RustBuffer push_f28b_PushManager_decrypt(
       void*_Nonnull ptr,RustBuffer channel_id,RustBuffer body,RustBuffer encoding,RustBuffer salt,RustBuffer dh,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_e1ba_PushManager_dispatch_info_for_chid(
+RustBuffer push_f28b_PushManager_dispatch_info_for_chid(
       void*_Nonnull ptr,RustBuffer channel_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_e1ba_rustbuffer_alloc(
+RustBuffer ffi_push_f28b_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_e1ba_rustbuffer_from_bytes(
+RustBuffer ffi_push_f28b_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_push_e1ba_rustbuffer_free(
+void ffi_push_f28b_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_e1ba_rustbuffer_reserve(
+RustBuffer ffi_push_f28b_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

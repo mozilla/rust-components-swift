@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_push_e1ba_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_push_f28b_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_push_e1ba_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_push_f28b_rustbuffer_free(self, $0) }
     }
 }
 
@@ -446,18 +446,18 @@ public class PushManager: PushManagerProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_new(senderId.lower(), serverHost.lower(), httpProtocol.lower(), bridgeType.lower(), registrationId.lower(), databasePath.lower(), $0)
+                push_f28b_PushManager_new(senderId.lower(), serverHost.lower(), httpProtocol.lower(), bridgeType.lower(), registrationId.lower(), databasePath.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_push_e1ba_PushManager_object_free(pointer, $0) }
+        try! rustCall { ffi_push_f28b_PushManager_object_free(pointer, $0) }
     }
 
     public func subscribe(channelId: String = "", scope: String = "", appServerSey: String? = nil) throws -> SubscriptionResponse {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_subscribe(self.pointer, channelId.lower(), scope.lower(), FfiConverterOptionString.lower(appServerSey), $0)
+                push_f28b_PushManager_subscribe(self.pointer, channelId.lower(), scope.lower(), FfiConverterOptionString.lower(appServerSey), $0)
             }
         return try SubscriptionResponse.lift(_retval)
     }
@@ -465,7 +465,7 @@ public class PushManager: PushManagerProtocol {
     public func unsubscribe(channelId: String) throws -> Bool {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_unsubscribe(self.pointer, channelId.lower(), $0)
+                push_f28b_PushManager_unsubscribe(self.pointer, channelId.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -473,14 +473,14 @@ public class PushManager: PushManagerProtocol {
     public func unsubscribeAll() throws {
         try
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_unsubscribe_all(self.pointer, $0)
+                push_f28b_PushManager_unsubscribe_all(self.pointer, $0)
             }
     }
 
     public func update(registrationToken: String) throws -> Bool {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_update(self.pointer, registrationToken.lower(), $0)
+                push_f28b_PushManager_update(self.pointer, registrationToken.lower(), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -488,7 +488,7 @@ public class PushManager: PushManagerProtocol {
     public func verifyConnection() throws -> [PushSubscriptionChanged] {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_verify_connection(self.pointer, $0)
+                push_f28b_PushManager_verify_connection(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordPushSubscriptionChanged.lift(_retval)
     }
@@ -496,7 +496,7 @@ public class PushManager: PushManagerProtocol {
     public func decrypt(channelId: String, body: String, encoding: String = "aes128gcm", salt: String = "", dh: String = "") throws -> [Int8] {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_decrypt(self.pointer, channelId.lower(), body.lower(), encoding.lower(), salt.lower(), dh.lower(), $0)
+                push_f28b_PushManager_decrypt(self.pointer, channelId.lower(), body.lower(), encoding.lower(), salt.lower(), dh.lower(), $0)
             }
         return try FfiConverterSequenceInt8.lift(_retval)
     }
@@ -504,7 +504,7 @@ public class PushManager: PushManagerProtocol {
     public func dispatchInfoForChid(channelId: String) throws -> DispatchInfo? {
         let _retval = try
             rustCallWithError(PushError.self) {
-                push_e1ba_PushManager_dispatch_info_for_chid(self.pointer, channelId.lower(), $0)
+                push_f28b_PushManager_dispatch_info_for_chid(self.pointer, channelId.lower(), $0)
             }
         return try FfiConverterOptionRecordDispatchInfo.lift(_retval)
     }

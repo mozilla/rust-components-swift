@@ -306,6 +306,33 @@ extension Nimbus: NimbusBranchInterface {
     }
 }
 
+extension Nimbus: GleanPlumbProtocol {
+    public func createMessageHelper() throws -> GleanPlumbMessageHelper {
+        return try createMessageHelper(string: nil)
+    }
+
+    public func createMessageHelper(additionalContext: [String: Any]) throws -> GleanPlumbMessageHelper {
+        let data = try JSONSerialization.data(withJSONObject: additionalContext, options: [])
+        let string = String(data: data, encoding: .utf8)
+        return try createMessageHelper(string: string)
+    }
+
+    public func createMessageHelper<T: Encodable>(additionalContext: T) throws -> GleanPlumbMessageHelper {
+        let encoder = JSONEncoder()
+        encoder.keyEncodingStrategy = .convertToSnakeCase
+
+        let data = try encoder.encode(additionalContext)
+        let string = String(data: data, encoding: .utf8)!
+        return try createMessageHelper(string: string)
+    }
+
+    private func createMessageHelper(string: String?) throws -> GleanPlumbMessageHelper {
+        let targetingHelper = try nimbusClient.createTargetingHelper(additionalContext: string)
+        let stringHelper = try nimbusClient.createStringHelper(additionalContext: string)
+        return GleanPlumbMessageHelper(targetingHelper: targetingHelper, stringHelper: stringHelper)
+    }
+}
+
 public class NimbusDisabled: NimbusApi {
     public static let shared = NimbusDisabled()
 
@@ -349,5 +376,22 @@ public extension NimbusDisabled {
 
     func getExperimentBranches(_: String) -> [Branch]? {
         return nil
+    }
+}
+
+extension NimbusDisabled: GleanPlumbProtocol {
+    public func createMessageHelper() throws -> GleanPlumbMessageHelper {
+        GleanPlumbMessageHelper(
+            targetingHelper: AlwaysFalseTargetingHelper(),
+            stringHelper: NonStringHelper()
+        )
+    }
+
+    public func createMessageHelper(additionalContext _: [String: Any]) throws -> GleanPlumbMessageHelper {
+        try createMessageHelper()
+    }
+
+    public func createMessageHelper<T: Encodable>(additionalContext _: T) throws -> GleanPlumbMessageHelper {
+        try createMessageHelper()
     }
 }
