@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_nimbus_59ee_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_nimbus_302d_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_nimbus_59ee_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_nimbus_302d_rustbuffer_free(self, $0) }
     }
 }
 
@@ -433,6 +433,8 @@ public protocol NimbusClientProtocol {
     func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent]
     func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent]
     func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent]
+    func createTargetingHelper(additionalContext: String?) throws -> NimbusTargetingHelper
+    func createStringHelper(additionalContext: String?) throws -> NimbusStringHelper
 }
 
 public class NimbusClient: NimbusClientProtocol {
@@ -449,25 +451,25 @@ public class NimbusClient: NimbusClientProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_new(appCtx.lower(), dbpath.lower(), FfiConverterOptionRecordRemoteSettingsConfig.lower(remoteSettingsConfig), availableRandomizationUnits.lower(), $0)
+                nimbus_302d_NimbusClient_new(appCtx.lower(), dbpath.lower(), FfiConverterOptionRecordRemoteSettingsConfig.lower(remoteSettingsConfig), availableRandomizationUnits.lower(), $0)
             })
     }
 
     deinit {
-        try! rustCall { ffi_nimbus_59ee_NimbusClient_object_free(pointer, $0) }
+        try! rustCall { ffi_nimbus_302d_NimbusClient_object_free(pointer, $0) }
     }
 
     public func initialize() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_initialize(self.pointer, $0)
+                nimbus_302d_NimbusClient_initialize(self.pointer, $0)
             }
     }
 
     public func getExperimentBranch(id: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
+                nimbus_302d_NimbusClient_get_experiment_branch(self.pointer, id.lower(), $0)
             }
         return try FfiConverterOptionString.lift(_retval)
     }
@@ -475,7 +477,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getFeatureConfigVariables(featureId: String) throws -> String? {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
+                nimbus_302d_NimbusClient_get_feature_config_variables(self.pointer, featureId.lower(), $0)
             }
         return try FfiConverterOptionString.lift(_retval)
     }
@@ -483,7 +485,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
+                nimbus_302d_NimbusClient_get_experiment_branches(self.pointer, experimentSlug.lower(), $0)
             }
         return try FfiConverterSequenceRecordExperimentBranch.lift(_retval)
     }
@@ -491,7 +493,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getActiveExperiments() throws -> [EnrolledExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_get_active_experiments(self.pointer, $0)
+                nimbus_302d_NimbusClient_get_active_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordEnrolledExperiment.lift(_retval)
     }
@@ -499,7 +501,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getAvailableExperiments() throws -> [AvailableExperiment] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_get_available_experiments(self.pointer, $0)
+                nimbus_302d_NimbusClient_get_available_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordAvailableExperiment.lift(_retval)
     }
@@ -507,7 +509,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getGlobalUserParticipation() throws -> Bool {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_get_global_user_participation(self.pointer, $0)
+                nimbus_302d_NimbusClient_get_global_user_participation(self.pointer, $0)
             }
         return try Bool.lift(_retval)
     }
@@ -515,7 +517,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
+                nimbus_302d_NimbusClient_set_global_user_participation(self.pointer, optIn.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -523,7 +525,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func updateExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_update_experiments(self.pointer, $0)
+                nimbus_302d_NimbusClient_update_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -531,14 +533,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func fetchExperiments() throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_fetch_experiments(self.pointer, $0)
+                nimbus_302d_NimbusClient_fetch_experiments(self.pointer, $0)
             }
     }
 
     public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_apply_pending_experiments(self.pointer, $0)
+                nimbus_302d_NimbusClient_apply_pending_experiments(self.pointer, $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -546,14 +548,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func setExperimentsLocally(experimentsJson: String) throws {
         try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
+                nimbus_302d_NimbusClient_set_experiments_locally(self.pointer, experimentsJson.lower(), $0)
             }
     }
 
     public func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
+                nimbus_302d_NimbusClient_opt_in_with_branch(self.pointer, experimentSlug.lower(), branch.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -561,7 +563,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
+                nimbus_302d_NimbusClient_opt_out(self.pointer, experimentSlug.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
     }
@@ -569,9 +571,25 @@ public class NimbusClient: NimbusClientProtocol {
     public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
         let _retval = try
             rustCallWithError(NimbusError.self) {
-                nimbus_59ee_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
+                nimbus_302d_NimbusClient_reset_telemetry_identifiers(self.pointer, newRandomizationUnits.lower(), $0)
             }
         return try FfiConverterSequenceRecordEnrollmentChangeEvent.lift(_retval)
+    }
+
+    public func createTargetingHelper(additionalContext: String? = nil) throws -> NimbusTargetingHelper {
+        let _retval = try
+            rustCallWithError(NimbusError.self) {
+                nimbus_302d_NimbusClient_create_targeting_helper(self.pointer, FfiConverterOptionJsonObject.lower(additionalContext), $0)
+            }
+        return try NimbusTargetingHelper.lift(_retval)
+    }
+
+    public func createStringHelper(additionalContext: String? = nil) throws -> NimbusStringHelper {
+        let _retval = try
+            rustCallWithError(NimbusError.self) {
+                nimbus_302d_NimbusClient_create_string_helper(self.pointer, FfiConverterOptionJsonObject.lower(additionalContext), $0)
+            }
+        return try NimbusStringHelper.lift(_retval)
     }
 }
 
@@ -609,6 +627,139 @@ private extension NimbusClient {
 // 'private' modifier cannot be used with extensions that declare protocol conformances
 // """
 extension NimbusClient: ViaFfi, Serializable {}
+
+public protocol NimbusTargetingHelperProtocol {
+    func evalJexl(expression: String) throws -> Bool
+}
+
+public class NimbusTargetingHelper: NimbusTargetingHelperProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `ViaFfi` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { ffi_nimbus_302d_NimbusTargetingHelper_object_free(pointer, $0) }
+    }
+
+    public func evalJexl(expression: String) throws -> Bool {
+        let _retval = try
+            rustCallWithError(NimbusError.self) {
+                nimbus_302d_NimbusTargetingHelper_eval_jexl(self.pointer, expression.lower(), $0)
+            }
+        return try Bool.lift(_retval)
+    }
+}
+
+private extension NimbusTargetingHelper {
+    typealias FfiType = UnsafeMutableRawPointer
+
+    static func read(from buf: Reader) throws -> Self {
+        let v: UInt64 = try buf.readInt()
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    func write(into buf: Writer) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower()))))
+    }
+
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Self {
+        return Self(unsafeFromRawPointer: pointer)
+    }
+
+    func lower() -> UnsafeMutableRawPointer {
+        return pointer
+    }
+}
+
+// Ideally this would be `fileprivate`, but Swift says:
+// """
+// 'private' modifier cannot be used with extensions that declare protocol conformances
+// """
+extension NimbusTargetingHelper: ViaFfi, Serializable {}
+
+public protocol NimbusStringHelperProtocol {
+    func stringFormat(template: String, uuid: String?) -> String
+    func getUuid(template: String) -> String?
+}
+
+public class NimbusStringHelper: NimbusStringHelperProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `ViaFfi` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { ffi_nimbus_302d_NimbusStringHelper_object_free(pointer, $0) }
+    }
+
+    public func stringFormat(template: String, uuid: String? = nil) -> String {
+        let _retval = try!
+            rustCall {
+                nimbus_302d_NimbusStringHelper_string_format(self.pointer, template.lower(), FfiConverterOptionString.lower(uuid), $0)
+            }
+        return try! String.lift(_retval)
+    }
+
+    public func getUuid(template: String) -> String? {
+        let _retval = try!
+            rustCall {
+                nimbus_302d_NimbusStringHelper_get_uuid(self.pointer, template.lower(), $0)
+            }
+        return try! FfiConverterOptionString.lift(_retval)
+    }
+}
+
+private extension NimbusStringHelper {
+    typealias FfiType = UnsafeMutableRawPointer
+
+    static func read(from buf: Reader) throws -> Self {
+        let v: UInt64 = try buf.readInt()
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    func write(into buf: Writer) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower()))))
+    }
+
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Self {
+        return Self(unsafeFromRawPointer: pointer)
+    }
+
+    func lower() -> UnsafeMutableRawPointer {
+        return pointer
+    }
+}
+
+// Ideally this would be `fileprivate`, but Swift says:
+// """
+// 'private' modifier cannot be used with extensions that declare protocol conformances
+// """
+extension NimbusStringHelper: ViaFfi, Serializable {}
 
 public struct AppContext {
     public var appName: String
@@ -1356,6 +1507,24 @@ extension NimbusError: ViaFfiUsingByteBuffer, ViaFfi {
 extension NimbusError: Equatable, Hashable {}
 
 extension NimbusError: Error {}
+private enum FfiConverterTypeJsonObject {
+    fileprivate static func read(_ buf: Reader) throws -> String {
+        return try String.read(from: buf)
+    }
+
+    fileprivate static func write(_ value: String, _ buf: Writer) {
+        return value.write(into: buf)
+    }
+
+    fileprivate static func lift(_ value: RustBuffer) throws -> String {
+        return try String.lift(value)
+    }
+
+    fileprivate static func lower(_ value: String) -> RustBuffer {
+        return value.lower()
+    }
+}
+
 extension Int8: Primitive, ViaFfi {
     fileprivate static func read(from buf: Reader) throws -> Self {
         return try lift(buf.readInt())
@@ -1444,6 +1613,8 @@ extension String: ViaFfi {
 }
 
 // Helper code for NimbusClient class is found in ObjectTemplate.swift
+// Helper code for NimbusStringHelper class is found in ObjectTemplate.swift
+// Helper code for NimbusTargetingHelper class is found in ObjectTemplate.swift
 // Helper code for AppContext record is found in RecordTemplate.swift
 // Helper code for AvailableExperiment record is found in RecordTemplate.swift
 // Helper code for AvailableRandomizationUnits record is found in RecordTemplate.swift
@@ -1514,6 +1685,22 @@ private enum FfiConverterOptionDictionaryString: FfiConverterUsingByteBuffer {
     static func read(from buf: Reader) throws -> SwiftType {
         try FfiConverterOptional.read(from: buf) { buf in
             try FfiConverterDictionaryString.read(from: buf)
+        }
+    }
+}
+
+private enum FfiConverterOptionJsonObject: FfiConverterUsingByteBuffer {
+    typealias SwiftType = String?
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        FfiConverterOptional.write(value, into: buf) { item, buf in
+            FfiConverterTypeJsonObject.write(item, buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        try FfiConverterOptional.read(from: buf) { buf in
+            try FfiConverterTypeJsonObject.read(buf)
         }
     }
 }
@@ -1615,6 +1802,8 @@ private enum FfiConverterDictionaryString: FfiConverterUsingByteBuffer {
         }
     }
 }
+
+// Helper code for JsonObject is found in CustomType.py
 
 /**
  * Top level initializers and tear down methods.
