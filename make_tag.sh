@@ -52,7 +52,7 @@ else
 fi
 
 "$THIS_DIR/generate.sh" $AS_PATH || exit 1
-git add "$THIS_DIR/generated"
+git add "$THIS_DIR/swift-source"
 
 if [ "false" = $IS_LOCAL ]; then
     echo "Removing application services repository after generating bindings"
