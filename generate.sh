@@ -79,7 +79,7 @@ cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$OUT_DIR"
 # Autofill
 #
 ###
-## Not of our consumers currently use autofill, and the swift code has a name conflict with
+## None of our consumers currently use autofill, and the swift code has a name conflict with
 ## another component, so for now, commented out.
 
 # "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/autofill/src/autofill.udl"
@@ -98,10 +98,11 @@ cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$OUT_DIR"
 # Tabs
 #
 ###
-## Not of our consumers currently use tabs, and the swift code has a name conflict with
-## another component, so for now, commented out.
 
-# "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/tabs/src/tabs.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/tabs/src/tabs.udl"
+
+# Copy the hand-written Swift, since it all needs to be together in one directory.
+cp -r "$APP_SERVICES_DIR/components/tabs/ios/Tabs" "$OUT_DIR"
 
 ###
 #
