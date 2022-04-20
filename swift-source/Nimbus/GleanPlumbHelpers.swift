@@ -3,7 +3,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import Foundation
-import Glean
 
 /**
  * Instances of this class are useful for implementing a messaging service based upon

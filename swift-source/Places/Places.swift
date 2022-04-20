@@ -4,6 +4,12 @@
 
 import Foundation
 import os.log
+#if canImport(Sync15)
+    import Sync15
+#endif
+#if canImport(MozillaRustComponents)
+    import MozillaRustComponents
+#endif
 
 internal typealias UniffiPlacesApi = PlacesApi
 internal typealias UniffiPlacesConnection = PlacesConnection
@@ -30,6 +36,7 @@ public class PlacesAPI {
     private let api: UniffiPlacesApi
 
     private let queue = DispatchQueue(label: "com.mozilla.places.api")
+    private let interruptHandle: SqlInterruptHandle
 
     /**
      * Initialize a PlacesAPI
@@ -43,6 +50,8 @@ public class PlacesAPI {
 
         let uniffiConn = try api.newConnection(connType: ConnectionType.readWrite)
         writeConn = try PlacesWriteConnection(conn: uniffiConn)
+
+        interruptHandle = try api.newSyncConnInterruptHandle()
 
         writeConn.api = self
     }
@@ -174,6 +183,18 @@ public class PlacesAPI {
             return try self.api.bookmarksReset()
         }
     }
+
+    /**
+     * Attempt to interrupt a long-running operation which may be happening
+     * concurrently (specifically, for `interrupt` on `PlacesAPI`, this refers
+     * to a call to `sync`).
+     *
+     * If the operation is interrupted, it should fail with a
+     * `PlacesError.databaseInterrupted` error.
+     */
+    open func interrupt() {
+        interruptHandle.interrupt()
+    }
 }
 
 /**
@@ -183,7 +204,7 @@ public class PlacesReadConnection {
     fileprivate let queue = DispatchQueue(label: "com.mozilla.places.conn")
     fileprivate var conn: UniffiPlacesConnection
     fileprivate weak var api: PlacesAPI?
-    private let interruptHandle: SqlInterruptHandle
+    fileprivate let interruptHandle: SqlInterruptHandle
 
     fileprivate init(conn: UniffiPlacesConnection, api: PlacesAPI? = nil) throws {
         self.conn = conn
