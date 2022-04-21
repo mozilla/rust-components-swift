@@ -1,8 +1,8 @@
 // swift-tools-version:5.4
 import PackageDescription
 
-let checksum = "b0bfb2bf91bf52978b8f0450456a4e9b2f7d346d635b0ac7f743709e6eaa98cb"
-let version = "v93.0.0"
+let checksum = "ee0c516ff8ddb0050c8e0daffd640c2b2cc01441cd081e6c46002e2f0324dc9c"
+let version = "v93.0.1"
 let url = "https://github.com/mozilla/application-services/releases/download/\(version)/MozillaRustComponents.xcframework.zip"
 
 let package = Package(
