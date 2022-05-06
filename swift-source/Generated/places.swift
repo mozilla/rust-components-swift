@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_places_d815_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_places_4240_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_places_d815_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_places_4240_rustbuffer_free(self, $0) }
     }
 }
 
@@ -724,7 +724,7 @@ public func placesApiNew(dbPath: String) throws -> PlacesApi {
     let _retval = try
 
         rustCallWithError(PlacesError.self) {
-            places_d815_places_api_new(dbPath.lower(), $0)
+            places_4240_places_api_new(dbPath.lower(), $0)
         }
     return try PlacesApi.lift(_retval)
 }
@@ -744,13 +744,13 @@ public class SqlInterruptHandle: SqlInterruptHandleProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_d815_SqlInterruptHandle_object_free(pointer, $0) }
+        try! rustCall { ffi_places_4240_SqlInterruptHandle_object_free(pointer, $0) }
     }
 
     public func interrupt() {
         try!
             rustCall {
-                places_d815_SqlInterruptHandle_interrupt(self.pointer, $0)
+                places_4240_SqlInterruptHandle_interrupt(self.pointer, $0)
             }
     }
 }
@@ -814,13 +814,13 @@ public class PlacesApi: PlacesApiProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_d815_PlacesApi_object_free(pointer, $0) }
+        try! rustCall { ffi_places_4240_PlacesApi_object_free(pointer, $0) }
     }
 
     public func newConnection(connType: ConnectionType) throws -> PlacesConnection {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_new_connection(self.pointer, connType.lower(), $0)
+                places_4240_PlacesApi_new_connection(self.pointer, connType.lower(), $0)
             }
         return try PlacesConnection.lift(_retval)
     }
@@ -828,21 +828,21 @@ public class PlacesApi: PlacesApiProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                places_d815_PlacesApi_register_with_sync_manager(self.pointer, $0)
+                places_4240_PlacesApi_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func resetHistory() throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_reset_history(self.pointer, $0)
+                places_4240_PlacesApi_reset_history(self.pointer, $0)
             }
     }
 
     public func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_history_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+                places_4240_PlacesApi_history_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), FfiConverterTypeUrl.lower(tokenserverUrl), $0)
             }
         return try String.lift(_retval)
     }
@@ -850,7 +850,7 @@ public class PlacesApi: PlacesApiProtocol {
     public func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String) throws -> String {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_bookmarks_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+                places_4240_PlacesApi_bookmarks_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), FfiConverterTypeUrl.lower(tokenserverUrl), $0)
             }
         return try String.lift(_retval)
     }
@@ -858,7 +858,7 @@ public class PlacesApi: PlacesApiProtocol {
     public func placesPinnedSitesImportFromFennec(dbPath: String) throws -> [BookmarkItem] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_places_pinned_sites_import_from_fennec(self.pointer, dbPath.lower(), $0)
+                places_4240_PlacesApi_places_pinned_sites_import_from_fennec(self.pointer, dbPath.lower(), $0)
             }
         return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
     }
@@ -866,7 +866,7 @@ public class PlacesApi: PlacesApiProtocol {
     public func placesHistoryImportFromFennec(dbPath: String) throws -> String {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_places_history_import_from_fennec(self.pointer, dbPath.lower(), $0)
+                places_4240_PlacesApi_places_history_import_from_fennec(self.pointer, dbPath.lower(), $0)
             }
         return try String.lift(_retval)
     }
@@ -874,7 +874,7 @@ public class PlacesApi: PlacesApiProtocol {
     public func placesBookmarksImportFromFennec(dbPath: String) throws -> String {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_places_bookmarks_import_from_fennec(self.pointer, dbPath.lower(), $0)
+                places_4240_PlacesApi_places_bookmarks_import_from_fennec(self.pointer, dbPath.lower(), $0)
             }
         return try String.lift(_retval)
     }
@@ -882,14 +882,14 @@ public class PlacesApi: PlacesApiProtocol {
     public func placesBookmarksImportFromIos(dbPath: String) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_places_bookmarks_import_from_ios(self.pointer, dbPath.lower(), $0)
+                places_4240_PlacesApi_places_bookmarks_import_from_ios(self.pointer, dbPath.lower(), $0)
             }
     }
 
     public func bookmarksReset() throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesApi_bookmarks_reset(self.pointer, $0)
+                places_4240_PlacesApi_bookmarks_reset(self.pointer, $0)
             }
     }
 }
@@ -980,13 +980,13 @@ public class PlacesConnection: PlacesConnectionProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_d815_PlacesConnection_object_free(pointer, $0) }
+        try! rustCall { ffi_places_4240_PlacesConnection_object_free(pointer, $0) }
     }
 
     public func newInterruptHandle() -> SqlInterruptHandle {
         let _retval = try!
             rustCall {
-                places_d815_PlacesConnection_new_interrupt_handle(self.pointer, $0)
+                places_4240_PlacesConnection_new_interrupt_handle(self.pointer, $0)
             }
         return try! SqlInterruptHandle.lift(_retval)
     }
@@ -994,7 +994,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getLatestHistoryMetadataForUrl(url: String) throws -> HistoryMetadata? {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_latest_history_metadata_for_url(self.pointer, FfiConverterTypeUrl.lower(url), $0)
+                places_4240_PlacesConnection_get_latest_history_metadata_for_url(self.pointer, FfiConverterTypeUrl.lower(url), $0)
             }
         return try FfiConverterOptionRecordHistoryMetadata.lift(_retval)
     }
@@ -1002,7 +1002,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getHistoryMetadataBetween(start: Int64, end: Int64) throws -> [HistoryMetadata] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_history_metadata_between(self.pointer, FfiConverterTypeTimestamp.lower(start), FfiConverterTypeTimestamp.lower(end), $0)
+                places_4240_PlacesConnection_get_history_metadata_between(self.pointer, FfiConverterTypeTimestamp.lower(start), FfiConverterTypeTimestamp.lower(end), $0)
             }
         return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
     }
@@ -1010,7 +1010,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getHistoryMetadataSince(since: Int64) throws -> [HistoryMetadata] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_history_metadata_since(self.pointer, FfiConverterTypeTimestamp.lower(since), $0)
+                places_4240_PlacesConnection_get_history_metadata_since(self.pointer, FfiConverterTypeTimestamp.lower(since), $0)
             }
         return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
     }
@@ -1018,7 +1018,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_query_autocomplete(self.pointer, search.lower(), limit.lower(), $0)
+                places_4240_PlacesConnection_query_autocomplete(self.pointer, search.lower(), limit.lower(), $0)
             }
         return try FfiConverterSequenceRecordSearchResult.lift(_retval)
     }
@@ -1026,14 +1026,14 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func acceptResult(searchString: String, url: String) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_accept_result(self.pointer, searchString.lower(), url.lower(), $0)
+                places_4240_PlacesConnection_accept_result(self.pointer, searchString.lower(), url.lower(), $0)
             }
     }
 
     public func matchUrl(query: String) throws -> String? {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_match_url(self.pointer, query.lower(), $0)
+                places_4240_PlacesConnection_match_url(self.pointer, query.lower(), $0)
             }
         return try FfiConverterOptionUrl.lift(_retval)
     }
@@ -1041,7 +1041,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_query_history_metadata(self.pointer, query.lower(), limit.lower(), $0)
+                places_4240_PlacesConnection_query_history_metadata(self.pointer, query.lower(), limit.lower(), $0)
             }
         return try FfiConverterSequenceRecordHistoryMetadata.lift(_retval)
     }
@@ -1049,7 +1049,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_history_highlights(self.pointer, weights.lower(), limit.lower(), $0)
+                places_4240_PlacesConnection_get_history_highlights(self.pointer, weights.lower(), limit.lower(), $0)
             }
         return try FfiConverterSequenceRecordHistoryHighlight.lift(_retval)
     }
@@ -1057,35 +1057,35 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_note_history_metadata_observation(self.pointer, data.lower(), $0)
+                places_4240_PlacesConnection_note_history_metadata_observation(self.pointer, data.lower(), $0)
             }
     }
 
     public func metadataDelete(url: String, referrerUrl: String?, searchTerm: String?) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_metadata_delete(self.pointer, FfiConverterTypeUrl.lower(url), FfiConverterOptionUrl.lower(referrerUrl), FfiConverterOptionString.lower(searchTerm), $0)
+                places_4240_PlacesConnection_metadata_delete(self.pointer, FfiConverterTypeUrl.lower(url), FfiConverterOptionUrl.lower(referrerUrl), FfiConverterOptionString.lower(searchTerm), $0)
             }
     }
 
     public func metadataDeleteOlderThan(olderThan: Int64) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_metadata_delete_older_than(self.pointer, FfiConverterTypeTimestamp.lower(olderThan), $0)
+                places_4240_PlacesConnection_metadata_delete_older_than(self.pointer, FfiConverterTypeTimestamp.lower(olderThan), $0)
             }
     }
 
     public func applyObservation(visit: VisitObservation) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_apply_observation(self.pointer, visit.lower(), $0)
+                places_4240_PlacesConnection_apply_observation(self.pointer, visit.lower(), $0)
             }
     }
 
     public func getVisitedUrlsInRange(start: Int64, end: Int64, includeRemote: Bool) throws -> [String] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_visited_urls_in_range(self.pointer, FfiConverterTypeTimestamp.lower(start), FfiConverterTypeTimestamp.lower(end), includeRemote.lower(), $0)
+                places_4240_PlacesConnection_get_visited_urls_in_range(self.pointer, FfiConverterTypeTimestamp.lower(start), FfiConverterTypeTimestamp.lower(end), includeRemote.lower(), $0)
             }
         return try FfiConverterSequenceUrl.lift(_retval)
     }
@@ -1093,7 +1093,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getVisitInfos(startDate: Int64, endDate: Int64, excludeTypes: Int32) throws -> [HistoryVisitInfo] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_visit_infos(self.pointer, FfiConverterTypeTimestamp.lower(startDate), FfiConverterTypeTimestamp.lower(endDate), FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                places_4240_PlacesConnection_get_visit_infos(self.pointer, FfiConverterTypeTimestamp.lower(startDate), FfiConverterTypeTimestamp.lower(endDate), FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
             }
         return try FfiConverterSequenceRecordHistoryVisitInfo.lift(_retval)
     }
@@ -1101,7 +1101,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getVisitCount(excludeTypes: Int32) throws -> Int64 {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_visit_count(self.pointer, FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                places_4240_PlacesConnection_get_visit_count(self.pointer, FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
             }
         return try Int64.lift(_retval)
     }
@@ -1109,7 +1109,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getVisitPage(offset: Int64, count: Int64, excludeTypes: Int32) throws -> [HistoryVisitInfo] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_visit_page(self.pointer, offset.lower(), count.lower(), FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                places_4240_PlacesConnection_get_visit_page(self.pointer, offset.lower(), count.lower(), FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
             }
         return try FfiConverterSequenceRecordHistoryVisitInfo.lift(_retval)
     }
@@ -1117,7 +1117,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getVisitPageWithBound(bound: Int64, offset: Int64, count: Int64, excludeTypes: Int32) throws -> HistoryVisitInfosWithBound {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_visit_page_with_bound(self.pointer, bound.lower(), offset.lower(), count.lower(), FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                places_4240_PlacesConnection_get_visit_page_with_bound(self.pointer, bound.lower(), offset.lower(), count.lower(), FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
             }
         return try HistoryVisitInfosWithBound.lift(_retval)
     }
@@ -1125,7 +1125,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func getVisited(urls: [String]) throws -> [Bool] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_visited(self.pointer, FfiConverterSequenceString.lower(urls), $0)
+                places_4240_PlacesConnection_get_visited(self.pointer, FfiConverterSequenceString.lower(urls), $0)
             }
         return try FfiConverterSequenceBool.lift(_retval)
     }
@@ -1133,28 +1133,28 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func deleteVisitsFor(url: String) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_delete_visits_for(self.pointer, url.lower(), $0)
+                places_4240_PlacesConnection_delete_visits_for(self.pointer, url.lower(), $0)
             }
     }
 
     public func deleteVisitsBetween(start: Int64, end: Int64) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_delete_visits_between(self.pointer, FfiConverterTypeTimestamp.lower(start), FfiConverterTypeTimestamp.lower(end), $0)
+                places_4240_PlacesConnection_delete_visits_between(self.pointer, FfiConverterTypeTimestamp.lower(start), FfiConverterTypeTimestamp.lower(end), $0)
             }
     }
 
     public func deleteVisit(url: String, timestamp: Int64) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_delete_visit(self.pointer, url.lower(), FfiConverterTypeTimestamp.lower(timestamp), $0)
+                places_4240_PlacesConnection_delete_visit(self.pointer, url.lower(), FfiConverterTypeTimestamp.lower(timestamp), $0)
             }
     }
 
     public func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_get_top_frecent_site_infos(self.pointer, numItems.lower(), thresholdOption.lower(), $0)
+                places_4240_PlacesConnection_get_top_frecent_site_infos(self.pointer, numItems.lower(), thresholdOption.lower(), $0)
             }
         return try FfiConverterSequenceRecordTopFrecentSiteInfo.lift(_retval)
     }
@@ -1162,35 +1162,35 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func wipeLocalHistory() throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_wipe_local_history(self.pointer, $0)
+                places_4240_PlacesConnection_wipe_local_history(self.pointer, $0)
             }
     }
 
     public func deleteEverythingHistory() throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_delete_everything_history(self.pointer, $0)
+                places_4240_PlacesConnection_delete_everything_history(self.pointer, $0)
             }
     }
 
     public func pruneDestructively() throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_prune_destructively(self.pointer, $0)
+                places_4240_PlacesConnection_prune_destructively(self.pointer, $0)
             }
     }
 
     public func runMaintenance() throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_run_maintenance(self.pointer, $0)
+                places_4240_PlacesConnection_run_maintenance(self.pointer, $0)
             }
     }
 
     public func bookmarksGetTree(itemGuid: String) throws -> BookmarkItem? {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_get_tree(self.pointer, FfiConverterTypeGuid.lower(itemGuid), $0)
+                places_4240_PlacesConnection_bookmarks_get_tree(self.pointer, FfiConverterTypeGuid.lower(itemGuid), $0)
             }
         return try FfiConverterOptionEnumBookmarkItem.lift(_retval)
     }
@@ -1198,7 +1198,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksGetByGuid(guid: String, getDirectChildren: Bool) throws -> BookmarkItem? {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_get_by_guid(self.pointer, FfiConverterTypeGuid.lower(guid), getDirectChildren.lower(), $0)
+                places_4240_PlacesConnection_bookmarks_get_by_guid(self.pointer, FfiConverterTypeGuid.lower(guid), getDirectChildren.lower(), $0)
             }
         return try FfiConverterOptionEnumBookmarkItem.lift(_retval)
     }
@@ -1206,7 +1206,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_get_all_with_url(self.pointer, url.lower(), $0)
+                places_4240_PlacesConnection_bookmarks_get_all_with_url(self.pointer, url.lower(), $0)
             }
         return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
     }
@@ -1214,7 +1214,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_search(self.pointer, query.lower(), limit.lower(), $0)
+                places_4240_PlacesConnection_bookmarks_search(self.pointer, query.lower(), limit.lower(), $0)
             }
         return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
     }
@@ -1222,7 +1222,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem] {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_get_recent(self.pointer, limit.lower(), $0)
+                places_4240_PlacesConnection_bookmarks_get_recent(self.pointer, limit.lower(), $0)
             }
         return try FfiConverterSequenceEnumBookmarkItem.lift(_retval)
     }
@@ -1230,7 +1230,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksDelete(id: String) throws -> Bool {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_delete(self.pointer, FfiConverterTypeGuid.lower(id), $0)
+                places_4240_PlacesConnection_bookmarks_delete(self.pointer, FfiConverterTypeGuid.lower(id), $0)
             }
         return try Bool.lift(_retval)
     }
@@ -1238,14 +1238,14 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksDeleteEverything() throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
+                places_4240_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
             }
     }
 
     public func bookmarksGetUrlForKeyword(keyword: String) throws -> String? {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer, keyword.lower(), $0)
+                places_4240_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer, keyword.lower(), $0)
             }
         return try FfiConverterOptionUrl.lift(_retval)
     }
@@ -1253,14 +1253,14 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksUpdate(data: BookmarkUpdateInfo) throws {
         try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_update(self.pointer, data.lower(), $0)
+                places_4240_PlacesConnection_bookmarks_update(self.pointer, data.lower(), $0)
             }
     }
 
     public func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> String {
         let _retval = try
             rustCallWithError(PlacesError.self) {
-                places_d815_PlacesConnection_bookmarks_insert(self.pointer, bookmark.lower(), $0)
+                places_4240_PlacesConnection_bookmarks_insert(self.pointer, bookmark.lower(), $0)
             }
         return try FfiConverterTypeGuid.lift(_retval)
     }
@@ -2571,6 +2571,9 @@ public enum PlacesError {
 
     // Simple error enums only carry a message
     case CannotUpdateRoot(message: String)
+
+    // Simple error enums only carry a message
+    case InternalError(message: String)
 }
 
 extension PlacesError: ViaFfiUsingByteBuffer, ViaFfi {
@@ -2621,6 +2624,10 @@ extension PlacesError: ViaFfiUsingByteBuffer, ViaFfi {
                 message: try String.read(from: buf)
             )
 
+        case 12: return .InternalError(
+                message: try String.read(from: buf)
+            )
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
@@ -2659,6 +2666,9 @@ extension PlacesError: ViaFfiUsingByteBuffer, ViaFfi {
             message.write(into: buf)
         case let .CannotUpdateRoot(message):
             buf.writeInt(Int32(11))
+            message.write(into: buf)
+        case let .InternalError(message):
+            buf.writeInt(Int32(12))
             message.write(into: buf)
         }
     }
