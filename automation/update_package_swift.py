@@ -7,7 +7,7 @@ import sys
 
 GITHUB_REPO = "mozilla/application-services"
 XC_FRAMEWORK_NAME = "MozillaRustComponents.xcframework.zip"
-FOCUS_FRAMEWORK_NAME = "MozillaRustComponents.xcframework.zip"
+FOCUS_FRAMEWORK_NAME = "FocusRustComponents.xcframework.zip"
 
 PACKAGE_SWIFT = "Package.swift"
 github_access_token = os.getenv("GITHUB_TOKEN")
@@ -44,7 +44,7 @@ def update_package_swift(as_version, checksum, focus_checksum):
             line = f"{checksum_line} \"{checksum}\"\n"
         elif line.strip().startswith(focus_checksum_line):
             # Replace the line with the new computed checksum
-            line = f"{focus_checksum_line} \"{checksum}\"\n"
+            line = f"{focus_checksum_line} \"{focus_checksum}\"\n"
         sys.stdout.write(line)
 def main():
     '''
