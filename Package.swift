@@ -7,8 +7,7 @@ let url = "https://github.com/mozilla/application-services/releases/download/\(v
 
 // Focus xcframework
 let focusChecksum = "d38bf21326ba6592196e06dac9e1786473a3c43f267fb010ce761f3954dc7b5e"
-// let focusUrl = "https://github.com/mozilla/application-services/releases/download/\(version)/FocusRustComponents.xcframework.zip"
-let focusUrl = "https://output.circle-artifacts.com/output/job/655aa9aa-3a5a-468d-9ff7-4783b9fb7458/artifacts/0/dist/FocusRustComponents.xcframework.zip"
+let focusUrl = "https://github.com/mozilla/application-services/releases/download/\(version)/FocusRustComponents.xcframework.zip"
 let package = Package(
     name: "MozillaRustComponentsSwift",
     platforms: [.iOS(.v11)],
