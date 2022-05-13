@@ -1,15 +1,19 @@
 // swift-tools-version:5.4
 import PackageDescription
 
-let checksum = "3d97e0661ccc4b45ee58b35ed958e19d8e419985ea5efd9b58078dd086f057ce"
-let version = "v93.1.0"
+let checksum = "8df6c1aeb572c5efbf792b58dbe1fc4dab31672d83be2cf41c5339ef4b1680c8"
+let version = "v93.2.0"
 let url = "https://github.com/mozilla/application-services/releases/download/\(version)/MozillaRustComponents.xcframework.zip"
 
+// Focus xcframework
+let focusChecksum = "2c9fbc8086c124a9256eb921290a605ec7de5e865e3cd1af6df7779662f0683a"
+let focusUrl = "https://github.com/mozilla/application-services/releases/download/\(version)/FocusRustComponents.xcframework.zip"
 let package = Package(
     name: "MozillaRustComponentsSwift",
     platforms: [.iOS(.v11)],
     products: [
         .library(name: "MozillaAppServices", targets: ["MozillaAppServices"]),
+        .library(name: "FocusAppServices", targets: ["FocusAppServices"]),
     ],
     dependencies: [
     ],
@@ -26,6 +30,13 @@ let package = Package(
             ],
             path: "MozillaRustComponentsWrapper"
         ),
+        .target(
+            name: "FocusRustComponentsWrapper",
+            dependencies: [
+                .target(name: "FocusRustComponents", condition: .when(platforms: [.iOS]))
+            ],
+            path: "FocusRustComponentsWrapper"
+        ),
         .binaryTarget(
             name: "MozillaRustComponents",
             //
@@ -40,10 +51,29 @@ let package = Package(
             //
             //path: "./MozillaRustComponents.xcframework"
         ),
+        .binaryTarget(
+            name: "FocusRustComponents",
+            //
+            // For release artifacts, reference the MozillaRustComponents as a URL with checksum.
+            // IMPORTANT: The checksum has to be on the line directly after the `url`
+            // this is important for our release script so that all values are updated correctly
+            url: focusUrl,
+            checksum: focusChecksum
+
+            // For local testing, you can point at an (unzipped) XCFramework that's part of the repo.
+            // Note that you have to actually check it in and make a tag for it to work correctly.
+            //
+            //path: "./FocusRustComponents.xcframework"
+        ),
         .target(
             name: "MozillaAppServices",
             dependencies: ["MozillaRustComponentsWrapper"],
-            path: "swift-source"
+            path: "swift-source/all"
+        ),
+        .target(
+            name: "FocusAppServices",
+            dependencies: ["FocusRustComponentsWrapper"],
+            path: "swift-source/focus"
         ),
     ]
 )

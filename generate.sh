@@ -21,9 +21,12 @@ GLEAN_GENERATOR="$APP_SERVICES_DIR/components/external/glean/glean-core/ios/sdk_
 
 set -euvx
 
-OUT_DIR="$THIS_DIR/swift-source"
+OUT_DIR="$THIS_DIR/swift-source/all"
+FOCUS_DIR="$THIS_DIR/swift-source/focus"
 
 rm -rf "$OUT_DIR" && mkdir -p "$OUT_DIR"
+rm -rf "$FOCUS_DIR" && mkdir -p "$FOCUS_DIR"
+
 
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
@@ -138,5 +141,45 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $OUT_DIR
 
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
+
+
+###################### Swift code generation for Focus ######################
+# Glean metrics.
+# Run this first, because it appears to delete any other .swift files in the output directory.
+# Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
+SOURCE_ROOT="$THIS_DIR" PROJECT="FocusAppServices" "$GLEAN_GENERATOR" -o "$FOCUS_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
+
+
+
+###
+#
+# Nimbus
+#
+###
+# UniFFI bindings.
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FOCUS_DIR/Generated" "$APP_SERVICES_DIR/components/nimbus/src/nimbus.udl"
+# Copy the hand-written Swift, since it all needs to be together in one directory.
+cp -r "$APP_SERVICES_DIR/components/nimbus/ios/Nimbus" "$FOCUS_DIR"
+
+###
+#
+# RustLog
+#
+###
+
+# We only need to copy the hand-written Swift, RustLog does not use `uniffi` yet
+cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $FOCUS_DIR
+
+
+###
+#
+# Viaduct
+#
+###
+
+# We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
+cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $FOCUS_DIR
+
+
 
 echo "Successfully generated uniffi code!"

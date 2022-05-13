@@ -22,7 +22,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 5, day: 6, hour: 19, minute: 27, second: 46))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 5, day: 12, hour: 3, minute: 18, second: 19))
     }
 
     enum NimbusEvents {
@@ -176,55 +176,6 @@ extension GleanMetrics {
             lifetime: .ping,
             disabled: false,
             allowedExtraKeys: ["branch", "enrollment_id", "experiment"]
-        )
-
-    }
-
-    enum LoginsStoreMigration {
-        /// The total number of login records processed by the migration
-        static let numProcessed = CounterMetricType( // generated from logins_store_migration.num_processed
-            category: "logins_store_migration",
-            name: "num_processed",
-            sendInPings: ["metrics"],
-            lifetime: .ping,
-            disabled: false
-        )
-
-        /// The total number of login records successfully migrated
-        static let numSucceeded = CounterMetricType( // generated from logins_store_migration.num_succeeded
-            category: "logins_store_migration",
-            name: "num_succeeded",
-            sendInPings: ["metrics"],
-            lifetime: .ping,
-            disabled: false
-        )
-
-        /// The total number of login records which failed to migrate
-        static let numFailed = CounterMetricType( // generated from logins_store_migration.num_failed
-            category: "logins_store_migration",
-            name: "num_failed",
-            sendInPings: ["metrics"],
-            lifetime: .ping,
-            disabled: false
-        )
-
-        /// How long the migration tool
-        static let totalDuration = TimespanMetricType( // generated from logins_store_migration.total_duration
-            category: "logins_store_migration",
-            name: "total_duration",
-            sendInPings: ["metrics"],
-            lifetime: .ping,
-            disabled: false,
-            timeUnit: .millisecond
-        )
-
-        /// Errors discovered in the migration.
-        static let errors = StringListMetricType( // generated from logins_store_migration.errors
-            category: "logins_store_migration",
-            name: "errors",
-            sendInPings: ["metrics"],
-            lifetime: .ping,
-            disabled: false
         )
 
     }
