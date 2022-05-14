@@ -118,7 +118,7 @@ pushd $APP_SERVICES_DIR/megazords/ios-rust/
 popd
 
 ## Once built, we want to move the frameowork to this repository, then unzip it
-mv $APP_SERVICES_DIR/megazords/ios-rust/MozillaRustComponents.xcframework $THIS_DIR/MozillaRustComponents.xcframework
+rsync -a --delete $APP_SERVICES_DIR/megazords/ios-rust/MozillaRustComponents.xcframework/ $THIS_DIR/MozillaRustComponents.xcframework/
 
 ## We replace the url and checksum in the Package.swift with a refernce to the local
 ## framework path
