@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_crashtest_5d0e_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_crashtest_9d89_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_crashtest_5d0e_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_crashtest_9d89_rustbuffer_free(self, $0) }
     }
 }
 
@@ -147,45 +147,39 @@ private class Writer {
     }
 }
 
-// Types conforming to `Serializable` can be read and written in a bytebuffer.
-private protocol Serializable {
-    func write(into: Writer)
-    static func read(from: Reader) throws -> Self
-}
-
-// Types confirming to `ViaFfi` can be transferred back-and-for over the FFI.
-// This is analogous to the Rust trait of the same name.
-private protocol ViaFfi: Serializable {
+// Protocol for types that transfer other types across the FFI. This is
+// analogous go the Rust trait of the same name.
+private protocol FfiConverter {
     associatedtype FfiType
-    static func lift(_ v: FfiType) throws -> Self
-    func lower() -> FfiType
+    associatedtype SwiftType
+
+    static func lift(_ value: FfiType) throws -> SwiftType
+    static func lower(_ value: SwiftType) -> FfiType
+    static func read(from buf: Reader) throws -> SwiftType
+    static func write(_ value: SwiftType, into buf: Writer)
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol Primitive {}
+private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
 
-private extension Primitive {
-    typealias FfiType = Self
-
-    static func lift(_ v: Self) throws -> Self {
-        return v
+extension FfiConverterPrimitive {
+    static func lift(_ value: FfiType) throws -> SwiftType {
+        return value
     }
 
-    func lower() -> Self {
-        return self
+    static func lower(_ value: SwiftType) -> FfiType {
+        return value
     }
 }
 
-// Types conforming to `ViaFfiUsingByteBuffer` lift and lower into a bytebuffer.
-// Use this for complex types where it's hard to write a custom lift/lower.
-private protocol ViaFfiUsingByteBuffer: Serializable {}
+// Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
+// Used for complex types where it's hard to write a custom lift/lower.
+private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
-private extension ViaFfiUsingByteBuffer {
-    typealias FfiType = RustBuffer
-
-    static func lift(_ buf: FfiType) throws -> Self {
+extension FfiConverterRustBuffer {
+    static func lift(_ buf: RustBuffer) throws -> SwiftType {
         let reader = Reader(data: Data(rustBuffer: buf))
-        let value = try Self.read(from: reader)
+        let value = try read(from: reader)
         if reader.hasRemaining() {
             throw UniffiInternalError.incompleteData
         }
@@ -193,9 +187,9 @@ private extension ViaFfiUsingByteBuffer {
         return value
     }
 
-    func lower() -> FfiType {
+    static func lower(_ value: SwiftType) -> RustBuffer {
         let writer = Writer()
-        write(into: writer)
+        write(value, into: writer)
         return RustBuffer(bytes: writer.bytes)
     }
 }
@@ -252,8 +246,11 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
     })
 }
 
-private func rustCallWithError<T, E: ViaFfiUsingByteBuffer & Error>(_: E.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: { try E.lift($0) })
+private func rustCallWithError<T, F: FfiConverter>
+(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+    where F.SwiftType: Error, F.FfiType == RustBuffer
+{
+    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
@@ -271,7 +268,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try String.lift(callStatus.errorBuf))
+            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -282,110 +279,13 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
     }
 }
 
-// Protocols for converters we'll implement in templates
-
-private protocol FfiConverter {
-    associatedtype SwiftType
-    associatedtype FfiType
-
-    static func lift(_ ffiValue: FfiType) throws -> SwiftType
-    static func lower(_ value: SwiftType) -> FfiType
-
-    static func read(from: Reader) throws -> SwiftType
-    static func write(_ value: SwiftType, into: Writer)
-}
-
-private protocol FfiConverterUsingByteBuffer: FfiConverter where FfiType == RustBuffer {
-    // Empty, because we want to declare some helper methods in the extension below.
-}
-
-extension FfiConverterUsingByteBuffer {
-    static func lower(_ value: SwiftType) -> FfiType {
-        let writer = Writer()
-        Self.write(value, into: writer)
-        return RustBuffer(bytes: writer.bytes)
-    }
-
-    static func lift(_ buf: FfiType) throws -> SwiftType {
-        let reader = Reader(data: Data(rustBuffer: buf))
-        let value = try Self.read(from: reader)
-        if reader.hasRemaining() {
-            throw UniffiInternalError.incompleteData
-        }
-        buf.deallocate()
-        return value
-    }
-}
-
-// Helpers for structural types. Note that because of canonical_names, it /should/ be impossible
-// to make another `FfiConverterSequence` etc just using the UDL.
-private enum FfiConverterSequence {
-    static func write<T>(_ value: [T], into buf: Writer, writeItem: (T, Writer) -> Void) {
-        let len = Int32(value.count)
-        buf.writeInt(len)
-        for item in value {
-            writeItem(item, buf)
-        }
-    }
-
-    static func read<T>(from buf: Reader, readItem: (Reader) throws -> T) throws -> [T] {
-        let len: Int32 = try buf.readInt()
-        var seq = [T]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            seq.append(try readItem(buf))
-        }
-        return seq
-    }
-}
-
-private enum FfiConverterOptional {
-    static func write<T>(_ value: T?, into buf: Writer, writeItem: (T, Writer) -> Void) {
-        guard let value = value else {
-            buf.writeInt(Int8(0))
-            return
-        }
-        buf.writeInt(Int8(1))
-        writeItem(value, buf)
-    }
-
-    static func read<T>(from buf: Reader, readItem: (Reader) throws -> T) throws -> T? {
-        switch try buf.readInt() as Int8 {
-        case 0: return nil
-        case 1: return try readItem(buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-private enum FfiConverterDictionary {
-    static func write<T>(_ value: [String: T], into buf: Writer, writeItem: (String, T, Writer) -> Void) {
-        let len = Int32(value.count)
-        buf.writeInt(len)
-        for (key, value) in value {
-            writeItem(key, value, buf)
-        }
-    }
-
-    static func read<T>(from buf: Reader, readItem: (Reader) throws -> (String, T)) throws -> [String: T] {
-        let len: Int32 = try buf.readInt()
-        var dict = [String: T]()
-        dict.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            let (key, value) = try readItem(buf)
-            dict[key] = value
-        }
-        return dict
-    }
-}
-
 // Public interface members begin here.
 
 public func triggerRustAbort() {
     try!
 
         rustCall {
-            crashtest_5d0e_trigger_rust_abort($0)
+            crashtest_9d89_trigger_rust_abort($0)
         }
 }
 
@@ -393,15 +293,15 @@ public func triggerRustPanic() {
     try!
 
         rustCall {
-            crashtest_5d0e_trigger_rust_panic($0)
+            crashtest_9d89_trigger_rust_panic($0)
         }
 }
 
 public func triggerRustError() throws {
     try
 
-        rustCallWithError(CrashTestError.self) {
-            crashtest_5d0e_trigger_rust_error($0)
+        rustCallWithError(FfiConverterTypeCrashTestError.self) {
+            crashtest_9d89_trigger_rust_error($0)
         }
 }
 
@@ -410,23 +310,25 @@ public enum CrashTestError {
     case ErrorFromTheRustCode(message: String)
 }
 
-extension CrashTestError: ViaFfiUsingByteBuffer, ViaFfi {
-    fileprivate static func read(from buf: Reader) throws -> CrashTestError {
+private struct FfiConverterTypeCrashTestError: FfiConverterRustBuffer {
+    typealias SwiftType = CrashTestError
+
+    static func read(from buf: Reader) throws -> CrashTestError {
         let variant: Int32 = try buf.readInt()
         switch variant {
         case 1: return .ErrorFromTheRustCode(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
-    fileprivate func write(into buf: Writer) {
-        switch self {
+    static func write(_ value: CrashTestError, into buf: Writer) {
+        switch value {
         case let .ErrorFromTheRustCode(message):
             buf.writeInt(Int32(1))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         }
     }
 }
@@ -434,22 +336,23 @@ extension CrashTestError: ViaFfiUsingByteBuffer, ViaFfi {
 extension CrashTestError: Equatable, Hashable {}
 
 extension CrashTestError: Error {}
-extension String: ViaFfi {
-    fileprivate typealias FfiType = RustBuffer
+private struct FfiConverterString: FfiConverter {
+    typealias SwiftType = String
+    typealias FfiType = RustBuffer
 
-    fileprivate static func lift(_ v: FfiType) throws -> Self {
+    static func lift(_ value: RustBuffer) throws -> String {
         defer {
-            v.deallocate()
+            value.deallocate()
         }
-        if v.data == nil {
+        if value.data == nil {
             return String()
         }
-        let bytes = UnsafeBufferPointer<UInt8>(start: v.data!, count: Int(v.len))
+        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
         return String(bytes: bytes, encoding: String.Encoding.utf8)!
     }
 
-    fileprivate func lower() -> FfiType {
-        return utf8CString.withUnsafeBufferPointer { ptr in
+    static func lower(_ value: String) -> RustBuffer {
+        return value.utf8CString.withUnsafeBufferPointer { ptr in
             // The swift string gives us int8_t, we want uint8_t.
             ptr.withMemoryRebound(to: UInt8.self) { ptr in
                 // The swift string gives us a trailing null byte, we don't want it.
@@ -459,15 +362,15 @@ extension String: ViaFfi {
         }
     }
 
-    fileprivate static func read(from buf: Reader) throws -> Self {
+    static func read(from buf: Reader) throws -> String {
         let len: Int32 = try buf.readInt()
         return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
-    fileprivate func write(into buf: Writer) {
-        let len = Int32(utf8.count)
+    static func write(_ value: String, into buf: Writer) {
+        let len = Int32(value.utf8.count)
         buf.writeInt(len)
-        buf.writeBytes(utf8)
+        buf.writeBytes(value.utf8)
     }
 }
 
