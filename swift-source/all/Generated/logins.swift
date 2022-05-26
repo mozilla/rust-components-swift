@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_logins_5de8_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_logins_2894_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_logins_5de8_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_logins_2894_rustbuffer_free(self, $0) }
     }
 }
 
@@ -147,45 +147,39 @@ private class Writer {
     }
 }
 
-// Types conforming to `Serializable` can be read and written in a bytebuffer.
-private protocol Serializable {
-    func write(into: Writer)
-    static func read(from: Reader) throws -> Self
-}
-
-// Types confirming to `ViaFfi` can be transferred back-and-for over the FFI.
-// This is analogous to the Rust trait of the same name.
-private protocol ViaFfi: Serializable {
+// Protocol for types that transfer other types across the FFI. This is
+// analogous go the Rust trait of the same name.
+private protocol FfiConverter {
     associatedtype FfiType
-    static func lift(_ v: FfiType) throws -> Self
-    func lower() -> FfiType
+    associatedtype SwiftType
+
+    static func lift(_ value: FfiType) throws -> SwiftType
+    static func lower(_ value: SwiftType) -> FfiType
+    static func read(from buf: Reader) throws -> SwiftType
+    static func write(_ value: SwiftType, into buf: Writer)
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol Primitive {}
+private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
 
-private extension Primitive {
-    typealias FfiType = Self
-
-    static func lift(_ v: Self) throws -> Self {
-        return v
+extension FfiConverterPrimitive {
+    static func lift(_ value: FfiType) throws -> SwiftType {
+        return value
     }
 
-    func lower() -> Self {
-        return self
+    static func lower(_ value: SwiftType) -> FfiType {
+        return value
     }
 }
 
-// Types conforming to `ViaFfiUsingByteBuffer` lift and lower into a bytebuffer.
-// Use this for complex types where it's hard to write a custom lift/lower.
-private protocol ViaFfiUsingByteBuffer: Serializable {}
+// Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
+// Used for complex types where it's hard to write a custom lift/lower.
+private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
-private extension ViaFfiUsingByteBuffer {
-    typealias FfiType = RustBuffer
-
-    static func lift(_ buf: FfiType) throws -> Self {
+extension FfiConverterRustBuffer {
+    static func lift(_ buf: RustBuffer) throws -> SwiftType {
         let reader = Reader(data: Data(rustBuffer: buf))
-        let value = try Self.read(from: reader)
+        let value = try read(from: reader)
         if reader.hasRemaining() {
             throw UniffiInternalError.incompleteData
         }
@@ -193,9 +187,9 @@ private extension ViaFfiUsingByteBuffer {
         return value
     }
 
-    func lower() -> FfiType {
+    static func lower(_ value: SwiftType) -> RustBuffer {
         let writer = Writer()
-        write(into: writer)
+        write(value, into: writer)
         return RustBuffer(bytes: writer.bytes)
     }
 }
@@ -252,8 +246,11 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
     })
 }
 
-private func rustCallWithError<T, E: ViaFfiUsingByteBuffer & Error>(_: E.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: { try E.lift($0) })
+private func rustCallWithError<T, F: FfiConverter>
+(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+    where F.SwiftType: Error, F.FfiType == RustBuffer
+{
+    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
@@ -271,7 +268,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try String.lift(callStatus.errorBuf))
+            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -282,175 +279,111 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
     }
 }
 
-// Protocols for converters we'll implement in templates
-
-private protocol FfiConverter {
-    associatedtype SwiftType
-    associatedtype FfiType
-
-    static func lift(_ ffiValue: FfiType) throws -> SwiftType
-    static func lower(_ value: SwiftType) -> FfiType
-
-    static func read(from: Reader) throws -> SwiftType
-    static func write(_ value: SwiftType, into: Writer)
-}
-
-private protocol FfiConverterUsingByteBuffer: FfiConverter where FfiType == RustBuffer {
-    // Empty, because we want to declare some helper methods in the extension below.
-}
-
-extension FfiConverterUsingByteBuffer {
-    static func lower(_ value: SwiftType) -> FfiType {
-        let writer = Writer()
-        Self.write(value, into: writer)
-        return RustBuffer(bytes: writer.bytes)
-    }
-
-    static func lift(_ buf: FfiType) throws -> SwiftType {
-        let reader = Reader(data: Data(rustBuffer: buf))
-        let value = try Self.read(from: reader)
-        if reader.hasRemaining() {
-            throw UniffiInternalError.incompleteData
-        }
-        buf.deallocate()
-        return value
-    }
-}
-
-// Helpers for structural types. Note that because of canonical_names, it /should/ be impossible
-// to make another `FfiConverterSequence` etc just using the UDL.
-private enum FfiConverterSequence {
-    static func write<T>(_ value: [T], into buf: Writer, writeItem: (T, Writer) -> Void) {
-        let len = Int32(value.count)
-        buf.writeInt(len)
-        for item in value {
-            writeItem(item, buf)
-        }
-    }
-
-    static func read<T>(from buf: Reader, readItem: (Reader) throws -> T) throws -> [T] {
-        let len: Int32 = try buf.readInt()
-        var seq = [T]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            seq.append(try readItem(buf))
-        }
-        return seq
-    }
-}
-
-private enum FfiConverterOptional {
-    static func write<T>(_ value: T?, into buf: Writer, writeItem: (T, Writer) -> Void) {
-        guard let value = value else {
-            buf.writeInt(Int8(0))
-            return
-        }
-        buf.writeInt(Int8(1))
-        writeItem(value, buf)
-    }
-
-    static func read<T>(from buf: Reader, readItem: (Reader) throws -> T) throws -> T? {
-        switch try buf.readInt() as Int8 {
-        case 0: return nil
-        case 1: return try readItem(buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-private enum FfiConverterDictionary {
-    static func write<T>(_ value: [String: T], into buf: Writer, writeItem: (String, T, Writer) -> Void) {
-        let len = Int32(value.count)
-        buf.writeInt(len)
-        for (key, value) in value {
-            writeItem(key, value, buf)
-        }
-    }
-
-    static func read<T>(from buf: Reader, readItem: (Reader) throws -> (String, T)) throws -> [String: T] {
-        let len: Int32 = try buf.readInt()
-        var dict = [String: T]()
-        dict.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            let (key, value) = try readItem(buf)
-            dict[key] = value
-        }
-        return dict
-    }
-}
-
 // Public interface members begin here.
 
 public func createKey() throws -> String {
-    let _retval = try
+    return try FfiConverterString.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_create_key($0)
-        }
-    return try String.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_create_key($0)
+            }
+    )
 }
 
 public func decryptLogin(login: EncryptedLogin, encryptionKey: String) throws -> Login {
-    let _retval = try
+    return try FfiConverterTypeLogin.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_decrypt_login(login.lower(), encryptionKey.lower(), $0)
-        }
-    return try Login.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_decrypt_login(
+                    FfiConverterTypeEncryptedLogin.lower(login),
+                    FfiConverterString.lower(encryptionKey), $0
+                )
+            }
+    )
 }
 
 public func encryptLogin(login: Login, encryptionKey: String) throws -> EncryptedLogin {
-    let _retval = try
+    return try FfiConverterTypeEncryptedLogin.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_encrypt_login(login.lower(), encryptionKey.lower(), $0)
-        }
-    return try EncryptedLogin.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_encrypt_login(
+                    FfiConverterTypeLogin.lower(login),
+                    FfiConverterString.lower(encryptionKey), $0
+                )
+            }
+    )
 }
 
 public func decryptFields(secFields: String, encryptionKey: String) throws -> SecureLoginFields {
-    let _retval = try
+    return try FfiConverterTypeSecureLoginFields.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_decrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
-        }
-    return try SecureLoginFields.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_decrypt_fields(
+                    FfiConverterString.lower(secFields),
+                    FfiConverterString.lower(encryptionKey), $0
+                )
+            }
+    )
 }
 
 public func encryptFields(secFields: SecureLoginFields, encryptionKey: String) throws -> String {
-    let _retval = try
+    return try FfiConverterString.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_encrypt_fields(secFields.lower(), encryptionKey.lower(), $0)
-        }
-    return try String.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_encrypt_fields(
+                    FfiConverterTypeSecureLoginFields.lower(secFields),
+                    FfiConverterString.lower(encryptionKey), $0
+                )
+            }
+    )
 }
 
 public func createCanary(text: String, encryptionKey: String) throws -> String {
-    let _retval = try
+    return try FfiConverterString.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_create_canary(text.lower(), encryptionKey.lower(), $0)
-        }
-    return try String.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_create_canary(
+                    FfiConverterString.lower(text),
+                    FfiConverterString.lower(encryptionKey), $0
+                )
+            }
+    )
 }
 
 public func checkCanary(canary: String, text: String, encryptionKey: String) throws -> Bool {
-    let _retval = try
+    return try FfiConverterBool.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_check_canary(canary.lower(), text.lower(), encryptionKey.lower(), $0)
-        }
-    return try Bool.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_check_canary(
+                    FfiConverterString.lower(canary),
+                    FfiConverterString.lower(text),
+                    FfiConverterString.lower(encryptionKey), $0
+                )
+            }
+    )
 }
 
 public func migrateLogins(path: String, newEncryptionKey: String, sqlcipherPath: String, sqlcipherKey: String, salt: String?) throws -> String {
-    let _retval = try
+    return try FfiConverterString.lift(
+        try
 
-        rustCallWithError(LoginsStorageError.self) {
-            logins_5de8_migrate_logins(path.lower(), newEncryptionKey.lower(), sqlcipherPath.lower(), sqlcipherKey.lower(), FfiConverterOptionString.lower(salt), $0)
-        }
-    return try String.lift(_retval)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_migrate_logins(
+                    FfiConverterString.lower(path),
+                    FfiConverterString.lower(newEncryptionKey),
+                    FfiConverterString.lower(sqlcipherPath),
+                    FfiConverterString.lower(sqlcipherKey),
+                    FfiConverterOptionString.lower(salt), $0
+                )
+            }
+    )
 }
 
 public protocol LoginStoreProtocol {
@@ -475,7 +408,7 @@ public class LoginStore: LoginStoreProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer
 
     // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `ViaFfi` without making this `required` and we can't
+    // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
     required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
@@ -484,135 +417,168 @@ public class LoginStore: LoginStoreProtocol {
     public convenience init(path: String) throws {
         self.init(unsafeFromRawPointer: try
 
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_new(path.lower(), $0)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_LoginStore_new(
+                    FfiConverterString.lower(path), $0
+                )
             })
     }
 
     deinit {
-        try! rustCall { ffi_logins_5de8_LoginStore_object_free(pointer, $0) }
+        try! rustCall { ffi_logins_2894_LoginStore_object_free(pointer, $0) }
     }
 
     public func add(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_add(self.pointer, login.lower(), encryptionKey.lower(), $0)
-            }
-        return try EncryptedLogin.lift(_retval)
+        return try FfiConverterTypeEncryptedLogin.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_add(self.pointer,
+                                               FfiConverterTypeLoginEntry.lower(login),
+                                               FfiConverterString.lower(encryptionKey), $0)
+                }
+        )
     }
 
     public func update(id: String, login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_update(self.pointer, id.lower(), login.lower(), encryptionKey.lower(), $0)
-            }
-        return try EncryptedLogin.lift(_retval)
+        return try FfiConverterTypeEncryptedLogin.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_update(self.pointer,
+                                                  FfiConverterString.lower(id),
+                                                  FfiConverterTypeLoginEntry.lower(login),
+                                                  FfiConverterString.lower(encryptionKey), $0)
+                }
+        )
     }
 
     public func addOrUpdate(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_add_or_update(self.pointer, login.lower(), encryptionKey.lower(), $0)
-            }
-        return try EncryptedLogin.lift(_retval)
+        return try FfiConverterTypeEncryptedLogin.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_add_or_update(self.pointer,
+                                                         FfiConverterTypeLoginEntry.lower(login),
+                                                         FfiConverterString.lower(encryptionKey), $0)
+                }
+        )
     }
 
     public func delete(id: String) throws -> Bool {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_delete(self.pointer, id.lower(), $0)
-            }
-        return try Bool.lift(_retval)
+        return try FfiConverterBool.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_delete(self.pointer,
+                                                  FfiConverterString.lower(id), $0)
+                }
+        )
     }
 
     public func wipe() throws {
         try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_wipe(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_LoginStore_wipe(self.pointer, $0)
             }
     }
 
     public func wipeLocal() throws {
         try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_wipe_local(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_LoginStore_wipe_local(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_reset(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_LoginStore_reset(self.pointer, $0)
             }
     }
 
     public func touch(id: String) throws {
         try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_touch(self.pointer, id.lower(), $0)
+            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                logins_2894_LoginStore_touch(self.pointer,
+                                             FfiConverterString.lower(id), $0)
             }
     }
 
     public func list() throws -> [EncryptedLogin] {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_list(self.pointer, $0)
-            }
-        return try FfiConverterSequenceRecordEncryptedLogin.lift(_retval)
+        return try FfiConverterSequenceTypeEncryptedLogin.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_list(self.pointer, $0)
+                }
+        )
     }
 
     public func getByBaseDomain(baseDomain: String) throws -> [EncryptedLogin] {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_get_by_base_domain(self.pointer, baseDomain.lower(), $0)
-            }
-        return try FfiConverterSequenceRecordEncryptedLogin.lift(_retval)
+        return try FfiConverterSequenceTypeEncryptedLogin.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_get_by_base_domain(self.pointer,
+                                                              FfiConverterString.lower(baseDomain), $0)
+                }
+        )
     }
 
     public func findLoginToUpdate(look: LoginEntry, encryptionKey: String) throws -> Login? {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_find_login_to_update(self.pointer, look.lower(), encryptionKey.lower(), $0)
-            }
-        return try FfiConverterOptionRecordLogin.lift(_retval)
+        return try FfiConverterOptionTypeLogin.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_find_login_to_update(self.pointer,
+                                                                FfiConverterTypeLoginEntry.lower(look),
+                                                                FfiConverterString.lower(encryptionKey), $0)
+                }
+        )
     }
 
     public func get(id: String) throws -> EncryptedLogin? {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_get(self.pointer, id.lower(), $0)
-            }
-        return try FfiConverterOptionRecordEncryptedLogin.lift(_retval)
+        return try FfiConverterOptionTypeEncryptedLogin.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_get(self.pointer,
+                                               FfiConverterString.lower(id), $0)
+                }
+        )
     }
 
     public func importMultiple(login: [Login], encryptionKey: String) throws -> String {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_import_multiple(self.pointer, FfiConverterSequenceRecordLogin.lower(login), encryptionKey.lower(), $0)
-            }
-        return try String.lift(_retval)
+        return try FfiConverterString.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_import_multiple(self.pointer,
+                                                           FfiConverterSequenceTypeLogin.lower(login),
+                                                           FfiConverterString.lower(encryptionKey), $0)
+                }
+        )
     }
 
     public func registerWithSyncManager() {
         try!
             rustCall {
-                logins_5de8_LoginStore_register_with_sync_manager(self.pointer, $0)
+                logins_2894_LoginStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localEncryptionKey: String) throws -> String {
-        let _retval = try
-            rustCallWithError(LoginsStorageError.self) {
-                logins_5de8_LoginStore_sync(self.pointer, keyId.lower(), accessToken.lower(), syncKey.lower(), tokenserverUrl.lower(), localEncryptionKey.lower(), $0)
-            }
-        return try String.lift(_retval)
+        return try FfiConverterString.lift(
+            try
+                rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+                    logins_2894_LoginStore_sync(self.pointer,
+                                                FfiConverterString.lower(keyId),
+                                                FfiConverterString.lower(accessToken),
+                                                FfiConverterString.lower(syncKey),
+                                                FfiConverterString.lower(tokenserverUrl),
+                                                FfiConverterString.lower(localEncryptionKey), $0)
+                }
+        )
     }
 }
 
-private extension LoginStore {
+private struct FfiConverterTypeLoginStore: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = LoginStore
 
-    static func read(from buf: Reader) throws -> Self {
+    static func read(from buf: Reader) throws -> LoginStore {
         let v: UInt64 = try buf.readInt()
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
@@ -623,26 +589,20 @@ private extension LoginStore {
         return try lift(ptr!)
     }
 
-    func write(into buf: Writer) {
+    static func write(_ value: LoginStore, into buf: Writer) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower()))))
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Self {
-        return Self(unsafeFromRawPointer: pointer)
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> LoginStore {
+        return LoginStore(unsafeFromRawPointer: pointer)
     }
 
-    func lower() -> UnsafeMutableRawPointer {
-        return pointer
+    static func lower(_ value: LoginStore) -> UnsafeMutableRawPointer {
+        return value.pointer
     }
 }
-
-// Ideally this would be `fileprivate`, but Swift says:
-// """
-// 'private' modifier cannot be used with extensions that declare protocol conformances
-// """
-extension LoginStore: ViaFfi, Serializable {}
 
 public struct LoginFields {
     public var origin: String
@@ -691,27 +651,25 @@ extension LoginFields: Equatable, Hashable {
     }
 }
 
-private extension LoginFields {
-    static func read(from buf: Reader) throws -> LoginFields {
+private struct FfiConverterTypeLoginFields: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> LoginFields {
         return try LoginFields(
-            origin: String.read(from: buf),
+            origin: FfiConverterString.read(from: buf),
             httpRealm: FfiConverterOptionString.read(from: buf),
             formActionOrigin: FfiConverterOptionString.read(from: buf),
-            usernameField: String.read(from: buf),
-            passwordField: String.read(from: buf)
+            usernameField: FfiConverterString.read(from: buf),
+            passwordField: FfiConverterString.read(from: buf)
         )
     }
 
-    func write(into buf: Writer) {
-        origin.write(into: buf)
-        FfiConverterOptionString.write(httpRealm, into: buf)
-        FfiConverterOptionString.write(formActionOrigin, into: buf)
-        usernameField.write(into: buf)
-        passwordField.write(into: buf)
+    fileprivate static func write(_ value: LoginFields, into buf: Writer) {
+        FfiConverterString.write(value.origin, into: buf)
+        FfiConverterOptionString.write(value.httpRealm, into: buf)
+        FfiConverterOptionString.write(value.formActionOrigin, into: buf)
+        FfiConverterString.write(value.usernameField, into: buf)
+        FfiConverterString.write(value.passwordField, into: buf)
     }
 }
-
-extension LoginFields: ViaFfiUsingByteBuffer, ViaFfi {}
 
 public struct SecureLoginFields {
     public var password: String
@@ -742,21 +700,19 @@ extension SecureLoginFields: Equatable, Hashable {
     }
 }
 
-private extension SecureLoginFields {
-    static func read(from buf: Reader) throws -> SecureLoginFields {
+private struct FfiConverterTypeSecureLoginFields: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> SecureLoginFields {
         return try SecureLoginFields(
-            password: String.read(from: buf),
-            username: String.read(from: buf)
+            password: FfiConverterString.read(from: buf),
+            username: FfiConverterString.read(from: buf)
         )
     }
 
-    func write(into buf: Writer) {
-        password.write(into: buf)
-        username.write(into: buf)
+    fileprivate static func write(_ value: SecureLoginFields, into buf: Writer) {
+        FfiConverterString.write(value.password, into: buf)
+        FfiConverterString.write(value.username, into: buf)
     }
 }
-
-extension SecureLoginFields: ViaFfiUsingByteBuffer, ViaFfi {}
 
 public struct RecordFields {
     public var id: String
@@ -805,27 +761,25 @@ extension RecordFields: Equatable, Hashable {
     }
 }
 
-private extension RecordFields {
-    static func read(from buf: Reader) throws -> RecordFields {
+private struct FfiConverterTypeRecordFields: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> RecordFields {
         return try RecordFields(
-            id: String.read(from: buf),
-            timesUsed: Int64.read(from: buf),
-            timeCreated: Int64.read(from: buf),
-            timeLastUsed: Int64.read(from: buf),
-            timePasswordChanged: Int64.read(from: buf)
+            id: FfiConverterString.read(from: buf),
+            timesUsed: FfiConverterInt64.read(from: buf),
+            timeCreated: FfiConverterInt64.read(from: buf),
+            timeLastUsed: FfiConverterInt64.read(from: buf),
+            timePasswordChanged: FfiConverterInt64.read(from: buf)
         )
     }
 
-    func write(into buf: Writer) {
-        id.write(into: buf)
-        timesUsed.write(into: buf)
-        timeCreated.write(into: buf)
-        timeLastUsed.write(into: buf)
-        timePasswordChanged.write(into: buf)
+    fileprivate static func write(_ value: RecordFields, into buf: Writer) {
+        FfiConverterString.write(value.id, into: buf)
+        FfiConverterInt64.write(value.timesUsed, into: buf)
+        FfiConverterInt64.write(value.timeCreated, into: buf)
+        FfiConverterInt64.write(value.timeLastUsed, into: buf)
+        FfiConverterInt64.write(value.timePasswordChanged, into: buf)
     }
 }
-
-extension RecordFields: ViaFfiUsingByteBuffer, ViaFfi {}
 
 public struct LoginEntry {
     public var fields: LoginFields
@@ -856,21 +810,19 @@ extension LoginEntry: Equatable, Hashable {
     }
 }
 
-private extension LoginEntry {
-    static func read(from buf: Reader) throws -> LoginEntry {
+private struct FfiConverterTypeLoginEntry: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> LoginEntry {
         return try LoginEntry(
-            fields: LoginFields.read(from: buf),
-            secFields: SecureLoginFields.read(from: buf)
+            fields: FfiConverterTypeLoginFields.read(from: buf),
+            secFields: FfiConverterTypeSecureLoginFields.read(from: buf)
         )
     }
 
-    func write(into buf: Writer) {
-        fields.write(into: buf)
-        secFields.write(into: buf)
+    fileprivate static func write(_ value: LoginEntry, into buf: Writer) {
+        FfiConverterTypeLoginFields.write(value.fields, into: buf)
+        FfiConverterTypeSecureLoginFields.write(value.secFields, into: buf)
     }
 }
-
-extension LoginEntry: ViaFfiUsingByteBuffer, ViaFfi {}
 
 public struct Login {
     public var record: RecordFields
@@ -907,23 +859,21 @@ extension Login: Equatable, Hashable {
     }
 }
 
-private extension Login {
-    static func read(from buf: Reader) throws -> Login {
+private struct FfiConverterTypeLogin: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> Login {
         return try Login(
-            record: RecordFields.read(from: buf),
-            fields: LoginFields.read(from: buf),
-            secFields: SecureLoginFields.read(from: buf)
+            record: FfiConverterTypeRecordFields.read(from: buf),
+            fields: FfiConverterTypeLoginFields.read(from: buf),
+            secFields: FfiConverterTypeSecureLoginFields.read(from: buf)
         )
     }
 
-    func write(into buf: Writer) {
-        record.write(into: buf)
-        fields.write(into: buf)
-        secFields.write(into: buf)
+    fileprivate static func write(_ value: Login, into buf: Writer) {
+        FfiConverterTypeRecordFields.write(value.record, into: buf)
+        FfiConverterTypeLoginFields.write(value.fields, into: buf)
+        FfiConverterTypeSecureLoginFields.write(value.secFields, into: buf)
     }
 }
-
-extension Login: ViaFfiUsingByteBuffer, ViaFfi {}
 
 public struct EncryptedLogin {
     public var record: RecordFields
@@ -960,23 +910,21 @@ extension EncryptedLogin: Equatable, Hashable {
     }
 }
 
-private extension EncryptedLogin {
-    static func read(from buf: Reader) throws -> EncryptedLogin {
+private struct FfiConverterTypeEncryptedLogin: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> EncryptedLogin {
         return try EncryptedLogin(
-            record: RecordFields.read(from: buf),
-            fields: LoginFields.read(from: buf),
-            secFields: String.read(from: buf)
+            record: FfiConverterTypeRecordFields.read(from: buf),
+            fields: FfiConverterTypeLoginFields.read(from: buf),
+            secFields: FfiConverterString.read(from: buf)
         )
     }
 
-    func write(into buf: Writer) {
-        record.write(into: buf)
-        fields.write(into: buf)
-        secFields.write(into: buf)
+    fileprivate static func write(_ value: EncryptedLogin, into buf: Writer) {
+        FfiConverterTypeRecordFields.write(value.record, into: buf)
+        FfiConverterTypeLoginFields.write(value.fields, into: buf)
+        FfiConverterString.write(value.secFields, into: buf)
     }
 }
-
-extension EncryptedLogin: ViaFfiUsingByteBuffer, ViaFfi {}
 
 public enum LoginsStorageError {
     // Simple error enums only carry a message
@@ -1007,79 +955,81 @@ public enum LoginsStorageError {
     case Interrupted(message: String)
 }
 
-extension LoginsStorageError: ViaFfiUsingByteBuffer, ViaFfi {
-    fileprivate static func read(from buf: Reader) throws -> LoginsStorageError {
+private struct FfiConverterTypeLoginsStorageError: FfiConverterRustBuffer {
+    typealias SwiftType = LoginsStorageError
+
+    static func read(from buf: Reader) throws -> LoginsStorageError {
         let variant: Int32 = try buf.readInt()
         switch variant {
         case 1: return .UnexpectedLoginsStorageError(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 2: return .SyncAuthInvalid(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 3: return .MismatchedLock(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 4: return .NoSuchRecord(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 5: return .InvalidRecord(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 6: return .CryptoError(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 7: return .InvalidKey(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 8: return .RequestFailed(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         case 9: return .Interrupted(
-                message: try String.read(from: buf)
+                message: try FfiConverterString.read(from: buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
-    fileprivate func write(into buf: Writer) {
-        switch self {
+    static func write(_ value: LoginsStorageError, into buf: Writer) {
+        switch value {
         case let .UnexpectedLoginsStorageError(message):
             buf.writeInt(Int32(1))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .SyncAuthInvalid(message):
             buf.writeInt(Int32(2))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .MismatchedLock(message):
             buf.writeInt(Int32(3))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .NoSuchRecord(message):
             buf.writeInt(Int32(4))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .InvalidRecord(message):
             buf.writeInt(Int32(5))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .CryptoError(message):
             buf.writeInt(Int32(6))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .InvalidKey(message):
             buf.writeInt(Int32(7))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .RequestFailed(message):
             buf.writeInt(Int32(8))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         case let .Interrupted(message):
             buf.writeInt(Int32(9))
-            message.write(into: buf)
+            FfiConverterString.write(message, into: buf)
         }
     }
 }
@@ -1087,52 +1037,57 @@ extension LoginsStorageError: ViaFfiUsingByteBuffer, ViaFfi {
 extension LoginsStorageError: Equatable, Hashable {}
 
 extension LoginsStorageError: Error {}
-extension Int64: Primitive, ViaFfi {
-    fileprivate static func read(from buf: Reader) throws -> Self {
+private struct FfiConverterInt64: FfiConverterPrimitive {
+    typealias FfiType = Int64
+    typealias SwiftType = Int64
+
+    static func read(from buf: Reader) throws -> Int64 {
         return try lift(buf.readInt())
     }
 
-    fileprivate func write(into buf: Writer) {
-        buf.writeInt(lower())
+    static func write(_ value: Int64, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension Bool: ViaFfi {
-    fileprivate typealias FfiType = Int8
+private struct FfiConverterBool: FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
 
-    fileprivate static func read(from buf: Reader) throws -> Self {
+    static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    static func read(from buf: Reader) throws -> Bool {
         return try lift(buf.readInt())
     }
 
-    fileprivate func write(into buf: Writer) {
-        buf.writeInt(lower())
-    }
-
-    fileprivate static func lift(_ v: FfiType) throws -> Self {
-        return v != 0
-    }
-
-    fileprivate func lower() -> FfiType {
-        return self ? 1 : 0
+    static func write(_ value: Bool, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension String: ViaFfi {
-    fileprivate typealias FfiType = RustBuffer
+private struct FfiConverterString: FfiConverter {
+    typealias SwiftType = String
+    typealias FfiType = RustBuffer
 
-    fileprivate static func lift(_ v: FfiType) throws -> Self {
+    static func lift(_ value: RustBuffer) throws -> String {
         defer {
-            v.deallocate()
+            value.deallocate()
         }
-        if v.data == nil {
+        if value.data == nil {
             return String()
         }
-        let bytes = UnsafeBufferPointer<UInt8>(start: v.data!, count: Int(v.len))
+        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
         return String(bytes: bytes, encoding: String.Encoding.utf8)!
     }
 
-    fileprivate func lower() -> FfiType {
-        return utf8CString.withUnsafeBufferPointer { ptr in
+    static func lower(_ value: String) -> RustBuffer {
+        return value.utf8CString.withUnsafeBufferPointer { ptr in
             // The swift string gives us int8_t, we want uint8_t.
             ptr.withMemoryRebound(to: UInt8.self) { ptr in
                 // The swift string gives us a trailing null byte, we don't want it.
@@ -1142,15 +1097,15 @@ extension String: ViaFfi {
         }
     }
 
-    fileprivate static func read(from buf: Reader) throws -> Self {
+    static func read(from buf: Reader) throws -> String {
         let len: Int32 = try buf.readInt()
         return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
-    fileprivate func write(into buf: Writer) {
-        let len = Int32(utf8.count)
+    static func write(_ value: String, into buf: Writer) {
+        let len = Int32(value.utf8.count)
         buf.writeInt(len)
-        buf.writeBytes(utf8)
+        buf.writeBytes(value.utf8)
     }
 }
 
@@ -1163,83 +1118,110 @@ extension String: ViaFfi {
 // Helper code for SecureLoginFields record is found in RecordTemplate.swift
 // Helper code for LoginsStorageError error is found in ErrorTemplate.swift
 
-private enum FfiConverterOptionString: FfiConverterUsingByteBuffer {
+private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
     static func write(_ value: SwiftType, into buf: Writer) {
-        FfiConverterOptional.write(value, into: buf) { item, buf in
-            item.write(into: buf)
+        guard let value = value else {
+            buf.writeInt(Int8(0))
+            return
         }
+        buf.writeInt(Int8(1))
+        FfiConverterString.write(value, into: buf)
     }
 
     static func read(from buf: Reader) throws -> SwiftType {
-        try FfiConverterOptional.read(from: buf) { buf in
-            try String.read(from: buf)
+        switch try buf.readInt() as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterString.read(from: buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
 }
 
-private enum FfiConverterOptionRecordEncryptedLogin: FfiConverterUsingByteBuffer {
+private struct FfiConverterOptionTypeEncryptedLogin: FfiConverterRustBuffer {
     typealias SwiftType = EncryptedLogin?
 
     static func write(_ value: SwiftType, into buf: Writer) {
-        FfiConverterOptional.write(value, into: buf) { item, buf in
-            item.write(into: buf)
+        guard let value = value else {
+            buf.writeInt(Int8(0))
+            return
         }
+        buf.writeInt(Int8(1))
+        FfiConverterTypeEncryptedLogin.write(value, into: buf)
     }
 
     static func read(from buf: Reader) throws -> SwiftType {
-        try FfiConverterOptional.read(from: buf) { buf in
-            try EncryptedLogin.read(from: buf)
+        switch try buf.readInt() as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeEncryptedLogin.read(from: buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
 }
 
-private enum FfiConverterOptionRecordLogin: FfiConverterUsingByteBuffer {
+private struct FfiConverterOptionTypeLogin: FfiConverterRustBuffer {
     typealias SwiftType = Login?
 
     static func write(_ value: SwiftType, into buf: Writer) {
-        FfiConverterOptional.write(value, into: buf) { item, buf in
-            item.write(into: buf)
+        guard let value = value else {
+            buf.writeInt(Int8(0))
+            return
         }
+        buf.writeInt(Int8(1))
+        FfiConverterTypeLogin.write(value, into: buf)
     }
 
     static func read(from buf: Reader) throws -> SwiftType {
-        try FfiConverterOptional.read(from: buf) { buf in
-            try Login.read(from: buf)
+        switch try buf.readInt() as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeLogin.read(from: buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
 }
 
-private enum FfiConverterSequenceRecordEncryptedLogin: FfiConverterUsingByteBuffer {
+private struct FfiConverterSequenceTypeEncryptedLogin: FfiConverterRustBuffer {
     typealias SwiftType = [EncryptedLogin]
 
-    static func write(_ value: SwiftType, into buf: Writer) {
-        FfiConverterSequence.write(value, into: buf) { item, buf in
-            item.write(into: buf)
+    static func write(_ value: [EncryptedLogin], into buf: Writer) {
+        let len = Int32(value.count)
+        buf.writeInt(len)
+        for item in value {
+            FfiConverterTypeEncryptedLogin.write(item, into: buf)
         }
     }
 
-    static func read(from buf: Reader) throws -> SwiftType {
-        try FfiConverterSequence.read(from: buf) { buf in
-            try EncryptedLogin.read(from: buf)
+    static func read(from buf: Reader) throws -> [EncryptedLogin] {
+        let len: Int32 = try buf.readInt()
+        var seq = [EncryptedLogin]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeEncryptedLogin.read(from: buf))
         }
+        return seq
     }
 }
 
-private enum FfiConverterSequenceRecordLogin: FfiConverterUsingByteBuffer {
+private struct FfiConverterSequenceTypeLogin: FfiConverterRustBuffer {
     typealias SwiftType = [Login]
 
-    static func write(_ value: SwiftType, into buf: Writer) {
-        FfiConverterSequence.write(value, into: buf) { item, buf in
-            item.write(into: buf)
+    static func write(_ value: [Login], into buf: Writer) {
+        let len = Int32(value.count)
+        buf.writeInt(len)
+        for item in value {
+            FfiConverterTypeLogin.write(item, into: buf)
         }
     }
 
-    static func read(from buf: Reader) throws -> SwiftType {
-        try FfiConverterSequence.read(from: buf) { buf in
-            try Login.read(from: buf)
+    static func read(from buf: Reader) throws -> [Login] {
+        let len: Int32 = try buf.readInt()
+        var seq = [Login]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeLogin.read(from: buf))
         }
+        return seq
     }
 }
 
