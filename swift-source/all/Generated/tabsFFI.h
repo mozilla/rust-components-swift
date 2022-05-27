@@ -46,47 +46,47 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_tabs_1245_TabsStore_object_free(
+void ffi_tabs_60f6_TabsStore_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull tabs_1245_TabsStore_new(
+void*_Nonnull tabs_60f6_TabsStore_new(
       RustBuffer path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer tabs_1245_TabsStore_get_all(
+RustBuffer tabs_60f6_TabsStore_get_all(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_1245_TabsStore_set_local_tabs(
+void tabs_60f6_TabsStore_set_local_tabs(
       void*_Nonnull ptr,RustBuffer remote_tabs,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_1245_TabsStore_register_with_sync_manager(
+void tabs_60f6_TabsStore_register_with_sync_manager(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_1245_TabsStore_reset(
+void tabs_60f6_TabsStore_reset(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer tabs_1245_TabsStore_sync(
+RustBuffer tabs_60f6_TabsStore_sync(
       void*_Nonnull ptr,RustBuffer key_id,RustBuffer access_token,RustBuffer sync_key,RustBuffer tokenserver_url,RustBuffer local_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_1245_rustbuffer_alloc(
+RustBuffer ffi_tabs_60f6_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_1245_rustbuffer_from_bytes(
+RustBuffer ffi_tabs_60f6_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_tabs_1245_rustbuffer_free(
+void ffi_tabs_60f6_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_1245_rustbuffer_reserve(
+RustBuffer ffi_tabs_60f6_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

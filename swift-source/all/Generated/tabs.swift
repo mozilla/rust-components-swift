@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_1245_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_60f6_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_1245_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_60f6_rustbuffer_free(self, $0) }
     }
 }
 
@@ -362,21 +362,21 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_1245_TabsStore_new(
+                tabs_60f6_TabsStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_1245_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_60f6_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(
             try!
                 rustCall {
-                    tabs_1245_TabsStore_get_all(self.pointer, $0)
+                    tabs_60f6_TabsStore_get_all(self.pointer, $0)
                 }
         )
     }
@@ -384,7 +384,7 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTabRecord]) {
         try!
             rustCall {
-                tabs_1245_TabsStore_set_local_tabs(self.pointer,
+                tabs_60f6_TabsStore_set_local_tabs(self.pointer,
                                                    FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs), $0)
             }
     }
@@ -392,14 +392,14 @@ public class TabsStore: TabsStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_1245_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_60f6_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsError.self) {
-                tabs_1245_TabsStore_reset(self.pointer, $0)
+                tabs_60f6_TabsStore_reset(self.pointer, $0)
             }
     }
 
@@ -407,7 +407,7 @@ public class TabsStore: TabsStoreProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsError.self) {
-                    tabs_1245_TabsStore_sync(self.pointer,
+                    tabs_60f6_TabsStore_sync(self.pointer,
                                              FfiConverterString.lower(keyId),
                                              FfiConverterString.lower(accessToken),
                                              FfiConverterString.lower(syncKey),
@@ -577,6 +577,9 @@ public enum TabsError {
     case JsonError(message: String)
 
     // Simple error enums only carry a message
+    case MissingLocalIdError(message: String)
+
+    // Simple error enums only carry a message
     case UrlParseError(message: String)
 
     // Simple error enums only carry a message
@@ -604,15 +607,19 @@ private struct FfiConverterTypeTabsError: FfiConverterRustBuffer {
                 message: try FfiConverterString.read(from: buf)
             )
 
-        case 4: return .UrlParseError(
+        case 4: return .MissingLocalIdError(
                 message: try FfiConverterString.read(from: buf)
             )
 
-        case 5: return .SqlError(
+        case 5: return .UrlParseError(
                 message: try FfiConverterString.read(from: buf)
             )
 
-        case 6: return .OpenDatabaseError(
+        case 6: return .SqlError(
+                message: try FfiConverterString.read(from: buf)
+            )
+
+        case 7: return .OpenDatabaseError(
                 message: try FfiConverterString.read(from: buf)
             )
 
@@ -631,14 +638,17 @@ private struct FfiConverterTypeTabsError: FfiConverterRustBuffer {
         case let .JsonError(message):
             buf.writeInt(Int32(3))
             FfiConverterString.write(message, into: buf)
-        case let .UrlParseError(message):
+        case let .MissingLocalIdError(message):
             buf.writeInt(Int32(4))
             FfiConverterString.write(message, into: buf)
-        case let .SqlError(message):
+        case let .UrlParseError(message):
             buf.writeInt(Int32(5))
             FfiConverterString.write(message, into: buf)
-        case let .OpenDatabaseError(message):
+        case let .SqlError(message):
             buf.writeInt(Int32(6))
+            FfiConverterString.write(message, into: buf)
+        case let .OpenDatabaseError(message):
+            buf.writeInt(Int32(7))
             FfiConverterString.write(message, into: buf)
         }
     }
