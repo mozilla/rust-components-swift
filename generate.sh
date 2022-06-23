@@ -31,7 +31,7 @@ rm -rf "$FOCUS_DIR" && mkdir -p "$FOCUS_DIR"
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml" "$APP_SERVICES_DIR/components/logins/ios/metrics.yaml"
+SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" -g "MozillaAppServices" --allow-reserved "$APP_SERVICES_DIR/components/logins/ios/metrics.yaml" "$APP_SERVICES_DIR/components/external/glean/glean-core/metrics.yaml" "$APP_SERVICES_DIR/components/external/glean/glean-core/pings.yaml"
 
 
 
@@ -143,12 +143,21 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $OUT_DIR
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
 
+###
+#
+# Glean
+#
+###
+
+# We only need to copy the hand-written Swift
+cp -r "$APP_SERVICES_DIR/components/external/glean/glean-core/ios/Glean" $OUT_DIR
+
 
 ###################### Swift code generation for Focus ######################
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="FocusAppServices" "$GLEAN_GENERATOR" -o "$FOCUS_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
+SOURCE_ROOT="$THIS_DIR" PROJECT="FocusAppServices" "$GLEAN_GENERATOR" -o "$FOCUS_DIR/Generated/Metrics/" -g "FocusAppServices" --allow-reserved "$APP_SERVICES_DIR/components/external/glean/glean-core/metrics.yaml" "$APP_SERVICES_DIR/components/external/glean/glean-core/pings.yaml"
 
 
 
@@ -181,6 +190,14 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $FOCUS_DIR
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $FOCUS_DIR
 
+###
+#
+# Glean
+#
+###
 
+# We only need to copy the hand-written Swift
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FOCUS_DIR/Generated" "$APP_SERVICES_DIR/components/external/glean/glean-core/src/glean.udl"
+cp -r "$APP_SERVICES_DIR/components/external/glean/glean-core/ios/Glean" $FOCUS_DIR
 
 echo "Successfully generated uniffi code!"
