@@ -22,7 +22,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 6, day: 16, hour: 18, minute: 44, second: 22))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 7, day: 12, hour: 15, minute: 7, second: 2))
     }
 
     enum NimbusEvents {
@@ -180,7 +180,7 @@ extension GleanMetrics {
                 name: "num_processed",
                 sendInPings: ["metrics"],
                 lifetime: .ping,
-                disabled: false
+                disabled: true
             )
         )
 
@@ -191,7 +191,7 @@ extension GleanMetrics {
                 name: "num_succeeded",
                 sendInPings: ["metrics"],
                 lifetime: .ping,
-                disabled: false
+                disabled: true
             )
         )
 
@@ -202,7 +202,7 @@ extension GleanMetrics {
                 name: "num_failed",
                 sendInPings: ["metrics"],
                 lifetime: .ping,
-                disabled: false
+                disabled: true
             )
         )
 
@@ -213,7 +213,7 @@ extension GleanMetrics {
                 name: "total_duration",
                 sendInPings: ["metrics"],
                 lifetime: .ping,
-                disabled: false
+                disabled: true
             )
             , .millisecond
         )
@@ -225,7 +225,7 @@ extension GleanMetrics {
                 name: "errors",
                 sendInPings: ["metrics"],
                 lifetime: .ping,
-                disabled: false
+                disabled: true
             )
         )
 

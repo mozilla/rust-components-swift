@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_logins_2894_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_logins_a415_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_logins_2894_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_logins_a415_rustbuffer_free(self, $0) }
     }
 }
 
@@ -286,7 +286,7 @@ public func createKey() throws -> String {
         try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_create_key($0)
+                logins_a415_create_key($0)
             }
     )
 }
@@ -296,7 +296,7 @@ public func decryptLogin(login: EncryptedLogin, encryptionKey: String) throws ->
         try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_decrypt_login(
+                logins_a415_decrypt_login(
                     FfiConverterTypeEncryptedLogin.lower(login),
                     FfiConverterString.lower(encryptionKey), $0
                 )
@@ -309,7 +309,7 @@ public func encryptLogin(login: Login, encryptionKey: String) throws -> Encrypte
         try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_encrypt_login(
+                logins_a415_encrypt_login(
                     FfiConverterTypeLogin.lower(login),
                     FfiConverterString.lower(encryptionKey), $0
                 )
@@ -322,7 +322,7 @@ public func decryptFields(secFields: String, encryptionKey: String) throws -> Se
         try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_decrypt_fields(
+                logins_a415_decrypt_fields(
                     FfiConverterString.lower(secFields),
                     FfiConverterString.lower(encryptionKey), $0
                 )
@@ -335,7 +335,7 @@ public func encryptFields(secFields: SecureLoginFields, encryptionKey: String) t
         try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_encrypt_fields(
+                logins_a415_encrypt_fields(
                     FfiConverterTypeSecureLoginFields.lower(secFields),
                     FfiConverterString.lower(encryptionKey), $0
                 )
@@ -348,7 +348,7 @@ public func createCanary(text: String, encryptionKey: String) throws -> String {
         try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_create_canary(
+                logins_a415_create_canary(
                     FfiConverterString.lower(text),
                     FfiConverterString.lower(encryptionKey), $0
                 )
@@ -361,7 +361,7 @@ public func checkCanary(canary: String, text: String, encryptionKey: String) thr
         try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_check_canary(
+                logins_a415_check_canary(
                     FfiConverterString.lower(canary),
                     FfiConverterString.lower(text),
                     FfiConverterString.lower(encryptionKey), $0
@@ -370,20 +370,18 @@ public func checkCanary(canary: String, text: String, encryptionKey: String) thr
     )
 }
 
-public func migrateLogins(path: String, newEncryptionKey: String, sqlcipherPath: String, sqlcipherKey: String, salt: String?) throws -> String {
-    return try FfiConverterString.lift(
-        try
+public func migrateLogins(path: String, newEncryptionKey: String, sqlcipherPath: String, sqlcipherKey: String, salt: String?) throws {
+    try
 
-            rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_migrate_logins(
-                    FfiConverterString.lower(path),
-                    FfiConverterString.lower(newEncryptionKey),
-                    FfiConverterString.lower(sqlcipherPath),
-                    FfiConverterString.lower(sqlcipherKey),
-                    FfiConverterOptionString.lower(salt), $0
-                )
-            }
-    )
+        rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
+            logins_a415_migrate_logins(
+                FfiConverterString.lower(path),
+                FfiConverterString.lower(newEncryptionKey),
+                FfiConverterString.lower(sqlcipherPath),
+                FfiConverterString.lower(sqlcipherKey),
+                FfiConverterOptionString.lower(salt), $0
+            )
+        }
 }
 
 public protocol LoginStoreProtocol {
@@ -418,21 +416,21 @@ public class LoginStore: LoginStoreProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_LoginStore_new(
+                logins_a415_LoginStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_logins_2894_LoginStore_object_free(pointer, $0) }
+        try! rustCall { ffi_logins_a415_LoginStore_object_free(pointer, $0) }
     }
 
     public func add(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         return try FfiConverterTypeEncryptedLogin.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_add(self.pointer,
+                    logins_a415_LoginStore_add(self.pointer,
                                                FfiConverterTypeLoginEntry.lower(login),
                                                FfiConverterString.lower(encryptionKey), $0)
                 }
@@ -443,7 +441,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterTypeEncryptedLogin.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_update(self.pointer,
+                    logins_a415_LoginStore_update(self.pointer,
                                                   FfiConverterString.lower(id),
                                                   FfiConverterTypeLoginEntry.lower(login),
                                                   FfiConverterString.lower(encryptionKey), $0)
@@ -455,7 +453,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterTypeEncryptedLogin.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_add_or_update(self.pointer,
+                    logins_a415_LoginStore_add_or_update(self.pointer,
                                                          FfiConverterTypeLoginEntry.lower(login),
                                                          FfiConverterString.lower(encryptionKey), $0)
                 }
@@ -466,7 +464,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterBool.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_delete(self.pointer,
+                    logins_a415_LoginStore_delete(self.pointer,
                                                   FfiConverterString.lower(id), $0)
                 }
         )
@@ -475,28 +473,28 @@ public class LoginStore: LoginStoreProtocol {
     public func wipe() throws {
         try
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_LoginStore_wipe(self.pointer, $0)
+                logins_a415_LoginStore_wipe(self.pointer, $0)
             }
     }
 
     public func wipeLocal() throws {
         try
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_LoginStore_wipe_local(self.pointer, $0)
+                logins_a415_LoginStore_wipe_local(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_LoginStore_reset(self.pointer, $0)
+                logins_a415_LoginStore_reset(self.pointer, $0)
             }
     }
 
     public func touch(id: String) throws {
         try
             rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                logins_2894_LoginStore_touch(self.pointer,
+                logins_a415_LoginStore_touch(self.pointer,
                                              FfiConverterString.lower(id), $0)
             }
     }
@@ -505,7 +503,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterSequenceTypeEncryptedLogin.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_list(self.pointer, $0)
+                    logins_a415_LoginStore_list(self.pointer, $0)
                 }
         )
     }
@@ -514,7 +512,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterSequenceTypeEncryptedLogin.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_get_by_base_domain(self.pointer,
+                    logins_a415_LoginStore_get_by_base_domain(self.pointer,
                                                               FfiConverterString.lower(baseDomain), $0)
                 }
         )
@@ -524,7 +522,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterOptionTypeLogin.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_find_login_to_update(self.pointer,
+                    logins_a415_LoginStore_find_login_to_update(self.pointer,
                                                                 FfiConverterTypeLoginEntry.lower(look),
                                                                 FfiConverterString.lower(encryptionKey), $0)
                 }
@@ -535,7 +533,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterOptionTypeEncryptedLogin.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_get(self.pointer,
+                    logins_a415_LoginStore_get(self.pointer,
                                                FfiConverterString.lower(id), $0)
                 }
         )
@@ -545,7 +543,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_import_multiple(self.pointer,
+                    logins_a415_LoginStore_import_multiple(self.pointer,
                                                            FfiConverterSequenceTypeLogin.lower(login),
                                                            FfiConverterString.lower(encryptionKey), $0)
                 }
@@ -555,7 +553,7 @@ public class LoginStore: LoginStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                logins_2894_LoginStore_register_with_sync_manager(self.pointer, $0)
+                logins_a415_LoginStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
@@ -563,7 +561,7 @@ public class LoginStore: LoginStoreProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeLoginsStorageError.self) {
-                    logins_2894_LoginStore_sync(self.pointer,
+                    logins_a415_LoginStore_sync(self.pointer,
                                                 FfiConverterString.lower(keyId),
                                                 FfiConverterString.lower(accessToken),
                                                 FfiConverterString.lower(syncKey),
