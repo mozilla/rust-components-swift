@@ -31,7 +31,7 @@ rm -rf "$FOCUS_DIR" && mkdir -p "$FOCUS_DIR"
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml" "$APP_SERVICES_DIR/components/logins/ios/metrics.yaml"
+SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
 
 
 
