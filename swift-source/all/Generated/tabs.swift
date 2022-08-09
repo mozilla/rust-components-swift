@@ -74,7 +74,7 @@ private class Reader {
             return value as! T
         }
         var value: T = 0
-        let _ = withUnsafeMutableBytes(of: &value) { data.copyBytes(to: $0, from: range) }
+        _ = withUnsafeMutableBytes(of: &value) { data.copyBytes(to: $0, from: range) }
         offset = range.upperBound
         return value.bigEndian
     }

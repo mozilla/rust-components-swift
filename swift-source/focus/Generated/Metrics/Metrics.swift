@@ -12,8 +12,6 @@
 
 
 
-import Glean
-
 // swiftlint:disable superfluous_disable_command
 // swiftlint:disable nesting
 // swiftlint:disable line_length
@@ -26,209 +24,614 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 10, day: 14, hour: 15, minute: 12, second: 22))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 10, day: 15, hour: 19, minute: 23, second: 10))
     }
 
-    enum NimbusEvents {
-        struct EnrollmentExtra: EventExtras {
-            var branch: String?
-            var enrollmentId: String?
-            var experiment: String?
-
-            func toExtraRecord() -> [String: String] {
-                var record = [String: String]()
-
-                if let branch = self.branch {
-                    record["branch"] = String(branch)
-                }
-                if let enrollmentId = self.enrollmentId {
-                    record["enrollment_id"] = String(enrollmentId)
-                }
-                if let experiment = self.experiment {
-                    record["experiment"] = String(experiment)
-                }
-
-                return record
-            }
-        }
-
-        struct UnenrollmentExtra: EventExtras {
-            var branch: String?
-            var enrollmentId: String?
-            var experiment: String?
-
-            func toExtraRecord() -> [String: String] {
-                var record = [String: String]()
-
-                if let branch = self.branch {
-                    record["branch"] = String(branch)
-                }
-                if let enrollmentId = self.enrollmentId {
-                    record["enrollment_id"] = String(enrollmentId)
-                }
-                if let experiment = self.experiment {
-                    record["experiment"] = String(experiment)
-                }
-
-                return record
-            }
-        }
-
-        struct DisqualificationExtra: EventExtras {
-            var branch: String?
-            var enrollmentId: String?
-            var experiment: String?
-
-            func toExtraRecord() -> [String: String] {
-                var record = [String: String]()
-
-                if let branch = self.branch {
-                    record["branch"] = String(branch)
-                }
-                if let enrollmentId = self.enrollmentId {
-                    record["enrollment_id"] = String(enrollmentId)
-                }
-                if let experiment = self.experiment {
-                    record["experiment"] = String(experiment)
-                }
-
-                return record
-            }
-        }
-
-        struct ExposureExtra: EventExtras {
-            var branch: String?
-            var enrollmentId: String?
-            var experiment: String?
-
-            func toExtraRecord() -> [String: String] {
-                var record = [String: String]()
-
-                if let branch = self.branch {
-                    record["branch"] = String(branch)
-                }
-                if let enrollmentId = self.enrollmentId {
-                    record["enrollment_id"] = String(enrollmentId)
-                }
-                if let experiment = self.experiment {
-                    record["experiment"] = String(experiment)
-                }
-
-                return record
-            }
-        }
-
-        /// Recorded when a user has met the conditions and is first bucketed into an
-        /// experiment (i.e. targeting matched and they were randomized into a bucket and
-        /// branch of the experiment). Expected a maximum of once per experiment per user.
-        static let enrollment = EventMetricType<NoExtraKeys, EnrollmentExtra>( // generated from nimbus_events.enrollment
+    enum GleanBaseline {
+        /// The duration of the last foreground session.
+        static let duration = TimespanMetricType( // generated from glean.baseline.duration
             CommonMetricData(
-                category: "nimbus_events",
-                name: "enrollment",
-                sendInPings: ["events"],
+                category: "glean.baseline",
+                name: "duration",
+                sendInPings: ["baseline"],
                 lifetime: .ping,
                 disabled: false
             )
-            , ["branch", "enrollment_id", "experiment"]
-        )
-
-        /// Recorded when either telemetry is disabled, or the experiment has run for its
-        /// designed duration (i.e. it is no longer present in the Nimbus Remote Settings
-        /// collection)
-        static let unenrollment = EventMetricType<NoExtraKeys, UnenrollmentExtra>( // generated from nimbus_events.unenrollment
-            CommonMetricData(
-                category: "nimbus_events",
-                name: "unenrollment",
-                sendInPings: ["events"],
-                lifetime: .ping,
-                disabled: false
-            )
-            , ["branch", "enrollment_id", "experiment"]
-        )
-
-        /// Recorded when a user becomes ineligible to continue receiving the treatment for
-        /// an enrolled experiment, for reasons such as the user opting out of the
-        /// experiment or no longer matching targeting for the experiment.
-        static let disqualification = EventMetricType<NoExtraKeys, DisqualificationExtra>( // generated from nimbus_events.disqualification
-            CommonMetricData(
-                category: "nimbus_events",
-                name: "disqualification",
-                sendInPings: ["events"],
-                lifetime: .ping,
-                disabled: false
-            )
-            , ["branch", "enrollment_id", "experiment"]
-        )
-
-        /// Recorded when a user actually observes an experimental treatment, or would have
-        /// observed an experimental treatment if they had been in a branch that would have
-        /// shown one.
-        static let exposure = EventMetricType<NoExtraKeys, ExposureExtra>( // generated from nimbus_events.exposure
-            CommonMetricData(
-                category: "nimbus_events",
-                name: "exposure",
-                sendInPings: ["events"],
-                lifetime: .ping,
-                disabled: false
-            )
-            , ["branch", "enrollment_id", "experiment"]
+            , .second
         )
 
     }
 
-    enum NimbusHealth {
-        struct SdkUnavailableForFeatureExtra: EventExtras {
-            var featureId: String?
-
-            func toExtraRecord() -> [String: String] {
-                var record = [String: String]()
-
-                if let featureId = self.featureId {
-                    record["feature_id"] = String(featureId)
-                }
-
-                return record
-            }
-        }
-
-        struct CacheNotReadyForFeatureExtra: EventExtras {
-            var featureId: String?
-
-            func toExtraRecord() -> [String: String] {
-                var record = [String: String]()
-
-                if let featureId = self.featureId {
-                    record["feature_id"] = String(featureId)
-                }
-
-                return record
-            }
-        }
-
-        /// Recorded when an application or library requests a feature configuration prior
-        /// to Nimbus initialization.
-        static let sdkUnavailableForFeature = EventMetricType<NoExtraKeys, SdkUnavailableForFeatureExtra>( // generated from nimbus_health.sdk_unavailable_for_feature
+    enum GleanInternalMetrics {
+        /// The name of the operating system.
+        /// Possible values:
+        /// Android, iOS, Linux, Darwin, Windows,
+        /// FreeBSD, NetBSD, OpenBSD, Solaris, Unknown
+        static let os = StringMetricType( // generated from os
             CommonMetricData(
-                category: "nimbus_health",
-                name: "sdk_unavailable_for_feature",
-                sendInPings: ["events"],
-                lifetime: .ping,
+                category: "",
+                name: "os",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
                 disabled: false
             )
-            , ["feature_id"]
         )
 
-        /// Recorded when an application or library requests a feature configuration before
-        /// the in memory cache has been populated from the database
-        static let cacheNotReadyForFeature = EventMetricType<NoExtraKeys, CacheNotReadyForFeatureExtra>( // generated from nimbus_health.cache_not_ready_for_feature
+        /// The user-visible version of the operating system (e.g. "1.2.3").
+        /// If the version detection fails, this metric gets set to `Unknown`.
+        static let osVersion = StringMetricType( // generated from os_version
             CommonMetricData(
-                category: "nimbus_health",
-                name: "cache_not_ready_for_feature",
-                sendInPings: ["events"],
+                category: "",
+                name: "os_version",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The manufacturer of the device the application is running on.
+        /// Not set if the device manufacturer can't be determined (e.g. on Desktop).
+        static let deviceManufacturer = StringMetricType( // generated from device_manufacturer
+            CommonMetricData(
+                category: "",
+                name: "device_manufacturer",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The model of the device the application is running on.
+        /// On Android, this is Build.MODEL, the user-visible marketing name,
+        /// like "Pixel 2 XL".
+        /// Not set if the device model can't be determined (e.g. on Desktop).
+        static let deviceModel = StringMetricType( // generated from device_model
+            CommonMetricData(
+                category: "",
+                name: "device_model",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The architecture of the device, (e.g. "arm", "x86").
+        static let architecture = StringMetricType( // generated from architecture
+            CommonMetricData(
+                category: "",
+                name: "architecture",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// A UUID uniquely identifying the client.
+        static let clientId = UuidMetricType( // generated from client_id
+            CommonMetricData(
+                category: "",
+                name: "client_id",
+                sendInPings: ["glean_client_info"],
+                lifetime: .user,
+                disabled: false
+            )
+        )
+
+        /// The build identifier generated by the CI system (e.g. "1234/A").
+        /// If the value was not provided through configuration,
+        /// this metric gets set to `Unknown`.
+        static let appBuild = StringMetricType( // generated from app_build
+            CommonMetricData(
+                category: "",
+                name: "app_build",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The user visible version string (e.g. "1.0.3").
+        /// If the value was not provided through configuration,
+        /// this metric gets set to `Unknown`.
+        static let appDisplayVersion = StringMetricType( // generated from app_display_version
+            CommonMetricData(
+                category: "",
+                name: "app_display_version",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The channel the application is being distributed on.
+        static let appChannel = StringMetricType( // generated from app_channel
+            CommonMetricData(
+                category: "",
+                name: "app_channel",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The date & time the application was built.
+        static let buildDate = DatetimeMetricType( // generated from build_date
+            CommonMetricData(
+                category: "",
+                name: "build_date",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+            , .second
+        )
+
+        /// The date of the first run of the application.
+        static let firstRunDate = DatetimeMetricType( // generated from first_run_date
+            CommonMetricData(
+                category: "",
+                name: "first_run_date",
+                sendInPings: ["glean_client_info"],
+                lifetime: .user,
+                disabled: false
+            )
+            , .day
+        )
+
+        /// The locale of the application during initialization (e.g. "es-ES").
+        /// If the locale can't be determined on the system, the value is
+        /// ["und"](https://unicode.org/reports/tr35/#Unknown_or_Invalid_Identifiers),
+        /// to indicate "undetermined".
+        static let locale = StringMetricType( // generated from locale
+            CommonMetricData(
+                category: "",
+                name: "locale",
+                sendInPings: ["glean_client_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The version of the Glean SDK
+        /// at the time the ping was collected (e.g. 25.0.0).
+        static let telemetrySdkBuild = StringMetricType( // generated from telemetry_sdk_build
+            CommonMetricData(
+                category: "",
+                name: "telemetry_sdk_build",
+                sendInPings: ["glean_internal_info"],
                 lifetime: .ping,
                 disabled: false
             )
-            , ["feature_id"]
+        )
+
+        /// A running counter of the number of times pings of this type have been
+        /// sent.
+        /// This metric definition is only used for documentation purposes:
+        /// internally, Glean instantiates the metric manually and calls it
+        /// `sequence`.
+        static let seq = CounterMetricType( // generated from seq
+            CommonMetricData(
+                category: "",
+                name: "seq",
+                sendInPings: ["glean_internal_info"],
+                lifetime: .user,
+                disabled: false
+            )
+        )
+
+        /// Optional. A dictionary of active experiments.
+        static let experiments = StringMetricType( // generated from experiments
+            CommonMetricData(
+                category: "",
+                name: "experiments",
+                sendInPings: ["glean_internal_info"],
+                lifetime: .application,
+                disabled: false
+            )
+        )
+
+        /// The time of the start of collection of the data in the ping,
+        /// in local time and with minute precision, including timezone information.
+        static let startTime = DatetimeMetricType( // generated from start_time
+            CommonMetricData(
+                category: "",
+                name: "start_time",
+                sendInPings: ["glean_internal_info"],
+                lifetime: .user,
+                disabled: false
+            )
+            , .minute
+        )
+
+        /// The time of the end of collection of the data in the ping,
+        /// in local time and with minute precision, including timezone information.
+        /// This is also the time this ping was generated
+        /// and is likely well before ping transmission time.
+        static let endTime = DatetimeMetricType( // generated from end_time
+            CommonMetricData(
+                category: "",
+                name: "end_time",
+                sendInPings: ["glean_internal_info"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .minute
+        )
+
+        /// The optional reason the ping was submitted.
+        /// The specific values for reason are specific to each ping, and are
+        /// documented in the ping's pings.yaml file.
+        static let reason = StringMetricType( // generated from reason
+            CommonMetricData(
+                category: "",
+                name: "reason",
+                sendInPings: ["glean_internal_info"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum GleanError {
+        private static let invalidValueLabel = CounterMetricType( // generated from glean.error.invalid_value
+            CommonMetricData(
+                category: "glean.error",
+                name: "invalid_value",
+                sendInPings: ["all-pings"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Counts the number of times a metric was set to an invalid value.
+        /// The labels are the `category.name` identifier of the metric.
+        static let invalidValue = try! LabeledMetricType<CounterMetricType>( // generated from glean.error.invalid_value
+            category: "glean.error",
+            name: "invalid_value",
+            sendInPings: ["all-pings"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: invalidValueLabel,
+            labels: nil
+        )
+
+        private static let invalidLabelLabel = CounterMetricType( // generated from glean.error.invalid_label
+            CommonMetricData(
+                category: "glean.error",
+                name: "invalid_label",
+                sendInPings: ["all-pings"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Counts the number of times a metric was set with an invalid label.
+        /// The labels are the `category.name` identifier of the metric.
+        static let invalidLabel = try! LabeledMetricType<CounterMetricType>( // generated from glean.error.invalid_label
+            category: "glean.error",
+            name: "invalid_label",
+            sendInPings: ["all-pings"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: invalidLabelLabel,
+            labels: nil
+        )
+
+        private static let invalidStateLabel = CounterMetricType( // generated from glean.error.invalid_state
+            CommonMetricData(
+                category: "glean.error",
+                name: "invalid_state",
+                sendInPings: ["all-pings"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Counts the number of times a timing metric was used incorrectly.
+        /// The labels are the `category.name` identifier of the metric.
+        static let invalidState = try! LabeledMetricType<CounterMetricType>( // generated from glean.error.invalid_state
+            category: "glean.error",
+            name: "invalid_state",
+            sendInPings: ["all-pings"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: invalidStateLabel,
+            labels: nil
+        )
+
+        private static let invalidOverflowLabel = CounterMetricType( // generated from glean.error.invalid_overflow
+            CommonMetricData(
+                category: "glean.error",
+                name: "invalid_overflow",
+                sendInPings: ["all-pings"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Counts the number of times a metric was set a value that overflowed.
+        /// The labels are the `category.name` identifier of the metric.
+        static let invalidOverflow = try! LabeledMetricType<CounterMetricType>( // generated from glean.error.invalid_overflow
+            category: "glean.error",
+            name: "invalid_overflow",
+            sendInPings: ["all-pings"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: invalidOverflowLabel,
+            labels: nil
+        )
+
+        /// The number of tasks that overflowed the pre-initialization buffer.
+        /// Only sent if the buffer ever overflows.
+        /// 
+        /// In Version 0 this reported the total number of tasks enqueued.
+        static let preinitTasksOverflow = CounterMetricType( // generated from glean.error.preinit_tasks_overflow
+            CommonMetricData(
+                category: "glean.error",
+                name: "preinit_tasks_overflow",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// The number of times we encountered an IO error
+        /// when writing a pending ping to disk.
+        static let io = CounterMetricType( // generated from glean.error.io
+            CommonMetricData(
+                category: "glean.error",
+                name: "io",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum GleanUpload {
+        private static let pingUploadFailureLabel = CounterMetricType( // generated from glean.upload.ping_upload_failure
+            CommonMetricData(
+                category: "glean.upload",
+                name: "ping_upload_failure",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Counts the number of ping upload failures, by type of failure.
+        /// This includes failures for all ping types,
+        /// though the counts appear in the next successfully sent `metrics` ping.
+        static let pingUploadFailure = try! LabeledMetricType<CounterMetricType>( // generated from glean.upload.ping_upload_failure
+            category: "glean.upload",
+            name: "ping_upload_failure",
+            sendInPings: ["metrics"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: pingUploadFailureLabel,
+            labels: ["recoverable", "status_code_4xx", "status_code_5xx", "status_code_unknown", "unrecoverable"]
+        )
+
+        /// The size of pings that exceeded the maximum ping size allowed for upload.
+        static let discardedExceedingPingsSize = MemoryDistributionMetricType( // generated from glean.upload.discarded_exceeding_pings_size
+            CommonMetricData(
+                category: "glean.upload",
+                name: "discarded_exceeding_pings_size",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .kilobyte
+        )
+
+        /// The size of the pending pings directory upon initialization of Glean.
+        /// This does not include the size of the deletion request pings directory.
+        static let pendingPingsDirectorySize = MemoryDistributionMetricType( // generated from glean.upload.pending_pings_directory_size
+            CommonMetricData(
+                category: "glean.upload",
+                name: "pending_pings_directory_size",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .kilobyte
+        )
+
+        /// The number of pings deleted after the quota
+        /// for the size of the pending pings directory or number of files is hit.
+        /// Since quota is only calculated for the pending pings directory,
+        /// and deletion request ping live in a different directory,
+        /// deletion request pings are never deleted.
+        static let deletedPingsAfterQuotaHit = CounterMetricType( // generated from glean.upload.deleted_pings_after_quota_hit
+            CommonMetricData(
+                category: "glean.upload",
+                name: "deleted_pings_after_quota_hit",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// The total number of pending pings at startup.
+        /// This does not include deletion-request pings.
+        static let pendingPings = CounterMetricType( // generated from glean.upload.pending_pings
+            CommonMetricData(
+                category: "glean.upload",
+                name: "pending_pings",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum GleanDatabase {
+        /// The size of the database file at startup.
+        static let size = MemoryDistributionMetricType( // generated from glean.database.size
+            CommonMetricData(
+                category: "glean.database",
+                name: "size",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .byte
+        )
+
+    }
+
+    enum GleanValidation {
+        /// The hour of the first run of the application.
+        static let firstRunHour = DatetimeMetricType( // generated from glean.validation.first_run_hour
+            CommonMetricData(
+                category: "glean.validation",
+                name: "first_run_hour",
+                sendInPings: ["baseline", "metrics"],
+                lifetime: .user,
+                disabled: false
+            )
+            , .hour
+        )
+
+        /// On mobile, the number of times the application went to foreground.
+        static let foregroundCount = CounterMetricType( // generated from glean.validation.foreground_count
+            CommonMetricData(
+                category: "glean.validation",
+                name: "foreground_count",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        private static let pingsSubmittedLabel = CounterMetricType( // generated from glean.validation.pings_submitted
+            CommonMetricData(
+                category: "glean.validation",
+                name: "pings_submitted",
+                sendInPings: ["baseline", "metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// A count of the pings submitted, by ping type.
+        /// 
+        /// This metric appears in both the metrics and baseline pings.
+        /// 
+        /// - On the metrics ping, the counts include the number of pings sent since
+        ///   the last metrics ping (including the last metrics ping)
+        /// - On the baseline ping, the counts include the number of pings send since
+        ///   the last baseline ping (including the last baseline ping)
+        static let pingsSubmitted = try! LabeledMetricType<CounterMetricType>( // generated from glean.validation.pings_submitted
+            category: "glean.validation",
+            name: "pings_submitted",
+            sendInPings: ["baseline", "metrics"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: pingsSubmittedLabel,
+            labels: nil
+        )
+
+    }
+
+    class Pings {
+        public static let shared = Pings()
+        private init() {
+            // Intentionally left private, no external user can instantiate a new global object.
+        }
+
+        enum BaselineReasonCodes: Int, ReasonCodes {
+            case active = 0
+            case dirtyStartup = 1
+            case inactive = 2
+
+            public func index() -> Int {
+                return self.rawValue
+            }
+        }
+
+        /// This ping is intended to provide metrics that are managed by the library
+        /// itself, and not explicitly set by the application or included in the
+        /// application's `metrics.yaml` file.
+        /// The `baseline` ping is automatically sent when the application is moved to
+        /// the background.
+        let baseline = Ping<BaselineReasonCodes>(
+            name: "baseline",
+            includeClientId: true,
+            sendIfEmpty: true,
+            reasonCodes: ["active", "dirty_startup", "inactive"]
+        )
+
+        enum MetricsReasonCodes: Int, ReasonCodes {
+            case overdue = 0
+            case reschedule = 1
+            case today = 2
+            case tomorrow = 3
+            case upgrade = 4
+
+            public func index() -> Int {
+                return self.rawValue
+            }
+        }
+
+        /// The `metrics` ping is intended for all of the metrics that are explicitly
+        /// set by the application or are included in the application's `metrics.yaml`
+        /// file (except events).
+        /// The reported data is tied to the ping's *measurement window*, which is the
+        /// time between the collection of two `metrics` ping. Ideally, this window is
+        /// expected to be about 24 hours, given that the collection is scheduled daily
+        /// at 4AM. Data in the `ping_info` section of the ping can be used to infer the
+        /// length of this window.
+        let metrics = Ping<MetricsReasonCodes>(
+            name: "metrics",
+            includeClientId: true,
+            sendIfEmpty: false,
+            reasonCodes: ["overdue", "reschedule", "today", "tomorrow", "upgrade"]
+        )
+
+        enum EventsReasonCodes: Int, ReasonCodes {
+            case inactive = 0
+            case maxCapacity = 1
+            case startup = 2
+
+            public func index() -> Int {
+                return self.rawValue
+            }
+        }
+
+        /// The events ping's purpose is to transport all of the event metric
+        /// information. The `events` ping is automatically sent when the application
+        /// becomes inactive.
+        let events = Ping<EventsReasonCodes>(
+            name: "events",
+            includeClientId: true,
+            sendIfEmpty: false,
+            reasonCodes: ["inactive", "max_capacity", "startup"]
+        )
+
+        enum DeletionRequestReasonCodes: Int, ReasonCodes {
+            case atInit = 0
+            case setUploadEnabled = 1
+
+            public func index() -> Int {
+                return self.rawValue
+            }
+        }
+
+        /// This ping is submitted when a user opts out of
+        /// sending technical and interaction data to Mozilla.
+        /// This ping is intended to communicate to the Data Pipeline
+        /// that the user wishes to have their reported Telemetry data deleted.
+        /// As such it attempts to send itself at the moment the user
+        /// opts out of data collection.
+        let deletionRequest = Ping<DeletionRequestReasonCodes>(
+            name: "deletion-request",
+            includeClientId: true,
+            sendIfEmpty: true,
+            reasonCodes: ["at_init", "set_upload_enabled"]
         )
 
     }

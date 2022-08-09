@@ -31,7 +31,7 @@ rm -rf "$FOCUS_DIR" && mkdir -p "$FOCUS_DIR"
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
+SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" -g "MozillaAppServices" --allow-reserved "$APP_SERVICES_DIR/components/external/glean/glean-core/metrics.yaml" "$APP_SERVICES_DIR/components/external/glean/glean-core/pings.yaml"
 
 
 
@@ -44,7 +44,11 @@ SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/nimbus/src/nimbus.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
 cp -r "$APP_SERVICES_DIR/components/nimbus/ios/Nimbus" "$OUT_DIR"
-
+# Because Glean has duplicates of the Nimbus Utils (that's where they came from to ensure
+# that the device targeting parameters matched telemetry), we need to remove Nimbus'
+# copy to avoid a collision when building in an application. Nimbus can still get to
+# Glean versions of the utilities since everything is in the Package together.
+rm -rf "$FOCUS_DIR/Nimbus/Utils"
 
 
 ###
@@ -143,6 +147,15 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $OUT_DIR
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
 
+###
+#
+# Glean
+#
+###
+
+# We only need to copy the hand-written Swift
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/external/glean/glean-core/src/glean.udl"
+cp -r "$APP_SERVICES_DIR/components/external/glean/glean-core/ios/Glean" $OUT_DIR
 
 ###
 #
@@ -157,7 +170,7 @@ cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="FocusAppServices" "$GLEAN_GENERATOR" -o "$FOCUS_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
+SOURCE_ROOT="$THIS_DIR" PROJECT="FocusAppServices" "$GLEAN_GENERATOR" -o "$FOCUS_DIR/Generated/Metrics/" -g "FocusAppServices" --allow-reserved "$APP_SERVICES_DIR/components/external/glean/glean-core/metrics.yaml" "$APP_SERVICES_DIR/components/external/glean/glean-core/pings.yaml"
 
 
 
@@ -170,6 +183,11 @@ SOURCE_ROOT="$THIS_DIR" PROJECT="FocusAppServices" "$GLEAN_GENERATOR" -o "$FOCUS
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FOCUS_DIR/Generated" "$APP_SERVICES_DIR/components/nimbus/src/nimbus.udl"
 # Copy the hand-written Swift, since it all needs to be together in one directory.
 cp -r "$APP_SERVICES_DIR/components/nimbus/ios/Nimbus" "$FOCUS_DIR"
+# Because Glean has duplicates of the Nimbus Utils (that's where they came from to ensure
+# that the device targeting parameters matched telemetry), we need to remove Nimbus'
+# copy to avoid a collision when building in an application. Nimbus can still get to
+# Glean versions of the utilities since everything is in the Package together.
+rm -rf "$FOCUS_DIR/Nimbus/Utils"
 
 ###
 #
@@ -190,6 +208,19 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $FOCUS_DIR
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $FOCUS_DIR
 
+###
+#
+# Glean
+#
+###
+
+# We only need to copy the hand-written Swift
+mv "$APP_SERVICES_DIR/components/external/glean/glean-core/uniffi.toml" "$APP_SERVICES_DIR/components/external/glean/glean-core/uniffi.toml.tmp"
+mv "$APP_SERVICES_DIR/components/external/glean/glean-core/megazord.uniffi.toml" "$APP_SERVICES_DIR/components/external/glean/glean-core/uniffi.toml"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FOCUS_DIR/Generated" "$APP_SERVICES_DIR/components/external/glean/glean-core/src/glean.udl"
+cp -r "$APP_SERVICES_DIR/components/external/glean/glean-core/ios/Glean" "$FOCUS_DIR"
+mv "$APP_SERVICES_DIR/components/external/glean/glean-core/uniffi.toml" "$APP_SERVICES_DIR/components/external/glean/glean-core/megazord.uniffi.toml"
+mv "$APP_SERVICES_DIR/components/external/glean/glean-core/uniffi.toml.tmp" "$APP_SERVICES_DIR/components/external/glean/glean-core/uniffi.toml"
 
 ###
 #
