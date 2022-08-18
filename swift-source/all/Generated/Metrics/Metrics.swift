@@ -22,7 +22,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 8, day: 5, hour: 19, minute: 16, second: 22))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2022, month: 8, day: 18, hour: 19, minute: 52, second: 20))
     }
 
     enum NimbusEvents {
@@ -168,6 +168,36 @@ extension GleanMetrics {
                 disabled: false
             )
             , ["branch", "enrollment_id", "experiment"]
+        )
+
+    }
+
+    enum NimbusHealth {
+        struct FeatureRequestErrorExtra: EventExtras {
+            var featureId: String?
+
+            func toExtraRecord() -> [String: String] {
+                var record = [String: String]()
+
+                if let featureId = self.featureId {
+                    record["feature_id"] = String(featureId)
+                }
+
+                return record
+            }
+        }
+
+        /// Recorded when an application or library requests a feature configuration prior
+        /// to Nimbus initialization.
+        static let featureRequestError = EventMetricType<NoExtraKeys, FeatureRequestErrorExtra>( // generated from nimbus_health.feature_request_error
+            CommonMetricData(
+                category: "nimbus_health",
+                name: "feature_request_error",
+                sendInPings: ["events"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , ["feature_id"]
         )
 
     }
