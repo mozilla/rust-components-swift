@@ -144,6 +144,15 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $OUT_DIR
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
 
 
+###
+#
+# ErrorSupport
+#
+###
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/support/error/src/errorsupport.udl"
+
+
+
 ###################### Swift code generation for Focus ######################
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
@@ -181,6 +190,13 @@ cp -r "$APP_SERVICES_DIR/components/rc_log/ios/" $FOCUS_DIR
 # We only need to copy the hand-written Swift, Viaduct does not use `uniffi` yet
 cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $FOCUS_DIR
 
+
+###
+#
+# ErrorSupport
+#
+###
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FOCUS_DIR/Generated" "$APP_SERVICES_DIR/components/support/error/src/errorsupport.udl"
 
 
 echo "Successfully generated uniffi code!"
