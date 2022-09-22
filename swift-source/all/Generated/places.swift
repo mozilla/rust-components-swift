@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_places_3e8_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_places_2030_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_places_3e8_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_places_2030_rustbuffer_free(self, $0) }
     }
 }
 
@@ -281,456 +281,114 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
 
 // Public interface members begin here.
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+private struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
 
-public enum ConnectionType {
-    case readOnly
-    case readWrite
-    case sync
-}
-
-private struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
-    typealias SwiftType = ConnectionType
-
-    static func read(from buf: Reader) throws -> ConnectionType {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .readOnly
-
-        case 2: return .readWrite
-
-        case 3: return .sync
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func read(from buf: Reader) throws -> UInt32 {
+        return try lift(buf.readInt())
     }
 
-    static func write(_ value: ConnectionType, into buf: Writer) {
-        switch value {
-        case .readOnly:
-            buf.writeInt(Int32(1))
-
-        case .readWrite:
-            buf.writeInt(Int32(2))
-
-        case .sync:
-            buf.writeInt(Int32(3))
-        }
+    static func write(_ value: SwiftType, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension ConnectionType: Equatable, Hashable {}
+private struct FfiConverterInt32: FfiConverterPrimitive {
+    typealias FfiType = Int32
+    typealias SwiftType = Int32
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum FrecencyThresholdOption {
-    case none
-    case skipOneTimePages
-}
-
-private struct FfiConverterTypeFrecencyThresholdOption: FfiConverterRustBuffer {
-    typealias SwiftType = FrecencyThresholdOption
-
-    static func read(from buf: Reader) throws -> FrecencyThresholdOption {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .none
-
-        case 2: return .skipOneTimePages
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func read(from buf: Reader) throws -> Int32 {
+        return try lift(buf.readInt())
     }
 
-    static func write(_ value: FrecencyThresholdOption, into buf: Writer) {
-        switch value {
-        case .none:
-            buf.writeInt(Int32(1))
-
-        case .skipOneTimePages:
-            buf.writeInt(Int32(2))
-        }
+    static func write(_ value: Int32, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension FrecencyThresholdOption: Equatable, Hashable {}
+private struct FfiConverterInt64: FfiConverterPrimitive {
+    typealias FfiType = Int64
+    typealias SwiftType = Int64
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum MatchReason {
-    case keyword
-    case origin
-    case urlMatch
-    case previousUse
-    case bookmark
-    case tags
-}
-
-private struct FfiConverterTypeMatchReason: FfiConverterRustBuffer {
-    typealias SwiftType = MatchReason
-
-    static func read(from buf: Reader) throws -> MatchReason {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .keyword
-
-        case 2: return .origin
-
-        case 3: return .urlMatch
-
-        case 4: return .previousUse
-
-        case 5: return .bookmark
-
-        case 6: return .tags
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func read(from buf: Reader) throws -> Int64 {
+        return try lift(buf.readInt())
     }
 
-    static func write(_ value: MatchReason, into buf: Writer) {
-        switch value {
-        case .keyword:
-            buf.writeInt(Int32(1))
-
-        case .origin:
-            buf.writeInt(Int32(2))
-
-        case .urlMatch:
-            buf.writeInt(Int32(3))
-
-        case .previousUse:
-            buf.writeInt(Int32(4))
-
-        case .bookmark:
-            buf.writeInt(Int32(5))
-
-        case .tags:
-            buf.writeInt(Int32(6))
-        }
+    static func write(_ value: Int64, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension MatchReason: Equatable, Hashable {}
+private struct FfiConverterDouble: FfiConverterPrimitive {
+    typealias FfiType = Double
+    typealias SwiftType = Double
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum DocumentType {
-    case regular
-    case media
-}
-
-private struct FfiConverterTypeDocumentType: FfiConverterRustBuffer {
-    typealias SwiftType = DocumentType
-
-    static func read(from buf: Reader) throws -> DocumentType {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .regular
-
-        case 2: return .media
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func read(from buf: Reader) throws -> Double {
+        return try lift(buf.readDouble())
     }
 
-    static func write(_ value: DocumentType, into buf: Writer) {
-        switch value {
-        case .regular:
-            buf.writeInt(Int32(1))
-
-        case .media:
-            buf.writeInt(Int32(2))
-        }
+    static func write(_ value: Double, into buf: Writer) {
+        buf.writeDouble(lower(value))
     }
 }
 
-extension DocumentType: Equatable, Hashable {}
+private struct FfiConverterBool: FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum VisitTransition {
-    case link
-    case typed
-    case bookmark
-    case embed
-    case redirectPermanent
-    case redirectTemporary
-    case download
-    case framedLink
-    case reload
-}
-
-private struct FfiConverterTypeVisitTransition: FfiConverterRustBuffer {
-    typealias SwiftType = VisitTransition
-
-    static func read(from buf: Reader) throws -> VisitTransition {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .link
-
-        case 2: return .typed
-
-        case 3: return .bookmark
-
-        case 4: return .embed
-
-        case 5: return .redirectPermanent
-
-        case 6: return .redirectTemporary
-
-        case 7: return .download
-
-        case 8: return .framedLink
-
-        case 9: return .reload
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
     }
 
-    static func write(_ value: VisitTransition, into buf: Writer) {
-        switch value {
-        case .link:
-            buf.writeInt(Int32(1))
+    static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
 
-        case .typed:
-            buf.writeInt(Int32(2))
+    static func read(from buf: Reader) throws -> Bool {
+        return try lift(buf.readInt())
+    }
 
-        case .bookmark:
-            buf.writeInt(Int32(3))
-
-        case .embed:
-            buf.writeInt(Int32(4))
-
-        case .redirectPermanent:
-            buf.writeInt(Int32(5))
-
-        case .redirectTemporary:
-            buf.writeInt(Int32(6))
-
-        case .download:
-            buf.writeInt(Int32(7))
-
-        case .framedLink:
-            buf.writeInt(Int32(8))
-
-        case .reload:
-            buf.writeInt(Int32(9))
-        }
+    static func write(_ value: Bool, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension VisitTransition: Equatable, Hashable {}
+private struct FfiConverterString: FfiConverter {
+    typealias SwiftType = String
+    typealias FfiType = RustBuffer
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum BookmarkItem {
-    case bookmark(b: BookmarkData)
-    case separator(s: BookmarkSeparator)
-    case folder(f: BookmarkFolder)
-}
-
-private struct FfiConverterTypeBookmarkItem: FfiConverterRustBuffer {
-    typealias SwiftType = BookmarkItem
-
-    static func read(from buf: Reader) throws -> BookmarkItem {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .bookmark(
-                b: try FfiConverterTypeBookmarkData.read(from: buf)
-            )
-
-        case 2: return .separator(
-                s: try FfiConverterTypeBookmarkSeparator.read(from: buf)
-            )
-
-        case 3: return .folder(
-                f: try FfiConverterTypeBookmarkFolder.read(from: buf)
-            )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
+    static func lift(_ value: RustBuffer) throws -> String {
+        defer {
+            value.deallocate()
         }
+        if value.data == nil {
+            return String()
+        }
+        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
+        return String(bytes: bytes, encoding: String.Encoding.utf8)!
     }
 
-    static func write(_ value: BookmarkItem, into buf: Writer) {
-        switch value {
-        case let .bookmark(b):
-            buf.writeInt(Int32(1))
-            FfiConverterTypeBookmarkData.write(b, into: buf)
-
-        case let .separator(s):
-            buf.writeInt(Int32(2))
-            FfiConverterTypeBookmarkSeparator.write(s, into: buf)
-
-        case let .folder(f):
-            buf.writeInt(Int32(3))
-            FfiConverterTypeBookmarkFolder.write(f, into: buf)
-        }
-    }
-}
-
-extension BookmarkItem: Equatable, Hashable {}
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum BookmarkPosition {
-    case specific(pos: UInt32)
-    case append
-}
-
-private struct FfiConverterTypeBookmarkPosition: FfiConverterRustBuffer {
-    typealias SwiftType = BookmarkPosition
-
-    static func read(from buf: Reader) throws -> BookmarkPosition {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .specific(
-                pos: try FfiConverterUInt32.read(from: buf)
-            )
-
-        case 2: return .append
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    static func write(_ value: BookmarkPosition, into buf: Writer) {
-        switch value {
-        case let .specific(pos):
-            buf.writeInt(Int32(1))
-            FfiConverterUInt32.write(pos, into: buf)
-
-        case .append:
-            buf.writeInt(Int32(2))
-        }
-    }
-}
-
-extension BookmarkPosition: Equatable, Hashable {}
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum InsertableBookmarkItem {
-    case bookmark(b: InsertableBookmark)
-    case folder(f: InsertableBookmarkFolder)
-    case separator(s: InsertableBookmarkSeparator)
-}
-
-private struct FfiConverterTypeInsertableBookmarkItem: FfiConverterRustBuffer {
-    typealias SwiftType = InsertableBookmarkItem
-
-    static func read(from buf: Reader) throws -> InsertableBookmarkItem {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .bookmark(
-                b: try FfiConverterTypeInsertableBookmark.read(from: buf)
-            )
-
-        case 2: return .folder(
-                f: try FfiConverterTypeInsertableBookmarkFolder.read(from: buf)
-            )
-
-        case 3: return .separator(
-                s: try FfiConverterTypeInsertableBookmarkSeparator.read(from: buf)
-            )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    static func write(_ value: InsertableBookmarkItem, into buf: Writer) {
-        switch value {
-        case let .bookmark(b):
-            buf.writeInt(Int32(1))
-            FfiConverterTypeInsertableBookmark.write(b, into: buf)
-
-        case let .folder(f):
-            buf.writeInt(Int32(2))
-            FfiConverterTypeInsertableBookmarkFolder.write(f, into: buf)
-
-        case let .separator(s):
-            buf.writeInt(Int32(3))
-            FfiConverterTypeInsertableBookmarkSeparator.write(s, into: buf)
-        }
-    }
-}
-
-extension InsertableBookmarkItem: Equatable, Hashable {}
-
-public func placesApiNew(dbPath: String) throws -> PlacesApi {
-    return try FfiConverterTypePlacesApi.lift(
-        try
-
-            rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_places_api_new(
-                    FfiConverterString.lower(dbPath), $0
-                )
+    static func lower(_ value: String) -> RustBuffer {
+        return value.utf8CString.withUnsafeBufferPointer { ptr in
+            // The swift string gives us int8_t, we want uint8_t.
+            ptr.withMemoryRebound(to: UInt8.self) { ptr in
+                // The swift string gives us a trailing null byte, we don't want it.
+                let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
+                return RustBuffer.from(buf)
             }
-    )
-}
-
-public protocol SqlInterruptHandleProtocol {
-    func interrupt()
-}
-
-public class SqlInterruptHandle: SqlInterruptHandleProtocol {
-    fileprivate let pointer: UnsafeMutableRawPointer
-
-    // TODO: We'd like this to be `private` but for Swifty reasons,
-    // we can't implement `FfiConverter` without making this `required` and we can't
-    // make it `required` without making it `public`.
-    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
-        self.pointer = pointer
-    }
-
-    deinit {
-        try! rustCall { ffi_places_3e8_SqlInterruptHandle_object_free(pointer, $0) }
-    }
-
-    public func interrupt() {
-        try!
-            rustCall {
-                places_3e8_SqlInterruptHandle_interrupt(self.pointer, $0)
-            }
-    }
-}
-
-private struct FfiConverterTypeSqlInterruptHandle: FfiConverter {
-    typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = SqlInterruptHandle
-
-    static func read(from buf: Reader) throws -> SqlInterruptHandle {
-        let v: UInt64 = try buf.readInt()
-        // The Rust code won't compile if a pointer won't fit in a UInt64.
-        // We have to go via `UInt` because that's the thing that's the size of a pointer.
-        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
-            throw UniffiInternalError.unexpectedNullPointer
         }
-        return try lift(ptr!)
     }
 
-    static func write(_ value: SqlInterruptHandle, into buf: Writer) {
-        // This fiddling is because `Int` is the thing that's the same size as a pointer.
-        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    static func read(from buf: Reader) throws -> String {
+        let len: Int32 = try buf.readInt()
+        return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
-    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SqlInterruptHandle {
-        return SqlInterruptHandle(unsafeFromRawPointer: pointer)
-    }
-
-    static func lower(_ value: SqlInterruptHandle) -> UnsafeMutableRawPointer {
-        return value.pointer
+    static func write(_ value: String, into buf: Writer) {
+        let len = Int32(value.utf8.count)
+        buf.writeInt(len)
+        buf.writeBytes(value.utf8)
     }
 }
 
@@ -758,15 +416,15 @@ public class PlacesApi: PlacesApiProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_3e8_PlacesApi_object_free(pointer, $0) }
+        try! rustCall { ffi_places_2030_PlacesApi_object_free(pointer, $0) }
     }
 
     public func newConnection(connType: ConnectionType) throws -> PlacesConnection {
         return try FfiConverterTypePlacesConnection.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesApi_new_connection(self.pointer,
-                                                        FfiConverterTypeConnectionType.lower(connType), $0)
+                    places_2030_PlacesApi_new_connection(self.pointer,
+                                                         FfiConverterTypeConnectionType.lower(connType), $0)
                 }
         )
     }
@@ -774,14 +432,14 @@ public class PlacesApi: PlacesApiProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                places_3e8_PlacesApi_register_with_sync_manager(self.pointer, $0)
+                places_2030_PlacesApi_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func resetHistory() throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesApi_reset_history(self.pointer, $0)
+                places_2030_PlacesApi_reset_history(self.pointer, $0)
             }
     }
 
@@ -789,11 +447,11 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesApi_history_sync(self.pointer,
-                                                      FfiConverterString.lower(keyId),
-                                                      FfiConverterString.lower(accessToken),
-                                                      FfiConverterString.lower(syncKey),
-                                                      FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+                    places_2030_PlacesApi_history_sync(self.pointer,
+                                                       FfiConverterString.lower(keyId),
+                                                       FfiConverterString.lower(accessToken),
+                                                       FfiConverterString.lower(syncKey),
+                                                       FfiConverterTypeUrl.lower(tokenserverUrl), $0)
                 }
         )
     }
@@ -802,11 +460,11 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesApi_bookmarks_sync(self.pointer,
-                                                        FfiConverterString.lower(keyId),
-                                                        FfiConverterString.lower(accessToken),
-                                                        FfiConverterString.lower(syncKey),
-                                                        FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+                    places_2030_PlacesApi_bookmarks_sync(self.pointer,
+                                                         FfiConverterString.lower(keyId),
+                                                         FfiConverterString.lower(accessToken),
+                                                         FfiConverterString.lower(syncKey),
+                                                         FfiConverterTypeUrl.lower(tokenserverUrl), $0)
                 }
         )
     }
@@ -815,8 +473,8 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesApi_places_pinned_sites_import_from_fennec(self.pointer,
-                                                                                FfiConverterString.lower(dbPath), $0)
+                    places_2030_PlacesApi_places_pinned_sites_import_from_fennec(self.pointer,
+                                                                                 FfiConverterString.lower(dbPath), $0)
                 }
         )
     }
@@ -825,8 +483,8 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesApi_places_history_import_from_fennec(self.pointer,
-                                                                           FfiConverterString.lower(dbPath), $0)
+                    places_2030_PlacesApi_places_history_import_from_fennec(self.pointer,
+                                                                            FfiConverterString.lower(dbPath), $0)
                 }
         )
     }
@@ -835,8 +493,8 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesApi_places_bookmarks_import_from_fennec(self.pointer,
-                                                                             FfiConverterString.lower(dbPath), $0)
+                    places_2030_PlacesApi_places_bookmarks_import_from_fennec(self.pointer,
+                                                                              FfiConverterString.lower(dbPath), $0)
                 }
         )
     }
@@ -844,15 +502,15 @@ public class PlacesApi: PlacesApiProtocol {
     public func placesBookmarksImportFromIos(dbPath: String) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesApi_places_bookmarks_import_from_ios(self.pointer,
-                                                                      FfiConverterString.lower(dbPath), $0)
+                places_2030_PlacesApi_places_bookmarks_import_from_ios(self.pointer,
+                                                                       FfiConverterString.lower(dbPath), $0)
             }
     }
 
     public func bookmarksReset() throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesApi_bookmarks_reset(self.pointer, $0)
+                places_2030_PlacesApi_bookmarks_reset(self.pointer, $0)
             }
     }
 }
@@ -938,14 +596,14 @@ public class PlacesConnection: PlacesConnectionProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_3e8_PlacesConnection_object_free(pointer, $0) }
+        try! rustCall { ffi_places_2030_PlacesConnection_object_free(pointer, $0) }
     }
 
     public func newInterruptHandle() -> SqlInterruptHandle {
         return try! FfiConverterTypeSqlInterruptHandle.lift(
             try!
                 rustCall {
-                    places_3e8_PlacesConnection_new_interrupt_handle(self.pointer, $0)
+                    places_2030_PlacesConnection_new_interrupt_handle(self.pointer, $0)
                 }
         )
     }
@@ -954,8 +612,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_latest_history_metadata_for_url(self.pointer,
-                                                                                    FfiConverterTypeUrl.lower(url), $0)
+                    places_2030_PlacesConnection_get_latest_history_metadata_for_url(self.pointer,
+                                                                                     FfiConverterTypeUrl.lower(url), $0)
                 }
         )
     }
@@ -964,9 +622,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_history_metadata_between(self.pointer,
-                                                                             FfiConverterTypePlacesTimestamp.lower(start),
-                                                                             FfiConverterTypePlacesTimestamp.lower(end), $0)
+                    places_2030_PlacesConnection_get_history_metadata_between(self.pointer,
+                                                                              FfiConverterTypePlacesTimestamp.lower(start),
+                                                                              FfiConverterTypePlacesTimestamp.lower(end), $0)
                 }
         )
     }
@@ -975,8 +633,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_history_metadata_since(self.pointer,
-                                                                           FfiConverterTypePlacesTimestamp.lower(since), $0)
+                    places_2030_PlacesConnection_get_history_metadata_since(self.pointer,
+                                                                            FfiConverterTypePlacesTimestamp.lower(since), $0)
                 }
         )
     }
@@ -985,9 +643,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeSearchResult.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_query_autocomplete(self.pointer,
-                                                                   FfiConverterString.lower(search),
-                                                                   FfiConverterInt32.lower(limit), $0)
+                    places_2030_PlacesConnection_query_autocomplete(self.pointer,
+                                                                    FfiConverterString.lower(search),
+                                                                    FfiConverterInt32.lower(limit), $0)
                 }
         )
     }
@@ -995,9 +653,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func acceptResult(searchString: String, url: String) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_accept_result(self.pointer,
-                                                          FfiConverterString.lower(searchString),
-                                                          FfiConverterString.lower(url), $0)
+                places_2030_PlacesConnection_accept_result(self.pointer,
+                                                           FfiConverterString.lower(searchString),
+                                                           FfiConverterString.lower(url), $0)
             }
     }
 
@@ -1005,8 +663,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeUrl.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_match_url(self.pointer,
-                                                          FfiConverterString.lower(query), $0)
+                    places_2030_PlacesConnection_match_url(self.pointer,
+                                                           FfiConverterString.lower(query), $0)
                 }
         )
     }
@@ -1015,9 +673,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_query_history_metadata(self.pointer,
-                                                                       FfiConverterString.lower(query),
-                                                                       FfiConverterInt32.lower(limit), $0)
+                    places_2030_PlacesConnection_query_history_metadata(self.pointer,
+                                                                        FfiConverterString.lower(query),
+                                                                        FfiConverterInt32.lower(limit), $0)
                 }
         )
     }
@@ -1026,9 +684,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryHighlight.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_history_highlights(self.pointer,
-                                                                       FfiConverterTypeHistoryHighlightWeights.lower(weights),
-                                                                       FfiConverterInt32.lower(limit), $0)
+                    places_2030_PlacesConnection_get_history_highlights(self.pointer,
+                                                                        FfiConverterTypeHistoryHighlightWeights.lower(weights),
+                                                                        FfiConverterInt32.lower(limit), $0)
                 }
         )
     }
@@ -1036,34 +694,34 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_note_history_metadata_observation(self.pointer,
-                                                                              FfiConverterTypeHistoryMetadataObservation.lower(data), $0)
+                places_2030_PlacesConnection_note_history_metadata_observation(self.pointer,
+                                                                               FfiConverterTypeHistoryMetadataObservation.lower(data), $0)
             }
     }
 
     public func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_metadata_delete(self.pointer,
-                                                            FfiConverterTypeUrl.lower(url),
-                                                            FfiConverterOptionTypeUrl.lower(referrerUrl),
-                                                            FfiConverterOptionString.lower(searchTerm), $0)
+                places_2030_PlacesConnection_metadata_delete(self.pointer,
+                                                             FfiConverterTypeUrl.lower(url),
+                                                             FfiConverterOptionTypeUrl.lower(referrerUrl),
+                                                             FfiConverterOptionString.lower(searchTerm), $0)
             }
     }
 
     public func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_metadata_delete_older_than(self.pointer,
-                                                                       FfiConverterTypePlacesTimestamp.lower(olderThan), $0)
+                places_2030_PlacesConnection_metadata_delete_older_than(self.pointer,
+                                                                        FfiConverterTypePlacesTimestamp.lower(olderThan), $0)
             }
     }
 
     public func applyObservation(visit: VisitObservation) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_apply_observation(self.pointer,
-                                                              FfiConverterTypeVisitObservation.lower(visit), $0)
+                places_2030_PlacesConnection_apply_observation(self.pointer,
+                                                               FfiConverterTypeVisitObservation.lower(visit), $0)
             }
     }
 
@@ -1071,10 +729,10 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeUrl.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_visited_urls_in_range(self.pointer,
-                                                                          FfiConverterTypePlacesTimestamp.lower(start),
-                                                                          FfiConverterTypePlacesTimestamp.lower(end),
-                                                                          FfiConverterBool.lower(includeRemote), $0)
+                    places_2030_PlacesConnection_get_visited_urls_in_range(self.pointer,
+                                                                           FfiConverterTypePlacesTimestamp.lower(start),
+                                                                           FfiConverterTypePlacesTimestamp.lower(end),
+                                                                           FfiConverterBool.lower(includeRemote), $0)
                 }
         )
     }
@@ -1083,10 +741,10 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_visit_infos(self.pointer,
-                                                                FfiConverterTypePlacesTimestamp.lower(startDate),
-                                                                FfiConverterTypePlacesTimestamp.lower(endDate),
-                                                                FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                    places_2030_PlacesConnection_get_visit_infos(self.pointer,
+                                                                 FfiConverterTypePlacesTimestamp.lower(startDate),
+                                                                 FfiConverterTypePlacesTimestamp.lower(endDate),
+                                                                 FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
                 }
         )
     }
@@ -1095,8 +753,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterInt64.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_visit_count(self.pointer,
-                                                                FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                    places_2030_PlacesConnection_get_visit_count(self.pointer,
+                                                                 FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
                 }
         )
     }
@@ -1105,10 +763,10 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_visit_page(self.pointer,
-                                                               FfiConverterInt64.lower(offset),
-                                                               FfiConverterInt64.lower(count),
-                                                               FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                    places_2030_PlacesConnection_get_visit_page(self.pointer,
+                                                                FfiConverterInt64.lower(offset),
+                                                                FfiConverterInt64.lower(count),
+                                                                FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
                 }
         )
     }
@@ -1117,11 +775,11 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterTypeHistoryVisitInfosWithBound.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_visit_page_with_bound(self.pointer,
-                                                                          FfiConverterInt64.lower(bound),
-                                                                          FfiConverterInt64.lower(offset),
-                                                                          FfiConverterInt64.lower(count),
-                                                                          FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+                    places_2030_PlacesConnection_get_visit_page_with_bound(self.pointer,
+                                                                           FfiConverterInt64.lower(bound),
+                                                                           FfiConverterInt64.lower(offset),
+                                                                           FfiConverterInt64.lower(count),
+                                                                           FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
                 }
         )
     }
@@ -1130,8 +788,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceBool.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_visited(self.pointer,
-                                                            FfiConverterSequenceString.lower(urls), $0)
+                    places_2030_PlacesConnection_get_visited(self.pointer,
+                                                             FfiConverterSequenceString.lower(urls), $0)
                 }
         )
     }
@@ -1139,26 +797,26 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func deleteVisitsFor(url: String) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_delete_visits_for(self.pointer,
-                                                              FfiConverterString.lower(url), $0)
+                places_2030_PlacesConnection_delete_visits_for(self.pointer,
+                                                               FfiConverterString.lower(url), $0)
             }
     }
 
     public func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_delete_visits_between(self.pointer,
-                                                                  FfiConverterTypePlacesTimestamp.lower(start),
-                                                                  FfiConverterTypePlacesTimestamp.lower(end), $0)
+                places_2030_PlacesConnection_delete_visits_between(self.pointer,
+                                                                   FfiConverterTypePlacesTimestamp.lower(start),
+                                                                   FfiConverterTypePlacesTimestamp.lower(end), $0)
             }
     }
 
     public func deleteVisit(url: String, timestamp: PlacesTimestamp) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_delete_visit(self.pointer,
-                                                         FfiConverterString.lower(url),
-                                                         FfiConverterTypePlacesTimestamp.lower(timestamp), $0)
+                places_2030_PlacesConnection_delete_visit(self.pointer,
+                                                          FfiConverterString.lower(url),
+                                                          FfiConverterTypePlacesTimestamp.lower(timestamp), $0)
             }
     }
 
@@ -1166,9 +824,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeTopFrecentSiteInfo.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_get_top_frecent_site_infos(self.pointer,
-                                                                           FfiConverterInt32.lower(numItems),
-                                                                           FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
+                    places_2030_PlacesConnection_get_top_frecent_site_infos(self.pointer,
+                                                                            FfiConverterInt32.lower(numItems),
+                                                                            FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
                 }
         )
     }
@@ -1176,29 +834,29 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func wipeLocalHistory() throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_wipe_local_history(self.pointer, $0)
+                places_2030_PlacesConnection_wipe_local_history(self.pointer, $0)
             }
     }
 
     public func deleteEverythingHistory() throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_delete_everything_history(self.pointer, $0)
+                places_2030_PlacesConnection_delete_everything_history(self.pointer, $0)
             }
     }
 
     public func pruneDestructively() throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_prune_destructively(self.pointer, $0)
+                places_2030_PlacesConnection_prune_destructively(self.pointer, $0)
             }
     }
 
     public func runMaintenance(dbSizeLimit: UInt32) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_run_maintenance(self.pointer,
-                                                            FfiConverterUInt32.lower(dbSizeLimit), $0)
+                places_2030_PlacesConnection_run_maintenance(self.pointer,
+                                                             FfiConverterUInt32.lower(dbSizeLimit), $0)
             }
     }
 
@@ -1206,8 +864,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_get_tree(self.pointer,
-                                                                   FfiConverterTypeGuid.lower(itemGuid), $0)
+                    places_2030_PlacesConnection_bookmarks_get_tree(self.pointer,
+                                                                    FfiConverterTypeGuid.lower(itemGuid), $0)
                 }
         )
     }
@@ -1216,9 +874,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_get_by_guid(self.pointer,
-                                                                      FfiConverterTypeGuid.lower(guid),
-                                                                      FfiConverterBool.lower(getDirectChildren), $0)
+                    places_2030_PlacesConnection_bookmarks_get_by_guid(self.pointer,
+                                                                       FfiConverterTypeGuid.lower(guid),
+                                                                       FfiConverterBool.lower(getDirectChildren), $0)
                 }
         )
     }
@@ -1227,8 +885,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_get_all_with_url(self.pointer,
-                                                                           FfiConverterString.lower(url), $0)
+                    places_2030_PlacesConnection_bookmarks_get_all_with_url(self.pointer,
+                                                                            FfiConverterString.lower(url), $0)
                 }
         )
     }
@@ -1237,9 +895,9 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_search(self.pointer,
-                                                                 FfiConverterString.lower(query),
-                                                                 FfiConverterInt32.lower(limit), $0)
+                    places_2030_PlacesConnection_bookmarks_search(self.pointer,
+                                                                  FfiConverterString.lower(query),
+                                                                  FfiConverterInt32.lower(limit), $0)
                 }
         )
     }
@@ -1248,8 +906,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_get_recent(self.pointer,
-                                                                     FfiConverterInt32.lower(limit), $0)
+                    places_2030_PlacesConnection_bookmarks_get_recent(self.pointer,
+                                                                      FfiConverterInt32.lower(limit), $0)
                 }
         )
     }
@@ -1258,8 +916,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterBool.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_delete(self.pointer,
-                                                                 FfiConverterTypeGuid.lower(id), $0)
+                    places_2030_PlacesConnection_bookmarks_delete(self.pointer,
+                                                                  FfiConverterTypeGuid.lower(id), $0)
                 }
         )
     }
@@ -1267,7 +925,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksDeleteEverything() throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
+                places_2030_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
             }
     }
 
@@ -1275,8 +933,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeUrl.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer,
-                                                                              FfiConverterString.lower(keyword), $0)
+                    places_2030_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer,
+                                                                               FfiConverterString.lower(keyword), $0)
                 }
         )
     }
@@ -1284,8 +942,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksUpdate(data: BookmarkUpdateInfo) throws {
         try
             rustCallWithError(FfiConverterTypePlacesError.self) {
-                places_3e8_PlacesConnection_bookmarks_update(self.pointer,
-                                                             FfiConverterTypeBookmarkUpdateInfo.lower(data), $0)
+                places_2030_PlacesConnection_bookmarks_update(self.pointer,
+                                                              FfiConverterTypeBookmarkUpdateInfo.lower(data), $0)
             }
     }
 
@@ -1293,8 +951,8 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterTypeGuid.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesError.self) {
-                    places_3e8_PlacesConnection_bookmarks_insert(self.pointer,
-                                                                 FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
+                    places_2030_PlacesConnection_bookmarks_insert(self.pointer,
+                                                                  FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
                 }
         )
     }
@@ -1330,100 +988,102 @@ private struct FfiConverterTypePlacesConnection: FfiConverter {
     }
 }
 
-public struct SearchResult {
+public protocol SqlInterruptHandleProtocol {
+    func interrupt()
+}
+
+public class SqlInterruptHandle: SqlInterruptHandleProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { ffi_places_2030_SqlInterruptHandle_object_free(pointer, $0) }
+    }
+
+    public func interrupt() {
+        try!
+            rustCall {
+                places_2030_SqlInterruptHandle_interrupt(self.pointer, $0)
+            }
+    }
+}
+
+private struct FfiConverterTypeSqlInterruptHandle: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = SqlInterruptHandle
+
+    static func read(from buf: Reader) throws -> SqlInterruptHandle {
+        let v: UInt64 = try buf.readInt()
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    static func write(_ value: SqlInterruptHandle, into buf: Writer) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SqlInterruptHandle {
+        return SqlInterruptHandle(unsafeFromRawPointer: pointer)
+    }
+
+    static func lower(_ value: SqlInterruptHandle) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public struct BookmarkData {
+    public var guid: Guid
+    public var parentGuid: Guid
+    public var position: UInt32
+    public var dateAdded: PlacesTimestamp
+    public var lastModified: PlacesTimestamp
     public var url: Url
-    public var title: String
-    public var frecency: Int64
-    public var reasons: [MatchReason]
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(url: Url, title: String, frecency: Int64, reasons: [MatchReason]) {
-        self.url = url
-        self.title = title
-        self.frecency = frecency
-        self.reasons = reasons
-    }
-}
-
-extension SearchResult: Equatable, Hashable {
-    public static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
-        if lhs.url != rhs.url {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.frecency != rhs.frecency {
-            return false
-        }
-        if lhs.reasons != rhs.reasons {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(url)
-        hasher.combine(title)
-        hasher.combine(frecency)
-        hasher.combine(reasons)
-    }
-}
-
-private struct FfiConverterTypeSearchResult: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> SearchResult {
-        return try SearchResult(
-            url: FfiConverterTypeUrl.read(from: buf),
-            title: FfiConverterString.read(from: buf),
-            frecency: FfiConverterInt64.read(from: buf),
-            reasons: FfiConverterSequenceTypeMatchReason.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: SearchResult, into buf: Writer) {
-        FfiConverterTypeUrl.write(value.url, into: buf)
-        FfiConverterString.write(value.title, into: buf)
-        FfiConverterInt64.write(value.frecency, into: buf)
-        FfiConverterSequenceTypeMatchReason.write(value.reasons, into: buf)
-    }
-}
-
-public struct HistoryMetadataObservation {
-    public var url: String
-    public var referrerUrl: String?
-    public var searchTerm: String?
-    public var viewTime: Int32?
-    public var documentType: DocumentType?
     public var title: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(url: String, referrerUrl: String? = nil, searchTerm: String? = nil, viewTime: Int32? = nil, documentType: DocumentType? = nil, title: String? = nil) {
+    public init(guid: Guid, parentGuid: Guid, position: UInt32, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, url: Url, title: String?) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
         self.url = url
-        self.referrerUrl = referrerUrl
-        self.searchTerm = searchTerm
-        self.viewTime = viewTime
-        self.documentType = documentType
         self.title = title
     }
 }
 
-extension HistoryMetadataObservation: Equatable, Hashable {
-    public static func == (lhs: HistoryMetadataObservation, rhs: HistoryMetadataObservation) -> Bool {
+extension BookmarkData: Equatable, Hashable {
+    public static func == (lhs: BookmarkData, rhs: BookmarkData) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
         if lhs.url != rhs.url {
-            return false
-        }
-        if lhs.referrerUrl != rhs.referrerUrl {
-            return false
-        }
-        if lhs.searchTerm != rhs.searchTerm {
-            return false
-        }
-        if lhs.viewTime != rhs.viewTime {
-            return false
-        }
-        if lhs.documentType != rhs.documentType {
             return false
         }
         if lhs.title != rhs.title {
@@ -1433,34 +1093,407 @@ extension HistoryMetadataObservation: Equatable, Hashable {
     }
 
     public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
         hasher.combine(url)
-        hasher.combine(referrerUrl)
-        hasher.combine(searchTerm)
-        hasher.combine(viewTime)
-        hasher.combine(documentType)
         hasher.combine(title)
     }
 }
 
-private struct FfiConverterTypeHistoryMetadataObservation: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> HistoryMetadataObservation {
-        return try HistoryMetadataObservation(
-            url: FfiConverterString.read(from: buf),
-            referrerUrl: FfiConverterOptionString.read(from: buf),
-            searchTerm: FfiConverterOptionString.read(from: buf),
-            viewTime: FfiConverterOptionInt32.read(from: buf),
-            documentType: FfiConverterOptionTypeDocumentType.read(from: buf),
+private struct FfiConverterTypeBookmarkData: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> BookmarkData {
+        return try BookmarkData(
+            guid: FfiConverterTypeGuid.read(from: buf),
+            parentGuid: FfiConverterTypeGuid.read(from: buf),
+            position: FfiConverterUInt32.read(from: buf),
+            dateAdded: FfiConverterTypePlacesTimestamp.read(from: buf),
+            lastModified: FfiConverterTypePlacesTimestamp.read(from: buf),
+            url: FfiConverterTypeUrl.read(from: buf),
             title: FfiConverterOptionString.read(from: buf)
         )
     }
 
-    fileprivate static func write(_ value: HistoryMetadataObservation, into buf: Writer) {
-        FfiConverterString.write(value.url, into: buf)
-        FfiConverterOptionString.write(value.referrerUrl, into: buf)
-        FfiConverterOptionString.write(value.searchTerm, into: buf)
-        FfiConverterOptionInt32.write(value.viewTime, into: buf)
-        FfiConverterOptionTypeDocumentType.write(value.documentType, into: buf)
+    fileprivate static func write(_ value: BookmarkData, into buf: Writer) {
+        FfiConverterTypeGuid.write(value.guid, into: buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
+        FfiConverterUInt32.write(value.position, into: buf)
+        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: buf)
+        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: buf)
+        FfiConverterTypeUrl.write(value.url, into: buf)
         FfiConverterOptionString.write(value.title, into: buf)
+    }
+}
+
+public struct BookmarkFolder {
+    public var guid: Guid
+    public var dateAdded: PlacesTimestamp
+    public var lastModified: PlacesTimestamp
+    public var parentGuid: Guid?
+    public var position: UInt32
+    public var title: String?
+    public var childGuids: [Guid]?
+    public var childNodes: [BookmarkItem]?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: Guid, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, parentGuid: Guid?, position: UInt32, title: String?, childGuids: [Guid]?, childNodes: [BookmarkItem]?) {
+        self.guid = guid
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.parentGuid = parentGuid
+        self.position = position
+        self.title = title
+        self.childGuids = childGuids
+        self.childNodes = childNodes
+    }
+}
+
+extension BookmarkFolder: Equatable, Hashable {
+    public static func == (lhs: BookmarkFolder, rhs: BookmarkFolder) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.childGuids != rhs.childGuids {
+            return false
+        }
+        if lhs.childNodes != rhs.childNodes {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(title)
+        hasher.combine(childGuids)
+        hasher.combine(childNodes)
+    }
+}
+
+private struct FfiConverterTypeBookmarkFolder: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> BookmarkFolder {
+        return try BookmarkFolder(
+            guid: FfiConverterTypeGuid.read(from: buf),
+            dateAdded: FfiConverterTypePlacesTimestamp.read(from: buf),
+            lastModified: FfiConverterTypePlacesTimestamp.read(from: buf),
+            parentGuid: FfiConverterOptionTypeGuid.read(from: buf),
+            position: FfiConverterUInt32.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            childGuids: FfiConverterOptionSequenceTypeGuid.read(from: buf),
+            childNodes: FfiConverterOptionSequenceTypeBookmarkItem.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: BookmarkFolder, into buf: Writer) {
+        FfiConverterTypeGuid.write(value.guid, into: buf)
+        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: buf)
+        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: buf)
+        FfiConverterOptionTypeGuid.write(value.parentGuid, into: buf)
+        FfiConverterUInt32.write(value.position, into: buf)
+        FfiConverterOptionString.write(value.title, into: buf)
+        FfiConverterOptionSequenceTypeGuid.write(value.childGuids, into: buf)
+        FfiConverterOptionSequenceTypeBookmarkItem.write(value.childNodes, into: buf)
+    }
+}
+
+public struct BookmarkSeparator {
+    public var guid: Guid
+    public var dateAdded: PlacesTimestamp
+    public var lastModified: PlacesTimestamp
+    public var parentGuid: Guid
+    public var position: UInt32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: Guid, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, parentGuid: Guid, position: UInt32) {
+        self.guid = guid
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.parentGuid = parentGuid
+        self.position = position
+    }
+}
+
+extension BookmarkSeparator: Equatable, Hashable {
+    public static func == (lhs: BookmarkSeparator, rhs: BookmarkSeparator) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+    }
+}
+
+private struct FfiConverterTypeBookmarkSeparator: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> BookmarkSeparator {
+        return try BookmarkSeparator(
+            guid: FfiConverterTypeGuid.read(from: buf),
+            dateAdded: FfiConverterTypePlacesTimestamp.read(from: buf),
+            lastModified: FfiConverterTypePlacesTimestamp.read(from: buf),
+            parentGuid: FfiConverterTypeGuid.read(from: buf),
+            position: FfiConverterUInt32.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: BookmarkSeparator, into buf: Writer) {
+        FfiConverterTypeGuid.write(value.guid, into: buf)
+        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: buf)
+        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
+        FfiConverterUInt32.write(value.position, into: buf)
+    }
+}
+
+public struct BookmarkUpdateInfo {
+    public var guid: Guid
+    public var title: String?
+    public var url: String?
+    public var parentGuid: Guid?
+    public var position: UInt32?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: Guid, title: String?, url: String?, parentGuid: Guid?, position: UInt32?) {
+        self.guid = guid
+        self.title = title
+        self.url = url
+        self.parentGuid = parentGuid
+        self.position = position
+    }
+}
+
+extension BookmarkUpdateInfo: Equatable, Hashable {
+    public static func == (lhs: BookmarkUpdateInfo, rhs: BookmarkUpdateInfo) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(title)
+        hasher.combine(url)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+    }
+}
+
+private struct FfiConverterTypeBookmarkUpdateInfo: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> BookmarkUpdateInfo {
+        return try BookmarkUpdateInfo(
+            guid: FfiConverterTypeGuid.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            url: FfiConverterOptionString.read(from: buf),
+            parentGuid: FfiConverterOptionTypeGuid.read(from: buf),
+            position: FfiConverterOptionUInt32.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: BookmarkUpdateInfo, into buf: Writer) {
+        FfiConverterTypeGuid.write(value.guid, into: buf)
+        FfiConverterOptionString.write(value.title, into: buf)
+        FfiConverterOptionString.write(value.url, into: buf)
+        FfiConverterOptionTypeGuid.write(value.parentGuid, into: buf)
+        FfiConverterOptionUInt32.write(value.position, into: buf)
+    }
+}
+
+public struct Dummy {
+    public var md: [HistoryMetadata]?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(md: [HistoryMetadata]?) {
+        self.md = md
+    }
+}
+
+extension Dummy: Equatable, Hashable {
+    public static func == (lhs: Dummy, rhs: Dummy) -> Bool {
+        if lhs.md != rhs.md {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(md)
+    }
+}
+
+private struct FfiConverterTypeDummy: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> Dummy {
+        return try Dummy(
+            md: FfiConverterOptionSequenceTypeHistoryMetadata.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: Dummy, into buf: Writer) {
+        FfiConverterOptionSequenceTypeHistoryMetadata.write(value.md, into: buf)
+    }
+}
+
+public struct HistoryHighlight {
+    public var score: Double
+    public var placeId: Int32
+    public var url: String
+    public var title: String?
+    public var previewImageUrl: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(score: Double, placeId: Int32, url: String, title: String?, previewImageUrl: String?) {
+        self.score = score
+        self.placeId = placeId
+        self.url = url
+        self.title = title
+        self.previewImageUrl = previewImageUrl
+    }
+}
+
+extension HistoryHighlight: Equatable, Hashable {
+    public static func == (lhs: HistoryHighlight, rhs: HistoryHighlight) -> Bool {
+        if lhs.score != rhs.score {
+            return false
+        }
+        if lhs.placeId != rhs.placeId {
+            return false
+        }
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.previewImageUrl != rhs.previewImageUrl {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(score)
+        hasher.combine(placeId)
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(previewImageUrl)
+    }
+}
+
+private struct FfiConverterTypeHistoryHighlight: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> HistoryHighlight {
+        return try HistoryHighlight(
+            score: FfiConverterDouble.read(from: buf),
+            placeId: FfiConverterInt32.read(from: buf),
+            url: FfiConverterString.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            previewImageUrl: FfiConverterOptionString.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: HistoryHighlight, into buf: Writer) {
+        FfiConverterDouble.write(value.score, into: buf)
+        FfiConverterInt32.write(value.placeId, into: buf)
+        FfiConverterString.write(value.url, into: buf)
+        FfiConverterOptionString.write(value.title, into: buf)
+        FfiConverterOptionString.write(value.previewImageUrl, into: buf)
+    }
+}
+
+public struct HistoryHighlightWeights {
+    public var viewTime: Double
+    public var frequency: Double
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(viewTime: Double, frequency: Double) {
+        self.viewTime = viewTime
+        self.frequency = frequency
+    }
+}
+
+extension HistoryHighlightWeights: Equatable, Hashable {
+    public static func == (lhs: HistoryHighlightWeights, rhs: HistoryHighlightWeights) -> Bool {
+        if lhs.viewTime != rhs.viewTime {
+            return false
+        }
+        if lhs.frequency != rhs.frequency {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(viewTime)
+        hasher.combine(frequency)
+    }
+}
+
+private struct FfiConverterTypeHistoryHighlightWeights: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> HistoryHighlightWeights {
+        return try HistoryHighlightWeights(
+            viewTime: FfiConverterDouble.read(from: buf),
+            frequency: FfiConverterDouble.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: HistoryHighlightWeights, into buf: Writer) {
+        FfiConverterDouble.write(value.viewTime, into: buf)
+        FfiConverterDouble.write(value.frequency, into: buf)
     }
 }
 
@@ -1563,113 +1596,78 @@ private struct FfiConverterTypeHistoryMetadata: FfiConverterRustBuffer {
     }
 }
 
-public struct HistoryHighlightWeights {
-    public var viewTime: Double
-    public var frequency: Double
+public struct HistoryMetadataObservation {
+    public var url: String
+    public var referrerUrl: String?
+    public var searchTerm: String?
+    public var viewTime: Int32?
+    public var documentType: DocumentType?
+    public var title: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(viewTime: Double, frequency: Double) {
+    public init(url: String, referrerUrl: String? = nil, searchTerm: String? = nil, viewTime: Int32? = nil, documentType: DocumentType? = nil, title: String? = nil) {
+        self.url = url
+        self.referrerUrl = referrerUrl
+        self.searchTerm = searchTerm
         self.viewTime = viewTime
-        self.frequency = frequency
+        self.documentType = documentType
+        self.title = title
     }
 }
 
-extension HistoryHighlightWeights: Equatable, Hashable {
-    public static func == (lhs: HistoryHighlightWeights, rhs: HistoryHighlightWeights) -> Bool {
+extension HistoryMetadataObservation: Equatable, Hashable {
+    public static func == (lhs: HistoryMetadataObservation, rhs: HistoryMetadataObservation) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.referrerUrl != rhs.referrerUrl {
+            return false
+        }
+        if lhs.searchTerm != rhs.searchTerm {
+            return false
+        }
         if lhs.viewTime != rhs.viewTime {
             return false
         }
-        if lhs.frequency != rhs.frequency {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(viewTime)
-        hasher.combine(frequency)
-    }
-}
-
-private struct FfiConverterTypeHistoryHighlightWeights: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> HistoryHighlightWeights {
-        return try HistoryHighlightWeights(
-            viewTime: FfiConverterDouble.read(from: buf),
-            frequency: FfiConverterDouble.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: HistoryHighlightWeights, into buf: Writer) {
-        FfiConverterDouble.write(value.viewTime, into: buf)
-        FfiConverterDouble.write(value.frequency, into: buf)
-    }
-}
-
-public struct HistoryHighlight {
-    public var score: Double
-    public var placeId: Int32
-    public var url: String
-    public var title: String?
-    public var previewImageUrl: String?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(score: Double, placeId: Int32, url: String, title: String?, previewImageUrl: String?) {
-        self.score = score
-        self.placeId = placeId
-        self.url = url
-        self.title = title
-        self.previewImageUrl = previewImageUrl
-    }
-}
-
-extension HistoryHighlight: Equatable, Hashable {
-    public static func == (lhs: HistoryHighlight, rhs: HistoryHighlight) -> Bool {
-        if lhs.score != rhs.score {
-            return false
-        }
-        if lhs.placeId != rhs.placeId {
-            return false
-        }
-        if lhs.url != rhs.url {
+        if lhs.documentType != rhs.documentType {
             return false
         }
         if lhs.title != rhs.title {
             return false
         }
-        if lhs.previewImageUrl != rhs.previewImageUrl {
-            return false
-        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(score)
-        hasher.combine(placeId)
         hasher.combine(url)
+        hasher.combine(referrerUrl)
+        hasher.combine(searchTerm)
+        hasher.combine(viewTime)
+        hasher.combine(documentType)
         hasher.combine(title)
-        hasher.combine(previewImageUrl)
     }
 }
 
-private struct FfiConverterTypeHistoryHighlight: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> HistoryHighlight {
-        return try HistoryHighlight(
-            score: FfiConverterDouble.read(from: buf),
-            placeId: FfiConverterInt32.read(from: buf),
+private struct FfiConverterTypeHistoryMetadataObservation: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> HistoryMetadataObservation {
+        return try HistoryMetadataObservation(
             url: FfiConverterString.read(from: buf),
-            title: FfiConverterOptionString.read(from: buf),
-            previewImageUrl: FfiConverterOptionString.read(from: buf)
+            referrerUrl: FfiConverterOptionString.read(from: buf),
+            searchTerm: FfiConverterOptionString.read(from: buf),
+            viewTime: FfiConverterOptionInt32.read(from: buf),
+            documentType: FfiConverterOptionTypeDocumentType.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf)
         )
     }
 
-    fileprivate static func write(_ value: HistoryHighlight, into buf: Writer) {
-        FfiConverterDouble.write(value.score, into: buf)
-        FfiConverterInt32.write(value.placeId, into: buf)
+    fileprivate static func write(_ value: HistoryMetadataObservation, into buf: Writer) {
         FfiConverterString.write(value.url, into: buf)
+        FfiConverterOptionString.write(value.referrerUrl, into: buf)
+        FfiConverterOptionString.write(value.searchTerm, into: buf)
+        FfiConverterOptionInt32.write(value.viewTime, into: buf)
+        FfiConverterOptionTypeDocumentType.write(value.documentType, into: buf)
         FfiConverterOptionString.write(value.title, into: buf)
-        FfiConverterOptionString.write(value.previewImageUrl, into: buf)
     }
 }
 
@@ -1807,6 +1805,341 @@ private struct FfiConverterTypeHistoryVisitInfosWithBound: FfiConverterRustBuffe
     }
 }
 
+public struct InsertableBookmark {
+    public var guid: Guid?
+    public var parentGuid: Guid
+    public var position: BookmarkPosition
+    public var dateAdded: PlacesTimestamp?
+    public var lastModified: PlacesTimestamp?
+    public var url: Url
+    public var title: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil, url: Url, title: String? = nil) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.url = url
+        self.title = title
+    }
+}
+
+extension InsertableBookmark: Equatable, Hashable {
+    public static func == (lhs: InsertableBookmark, rhs: InsertableBookmark) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(url)
+        hasher.combine(title)
+    }
+}
+
+private struct FfiConverterTypeInsertableBookmark: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> InsertableBookmark {
+        return try InsertableBookmark(
+            guid: FfiConverterOptionTypeGuid.read(from: buf),
+            parentGuid: FfiConverterTypeGuid.read(from: buf),
+            position: FfiConverterTypeBookmarkPosition.read(from: buf),
+            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
+            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
+            url: FfiConverterTypeUrl.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: InsertableBookmark, into buf: Writer) {
+        FfiConverterOptionTypeGuid.write(value.guid, into: buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
+        FfiConverterTypeBookmarkPosition.write(value.position, into: buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: buf)
+        FfiConverterTypeUrl.write(value.url, into: buf)
+        FfiConverterOptionString.write(value.title, into: buf)
+    }
+}
+
+public struct InsertableBookmarkFolder {
+    public var guid: Guid?
+    public var parentGuid: Guid
+    public var position: BookmarkPosition
+    public var dateAdded: PlacesTimestamp?
+    public var lastModified: PlacesTimestamp?
+    public var title: String?
+    public var children: [InsertableBookmarkItem]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil, title: String? = nil, children: [InsertableBookmarkItem]) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.title = title
+        self.children = children
+    }
+}
+
+extension InsertableBookmarkFolder: Equatable, Hashable {
+    public static func == (lhs: InsertableBookmarkFolder, rhs: InsertableBookmarkFolder) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.children != rhs.children {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(title)
+        hasher.combine(children)
+    }
+}
+
+private struct FfiConverterTypeInsertableBookmarkFolder: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> InsertableBookmarkFolder {
+        return try InsertableBookmarkFolder(
+            guid: FfiConverterOptionTypeGuid.read(from: buf),
+            parentGuid: FfiConverterTypeGuid.read(from: buf),
+            position: FfiConverterTypeBookmarkPosition.read(from: buf),
+            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
+            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf),
+            children: FfiConverterSequenceTypeInsertableBookmarkItem.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: InsertableBookmarkFolder, into buf: Writer) {
+        FfiConverterOptionTypeGuid.write(value.guid, into: buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
+        FfiConverterTypeBookmarkPosition.write(value.position, into: buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: buf)
+        FfiConverterOptionString.write(value.title, into: buf)
+        FfiConverterSequenceTypeInsertableBookmarkItem.write(value.children, into: buf)
+    }
+}
+
+public struct InsertableBookmarkSeparator {
+    public var guid: Guid?
+    public var parentGuid: Guid
+    public var position: BookmarkPosition
+    public var dateAdded: PlacesTimestamp?
+    public var lastModified: PlacesTimestamp?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+    }
+}
+
+extension InsertableBookmarkSeparator: Equatable, Hashable {
+    public static func == (lhs: InsertableBookmarkSeparator, rhs: InsertableBookmarkSeparator) -> Bool {
+        if lhs.guid != rhs.guid {
+            return false
+        }
+        if lhs.parentGuid != rhs.parentGuid {
+            return false
+        }
+        if lhs.position != rhs.position {
+            return false
+        }
+        if lhs.dateAdded != rhs.dateAdded {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+    }
+}
+
+private struct FfiConverterTypeInsertableBookmarkSeparator: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> InsertableBookmarkSeparator {
+        return try InsertableBookmarkSeparator(
+            guid: FfiConverterOptionTypeGuid.read(from: buf),
+            parentGuid: FfiConverterTypeGuid.read(from: buf),
+            position: FfiConverterTypeBookmarkPosition.read(from: buf),
+            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
+            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: InsertableBookmarkSeparator, into buf: Writer) {
+        FfiConverterOptionTypeGuid.write(value.guid, into: buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
+        FfiConverterTypeBookmarkPosition.write(value.position, into: buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: buf)
+    }
+}
+
+public struct SearchResult {
+    public var url: Url
+    public var title: String
+    public var frecency: Int64
+    public var reasons: [MatchReason]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(url: Url, title: String, frecency: Int64, reasons: [MatchReason]) {
+        self.url = url
+        self.title = title
+        self.frecency = frecency
+        self.reasons = reasons
+    }
+}
+
+extension SearchResult: Equatable, Hashable {
+    public static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        if lhs.frecency != rhs.frecency {
+            return false
+        }
+        if lhs.reasons != rhs.reasons {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(frecency)
+        hasher.combine(reasons)
+    }
+}
+
+private struct FfiConverterTypeSearchResult: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> SearchResult {
+        return try SearchResult(
+            url: FfiConverterTypeUrl.read(from: buf),
+            title: FfiConverterString.read(from: buf),
+            frecency: FfiConverterInt64.read(from: buf),
+            reasons: FfiConverterSequenceTypeMatchReason.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: SearchResult, into buf: Writer) {
+        FfiConverterTypeUrl.write(value.url, into: buf)
+        FfiConverterString.write(value.title, into: buf)
+        FfiConverterInt64.write(value.frecency, into: buf)
+        FfiConverterSequenceTypeMatchReason.write(value.reasons, into: buf)
+    }
+}
+
+public struct TopFrecentSiteInfo {
+    public var url: Url
+    public var title: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(url: Url, title: String?) {
+        self.url = url
+        self.title = title
+    }
+}
+
+extension TopFrecentSiteInfo: Equatable, Hashable {
+    public static func == (lhs: TopFrecentSiteInfo, rhs: TopFrecentSiteInfo) -> Bool {
+        if lhs.url != rhs.url {
+            return false
+        }
+        if lhs.title != rhs.title {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+        hasher.combine(title)
+    }
+}
+
+private struct FfiConverterTypeTopFrecentSiteInfo: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> TopFrecentSiteInfo {
+        return try TopFrecentSiteInfo(
+            url: FfiConverterTypeUrl.read(from: buf),
+            title: FfiConverterOptionString.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: TopFrecentSiteInfo, into buf: Writer) {
+        FfiConverterTypeUrl.write(value.url, into: buf)
+        FfiConverterOptionString.write(value.title, into: buf)
+    }
+}
+
 public struct VisitObservation {
     public var url: Url
     public var title: String?
@@ -1914,624 +2247,382 @@ private struct FfiConverterTypeVisitObservation: FfiConverterRustBuffer {
     }
 }
 
-public struct Dummy {
-    public var md: [HistoryMetadata]?
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum BookmarkItem {
+    case bookmark(b: BookmarkData)
+    case separator(s: BookmarkSeparator)
+    case folder(f: BookmarkFolder)
+}
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(md: [HistoryMetadata]?) {
-        self.md = md
+private struct FfiConverterTypeBookmarkItem: FfiConverterRustBuffer {
+    typealias SwiftType = BookmarkItem
+
+    static func read(from buf: Reader) throws -> BookmarkItem {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .bookmark(
+                b: try FfiConverterTypeBookmarkData.read(from: buf)
+            )
+
+        case 2: return .separator(
+                s: try FfiConverterTypeBookmarkSeparator.read(from: buf)
+            )
+
+        case 3: return .folder(
+                f: try FfiConverterTypeBookmarkFolder.read(from: buf)
+            )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    static func write(_ value: BookmarkItem, into buf: Writer) {
+        switch value {
+        case let .bookmark(b):
+            buf.writeInt(Int32(1))
+            FfiConverterTypeBookmarkData.write(b, into: buf)
+
+        case let .separator(s):
+            buf.writeInt(Int32(2))
+            FfiConverterTypeBookmarkSeparator.write(s, into: buf)
+
+        case let .folder(f):
+            buf.writeInt(Int32(3))
+            FfiConverterTypeBookmarkFolder.write(f, into: buf)
+        }
     }
 }
 
-extension Dummy: Equatable, Hashable {
-    public static func == (lhs: Dummy, rhs: Dummy) -> Bool {
-        if lhs.md != rhs.md {
-            return false
+extension BookmarkItem: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum BookmarkPosition {
+    case specific(pos: UInt32)
+    case append
+}
+
+private struct FfiConverterTypeBookmarkPosition: FfiConverterRustBuffer {
+    typealias SwiftType = BookmarkPosition
+
+    static func read(from buf: Reader) throws -> BookmarkPosition {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .specific(
+                pos: try FfiConverterUInt32.read(from: buf)
+            )
+
+        case 2: return .append
+
+        default: throw UniffiInternalError.unexpectedEnumCase
         }
-        return true
     }
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(md)
+    static func write(_ value: BookmarkPosition, into buf: Writer) {
+        switch value {
+        case let .specific(pos):
+            buf.writeInt(Int32(1))
+            FfiConverterUInt32.write(pos, into: buf)
+
+        case .append:
+            buf.writeInt(Int32(2))
+        }
     }
 }
 
-private struct FfiConverterTypeDummy: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> Dummy {
-        return try Dummy(
-            md: FfiConverterOptionSequenceTypeHistoryMetadata.read(from: buf)
-        )
+extension BookmarkPosition: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum ConnectionType {
+    case readOnly
+    case readWrite
+    case sync
+}
+
+private struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
+    typealias SwiftType = ConnectionType
+
+    static func read(from buf: Reader) throws -> ConnectionType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .readOnly
+
+        case 2: return .readWrite
+
+        case 3: return .sync
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
     }
 
-    fileprivate static func write(_ value: Dummy, into buf: Writer) {
-        FfiConverterOptionSequenceTypeHistoryMetadata.write(value.md, into: buf)
+    static func write(_ value: ConnectionType, into buf: Writer) {
+        switch value {
+        case .readOnly:
+            buf.writeInt(Int32(1))
+
+        case .readWrite:
+            buf.writeInt(Int32(2))
+
+        case .sync:
+            buf.writeInt(Int32(3))
+        }
     }
 }
 
-public struct TopFrecentSiteInfo {
-    public var url: Url
-    public var title: String?
+extension ConnectionType: Equatable, Hashable {}
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(url: Url, title: String?) {
-        self.url = url
-        self.title = title
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum DocumentType {
+    case regular
+    case media
+}
+
+private struct FfiConverterTypeDocumentType: FfiConverterRustBuffer {
+    typealias SwiftType = DocumentType
+
+    static func read(from buf: Reader) throws -> DocumentType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .regular
+
+        case 2: return .media
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    static func write(_ value: DocumentType, into buf: Writer) {
+        switch value {
+        case .regular:
+            buf.writeInt(Int32(1))
+
+        case .media:
+            buf.writeInt(Int32(2))
+        }
     }
 }
 
-extension TopFrecentSiteInfo: Equatable, Hashable {
-    public static func == (lhs: TopFrecentSiteInfo, rhs: TopFrecentSiteInfo) -> Bool {
-        if lhs.url != rhs.url {
-            return false
+extension DocumentType: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum FrecencyThresholdOption {
+    case none
+    case skipOneTimePages
+}
+
+private struct FfiConverterTypeFrecencyThresholdOption: FfiConverterRustBuffer {
+    typealias SwiftType = FrecencyThresholdOption
+
+    static func read(from buf: Reader) throws -> FrecencyThresholdOption {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .none
+
+        case 2: return .skipOneTimePages
+
+        default: throw UniffiInternalError.unexpectedEnumCase
         }
-        if lhs.title != rhs.title {
-            return false
-        }
-        return true
     }
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(url)
-        hasher.combine(title)
+    static func write(_ value: FrecencyThresholdOption, into buf: Writer) {
+        switch value {
+        case .none:
+            buf.writeInt(Int32(1))
+
+        case .skipOneTimePages:
+            buf.writeInt(Int32(2))
+        }
     }
 }
 
-private struct FfiConverterTypeTopFrecentSiteInfo: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> TopFrecentSiteInfo {
-        return try TopFrecentSiteInfo(
-            url: FfiConverterTypeUrl.read(from: buf),
-            title: FfiConverterOptionString.read(from: buf)
-        )
+extension FrecencyThresholdOption: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum InsertableBookmarkItem {
+    case bookmark(b: InsertableBookmark)
+    case folder(f: InsertableBookmarkFolder)
+    case separator(s: InsertableBookmarkSeparator)
+}
+
+private struct FfiConverterTypeInsertableBookmarkItem: FfiConverterRustBuffer {
+    typealias SwiftType = InsertableBookmarkItem
+
+    static func read(from buf: Reader) throws -> InsertableBookmarkItem {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .bookmark(
+                b: try FfiConverterTypeInsertableBookmark.read(from: buf)
+            )
+
+        case 2: return .folder(
+                f: try FfiConverterTypeInsertableBookmarkFolder.read(from: buf)
+            )
+
+        case 3: return .separator(
+                s: try FfiConverterTypeInsertableBookmarkSeparator.read(from: buf)
+            )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
     }
 
-    fileprivate static func write(_ value: TopFrecentSiteInfo, into buf: Writer) {
-        FfiConverterTypeUrl.write(value.url, into: buf)
-        FfiConverterOptionString.write(value.title, into: buf)
+    static func write(_ value: InsertableBookmarkItem, into buf: Writer) {
+        switch value {
+        case let .bookmark(b):
+            buf.writeInt(Int32(1))
+            FfiConverterTypeInsertableBookmark.write(b, into: buf)
+
+        case let .folder(f):
+            buf.writeInt(Int32(2))
+            FfiConverterTypeInsertableBookmarkFolder.write(f, into: buf)
+
+        case let .separator(s):
+            buf.writeInt(Int32(3))
+            FfiConverterTypeInsertableBookmarkSeparator.write(s, into: buf)
+        }
     }
 }
 
-public struct BookmarkData {
-    public var guid: Guid
-    public var parentGuid: Guid
-    public var position: UInt32
-    public var dateAdded: PlacesTimestamp
-    public var lastModified: PlacesTimestamp
-    public var url: Url
-    public var title: String?
+extension InsertableBookmarkItem: Equatable, Hashable {}
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(guid: Guid, parentGuid: Guid, position: UInt32, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, url: Url, title: String?) {
-        self.guid = guid
-        self.parentGuid = parentGuid
-        self.position = position
-        self.dateAdded = dateAdded
-        self.lastModified = lastModified
-        self.url = url
-        self.title = title
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum MatchReason {
+    case keyword
+    case origin
+    case urlMatch
+    case previousUse
+    case bookmark
+    case tags
+}
+
+private struct FfiConverterTypeMatchReason: FfiConverterRustBuffer {
+    typealias SwiftType = MatchReason
+
+    static func read(from buf: Reader) throws -> MatchReason {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .keyword
+
+        case 2: return .origin
+
+        case 3: return .urlMatch
+
+        case 4: return .previousUse
+
+        case 5: return .bookmark
+
+        case 6: return .tags
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    static func write(_ value: MatchReason, into buf: Writer) {
+        switch value {
+        case .keyword:
+            buf.writeInt(Int32(1))
+
+        case .origin:
+            buf.writeInt(Int32(2))
+
+        case .urlMatch:
+            buf.writeInt(Int32(3))
+
+        case .previousUse:
+            buf.writeInt(Int32(4))
+
+        case .bookmark:
+            buf.writeInt(Int32(5))
+
+        case .tags:
+            buf.writeInt(Int32(6))
+        }
     }
 }
 
-extension BookmarkData: Equatable, Hashable {
-    public static func == (lhs: BookmarkData, rhs: BookmarkData) -> Bool {
-        if lhs.guid != rhs.guid {
-            return false
+extension MatchReason: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum VisitTransition {
+    case link
+    case typed
+    case bookmark
+    case embed
+    case redirectPermanent
+    case redirectTemporary
+    case download
+    case framedLink
+    case reload
+}
+
+private struct FfiConverterTypeVisitTransition: FfiConverterRustBuffer {
+    typealias SwiftType = VisitTransition
+
+    static func read(from buf: Reader) throws -> VisitTransition {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .link
+
+        case 2: return .typed
+
+        case 3: return .bookmark
+
+        case 4: return .embed
+
+        case 5: return .redirectPermanent
+
+        case 6: return .redirectTemporary
+
+        case 7: return .download
+
+        case 8: return .framedLink
+
+        case 9: return .reload
+
+        default: throw UniffiInternalError.unexpectedEnumCase
         }
-        if lhs.parentGuid != rhs.parentGuid {
-            return false
-        }
-        if lhs.position != rhs.position {
-            return false
-        }
-        if lhs.dateAdded != rhs.dateAdded {
-            return false
-        }
-        if lhs.lastModified != rhs.lastModified {
-            return false
-        }
-        if lhs.url != rhs.url {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        return true
     }
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(parentGuid)
-        hasher.combine(position)
-        hasher.combine(dateAdded)
-        hasher.combine(lastModified)
-        hasher.combine(url)
-        hasher.combine(title)
+    static func write(_ value: VisitTransition, into buf: Writer) {
+        switch value {
+        case .link:
+            buf.writeInt(Int32(1))
+
+        case .typed:
+            buf.writeInt(Int32(2))
+
+        case .bookmark:
+            buf.writeInt(Int32(3))
+
+        case .embed:
+            buf.writeInt(Int32(4))
+
+        case .redirectPermanent:
+            buf.writeInt(Int32(5))
+
+        case .redirectTemporary:
+            buf.writeInt(Int32(6))
+
+        case .download:
+            buf.writeInt(Int32(7))
+
+        case .framedLink:
+            buf.writeInt(Int32(8))
+
+        case .reload:
+            buf.writeInt(Int32(9))
+        }
     }
 }
 
-private struct FfiConverterTypeBookmarkData: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> BookmarkData {
-        return try BookmarkData(
-            guid: FfiConverterTypeGuid.read(from: buf),
-            parentGuid: FfiConverterTypeGuid.read(from: buf),
-            position: FfiConverterUInt32.read(from: buf),
-            dateAdded: FfiConverterTypePlacesTimestamp.read(from: buf),
-            lastModified: FfiConverterTypePlacesTimestamp.read(from: buf),
-            url: FfiConverterTypeUrl.read(from: buf),
-            title: FfiConverterOptionString.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: BookmarkData, into buf: Writer) {
-        FfiConverterTypeGuid.write(value.guid, into: buf)
-        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
-        FfiConverterUInt32.write(value.position, into: buf)
-        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: buf)
-        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: buf)
-        FfiConverterTypeUrl.write(value.url, into: buf)
-        FfiConverterOptionString.write(value.title, into: buf)
-    }
-}
-
-public struct BookmarkSeparator {
-    public var guid: Guid
-    public var dateAdded: PlacesTimestamp
-    public var lastModified: PlacesTimestamp
-    public var parentGuid: Guid
-    public var position: UInt32
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(guid: Guid, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, parentGuid: Guid, position: UInt32) {
-        self.guid = guid
-        self.dateAdded = dateAdded
-        self.lastModified = lastModified
-        self.parentGuid = parentGuid
-        self.position = position
-    }
-}
-
-extension BookmarkSeparator: Equatable, Hashable {
-    public static func == (lhs: BookmarkSeparator, rhs: BookmarkSeparator) -> Bool {
-        if lhs.guid != rhs.guid {
-            return false
-        }
-        if lhs.dateAdded != rhs.dateAdded {
-            return false
-        }
-        if lhs.lastModified != rhs.lastModified {
-            return false
-        }
-        if lhs.parentGuid != rhs.parentGuid {
-            return false
-        }
-        if lhs.position != rhs.position {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(dateAdded)
-        hasher.combine(lastModified)
-        hasher.combine(parentGuid)
-        hasher.combine(position)
-    }
-}
-
-private struct FfiConverterTypeBookmarkSeparator: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> BookmarkSeparator {
-        return try BookmarkSeparator(
-            guid: FfiConverterTypeGuid.read(from: buf),
-            dateAdded: FfiConverterTypePlacesTimestamp.read(from: buf),
-            lastModified: FfiConverterTypePlacesTimestamp.read(from: buf),
-            parentGuid: FfiConverterTypeGuid.read(from: buf),
-            position: FfiConverterUInt32.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: BookmarkSeparator, into buf: Writer) {
-        FfiConverterTypeGuid.write(value.guid, into: buf)
-        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: buf)
-        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: buf)
-        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
-        FfiConverterUInt32.write(value.position, into: buf)
-    }
-}
-
-public struct BookmarkFolder {
-    public var guid: Guid
-    public var dateAdded: PlacesTimestamp
-    public var lastModified: PlacesTimestamp
-    public var parentGuid: Guid?
-    public var position: UInt32
-    public var title: String?
-    public var childGuids: [Guid]?
-    public var childNodes: [BookmarkItem]?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(guid: Guid, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, parentGuid: Guid?, position: UInt32, title: String?, childGuids: [Guid]?, childNodes: [BookmarkItem]?) {
-        self.guid = guid
-        self.dateAdded = dateAdded
-        self.lastModified = lastModified
-        self.parentGuid = parentGuid
-        self.position = position
-        self.title = title
-        self.childGuids = childGuids
-        self.childNodes = childNodes
-    }
-}
-
-extension BookmarkFolder: Equatable, Hashable {
-    public static func == (lhs: BookmarkFolder, rhs: BookmarkFolder) -> Bool {
-        if lhs.guid != rhs.guid {
-            return false
-        }
-        if lhs.dateAdded != rhs.dateAdded {
-            return false
-        }
-        if lhs.lastModified != rhs.lastModified {
-            return false
-        }
-        if lhs.parentGuid != rhs.parentGuid {
-            return false
-        }
-        if lhs.position != rhs.position {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.childGuids != rhs.childGuids {
-            return false
-        }
-        if lhs.childNodes != rhs.childNodes {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(dateAdded)
-        hasher.combine(lastModified)
-        hasher.combine(parentGuid)
-        hasher.combine(position)
-        hasher.combine(title)
-        hasher.combine(childGuids)
-        hasher.combine(childNodes)
-    }
-}
-
-private struct FfiConverterTypeBookmarkFolder: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> BookmarkFolder {
-        return try BookmarkFolder(
-            guid: FfiConverterTypeGuid.read(from: buf),
-            dateAdded: FfiConverterTypePlacesTimestamp.read(from: buf),
-            lastModified: FfiConverterTypePlacesTimestamp.read(from: buf),
-            parentGuid: FfiConverterOptionTypeGuid.read(from: buf),
-            position: FfiConverterUInt32.read(from: buf),
-            title: FfiConverterOptionString.read(from: buf),
-            childGuids: FfiConverterOptionSequenceTypeGuid.read(from: buf),
-            childNodes: FfiConverterOptionSequenceTypeBookmarkItem.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: BookmarkFolder, into buf: Writer) {
-        FfiConverterTypeGuid.write(value.guid, into: buf)
-        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: buf)
-        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: buf)
-        FfiConverterOptionTypeGuid.write(value.parentGuid, into: buf)
-        FfiConverterUInt32.write(value.position, into: buf)
-        FfiConverterOptionString.write(value.title, into: buf)
-        FfiConverterOptionSequenceTypeGuid.write(value.childGuids, into: buf)
-        FfiConverterOptionSequenceTypeBookmarkItem.write(value.childNodes, into: buf)
-    }
-}
-
-public struct BookmarkUpdateInfo {
-    public var guid: Guid
-    public var title: String?
-    public var url: String?
-    public var parentGuid: Guid?
-    public var position: UInt32?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(guid: Guid, title: String?, url: String?, parentGuid: Guid?, position: UInt32?) {
-        self.guid = guid
-        self.title = title
-        self.url = url
-        self.parentGuid = parentGuid
-        self.position = position
-    }
-}
-
-extension BookmarkUpdateInfo: Equatable, Hashable {
-    public static func == (lhs: BookmarkUpdateInfo, rhs: BookmarkUpdateInfo) -> Bool {
-        if lhs.guid != rhs.guid {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.url != rhs.url {
-            return false
-        }
-        if lhs.parentGuid != rhs.parentGuid {
-            return false
-        }
-        if lhs.position != rhs.position {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(title)
-        hasher.combine(url)
-        hasher.combine(parentGuid)
-        hasher.combine(position)
-    }
-}
-
-private struct FfiConverterTypeBookmarkUpdateInfo: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> BookmarkUpdateInfo {
-        return try BookmarkUpdateInfo(
-            guid: FfiConverterTypeGuid.read(from: buf),
-            title: FfiConverterOptionString.read(from: buf),
-            url: FfiConverterOptionString.read(from: buf),
-            parentGuid: FfiConverterOptionTypeGuid.read(from: buf),
-            position: FfiConverterOptionUInt32.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: BookmarkUpdateInfo, into buf: Writer) {
-        FfiConverterTypeGuid.write(value.guid, into: buf)
-        FfiConverterOptionString.write(value.title, into: buf)
-        FfiConverterOptionString.write(value.url, into: buf)
-        FfiConverterOptionTypeGuid.write(value.parentGuid, into: buf)
-        FfiConverterOptionUInt32.write(value.position, into: buf)
-    }
-}
-
-public struct InsertableBookmark {
-    public var guid: Guid?
-    public var parentGuid: Guid
-    public var position: BookmarkPosition
-    public var dateAdded: PlacesTimestamp?
-    public var lastModified: PlacesTimestamp?
-    public var url: Url
-    public var title: String?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil, url: Url, title: String? = nil) {
-        self.guid = guid
-        self.parentGuid = parentGuid
-        self.position = position
-        self.dateAdded = dateAdded
-        self.lastModified = lastModified
-        self.url = url
-        self.title = title
-    }
-}
-
-extension InsertableBookmark: Equatable, Hashable {
-    public static func == (lhs: InsertableBookmark, rhs: InsertableBookmark) -> Bool {
-        if lhs.guid != rhs.guid {
-            return false
-        }
-        if lhs.parentGuid != rhs.parentGuid {
-            return false
-        }
-        if lhs.position != rhs.position {
-            return false
-        }
-        if lhs.dateAdded != rhs.dateAdded {
-            return false
-        }
-        if lhs.lastModified != rhs.lastModified {
-            return false
-        }
-        if lhs.url != rhs.url {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(parentGuid)
-        hasher.combine(position)
-        hasher.combine(dateAdded)
-        hasher.combine(lastModified)
-        hasher.combine(url)
-        hasher.combine(title)
-    }
-}
-
-private struct FfiConverterTypeInsertableBookmark: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> InsertableBookmark {
-        return try InsertableBookmark(
-            guid: FfiConverterOptionTypeGuid.read(from: buf),
-            parentGuid: FfiConverterTypeGuid.read(from: buf),
-            position: FfiConverterTypeBookmarkPosition.read(from: buf),
-            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
-            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
-            url: FfiConverterTypeUrl.read(from: buf),
-            title: FfiConverterOptionString.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: InsertableBookmark, into buf: Writer) {
-        FfiConverterOptionTypeGuid.write(value.guid, into: buf)
-        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
-        FfiConverterTypeBookmarkPosition.write(value.position, into: buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: buf)
-        FfiConverterTypeUrl.write(value.url, into: buf)
-        FfiConverterOptionString.write(value.title, into: buf)
-    }
-}
-
-public struct InsertableBookmarkSeparator {
-    public var guid: Guid?
-    public var parentGuid: Guid
-    public var position: BookmarkPosition
-    public var dateAdded: PlacesTimestamp?
-    public var lastModified: PlacesTimestamp?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil) {
-        self.guid = guid
-        self.parentGuid = parentGuid
-        self.position = position
-        self.dateAdded = dateAdded
-        self.lastModified = lastModified
-    }
-}
-
-extension InsertableBookmarkSeparator: Equatable, Hashable {
-    public static func == (lhs: InsertableBookmarkSeparator, rhs: InsertableBookmarkSeparator) -> Bool {
-        if lhs.guid != rhs.guid {
-            return false
-        }
-        if lhs.parentGuid != rhs.parentGuid {
-            return false
-        }
-        if lhs.position != rhs.position {
-            return false
-        }
-        if lhs.dateAdded != rhs.dateAdded {
-            return false
-        }
-        if lhs.lastModified != rhs.lastModified {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(parentGuid)
-        hasher.combine(position)
-        hasher.combine(dateAdded)
-        hasher.combine(lastModified)
-    }
-}
-
-private struct FfiConverterTypeInsertableBookmarkSeparator: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> InsertableBookmarkSeparator {
-        return try InsertableBookmarkSeparator(
-            guid: FfiConverterOptionTypeGuid.read(from: buf),
-            parentGuid: FfiConverterTypeGuid.read(from: buf),
-            position: FfiConverterTypeBookmarkPosition.read(from: buf),
-            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
-            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: InsertableBookmarkSeparator, into buf: Writer) {
-        FfiConverterOptionTypeGuid.write(value.guid, into: buf)
-        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
-        FfiConverterTypeBookmarkPosition.write(value.position, into: buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: buf)
-    }
-}
-
-public struct InsertableBookmarkFolder {
-    public var guid: Guid?
-    public var parentGuid: Guid
-    public var position: BookmarkPosition
-    public var dateAdded: PlacesTimestamp?
-    public var lastModified: PlacesTimestamp?
-    public var title: String?
-    public var children: [InsertableBookmarkItem]
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil, title: String? = nil, children: [InsertableBookmarkItem]) {
-        self.guid = guid
-        self.parentGuid = parentGuid
-        self.position = position
-        self.dateAdded = dateAdded
-        self.lastModified = lastModified
-        self.title = title
-        self.children = children
-    }
-}
-
-extension InsertableBookmarkFolder: Equatable, Hashable {
-    public static func == (lhs: InsertableBookmarkFolder, rhs: InsertableBookmarkFolder) -> Bool {
-        if lhs.guid != rhs.guid {
-            return false
-        }
-        if lhs.parentGuid != rhs.parentGuid {
-            return false
-        }
-        if lhs.position != rhs.position {
-            return false
-        }
-        if lhs.dateAdded != rhs.dateAdded {
-            return false
-        }
-        if lhs.lastModified != rhs.lastModified {
-            return false
-        }
-        if lhs.title != rhs.title {
-            return false
-        }
-        if lhs.children != rhs.children {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(parentGuid)
-        hasher.combine(position)
-        hasher.combine(dateAdded)
-        hasher.combine(lastModified)
-        hasher.combine(title)
-        hasher.combine(children)
-    }
-}
-
-private struct FfiConverterTypeInsertableBookmarkFolder: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> InsertableBookmarkFolder {
-        return try InsertableBookmarkFolder(
-            guid: FfiConverterOptionTypeGuid.read(from: buf),
-            parentGuid: FfiConverterTypeGuid.read(from: buf),
-            position: FfiConverterTypeBookmarkPosition.read(from: buf),
-            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
-            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: buf),
-            title: FfiConverterOptionString.read(from: buf),
-            children: FfiConverterSequenceTypeInsertableBookmarkItem.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: InsertableBookmarkFolder, into buf: Writer) {
-        FfiConverterOptionTypeGuid.write(value.guid, into: buf)
-        FfiConverterTypeGuid.write(value.parentGuid, into: buf)
-        FfiConverterTypeBookmarkPosition.write(value.position, into: buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: buf)
-        FfiConverterOptionString.write(value.title, into: buf)
-        FfiConverterSequenceTypeInsertableBookmarkItem.write(value.children, into: buf)
-    }
-}
+extension VisitTransition: Equatable, Hashable {}
 
 public enum PlacesError {
     // Simple error enums only carry a message
@@ -2674,174 +2765,6 @@ private struct FfiConverterTypePlacesError: FfiConverterRustBuffer {
 extension PlacesError: Equatable, Hashable {}
 
 extension PlacesError: Error {}
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias Guid = String
-private typealias FfiConverterTypeGuid = FfiConverterString
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias PlacesTimestamp = Int64
-private typealias FfiConverterTypePlacesTimestamp = FfiConverterInt64
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias Url = String
-private typealias FfiConverterTypeUrl = FfiConverterString
-
-/**
- * Typealias from the type name used in the UDL file to the builtin type.  This
- * is needed because the UDL type name is used in function/method signatures.
- */
-public typealias VisitTransitionSet = Int32
-private typealias FfiConverterTypeVisitTransitionSet = FfiConverterInt32
-private struct FfiConverterUInt32: FfiConverterPrimitive {
-    typealias FfiType = UInt32
-    typealias SwiftType = UInt32
-
-    static func read(from buf: Reader) throws -> UInt32 {
-        return try lift(buf.readInt())
-    }
-
-    static func write(_ value: SwiftType, into buf: Writer) {
-        buf.writeInt(lower(value))
-    }
-}
-
-private struct FfiConverterInt32: FfiConverterPrimitive {
-    typealias FfiType = Int32
-    typealias SwiftType = Int32
-
-    static func read(from buf: Reader) throws -> Int32 {
-        return try lift(buf.readInt())
-    }
-
-    static func write(_ value: Int32, into buf: Writer) {
-        buf.writeInt(lower(value))
-    }
-}
-
-private struct FfiConverterInt64: FfiConverterPrimitive {
-    typealias FfiType = Int64
-    typealias SwiftType = Int64
-
-    static func read(from buf: Reader) throws -> Int64 {
-        return try lift(buf.readInt())
-    }
-
-    static func write(_ value: Int64, into buf: Writer) {
-        buf.writeInt(lower(value))
-    }
-}
-
-private struct FfiConverterDouble: FfiConverterPrimitive {
-    typealias FfiType = Double
-    typealias SwiftType = Double
-
-    static func read(from buf: Reader) throws -> Double {
-        return try lift(buf.readDouble())
-    }
-
-    static func write(_ value: Double, into buf: Writer) {
-        buf.writeDouble(lower(value))
-    }
-}
-
-private struct FfiConverterBool: FfiConverter {
-    typealias FfiType = Int8
-    typealias SwiftType = Bool
-
-    static func lift(_ value: Int8) throws -> Bool {
-        return value != 0
-    }
-
-    static func lower(_ value: Bool) -> Int8 {
-        return value ? 1 : 0
-    }
-
-    static func read(from buf: Reader) throws -> Bool {
-        return try lift(buf.readInt())
-    }
-
-    static func write(_ value: Bool, into buf: Writer) {
-        buf.writeInt(lower(value))
-    }
-}
-
-private struct FfiConverterString: FfiConverter {
-    typealias SwiftType = String
-    typealias FfiType = RustBuffer
-
-    static func lift(_ value: RustBuffer) throws -> String {
-        defer {
-            value.deallocate()
-        }
-        if value.data == nil {
-            return String()
-        }
-        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
-        return String(bytes: bytes, encoding: String.Encoding.utf8)!
-    }
-
-    static func lower(_ value: String) -> RustBuffer {
-        return value.utf8CString.withUnsafeBufferPointer { ptr in
-            // The swift string gives us int8_t, we want uint8_t.
-            ptr.withMemoryRebound(to: UInt8.self) { ptr in
-                // The swift string gives us a trailing null byte, we don't want it.
-                let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
-                return RustBuffer.from(buf)
-            }
-        }
-    }
-
-    static func read(from buf: Reader) throws -> String {
-        let len: Int32 = try buf.readInt()
-        return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
-    }
-
-    static func write(_ value: String, into buf: Writer) {
-        let len = Int32(value.utf8.count)
-        buf.writeInt(len)
-        buf.writeBytes(value.utf8)
-    }
-}
-
-// Helper code for PlacesApi class is found in ObjectTemplate.swift
-// Helper code for PlacesConnection class is found in ObjectTemplate.swift
-// Helper code for SqlInterruptHandle class is found in ObjectTemplate.swift
-// Helper code for BookmarkData record is found in RecordTemplate.swift
-// Helper code for BookmarkFolder record is found in RecordTemplate.swift
-// Helper code for BookmarkSeparator record is found in RecordTemplate.swift
-// Helper code for BookmarkUpdateInfo record is found in RecordTemplate.swift
-// Helper code for Dummy record is found in RecordTemplate.swift
-// Helper code for HistoryHighlight record is found in RecordTemplate.swift
-// Helper code for HistoryHighlightWeights record is found in RecordTemplate.swift
-// Helper code for HistoryMetadata record is found in RecordTemplate.swift
-// Helper code for HistoryMetadataObservation record is found in RecordTemplate.swift
-// Helper code for HistoryVisitInfo record is found in RecordTemplate.swift
-// Helper code for HistoryVisitInfosWithBound record is found in RecordTemplate.swift
-// Helper code for InsertableBookmark record is found in RecordTemplate.swift
-// Helper code for InsertableBookmarkFolder record is found in RecordTemplate.swift
-// Helper code for InsertableBookmarkSeparator record is found in RecordTemplate.swift
-// Helper code for SearchResult record is found in RecordTemplate.swift
-// Helper code for TopFrecentSiteInfo record is found in RecordTemplate.swift
-// Helper code for VisitObservation record is found in RecordTemplate.swift
-// Helper code for BookmarkItem enum is found in EnumTemplate.swift
-// Helper code for BookmarkPosition enum is found in EnumTemplate.swift
-// Helper code for ConnectionType enum is found in EnumTemplate.swift
-// Helper code for DocumentType enum is found in EnumTemplate.swift
-// Helper code for FrecencyThresholdOption enum is found in EnumTemplate.swift
-// Helper code for InsertableBookmarkItem enum is found in EnumTemplate.swift
-// Helper code for MatchReason enum is found in EnumTemplate.swift
-// Helper code for VisitTransition enum is found in EnumTemplate.swift
-// Helper code for PlacesError error is found in ErrorTemplate.swift
 
 private struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     typealias SwiftType = UInt32?
@@ -3401,10 +3324,45 @@ private struct FfiConverterSequenceTypeUrl: FfiConverterRustBuffer {
     }
 }
 
-// Helper code for Guid is found in CustomType.py
-// Helper code for PlacesTimestamp is found in CustomType.py
-// Helper code for Url is found in CustomType.py
-// Helper code for VisitTransitionSet is found in CustomType.py
+/**
+ * Typealias from the type name used in the UDL file to the builtin type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias Guid = String
+private typealias FfiConverterTypeGuid = FfiConverterString
+
+/**
+ * Typealias from the type name used in the UDL file to the builtin type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias PlacesTimestamp = Int64
+private typealias FfiConverterTypePlacesTimestamp = FfiConverterInt64
+
+/**
+ * Typealias from the type name used in the UDL file to the builtin type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias Url = String
+private typealias FfiConverterTypeUrl = FfiConverterString
+
+/**
+ * Typealias from the type name used in the UDL file to the builtin type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias VisitTransitionSet = Int32
+private typealias FfiConverterTypeVisitTransitionSet = FfiConverterInt32
+
+public func placesApiNew(dbPath: String) throws -> PlacesApi {
+    return try FfiConverterTypePlacesApi.lift(
+        try
+
+            rustCallWithError(FfiConverterTypePlacesError.self) {
+                places_2030_places_api_new(
+                    FfiConverterString.lower(dbPath), $0
+                )
+            }
+    )
+}
 
 /**
  * Top level initializers and tear down methods.
@@ -3415,7 +3373,5 @@ public enum PlacesLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {
-        // No initialization code needed
-    }
+    func initialize() {}
 }

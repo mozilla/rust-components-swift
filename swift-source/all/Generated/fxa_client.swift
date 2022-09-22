@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_fxa_client_7d70_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_fxa_client_9284_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_fxa_client_7d70_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_fxa_client_9284_rustbuffer_free(self, $0) }
     }
 }
 
@@ -281,238 +281,77 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
 
 // Public interface members begin here.
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+private struct FfiConverterInt64: FfiConverterPrimitive {
+    typealias FfiType = Int64
+    typealias SwiftType = Int64
 
-public enum DeviceType {
-    case desktop
-    case mobile
-    case tablet
-    case vr
-    case tv
-    case unknown
-}
-
-private struct FfiConverterTypeDeviceType: FfiConverterRustBuffer {
-    typealias SwiftType = DeviceType
-
-    static func read(from buf: Reader) throws -> DeviceType {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .desktop
-
-        case 2: return .mobile
-
-        case 3: return .tablet
-
-        case 4: return .vr
-
-        case 5: return .tv
-
-        case 6: return .unknown
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func read(from buf: Reader) throws -> Int64 {
+        return try lift(buf.readInt())
     }
 
-    static func write(_ value: DeviceType, into buf: Writer) {
-        switch value {
-        case .desktop:
-            buf.writeInt(Int32(1))
-
-        case .mobile:
-            buf.writeInt(Int32(2))
-
-        case .tablet:
-            buf.writeInt(Int32(3))
-
-        case .vr:
-            buf.writeInt(Int32(4))
-
-        case .tv:
-            buf.writeInt(Int32(5))
-
-        case .unknown:
-            buf.writeInt(Int32(6))
-        }
+    static func write(_ value: Int64, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension DeviceType: Equatable, Hashable {}
+private struct FfiConverterBool: FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum DeviceCapability {
-    case sendTab
-}
-
-private struct FfiConverterTypeDeviceCapability: FfiConverterRustBuffer {
-    typealias SwiftType = DeviceCapability
-
-    static func read(from buf: Reader) throws -> DeviceCapability {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .sendTab
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
     }
 
-    static func write(_ value: DeviceCapability, into buf: Writer) {
-        switch value {
-        case .sendTab:
-            buf.writeInt(Int32(1))
-        }
+    static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    static func read(from buf: Reader) throws -> Bool {
+        return try lift(buf.readInt())
+    }
+
+    static func write(_ value: Bool, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension DeviceCapability: Equatable, Hashable {}
+private struct FfiConverterString: FfiConverter {
+    typealias SwiftType = String
+    typealias FfiType = RustBuffer
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+    static func lift(_ value: RustBuffer) throws -> String {
+        defer {
+            value.deallocate()
+        }
+        if value.data == nil {
+            return String()
+        }
+        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
+        return String(bytes: bytes, encoding: String.Encoding.utf8)!
+    }
 
-public enum AccountEvent {
-    case commandReceived(command: IncomingDeviceCommand)
-    case profileUpdated
-    case accountAuthStateChanged
-    case accountDestroyed
-    case deviceConnected(deviceName: String)
-    case deviceDisconnected(deviceId: String, isLocalDevice: Bool)
-}
-
-private struct FfiConverterTypeAccountEvent: FfiConverterRustBuffer {
-    typealias SwiftType = AccountEvent
-
-    static func read(from buf: Reader) throws -> AccountEvent {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .commandReceived(
-                command: try FfiConverterTypeIncomingDeviceCommand.read(from: buf)
-            )
-
-        case 2: return .profileUpdated
-
-        case 3: return .accountAuthStateChanged
-
-        case 4: return .accountDestroyed
-
-        case 5: return .deviceConnected(
-                deviceName: try FfiConverterString.read(from: buf)
-            )
-
-        case 6: return .deviceDisconnected(
-                deviceId: try FfiConverterString.read(from: buf),
-                isLocalDevice: try FfiConverterBool.read(from: buf)
-            )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
+    static func lower(_ value: String) -> RustBuffer {
+        return value.utf8CString.withUnsafeBufferPointer { ptr in
+            // The swift string gives us int8_t, we want uint8_t.
+            ptr.withMemoryRebound(to: UInt8.self) { ptr in
+                // The swift string gives us a trailing null byte, we don't want it.
+                let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
+                return RustBuffer.from(buf)
+            }
         }
     }
 
-    static func write(_ value: AccountEvent, into buf: Writer) {
-        switch value {
-        case let .commandReceived(command):
-            buf.writeInt(Int32(1))
-            FfiConverterTypeIncomingDeviceCommand.write(command, into: buf)
-
-        case .profileUpdated:
-            buf.writeInt(Int32(2))
-
-        case .accountAuthStateChanged:
-            buf.writeInt(Int32(3))
-
-        case .accountDestroyed:
-            buf.writeInt(Int32(4))
-
-        case let .deviceConnected(deviceName):
-            buf.writeInt(Int32(5))
-            FfiConverterString.write(deviceName, into: buf)
-
-        case let .deviceDisconnected(deviceId, isLocalDevice):
-            buf.writeInt(Int32(6))
-            FfiConverterString.write(deviceId, into: buf)
-            FfiConverterBool.write(isLocalDevice, into: buf)
-        }
-    }
-}
-
-extension AccountEvent: Equatable, Hashable {}
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum IncomingDeviceCommand {
-    case tabReceived(sender: Device?, payload: SendTabPayload)
-}
-
-private struct FfiConverterTypeIncomingDeviceCommand: FfiConverterRustBuffer {
-    typealias SwiftType = IncomingDeviceCommand
-
-    static func read(from buf: Reader) throws -> IncomingDeviceCommand {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .tabReceived(
-                sender: try FfiConverterOptionTypeDevice.read(from: buf),
-                payload: try FfiConverterTypeSendTabPayload.read(from: buf)
-            )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func read(from buf: Reader) throws -> String {
+        let len: Int32 = try buf.readInt()
+        return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
-    static func write(_ value: IncomingDeviceCommand, into buf: Writer) {
-        switch value {
-        case let .tabReceived(sender, payload):
-            buf.writeInt(Int32(1))
-            FfiConverterOptionTypeDevice.write(sender, into: buf)
-            FfiConverterTypeSendTabPayload.write(payload, into: buf)
-        }
+    static func write(_ value: String, into buf: Writer) {
+        let len = Int32(value.utf8.count)
+        buf.writeInt(len)
+        buf.writeBytes(value.utf8)
     }
 }
-
-extension IncomingDeviceCommand: Equatable, Hashable {}
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum MigrationState {
-    case none
-    case copySessionToken
-    case reuseSessionToken
-}
-
-private struct FfiConverterTypeMigrationState: FfiConverterRustBuffer {
-    typealias SwiftType = MigrationState
-
-    static func read(from buf: Reader) throws -> MigrationState {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .none
-
-        case 2: return .copySessionToken
-
-        case 3: return .reuseSessionToken
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    static func write(_ value: MigrationState, into buf: Writer) {
-        switch value {
-        case .none:
-            buf.writeInt(Int32(1))
-
-        case .copySessionToken:
-            buf.writeInt(Int32(2))
-
-        case .reuseSessionToken:
-            buf.writeInt(Int32(3))
-        }
-    }
-}
-
-extension MigrationState: Equatable, Hashable {}
 
 public protocol FirefoxAccountProtocol {
     func toJson() throws -> String
@@ -563,7 +402,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                fxa_client_7d70_FirefoxAccount_new(
+                fxa_client_9284_FirefoxAccount_new(
                     FfiConverterString.lower(contentUrl),
                     FfiConverterString.lower(clientId),
                     FfiConverterString.lower(redirectUri),
@@ -573,14 +412,14 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_fxa_client_7d70_FirefoxAccount_object_free(pointer, $0) }
+        try! rustCall { ffi_fxa_client_9284_FirefoxAccount_object_free(pointer, $0) }
     }
 
     public static func fromJson(data: String) throws -> FirefoxAccount {
         return FirefoxAccount(unsafeFromRawPointer: try
 
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_from_json(
+                fxa_client_9284_FirefoxAccount_from_json(
                     FfiConverterString.lower(data), $0
                 )
             })
@@ -590,7 +429,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_to_json(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_to_json(self.pointer, $0)
                 }
         )
     }
@@ -599,7 +438,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_begin_oauth_flow(self.pointer,
+                    fxa_client_9284_FirefoxAccount_begin_oauth_flow(self.pointer,
                                                                     FfiConverterSequenceString.lower(scopes),
                                                                     FfiConverterString.lower(entrypoint),
                                                                     FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
@@ -611,7 +450,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_pairing_authority_url(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_get_pairing_authority_url(self.pointer, $0)
                 }
         )
     }
@@ -620,7 +459,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_begin_pairing_flow(self.pointer,
+                    fxa_client_9284_FirefoxAccount_begin_pairing_flow(self.pointer,
                                                                       FfiConverterString.lower(pairingUrl),
                                                                       FfiConverterSequenceString.lower(scopes),
                                                                       FfiConverterString.lower(entrypoint),
@@ -632,7 +471,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func completeOauthFlow(code: String, state: String) throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_complete_oauth_flow(self.pointer,
+                fxa_client_9284_FirefoxAccount_complete_oauth_flow(self.pointer,
                                                                    FfiConverterString.lower(code),
                                                                    FfiConverterString.lower(state), $0)
             }
@@ -642,7 +481,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterTypeAuthorizationInfo.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_check_authorization_status(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_check_authorization_status(self.pointer, $0)
                 }
         )
     }
@@ -650,7 +489,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func disconnect() {
         try!
             rustCall {
-                fxa_client_7d70_FirefoxAccount_disconnect(self.pointer, $0)
+                fxa_client_9284_FirefoxAccount_disconnect(self.pointer, $0)
             }
     }
 
@@ -658,7 +497,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterTypeProfile.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_profile(self.pointer,
+                    fxa_client_9284_FirefoxAccount_get_profile(self.pointer,
                                                                FfiConverterBool.lower(ignoreCache), $0)
                 }
         )
@@ -667,7 +506,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_initialize_device(self.pointer,
+                fxa_client_9284_FirefoxAccount_initialize_device(self.pointer,
                                                                  FfiConverterString.lower(name),
                                                                  FfiConverterTypeDeviceType.lower(deviceType),
                                                                  FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
@@ -678,7 +517,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_current_device_id(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_get_current_device_id(self.pointer, $0)
                 }
         )
     }
@@ -687,7 +526,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterSequenceTypeDevice.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_devices(self.pointer,
+                    fxa_client_9284_FirefoxAccount_get_devices(self.pointer,
                                                                FfiConverterBool.lower(ignoreCache), $0)
                 }
         )
@@ -697,7 +536,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterSequenceTypeAttachedClient.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_attached_clients(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_get_attached_clients(self.pointer, $0)
                 }
         )
     }
@@ -705,7 +544,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func setDeviceName(displayName: String) throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_set_device_name(self.pointer,
+                fxa_client_9284_FirefoxAccount_set_device_name(self.pointer,
                                                                FfiConverterString.lower(displayName), $0)
             }
     }
@@ -713,14 +552,14 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func clearDeviceName() throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_clear_device_name(self.pointer, $0)
+                fxa_client_9284_FirefoxAccount_clear_device_name(self.pointer, $0)
             }
     }
 
     public func ensureCapabilities(supportedCapabilities: [DeviceCapability]) throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_ensure_capabilities(self.pointer,
+                fxa_client_9284_FirefoxAccount_ensure_capabilities(self.pointer,
                                                                    FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
             }
     }
@@ -728,7 +567,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func setPushSubscription(subscription: DevicePushSubscription) throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_set_push_subscription(self.pointer,
+                fxa_client_9284_FirefoxAccount_set_push_subscription(self.pointer,
                                                                      FfiConverterTypeDevicePushSubscription.lower(subscription), $0)
             }
     }
@@ -737,7 +576,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterSequenceTypeAccountEvent.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_handle_push_message(self.pointer,
+                    fxa_client_9284_FirefoxAccount_handle_push_message(self.pointer,
                                                                        FfiConverterString.lower(payload), $0)
                 }
         )
@@ -747,7 +586,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterSequenceTypeIncomingDeviceCommand.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_poll_device_commands(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_poll_device_commands(self.pointer, $0)
                 }
         )
     }
@@ -755,7 +594,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func sendSingleTab(targetDeviceId: String, title: String, url: String) throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_send_single_tab(self.pointer,
+                fxa_client_9284_FirefoxAccount_send_single_tab(self.pointer,
                                                                FfiConverterString.lower(targetDeviceId),
                                                                FfiConverterString.lower(title),
                                                                FfiConverterString.lower(url), $0)
@@ -766,7 +605,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_token_server_endpoint_url(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_get_token_server_endpoint_url(self.pointer, $0)
                 }
         )
     }
@@ -775,7 +614,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_connection_success_url(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_get_connection_success_url(self.pointer, $0)
                 }
         )
     }
@@ -784,7 +623,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_manage_account_url(self.pointer,
+                    fxa_client_9284_FirefoxAccount_get_manage_account_url(self.pointer,
                                                                           FfiConverterString.lower(entrypoint), $0)
                 }
         )
@@ -794,7 +633,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_manage_devices_url(self.pointer,
+                    fxa_client_9284_FirefoxAccount_get_manage_devices_url(self.pointer,
                                                                           FfiConverterString.lower(entrypoint), $0)
                 }
         )
@@ -804,7 +643,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterTypeAccessTokenInfo.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_access_token(self.pointer,
+                    fxa_client_9284_FirefoxAccount_get_access_token(self.pointer,
                                                                     FfiConverterString.lower(scope),
                                                                     FfiConverterOptionInt64.lower(ttl), $0)
                 }
@@ -815,7 +654,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_get_session_token(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_get_session_token(self.pointer, $0)
                 }
         )
     }
@@ -823,7 +662,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func handleSessionTokenChange(sessionToken: String) throws {
         try
             rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_7d70_FirefoxAccount_handle_session_token_change(self.pointer,
+                fxa_client_9284_FirefoxAccount_handle_session_token_change(self.pointer,
                                                                            FfiConverterString.lower(sessionToken), $0)
             }
     }
@@ -832,7 +671,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_authorize_code_using_session_token(self.pointer,
+                    fxa_client_9284_FirefoxAccount_authorize_code_using_session_token(self.pointer,
                                                                                       FfiConverterTypeAuthorizationParameters.lower(params), $0)
                 }
         )
@@ -841,7 +680,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func clearAccessTokenCache() {
         try!
             rustCall {
-                fxa_client_7d70_FirefoxAccount_clear_access_token_cache(self.pointer, $0)
+                fxa_client_9284_FirefoxAccount_clear_access_token_cache(self.pointer, $0)
             }
     }
 
@@ -849,7 +688,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_gather_telemetry(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_gather_telemetry(self.pointer, $0)
                 }
         )
     }
@@ -858,7 +697,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterTypeFxAMigrationResult.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_migrate_from_session_token(self.pointer,
+                    fxa_client_9284_FirefoxAccount_migrate_from_session_token(self.pointer,
                                                                               FfiConverterString.lower(sessionToken),
                                                                               FfiConverterString.lower(kSync),
                                                                               FfiConverterString.lower(kXcs),
@@ -871,7 +710,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterTypeFxAMigrationResult.lift(
             try
                 rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_7d70_FirefoxAccount_retry_migrate_from_session_token(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_retry_migrate_from_session_token(self.pointer, $0)
                 }
         )
     }
@@ -880,7 +719,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try! FfiConverterTypeMigrationState.lift(
             try!
                 rustCall {
-                    fxa_client_7d70_FirefoxAccount_is_in_migration_state(self.pointer, $0)
+                    fxa_client_9284_FirefoxAccount_is_in_migration_state(self.pointer, $0)
                 }
         )
     }
@@ -913,76 +752,6 @@ private struct FfiConverterTypeFirefoxAccount: FfiConverter {
 
     static func lower(_ value: FirefoxAccount) -> UnsafeMutableRawPointer {
         return value.pointer
-    }
-}
-
-public struct AuthorizationInfo {
-    public var active: Bool
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(active: Bool) {
-        self.active = active
-    }
-}
-
-extension AuthorizationInfo: Equatable, Hashable {
-    public static func == (lhs: AuthorizationInfo, rhs: AuthorizationInfo) -> Bool {
-        if lhs.active != rhs.active {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(active)
-    }
-}
-
-private struct FfiConverterTypeAuthorizationInfo: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> AuthorizationInfo {
-        return try AuthorizationInfo(
-            active: FfiConverterBool.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: AuthorizationInfo, into buf: Writer) {
-        FfiConverterBool.write(value.active, into: buf)
-    }
-}
-
-public struct MetricsParams {
-    public var parameters: [String: String]
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(parameters: [String: String]) {
-        self.parameters = parameters
-    }
-}
-
-extension MetricsParams: Equatable, Hashable {
-    public static func == (lhs: MetricsParams, rhs: MetricsParams) -> Bool {
-        if lhs.parameters != rhs.parameters {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(parameters)
-    }
-}
-
-private struct FfiConverterTypeMetricsParams: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> MetricsParams {
-        return try MetricsParams(
-            parameters: FfiConverterDictionaryStringString.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: MetricsParams, into buf: Writer) {
-        FfiConverterDictionaryStringString.write(value.parameters, into: buf)
     }
 }
 
@@ -1045,62 +814,129 @@ private struct FfiConverterTypeAccessTokenInfo: FfiConverterRustBuffer {
     }
 }
 
-public struct ScopedKey {
-    public var kty: String
-    public var scope: String
-    public var k: String
-    public var kid: String
+public struct AttachedClient {
+    public var clientId: String?
+    public var deviceId: String?
+    public var deviceType: DeviceType?
+    public var isCurrentSession: Bool
+    public var name: String?
+    public var createdTime: Int64?
+    public var lastAccessTime: Int64?
+    public var scope: [String]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(kty: String, scope: String, k: String, kid: String) {
-        self.kty = kty
+    public init(clientId: String?, deviceId: String?, deviceType: DeviceType?, isCurrentSession: Bool, name: String?, createdTime: Int64?, lastAccessTime: Int64?, scope: [String]?) {
+        self.clientId = clientId
+        self.deviceId = deviceId
+        self.deviceType = deviceType
+        self.isCurrentSession = isCurrentSession
+        self.name = name
+        self.createdTime = createdTime
+        self.lastAccessTime = lastAccessTime
         self.scope = scope
-        self.k = k
-        self.kid = kid
     }
 }
 
-extension ScopedKey: Equatable, Hashable {
-    public static func == (lhs: ScopedKey, rhs: ScopedKey) -> Bool {
-        if lhs.kty != rhs.kty {
+extension AttachedClient: Equatable, Hashable {
+    public static func == (lhs: AttachedClient, rhs: AttachedClient) -> Bool {
+        if lhs.clientId != rhs.clientId {
+            return false
+        }
+        if lhs.deviceId != rhs.deviceId {
+            return false
+        }
+        if lhs.deviceType != rhs.deviceType {
+            return false
+        }
+        if lhs.isCurrentSession != rhs.isCurrentSession {
+            return false
+        }
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.createdTime != rhs.createdTime {
+            return false
+        }
+        if lhs.lastAccessTime != rhs.lastAccessTime {
             return false
         }
         if lhs.scope != rhs.scope {
-            return false
-        }
-        if lhs.k != rhs.k {
-            return false
-        }
-        if lhs.kid != rhs.kid {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(kty)
+        hasher.combine(clientId)
+        hasher.combine(deviceId)
+        hasher.combine(deviceType)
+        hasher.combine(isCurrentSession)
+        hasher.combine(name)
+        hasher.combine(createdTime)
+        hasher.combine(lastAccessTime)
         hasher.combine(scope)
-        hasher.combine(k)
-        hasher.combine(kid)
     }
 }
 
-private struct FfiConverterTypeScopedKey: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> ScopedKey {
-        return try ScopedKey(
-            kty: FfiConverterString.read(from: buf),
-            scope: FfiConverterString.read(from: buf),
-            k: FfiConverterString.read(from: buf),
-            kid: FfiConverterString.read(from: buf)
+private struct FfiConverterTypeAttachedClient: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> AttachedClient {
+        return try AttachedClient(
+            clientId: FfiConverterOptionString.read(from: buf),
+            deviceId: FfiConverterOptionString.read(from: buf),
+            deviceType: FfiConverterOptionTypeDeviceType.read(from: buf),
+            isCurrentSession: FfiConverterBool.read(from: buf),
+            name: FfiConverterOptionString.read(from: buf),
+            createdTime: FfiConverterOptionInt64.read(from: buf),
+            lastAccessTime: FfiConverterOptionInt64.read(from: buf),
+            scope: FfiConverterOptionSequenceString.read(from: buf)
         )
     }
 
-    fileprivate static func write(_ value: ScopedKey, into buf: Writer) {
-        FfiConverterString.write(value.kty, into: buf)
-        FfiConverterString.write(value.scope, into: buf)
-        FfiConverterString.write(value.k, into: buf)
-        FfiConverterString.write(value.kid, into: buf)
+    fileprivate static func write(_ value: AttachedClient, into buf: Writer) {
+        FfiConverterOptionString.write(value.clientId, into: buf)
+        FfiConverterOptionString.write(value.deviceId, into: buf)
+        FfiConverterOptionTypeDeviceType.write(value.deviceType, into: buf)
+        FfiConverterBool.write(value.isCurrentSession, into: buf)
+        FfiConverterOptionString.write(value.name, into: buf)
+        FfiConverterOptionInt64.write(value.createdTime, into: buf)
+        FfiConverterOptionInt64.write(value.lastAccessTime, into: buf)
+        FfiConverterOptionSequenceString.write(value.scope, into: buf)
+    }
+}
+
+public struct AuthorizationInfo {
+    public var active: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(active: Bool) {
+        self.active = active
+    }
+}
+
+extension AuthorizationInfo: Equatable, Hashable {
+    public static func == (lhs: AuthorizationInfo, rhs: AuthorizationInfo) -> Bool {
+        if lhs.active != rhs.active {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(active)
+    }
+}
+
+private struct FfiConverterTypeAuthorizationInfo: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> AuthorizationInfo {
+        return try AuthorizationInfo(
+            active: FfiConverterBool.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: AuthorizationInfo, into buf: Writer) {
+        FfiConverterBool.write(value.active, into: buf)
     }
 }
 
@@ -1329,6 +1165,202 @@ private struct FfiConverterTypeDevicePushSubscription: FfiConverterRustBuffer {
     }
 }
 
+public struct FxAMigrationResult {
+    public var totalDuration: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(totalDuration: Int64) {
+        self.totalDuration = totalDuration
+    }
+}
+
+extension FxAMigrationResult: Equatable, Hashable {
+    public static func == (lhs: FxAMigrationResult, rhs: FxAMigrationResult) -> Bool {
+        if lhs.totalDuration != rhs.totalDuration {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(totalDuration)
+    }
+}
+
+private struct FfiConverterTypeFxAMigrationResult: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> FxAMigrationResult {
+        return try FxAMigrationResult(
+            totalDuration: FfiConverterInt64.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: FxAMigrationResult, into buf: Writer) {
+        FfiConverterInt64.write(value.totalDuration, into: buf)
+    }
+}
+
+public struct MetricsParams {
+    public var parameters: [String: String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(parameters: [String: String]) {
+        self.parameters = parameters
+    }
+}
+
+extension MetricsParams: Equatable, Hashable {
+    public static func == (lhs: MetricsParams, rhs: MetricsParams) -> Bool {
+        if lhs.parameters != rhs.parameters {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(parameters)
+    }
+}
+
+private struct FfiConverterTypeMetricsParams: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> MetricsParams {
+        return try MetricsParams(
+            parameters: FfiConverterDictionaryStringString.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: MetricsParams, into buf: Writer) {
+        FfiConverterDictionaryStringString.write(value.parameters, into: buf)
+    }
+}
+
+public struct Profile {
+    public var uid: String
+    public var email: String
+    public var displayName: String?
+    public var avatar: String
+    public var isDefaultAvatar: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(uid: String, email: String, displayName: String?, avatar: String, isDefaultAvatar: Bool) {
+        self.uid = uid
+        self.email = email
+        self.displayName = displayName
+        self.avatar = avatar
+        self.isDefaultAvatar = isDefaultAvatar
+    }
+}
+
+extension Profile: Equatable, Hashable {
+    public static func == (lhs: Profile, rhs: Profile) -> Bool {
+        if lhs.uid != rhs.uid {
+            return false
+        }
+        if lhs.email != rhs.email {
+            return false
+        }
+        if lhs.displayName != rhs.displayName {
+            return false
+        }
+        if lhs.avatar != rhs.avatar {
+            return false
+        }
+        if lhs.isDefaultAvatar != rhs.isDefaultAvatar {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(uid)
+        hasher.combine(email)
+        hasher.combine(displayName)
+        hasher.combine(avatar)
+        hasher.combine(isDefaultAvatar)
+    }
+}
+
+private struct FfiConverterTypeProfile: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> Profile {
+        return try Profile(
+            uid: FfiConverterString.read(from: buf),
+            email: FfiConverterString.read(from: buf),
+            displayName: FfiConverterOptionString.read(from: buf),
+            avatar: FfiConverterString.read(from: buf),
+            isDefaultAvatar: FfiConverterBool.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: Profile, into buf: Writer) {
+        FfiConverterString.write(value.uid, into: buf)
+        FfiConverterString.write(value.email, into: buf)
+        FfiConverterOptionString.write(value.displayName, into: buf)
+        FfiConverterString.write(value.avatar, into: buf)
+        FfiConverterBool.write(value.isDefaultAvatar, into: buf)
+    }
+}
+
+public struct ScopedKey {
+    public var kty: String
+    public var scope: String
+    public var k: String
+    public var kid: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(kty: String, scope: String, k: String, kid: String) {
+        self.kty = kty
+        self.scope = scope
+        self.k = k
+        self.kid = kid
+    }
+}
+
+extension ScopedKey: Equatable, Hashable {
+    public static func == (lhs: ScopedKey, rhs: ScopedKey) -> Bool {
+        if lhs.kty != rhs.kty {
+            return false
+        }
+        if lhs.scope != rhs.scope {
+            return false
+        }
+        if lhs.k != rhs.k {
+            return false
+        }
+        if lhs.kid != rhs.kid {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(kty)
+        hasher.combine(scope)
+        hasher.combine(k)
+        hasher.combine(kid)
+    }
+}
+
+private struct FfiConverterTypeScopedKey: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> ScopedKey {
+        return try ScopedKey(
+            kty: FfiConverterString.read(from: buf),
+            scope: FfiConverterString.read(from: buf),
+            k: FfiConverterString.read(from: buf),
+            kid: FfiConverterString.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: ScopedKey, into buf: Writer) {
+        FfiConverterString.write(value.kty, into: buf)
+        FfiConverterString.write(value.scope, into: buf)
+        FfiConverterString.write(value.k, into: buf)
+        FfiConverterString.write(value.kid, into: buf)
+    }
+}
+
 public struct SendTabPayload {
     public var entries: [TabHistoryEntry]
     public var flowId: String
@@ -1423,198 +1455,233 @@ private struct FfiConverterTypeTabHistoryEntry: FfiConverterRustBuffer {
     }
 }
 
-public struct AttachedClient {
-    public var clientId: String?
-    public var deviceId: String?
-    public var deviceType: DeviceType?
-    public var isCurrentSession: Bool
-    public var name: String?
-    public var createdTime: Int64?
-    public var lastAccessTime: Int64?
-    public var scope: [String]?
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum AccountEvent {
+    case commandReceived(command: IncomingDeviceCommand)
+    case profileUpdated
+    case accountAuthStateChanged
+    case accountDestroyed
+    case deviceConnected(deviceName: String)
+    case deviceDisconnected(deviceId: String, isLocalDevice: Bool)
+}
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(clientId: String?, deviceId: String?, deviceType: DeviceType?, isCurrentSession: Bool, name: String?, createdTime: Int64?, lastAccessTime: Int64?, scope: [String]?) {
-        self.clientId = clientId
-        self.deviceId = deviceId
-        self.deviceType = deviceType
-        self.isCurrentSession = isCurrentSession
-        self.name = name
-        self.createdTime = createdTime
-        self.lastAccessTime = lastAccessTime
-        self.scope = scope
+private struct FfiConverterTypeAccountEvent: FfiConverterRustBuffer {
+    typealias SwiftType = AccountEvent
+
+    static func read(from buf: Reader) throws -> AccountEvent {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .commandReceived(
+                command: try FfiConverterTypeIncomingDeviceCommand.read(from: buf)
+            )
+
+        case 2: return .profileUpdated
+
+        case 3: return .accountAuthStateChanged
+
+        case 4: return .accountDestroyed
+
+        case 5: return .deviceConnected(
+                deviceName: try FfiConverterString.read(from: buf)
+            )
+
+        case 6: return .deviceDisconnected(
+                deviceId: try FfiConverterString.read(from: buf),
+                isLocalDevice: try FfiConverterBool.read(from: buf)
+            )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    static func write(_ value: AccountEvent, into buf: Writer) {
+        switch value {
+        case let .commandReceived(command):
+            buf.writeInt(Int32(1))
+            FfiConverterTypeIncomingDeviceCommand.write(command, into: buf)
+
+        case .profileUpdated:
+            buf.writeInt(Int32(2))
+
+        case .accountAuthStateChanged:
+            buf.writeInt(Int32(3))
+
+        case .accountDestroyed:
+            buf.writeInt(Int32(4))
+
+        case let .deviceConnected(deviceName):
+            buf.writeInt(Int32(5))
+            FfiConverterString.write(deviceName, into: buf)
+
+        case let .deviceDisconnected(deviceId, isLocalDevice):
+            buf.writeInt(Int32(6))
+            FfiConverterString.write(deviceId, into: buf)
+            FfiConverterBool.write(isLocalDevice, into: buf)
+        }
     }
 }
 
-extension AttachedClient: Equatable, Hashable {
-    public static func == (lhs: AttachedClient, rhs: AttachedClient) -> Bool {
-        if lhs.clientId != rhs.clientId {
-            return false
+extension AccountEvent: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum DeviceCapability {
+    case sendTab
+}
+
+private struct FfiConverterTypeDeviceCapability: FfiConverterRustBuffer {
+    typealias SwiftType = DeviceCapability
+
+    static func read(from buf: Reader) throws -> DeviceCapability {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .sendTab
+
+        default: throw UniffiInternalError.unexpectedEnumCase
         }
-        if lhs.deviceId != rhs.deviceId {
-            return false
-        }
-        if lhs.deviceType != rhs.deviceType {
-            return false
-        }
-        if lhs.isCurrentSession != rhs.isCurrentSession {
-            return false
-        }
-        if lhs.name != rhs.name {
-            return false
-        }
-        if lhs.createdTime != rhs.createdTime {
-            return false
-        }
-        if lhs.lastAccessTime != rhs.lastAccessTime {
-            return false
-        }
-        if lhs.scope != rhs.scope {
-            return false
-        }
-        return true
     }
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(clientId)
-        hasher.combine(deviceId)
-        hasher.combine(deviceType)
-        hasher.combine(isCurrentSession)
-        hasher.combine(name)
-        hasher.combine(createdTime)
-        hasher.combine(lastAccessTime)
-        hasher.combine(scope)
+    static func write(_ value: DeviceCapability, into buf: Writer) {
+        switch value {
+        case .sendTab:
+            buf.writeInt(Int32(1))
+        }
     }
 }
 
-private struct FfiConverterTypeAttachedClient: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> AttachedClient {
-        return try AttachedClient(
-            clientId: FfiConverterOptionString.read(from: buf),
-            deviceId: FfiConverterOptionString.read(from: buf),
-            deviceType: FfiConverterOptionTypeDeviceType.read(from: buf),
-            isCurrentSession: FfiConverterBool.read(from: buf),
-            name: FfiConverterOptionString.read(from: buf),
-            createdTime: FfiConverterOptionInt64.read(from: buf),
-            lastAccessTime: FfiConverterOptionInt64.read(from: buf),
-            scope: FfiConverterOptionSequenceString.read(from: buf)
-        )
-    }
+extension DeviceCapability: Equatable, Hashable {}
 
-    fileprivate static func write(_ value: AttachedClient, into buf: Writer) {
-        FfiConverterOptionString.write(value.clientId, into: buf)
-        FfiConverterOptionString.write(value.deviceId, into: buf)
-        FfiConverterOptionTypeDeviceType.write(value.deviceType, into: buf)
-        FfiConverterBool.write(value.isCurrentSession, into: buf)
-        FfiConverterOptionString.write(value.name, into: buf)
-        FfiConverterOptionInt64.write(value.createdTime, into: buf)
-        FfiConverterOptionInt64.write(value.lastAccessTime, into: buf)
-        FfiConverterOptionSequenceString.write(value.scope, into: buf)
-    }
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum DeviceType {
+    case desktop
+    case mobile
+    case tablet
+    case vr
+    case tv
+    case unknown
 }
 
-public struct Profile {
-    public var uid: String
-    public var email: String
-    public var displayName: String?
-    public var avatar: String
-    public var isDefaultAvatar: Bool
+private struct FfiConverterTypeDeviceType: FfiConverterRustBuffer {
+    typealias SwiftType = DeviceType
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(uid: String, email: String, displayName: String?, avatar: String, isDefaultAvatar: Bool) {
-        self.uid = uid
-        self.email = email
-        self.displayName = displayName
-        self.avatar = avatar
-        self.isDefaultAvatar = isDefaultAvatar
-    }
-}
+    static func read(from buf: Reader) throws -> DeviceType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .desktop
 
-extension Profile: Equatable, Hashable {
-    public static func == (lhs: Profile, rhs: Profile) -> Bool {
-        if lhs.uid != rhs.uid {
-            return false
+        case 2: return .mobile
+
+        case 3: return .tablet
+
+        case 4: return .vr
+
+        case 5: return .tv
+
+        case 6: return .unknown
+
+        default: throw UniffiInternalError.unexpectedEnumCase
         }
-        if lhs.email != rhs.email {
-            return false
-        }
-        if lhs.displayName != rhs.displayName {
-            return false
-        }
-        if lhs.avatar != rhs.avatar {
-            return false
-        }
-        if lhs.isDefaultAvatar != rhs.isDefaultAvatar {
-            return false
-        }
-        return true
     }
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(uid)
-        hasher.combine(email)
-        hasher.combine(displayName)
-        hasher.combine(avatar)
-        hasher.combine(isDefaultAvatar)
+    static func write(_ value: DeviceType, into buf: Writer) {
+        switch value {
+        case .desktop:
+            buf.writeInt(Int32(1))
+
+        case .mobile:
+            buf.writeInt(Int32(2))
+
+        case .tablet:
+            buf.writeInt(Int32(3))
+
+        case .vr:
+            buf.writeInt(Int32(4))
+
+        case .tv:
+            buf.writeInt(Int32(5))
+
+        case .unknown:
+            buf.writeInt(Int32(6))
+        }
     }
 }
 
-private struct FfiConverterTypeProfile: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> Profile {
-        return try Profile(
-            uid: FfiConverterString.read(from: buf),
-            email: FfiConverterString.read(from: buf),
-            displayName: FfiConverterOptionString.read(from: buf),
-            avatar: FfiConverterString.read(from: buf),
-            isDefaultAvatar: FfiConverterBool.read(from: buf)
-        )
-    }
+extension DeviceType: Equatable, Hashable {}
 
-    fileprivate static func write(_ value: Profile, into buf: Writer) {
-        FfiConverterString.write(value.uid, into: buf)
-        FfiConverterString.write(value.email, into: buf)
-        FfiConverterOptionString.write(value.displayName, into: buf)
-        FfiConverterString.write(value.avatar, into: buf)
-        FfiConverterBool.write(value.isDefaultAvatar, into: buf)
-    }
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum IncomingDeviceCommand {
+    case tabReceived(sender: Device?, payload: SendTabPayload)
 }
 
-public struct FxAMigrationResult {
-    public var totalDuration: Int64
+private struct FfiConverterTypeIncomingDeviceCommand: FfiConverterRustBuffer {
+    typealias SwiftType = IncomingDeviceCommand
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(totalDuration: Int64) {
-        self.totalDuration = totalDuration
-    }
-}
+    static func read(from buf: Reader) throws -> IncomingDeviceCommand {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .tabReceived(
+                sender: try FfiConverterOptionTypeDevice.read(from: buf),
+                payload: try FfiConverterTypeSendTabPayload.read(from: buf)
+            )
 
-extension FxAMigrationResult: Equatable, Hashable {
-    public static func == (lhs: FxAMigrationResult, rhs: FxAMigrationResult) -> Bool {
-        if lhs.totalDuration != rhs.totalDuration {
-            return false
+        default: throw UniffiInternalError.unexpectedEnumCase
         }
-        return true
     }
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(totalDuration)
+    static func write(_ value: IncomingDeviceCommand, into buf: Writer) {
+        switch value {
+        case let .tabReceived(sender, payload):
+            buf.writeInt(Int32(1))
+            FfiConverterOptionTypeDevice.write(sender, into: buf)
+            FfiConverterTypeSendTabPayload.write(payload, into: buf)
+        }
     }
 }
 
-private struct FfiConverterTypeFxAMigrationResult: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> FxAMigrationResult {
-        return try FxAMigrationResult(
-            totalDuration: FfiConverterInt64.read(from: buf)
-        )
+extension IncomingDeviceCommand: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum MigrationState {
+    case none
+    case copySessionToken
+    case reuseSessionToken
+}
+
+private struct FfiConverterTypeMigrationState: FfiConverterRustBuffer {
+    typealias SwiftType = MigrationState
+
+    static func read(from buf: Reader) throws -> MigrationState {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .none
+
+        case 2: return .copySessionToken
+
+        case 3: return .reuseSessionToken
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
     }
 
-    fileprivate static func write(_ value: FxAMigrationResult, into buf: Writer) {
-        FfiConverterInt64.write(value.totalDuration, into: buf)
+    static func write(_ value: MigrationState, into buf: Writer) {
+        switch value {
+        case .none:
+            buf.writeInt(Int32(1))
+
+        case .copySessionToken:
+            buf.writeInt(Int32(2))
+
+        case .reuseSessionToken:
+            buf.writeInt(Int32(3))
+        }
     }
 }
+
+extension MigrationState: Equatable, Hashable {}
 
 public enum FxaError {
     // Simple error enums only carry a message
@@ -1697,97 +1764,6 @@ private struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
 extension FxaError: Equatable, Hashable {}
 
 extension FxaError: Error {}
-private struct FfiConverterInt64: FfiConverterPrimitive {
-    typealias FfiType = Int64
-    typealias SwiftType = Int64
-
-    static func read(from buf: Reader) throws -> Int64 {
-        return try lift(buf.readInt())
-    }
-
-    static func write(_ value: Int64, into buf: Writer) {
-        buf.writeInt(lower(value))
-    }
-}
-
-private struct FfiConverterBool: FfiConverter {
-    typealias FfiType = Int8
-    typealias SwiftType = Bool
-
-    static func lift(_ value: Int8) throws -> Bool {
-        return value != 0
-    }
-
-    static func lower(_ value: Bool) -> Int8 {
-        return value ? 1 : 0
-    }
-
-    static func read(from buf: Reader) throws -> Bool {
-        return try lift(buf.readInt())
-    }
-
-    static func write(_ value: Bool, into buf: Writer) {
-        buf.writeInt(lower(value))
-    }
-}
-
-private struct FfiConverterString: FfiConverter {
-    typealias SwiftType = String
-    typealias FfiType = RustBuffer
-
-    static func lift(_ value: RustBuffer) throws -> String {
-        defer {
-            value.deallocate()
-        }
-        if value.data == nil {
-            return String()
-        }
-        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
-        return String(bytes: bytes, encoding: String.Encoding.utf8)!
-    }
-
-    static func lower(_ value: String) -> RustBuffer {
-        return value.utf8CString.withUnsafeBufferPointer { ptr in
-            // The swift string gives us int8_t, we want uint8_t.
-            ptr.withMemoryRebound(to: UInt8.self) { ptr in
-                // The swift string gives us a trailing null byte, we don't want it.
-                let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
-                return RustBuffer.from(buf)
-            }
-        }
-    }
-
-    static func read(from buf: Reader) throws -> String {
-        let len: Int32 = try buf.readInt()
-        return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
-    }
-
-    static func write(_ value: String, into buf: Writer) {
-        let len = Int32(value.utf8.count)
-        buf.writeInt(len)
-        buf.writeBytes(value.utf8)
-    }
-}
-
-// Helper code for FirefoxAccount class is found in ObjectTemplate.swift
-// Helper code for AccessTokenInfo record is found in RecordTemplate.swift
-// Helper code for AttachedClient record is found in RecordTemplate.swift
-// Helper code for AuthorizationInfo record is found in RecordTemplate.swift
-// Helper code for AuthorizationParameters record is found in RecordTemplate.swift
-// Helper code for Device record is found in RecordTemplate.swift
-// Helper code for DevicePushSubscription record is found in RecordTemplate.swift
-// Helper code for FxAMigrationResult record is found in RecordTemplate.swift
-// Helper code for MetricsParams record is found in RecordTemplate.swift
-// Helper code for Profile record is found in RecordTemplate.swift
-// Helper code for ScopedKey record is found in RecordTemplate.swift
-// Helper code for SendTabPayload record is found in RecordTemplate.swift
-// Helper code for TabHistoryEntry record is found in RecordTemplate.swift
-// Helper code for AccountEvent enum is found in EnumTemplate.swift
-// Helper code for DeviceCapability enum is found in EnumTemplate.swift
-// Helper code for DeviceType enum is found in EnumTemplate.swift
-// Helper code for IncomingDeviceCommand enum is found in EnumTemplate.swift
-// Helper code for MigrationState enum is found in EnumTemplate.swift
-// Helper code for FxaError error is found in ErrorTemplate.swift
 
 private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
@@ -2143,7 +2119,5 @@ public enum FxaClientLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {
-        // No initialization code needed
-    }
+    func initialize() {}
 }
