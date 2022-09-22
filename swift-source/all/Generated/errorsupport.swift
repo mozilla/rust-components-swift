@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_crashtest_fc4a_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_errorsupport_b986_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_crashtest_fc4a_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_errorsupport_b986_rustbuffer_free(self, $0) }
     }
 }
 
@@ -281,6 +281,19 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
 
 // Public interface members begin here.
 
+private struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
+
+    static func read(from buf: Reader) throws -> UInt32 {
+        return try lift(buf.readInt())
+    }
+
+    static func write(_ value: SwiftType, into buf: Writer) {
+        buf.writeInt(lower(value))
+    }
+}
+
 private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -319,59 +332,195 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
-public enum CrashTestError {
-    // Simple error enums only carry a message
-    case ErrorFromTheRustCode(message: String)
+private extension NSLock {
+    func withLock<T>(f: () throws -> T) rethrows -> T {
+        lock()
+        defer { self.unlock() }
+        return try f()
+    }
 }
 
-private struct FfiConverterTypeCrashTestError: FfiConverterRustBuffer {
-    typealias SwiftType = CrashTestError
+private typealias Handle = UInt64
+private class ConcurrentHandleMap<T> {
+    private var leftMap: [Handle: T] = [:]
+    private var counter: [Handle: UInt64] = [:]
+    private var rightMap: [ObjectIdentifier: Handle] = [:]
 
-    static func read(from buf: Reader) throws -> CrashTestError {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .ErrorFromTheRustCode(
-                message: try FfiConverterString.read(from: buf)
+    private let lock = NSLock()
+    private var currentHandle: Handle = 0
+    private let stride: Handle = 1
+
+    func insert(obj: T) -> Handle {
+        lock.withLock {
+            let id = ObjectIdentifier(obj as AnyObject)
+            let handle = rightMap[id] ?? {
+                currentHandle += stride
+                let handle = currentHandle
+                leftMap[handle] = obj
+                rightMap[id] = handle
+                return handle
+            }()
+            counter[handle] = (counter[handle] ?? 0) + 1
+            return handle
+        }
+    }
+
+    func get(handle: Handle) -> T? {
+        lock.withLock {
+            leftMap[handle]
+        }
+    }
+
+    func delete(handle: Handle) {
+        remove(handle: handle)
+    }
+
+    @discardableResult
+    func remove(handle: Handle) -> T? {
+        lock.withLock {
+            defer { counter[handle] = (counter[handle] ?? 1) - 1 }
+            guard counter[handle] == 1 else { return leftMap[handle] }
+            let obj = leftMap.removeValue(forKey: handle)
+            if let obj = obj {
+                rightMap.removeValue(forKey: ObjectIdentifier(obj as AnyObject))
+            }
+            return obj
+        }
+    }
+}
+
+// Magic number for the Rust proxy to call using the same mechanism as every other method,
+// to free the callback once it's dropped by Rust.
+private let IDX_CALLBACK_FREE: Int32 = 0
+
+// Declaration and FfiConverters for ApplicationErrorReporter Callback Interface
+
+public protocol ApplicationErrorReporter: AnyObject {
+    func reportError(typeName: String, message: String)
+    func reportBreadcrumb(message: String, module: String, line: UInt32, column: UInt32)
+}
+
+// The ForeignCallback that is passed to Rust.
+private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCallback =
+    { (handle: Handle, method: Int32, args: RustBuffer, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+        func invokeReportError(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
+            defer { args.deallocate() }
+
+            let reader = Reader(data: Data(rustBuffer: args))
+            swiftCallbackInterface.reportError(
+                typeName: try FfiConverterString.read(from: reader),
+                message: try FfiConverterString.read(from: reader)
             )
+            return RustBuffer()
+            // TODO: catch errors and report them back to Rust.
+            // https://github.com/mozilla/uniffi-rs/issues/351
+        }
+        func invokeReportBreadcrumb(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
+            defer { args.deallocate() }
 
-        default: throw UniffiInternalError.unexpectedEnumCase
+            let reader = Reader(data: Data(rustBuffer: args))
+            swiftCallbackInterface.reportBreadcrumb(
+                message: try FfiConverterString.read(from: reader),
+                module: try FfiConverterString.read(from: reader),
+                line: try FfiConverterUInt32.read(from: reader),
+                column: try FfiConverterUInt32.read(from: reader)
+            )
+            return RustBuffer()
+            // TODO: catch errors and report them back to Rust.
+            // https://github.com/mozilla/uniffi-rs/issues/351
+        }
+
+        let cb = try! FfiConverterCallbackInterfaceApplicationErrorReporter.lift(handle)
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceApplicationErrorReporter.drop(handle: handle)
+            // No return value.
+            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+            return 0
+        case 1:
+            let buffer = try! invokeReportError(cb, args)
+            out_buf.pointee = buffer
+            // Value written to out buffer.
+            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+            return 1
+        case 2:
+            let buffer = try! invokeReportBreadcrumb(cb, args)
+            out_buf.pointee = buffer
+            // Value written to out buffer.
+            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+            return 1
+
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+            return -1
         }
     }
 
-    static func write(_ value: CrashTestError, into buf: Writer) {
-        switch value {
-        case let .ErrorFromTheRustCode(message):
-            buf.writeInt(Int32(1))
-            FfiConverterString.write(message, into: buf)
+// FFIConverter protocol for callback interfaces
+private enum FfiConverterCallbackInterfaceApplicationErrorReporter {
+    // Initialize our callback method with the scaffolding code
+    private static var callbackInitialized = false
+    private static func initCallback() {
+        try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
+            ffi_errorsupport_b986_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
         }
+    }
+
+    private static func ensureCallbackinitialized() {
+        if !callbackInitialized {
+            initCallback()
+            callbackInitialized = true
+        }
+    }
+
+    static func drop(handle: Handle) {
+        handleMap.remove(handle: handle)
+    }
+
+    private static var handleMap = ConcurrentHandleMap<ApplicationErrorReporter>()
+}
+
+extension FfiConverterCallbackInterfaceApplicationErrorReporter: FfiConverter {
+    typealias SwiftType = ApplicationErrorReporter
+    // We can use Handle as the FFIType because it's a typealias to UInt64
+    typealias FfiType = Handle
+
+    static func lift(_ handle: Handle) throws -> SwiftType {
+        ensureCallbackinitialized()
+        guard let callback = handleMap.get(handle: handle) else {
+            throw UniffiInternalError.unexpectedStaleHandle
+        }
+        return callback
+    }
+
+    static func read(from buf: Reader) throws -> SwiftType {
+        ensureCallbackinitialized()
+        let handle: Handle = try buf.readInt()
+        return try lift(handle)
+    }
+
+    static func lower(_ v: SwiftType) -> Handle {
+        ensureCallbackinitialized()
+        return handleMap.insert(obj: v)
+    }
+
+    static func write(_ v: SwiftType, into buf: Writer) {
+        ensureCallbackinitialized()
+        buf.writeInt(lower(v))
     }
 }
 
-extension CrashTestError: Equatable, Hashable {}
-
-extension CrashTestError: Error {}
-
-public func triggerRustAbort() {
+public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter) {
     try!
 
         rustCall {
-            crashtest_fc4a_trigger_rust_abort($0)
-        }
-}
-
-public func triggerRustPanic() {
-    try!
-
-        rustCall {
-            crashtest_fc4a_trigger_rust_panic($0)
-        }
-}
-
-public func triggerRustError() throws {
-    try
-
-        rustCallWithError(FfiConverterTypeCrashTestError.self) {
-            crashtest_fc4a_trigger_rust_error($0)
+            errorsupport_b986_set_application_error_reporter(
+                FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
+            )
         }
 }
 
@@ -380,7 +529,7 @@ public func triggerRustError() throws {
  *
  * This is generated by uniffi.
  */
-public enum CrashtestLifecycle {
+public enum ErrorsupportLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */

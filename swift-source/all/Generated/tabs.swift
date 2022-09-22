@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_60f6_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_709c_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_60f6_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_709c_rustbuffer_free(self, $0) }
     }
 }
 
@@ -281,64 +281,56 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
 
 // Public interface members begin here.
 
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+private struct FfiConverterInt64: FfiConverterPrimitive {
+    typealias FfiType = Int64
+    typealias SwiftType = Int64
 
-public enum TabsDeviceType {
-    case desktop
-    case mobile
-    case tablet
-    case vr
-    case tv
-    case unknown
-}
-
-private struct FfiConverterTypeTabsDeviceType: FfiConverterRustBuffer {
-    typealias SwiftType = TabsDeviceType
-
-    static func read(from buf: Reader) throws -> TabsDeviceType {
-        let variant: Int32 = try buf.readInt()
-        switch variant {
-        case 1: return .desktop
-
-        case 2: return .mobile
-
-        case 3: return .tablet
-
-        case 4: return .vr
-
-        case 5: return .tv
-
-        case 6: return .unknown
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
+    static func read(from buf: Reader) throws -> Int64 {
+        return try lift(buf.readInt())
     }
 
-    static func write(_ value: TabsDeviceType, into buf: Writer) {
-        switch value {
-        case .desktop:
-            buf.writeInt(Int32(1))
-
-        case .mobile:
-            buf.writeInt(Int32(2))
-
-        case .tablet:
-            buf.writeInt(Int32(3))
-
-        case .vr:
-            buf.writeInt(Int32(4))
-
-        case .tv:
-            buf.writeInt(Int32(5))
-
-        case .unknown:
-            buf.writeInt(Int32(6))
-        }
+    static func write(_ value: Int64, into buf: Writer) {
+        buf.writeInt(lower(value))
     }
 }
 
-extension TabsDeviceType: Equatable, Hashable {}
+private struct FfiConverterString: FfiConverter {
+    typealias SwiftType = String
+    typealias FfiType = RustBuffer
+
+    static func lift(_ value: RustBuffer) throws -> String {
+        defer {
+            value.deallocate()
+        }
+        if value.data == nil {
+            return String()
+        }
+        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
+        return String(bytes: bytes, encoding: String.Encoding.utf8)!
+    }
+
+    static func lower(_ value: String) -> RustBuffer {
+        return value.utf8CString.withUnsafeBufferPointer { ptr in
+            // The swift string gives us int8_t, we want uint8_t.
+            ptr.withMemoryRebound(to: UInt8.self) { ptr in
+                // The swift string gives us a trailing null byte, we don't want it.
+                let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
+                return RustBuffer.from(buf)
+            }
+        }
+    }
+
+    static func read(from buf: Reader) throws -> String {
+        let len: Int32 = try buf.readInt()
+        return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
+    }
+
+    static func write(_ value: String, into buf: Writer) {
+        let len = Int32(value.utf8.count)
+        buf.writeInt(len)
+        buf.writeBytes(value.utf8)
+    }
+}
 
 public protocol TabsStoreProtocol {
     func getAll() -> [ClientRemoteTabs]
@@ -362,21 +354,21 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_60f6_TabsStore_new(
+                tabs_709c_TabsStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_60f6_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_709c_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(
             try!
                 rustCall {
-                    tabs_60f6_TabsStore_get_all(self.pointer, $0)
+                    tabs_709c_TabsStore_get_all(self.pointer, $0)
                 }
         )
     }
@@ -384,7 +376,7 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTabRecord]) {
         try!
             rustCall {
-                tabs_60f6_TabsStore_set_local_tabs(self.pointer,
+                tabs_709c_TabsStore_set_local_tabs(self.pointer,
                                                    FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs), $0)
             }
     }
@@ -392,14 +384,14 @@ public class TabsStore: TabsStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_60f6_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_709c_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsError.self) {
-                tabs_60f6_TabsStore_reset(self.pointer, $0)
+                tabs_709c_TabsStore_reset(self.pointer, $0)
             }
     }
 
@@ -407,7 +399,7 @@ public class TabsStore: TabsStoreProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsError.self) {
-                    tabs_60f6_TabsStore_sync(self.pointer,
+                    tabs_709c_TabsStore_sync(self.pointer,
                                              FfiConverterString.lower(keyId),
                                              FfiConverterString.lower(accessToken),
                                              FfiConverterString.lower(syncKey),
@@ -445,6 +437,65 @@ private struct FfiConverterTypeTabsStore: FfiConverter {
 
     static func lower(_ value: TabsStore) -> UnsafeMutableRawPointer {
         return value.pointer
+    }
+}
+
+public struct ClientRemoteTabs {
+    public var clientId: String
+    public var clientName: String
+    public var deviceType: TabsDeviceType
+    public var remoteTabs: [RemoteTabRecord]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(clientId: String, clientName: String, deviceType: TabsDeviceType, remoteTabs: [RemoteTabRecord]) {
+        self.clientId = clientId
+        self.clientName = clientName
+        self.deviceType = deviceType
+        self.remoteTabs = remoteTabs
+    }
+}
+
+extension ClientRemoteTabs: Equatable, Hashable {
+    public static func == (lhs: ClientRemoteTabs, rhs: ClientRemoteTabs) -> Bool {
+        if lhs.clientId != rhs.clientId {
+            return false
+        }
+        if lhs.clientName != rhs.clientName {
+            return false
+        }
+        if lhs.deviceType != rhs.deviceType {
+            return false
+        }
+        if lhs.remoteTabs != rhs.remoteTabs {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(clientId)
+        hasher.combine(clientName)
+        hasher.combine(deviceType)
+        hasher.combine(remoteTabs)
+    }
+}
+
+private struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
+    fileprivate static func read(from buf: Reader) throws -> ClientRemoteTabs {
+        return try ClientRemoteTabs(
+            clientId: FfiConverterString.read(from: buf),
+            clientName: FfiConverterString.read(from: buf),
+            deviceType: FfiConverterTypeTabsDeviceType.read(from: buf),
+            remoteTabs: FfiConverterSequenceTypeRemoteTabRecord.read(from: buf)
+        )
+    }
+
+    fileprivate static func write(_ value: ClientRemoteTabs, into buf: Writer) {
+        FfiConverterString.write(value.clientId, into: buf)
+        FfiConverterString.write(value.clientName, into: buf)
+        FfiConverterTypeTabsDeviceType.write(value.deviceType, into: buf)
+        FfiConverterSequenceTypeRemoteTabRecord.write(value.remoteTabs, into: buf)
     }
 }
 
@@ -507,64 +558,63 @@ private struct FfiConverterTypeRemoteTabRecord: FfiConverterRustBuffer {
     }
 }
 
-public struct ClientRemoteTabs {
-    public var clientId: String
-    public var clientName: String
-    public var deviceType: TabsDeviceType
-    public var remoteTabs: [RemoteTabRecord]
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum TabsDeviceType {
+    case desktop
+    case mobile
+    case tablet
+    case vr
+    case tv
+    case unknown
+}
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(clientId: String, clientName: String, deviceType: TabsDeviceType, remoteTabs: [RemoteTabRecord]) {
-        self.clientId = clientId
-        self.clientName = clientName
-        self.deviceType = deviceType
-        self.remoteTabs = remoteTabs
+private struct FfiConverterTypeTabsDeviceType: FfiConverterRustBuffer {
+    typealias SwiftType = TabsDeviceType
+
+    static func read(from buf: Reader) throws -> TabsDeviceType {
+        let variant: Int32 = try buf.readInt()
+        switch variant {
+        case 1: return .desktop
+
+        case 2: return .mobile
+
+        case 3: return .tablet
+
+        case 4: return .vr
+
+        case 5: return .tv
+
+        case 6: return .unknown
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    static func write(_ value: TabsDeviceType, into buf: Writer) {
+        switch value {
+        case .desktop:
+            buf.writeInt(Int32(1))
+
+        case .mobile:
+            buf.writeInt(Int32(2))
+
+        case .tablet:
+            buf.writeInt(Int32(3))
+
+        case .vr:
+            buf.writeInt(Int32(4))
+
+        case .tv:
+            buf.writeInt(Int32(5))
+
+        case .unknown:
+            buf.writeInt(Int32(6))
+        }
     }
 }
 
-extension ClientRemoteTabs: Equatable, Hashable {
-    public static func == (lhs: ClientRemoteTabs, rhs: ClientRemoteTabs) -> Bool {
-        if lhs.clientId != rhs.clientId {
-            return false
-        }
-        if lhs.clientName != rhs.clientName {
-            return false
-        }
-        if lhs.deviceType != rhs.deviceType {
-            return false
-        }
-        if lhs.remoteTabs != rhs.remoteTabs {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(clientId)
-        hasher.combine(clientName)
-        hasher.combine(deviceType)
-        hasher.combine(remoteTabs)
-    }
-}
-
-private struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> ClientRemoteTabs {
-        return try ClientRemoteTabs(
-            clientId: FfiConverterString.read(from: buf),
-            clientName: FfiConverterString.read(from: buf),
-            deviceType: FfiConverterTypeTabsDeviceType.read(from: buf),
-            remoteTabs: FfiConverterSequenceTypeRemoteTabRecord.read(from: buf)
-        )
-    }
-
-    fileprivate static func write(_ value: ClientRemoteTabs, into buf: Writer) {
-        FfiConverterString.write(value.clientId, into: buf)
-        FfiConverterString.write(value.clientName, into: buf)
-        FfiConverterTypeTabsDeviceType.write(value.deviceType, into: buf)
-        FfiConverterSequenceTypeRemoteTabRecord.write(value.remoteTabs, into: buf)
-    }
-}
+extension TabsDeviceType: Equatable, Hashable {}
 
 public enum TabsError {
     // Simple error enums only carry a message
@@ -657,62 +707,6 @@ private struct FfiConverterTypeTabsError: FfiConverterRustBuffer {
 extension TabsError: Equatable, Hashable {}
 
 extension TabsError: Error {}
-private struct FfiConverterInt64: FfiConverterPrimitive {
-    typealias FfiType = Int64
-    typealias SwiftType = Int64
-
-    static func read(from buf: Reader) throws -> Int64 {
-        return try lift(buf.readInt())
-    }
-
-    static func write(_ value: Int64, into buf: Writer) {
-        buf.writeInt(lower(value))
-    }
-}
-
-private struct FfiConverterString: FfiConverter {
-    typealias SwiftType = String
-    typealias FfiType = RustBuffer
-
-    static func lift(_ value: RustBuffer) throws -> String {
-        defer {
-            value.deallocate()
-        }
-        if value.data == nil {
-            return String()
-        }
-        let bytes = UnsafeBufferPointer<UInt8>(start: value.data!, count: Int(value.len))
-        return String(bytes: bytes, encoding: String.Encoding.utf8)!
-    }
-
-    static func lower(_ value: String) -> RustBuffer {
-        return value.utf8CString.withUnsafeBufferPointer { ptr in
-            // The swift string gives us int8_t, we want uint8_t.
-            ptr.withMemoryRebound(to: UInt8.self) { ptr in
-                // The swift string gives us a trailing null byte, we don't want it.
-                let buf = UnsafeBufferPointer(rebasing: ptr.prefix(upTo: ptr.count - 1))
-                return RustBuffer.from(buf)
-            }
-        }
-    }
-
-    static func read(from buf: Reader) throws -> String {
-        let len: Int32 = try buf.readInt()
-        return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
-    }
-
-    static func write(_ value: String, into buf: Writer) {
-        let len = Int32(value.utf8.count)
-        buf.writeInt(len)
-        buf.writeBytes(value.utf8)
-    }
-}
-
-// Helper code for TabsStore class is found in ObjectTemplate.swift
-// Helper code for ClientRemoteTabs record is found in RecordTemplate.swift
-// Helper code for RemoteTabRecord record is found in RecordTemplate.swift
-// Helper code for TabsDeviceType enum is found in EnumTemplate.swift
-// Helper code for TabsError error is found in ErrorTemplate.swift
 
 private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
@@ -810,7 +804,5 @@ public enum TabsLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {
-        // No initialization code needed
-    }
+    func initialize() {}
 }

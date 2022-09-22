@@ -46,55 +46,27 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_push_be6b_PushManager_object_free(
-      void*_Nonnull ptr,
+void ffi_errorsupport_b986_ApplicationErrorReporter_init_callback(
+      ForeignCallback  _Nonnull callback_stub,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull push_be6b_PushManager_new(
-      RustBuffer sender_id,RustBuffer server_host,RustBuffer http_protocol,RustBuffer bridge_type,RustBuffer registration_id,RustBuffer database_path,
+void errorsupport_b986_set_application_error_reporter(
+      uint64_t error_reporter,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer push_be6b_PushManager_subscribe(
-      void*_Nonnull ptr,RustBuffer channel_id,RustBuffer scope,RustBuffer app_server_sey,
-    RustCallStatus *_Nonnull out_status
-    );
-int8_t push_be6b_PushManager_unsubscribe(
-      void*_Nonnull ptr,RustBuffer channel_id,
-    RustCallStatus *_Nonnull out_status
-    );
-void push_be6b_PushManager_unsubscribe_all(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-int8_t push_be6b_PushManager_update(
-      void*_Nonnull ptr,RustBuffer registration_token,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer push_be6b_PushManager_verify_connection(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer push_be6b_PushManager_decrypt(
-      void*_Nonnull ptr,RustBuffer channel_id,RustBuffer body,RustBuffer encoding,RustBuffer salt,RustBuffer dh,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer push_be6b_PushManager_dispatch_info_for_chid(
-      void*_Nonnull ptr,RustBuffer channel_id,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_push_be6b_rustbuffer_alloc(
+RustBuffer ffi_errorsupport_b986_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_be6b_rustbuffer_from_bytes(
+RustBuffer ffi_errorsupport_b986_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_push_be6b_rustbuffer_free(
+void ffi_errorsupport_b986_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_push_be6b_rustbuffer_reserve(
+RustBuffer ffi_errorsupport_b986_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );
