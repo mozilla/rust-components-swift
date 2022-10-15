@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_709c_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_ae4c_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_709c_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_ae4c_rustbuffer_free(self, $0) }
     }
 }
 
@@ -354,21 +354,21 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_709c_TabsStore_new(
+                tabs_ae4c_TabsStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_709c_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_ae4c_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(
             try!
                 rustCall {
-                    tabs_709c_TabsStore_get_all(self.pointer, $0)
+                    tabs_ae4c_TabsStore_get_all(self.pointer, $0)
                 }
         )
     }
@@ -376,7 +376,7 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTabRecord]) {
         try!
             rustCall {
-                tabs_709c_TabsStore_set_local_tabs(self.pointer,
+                tabs_ae4c_TabsStore_set_local_tabs(self.pointer,
                                                    FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs), $0)
             }
     }
@@ -384,14 +384,14 @@ public class TabsStore: TabsStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_709c_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_ae4c_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsError.self) {
-                tabs_709c_TabsStore_reset(self.pointer, $0)
+                tabs_ae4c_TabsStore_reset(self.pointer, $0)
             }
     }
 
@@ -399,7 +399,7 @@ public class TabsStore: TabsStoreProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsError.self) {
-                    tabs_709c_TabsStore_sync(self.pointer,
+                    tabs_ae4c_TabsStore_sync(self.pointer,
                                              FfiConverterString.lower(keyId),
                                              FfiConverterString.lower(accessToken),
                                              FfiConverterString.lower(syncKey),

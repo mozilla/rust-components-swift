@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_push_be6b_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_push_cfe1_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_push_be6b_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_push_cfe1_rustbuffer_free(self, $0) }
     }
 }
 
@@ -377,7 +377,7 @@ public class PushManager: PushManagerProtocol {
         self.init(unsafeFromRawPointer: try
 
             rustCallWithError(FfiConverterTypePushError.self) {
-                push_be6b_PushManager_new(
+                push_cfe1_PushManager_new(
                     FfiConverterString.lower(senderId),
                     FfiConverterString.lower(serverHost),
                     FfiConverterString.lower(httpProtocol),
@@ -389,14 +389,14 @@ public class PushManager: PushManagerProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_push_be6b_PushManager_object_free(pointer, $0) }
+        try! rustCall { ffi_push_cfe1_PushManager_object_free(pointer, $0) }
     }
 
     public func subscribe(channelId: String = "", scope: String = "", appServerSey: String? = nil) throws -> SubscriptionResponse {
         return try FfiConverterTypeSubscriptionResponse.lift(
             try
                 rustCallWithError(FfiConverterTypePushError.self) {
-                    push_be6b_PushManager_subscribe(self.pointer,
+                    push_cfe1_PushManager_subscribe(self.pointer,
                                                     FfiConverterString.lower(channelId),
                                                     FfiConverterString.lower(scope),
                                                     FfiConverterOptionString.lower(appServerSey), $0)
@@ -408,7 +408,7 @@ public class PushManager: PushManagerProtocol {
         return try FfiConverterBool.lift(
             try
                 rustCallWithError(FfiConverterTypePushError.self) {
-                    push_be6b_PushManager_unsubscribe(self.pointer,
+                    push_cfe1_PushManager_unsubscribe(self.pointer,
                                                       FfiConverterString.lower(channelId), $0)
                 }
         )
@@ -417,7 +417,7 @@ public class PushManager: PushManagerProtocol {
     public func unsubscribeAll() throws {
         try
             rustCallWithError(FfiConverterTypePushError.self) {
-                push_be6b_PushManager_unsubscribe_all(self.pointer, $0)
+                push_cfe1_PushManager_unsubscribe_all(self.pointer, $0)
             }
     }
 
@@ -425,7 +425,7 @@ public class PushManager: PushManagerProtocol {
         return try FfiConverterBool.lift(
             try
                 rustCallWithError(FfiConverterTypePushError.self) {
-                    push_be6b_PushManager_update(self.pointer,
+                    push_cfe1_PushManager_update(self.pointer,
                                                  FfiConverterString.lower(registrationToken), $0)
                 }
         )
@@ -435,7 +435,7 @@ public class PushManager: PushManagerProtocol {
         return try FfiConverterSequenceTypePushSubscriptionChanged.lift(
             try
                 rustCallWithError(FfiConverterTypePushError.self) {
-                    push_be6b_PushManager_verify_connection(self.pointer, $0)
+                    push_cfe1_PushManager_verify_connection(self.pointer, $0)
                 }
         )
     }
@@ -444,7 +444,7 @@ public class PushManager: PushManagerProtocol {
         return try FfiConverterSequenceInt8.lift(
             try
                 rustCallWithError(FfiConverterTypePushError.self) {
-                    push_be6b_PushManager_decrypt(self.pointer,
+                    push_cfe1_PushManager_decrypt(self.pointer,
                                                   FfiConverterString.lower(channelId),
                                                   FfiConverterString.lower(body),
                                                   FfiConverterString.lower(encoding),
@@ -458,7 +458,7 @@ public class PushManager: PushManagerProtocol {
         return try FfiConverterOptionTypeDispatchInfo.lift(
             try
                 rustCallWithError(FfiConverterTypePushError.self) {
-                    push_be6b_PushManager_dispatch_info_for_chid(self.pointer,
+                    push_cfe1_PushManager_dispatch_info_for_chid(self.pointer,
                                                                  FfiConverterString.lower(channelId), $0)
                 }
         )
