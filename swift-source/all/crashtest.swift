@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_crashtest_fc4a_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_crashtest_4d35_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_crashtest_fc4a_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_crashtest_4d35_rustbuffer_free(self, $0) }
     }
 }
 
@@ -355,7 +355,7 @@ public func triggerRustAbort() {
     try!
 
         rustCall {
-            crashtest_fc4a_trigger_rust_abort($0)
+            crashtest_4d35_trigger_rust_abort($0)
         }
 }
 
@@ -363,7 +363,7 @@ public func triggerRustPanic() {
     try!
 
         rustCall {
-            crashtest_fc4a_trigger_rust_panic($0)
+            crashtest_4d35_trigger_rust_panic($0)
         }
 }
 
@@ -371,7 +371,7 @@ public func triggerRustError() throws {
     try
 
         rustCallWithError(FfiConverterTypeCrashTestError.self) {
-            crashtest_fc4a_trigger_rust_error($0)
+            crashtest_4d35_trigger_rust_error($0)
         }
 }
 

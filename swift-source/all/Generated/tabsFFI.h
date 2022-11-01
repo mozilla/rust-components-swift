@@ -46,47 +46,107 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_tabs_709c_TabsStore_object_free(
+void ffi_tabs_413c_TabsStore_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull tabs_709c_TabsStore_new(
+void*_Nonnull tabs_413c_TabsStore_new(
       RustBuffer path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer tabs_709c_TabsStore_get_all(
+RustBuffer tabs_413c_TabsStore_get_all(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_709c_TabsStore_set_local_tabs(
+void tabs_413c_TabsStore_set_local_tabs(
       void*_Nonnull ptr,RustBuffer remote_tabs,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_709c_TabsStore_register_with_sync_manager(
+void tabs_413c_TabsStore_register_with_sync_manager(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void tabs_709c_TabsStore_reset(
+void tabs_413c_TabsStore_reset(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer tabs_709c_TabsStore_sync(
+RustBuffer tabs_413c_TabsStore_sync(
       void*_Nonnull ptr,RustBuffer key_id,RustBuffer access_token,RustBuffer sync_key,RustBuffer tokenserver_url,RustBuffer local_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_709c_rustbuffer_alloc(
+void*_Nonnull tabs_413c_TabsStore_bridged_engine(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+void ffi_tabs_413c_TabsBridgedEngine_object_free(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+int64_t tabs_413c_TabsBridgedEngine_last_sync(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_set_last_sync(
+      void*_Nonnull ptr,int64_t last_sync,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer tabs_413c_TabsBridgedEngine_sync_id(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer tabs_413c_TabsBridgedEngine_reset_sync_id(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer tabs_413c_TabsBridgedEngine_ensure_current_sync_id(
+      void*_Nonnull ptr,RustBuffer new_sync_id,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_prepare_for_sync(
+      void*_Nonnull ptr,RustBuffer client_data,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_sync_started(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_store_incoming(
+      void*_Nonnull ptr,RustBuffer incoming_envelopes_as_json,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer tabs_413c_TabsBridgedEngine_apply(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_set_uploaded(
+      void*_Nonnull ptr,int64_t new_timestamp,RustBuffer uploaded_ids,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_sync_finished(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_reset(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+void tabs_413c_TabsBridgedEngine_wipe(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+RustBuffer ffi_tabs_413c_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_709c_rustbuffer_from_bytes(
+RustBuffer ffi_tabs_413c_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_tabs_709c_rustbuffer_free(
+void ffi_tabs_413c_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_tabs_709c_rustbuffer_reserve(
+RustBuffer ffi_tabs_413c_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

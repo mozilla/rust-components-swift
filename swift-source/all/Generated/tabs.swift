@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_709c_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_413c_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_709c_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_413c_rustbuffer_free(self, $0) }
     }
 }
 
@@ -332,12 +332,181 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+public protocol TabsBridgedEngineProtocol {
+    func lastSync() throws -> Int64
+    func setLastSync(lastSync: Int64) throws
+    func syncId() throws -> String?
+    func resetSyncId() throws -> String
+    func ensureCurrentSyncId(newSyncId: String) throws -> String
+    func prepareForSync(clientData: String) throws
+    func syncStarted() throws
+    func storeIncoming(incomingEnvelopesAsJson: [String]) throws
+    func apply() throws -> [String]
+    func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid]) throws
+    func syncFinished() throws
+    func reset() throws
+    func wipe() throws
+}
+
+public class TabsBridgedEngine: TabsBridgedEngineProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    deinit {
+        try! rustCall { ffi_tabs_413c_TabsBridgedEngine_object_free(pointer, $0) }
+    }
+
+    public func lastSync() throws -> Int64 {
+        return try FfiConverterInt64.lift(
+            try
+                rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                    tabs_413c_TabsBridgedEngine_last_sync(self.pointer, $0)
+                }
+        )
+    }
+
+    public func setLastSync(lastSync: Int64) throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_set_last_sync(self.pointer,
+                                                          FfiConverterInt64.lower(lastSync), $0)
+            }
+    }
+
+    public func syncId() throws -> String? {
+        return try FfiConverterOptionString.lift(
+            try
+                rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                    tabs_413c_TabsBridgedEngine_sync_id(self.pointer, $0)
+                }
+        )
+    }
+
+    public func resetSyncId() throws -> String {
+        return try FfiConverterString.lift(
+            try
+                rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                    tabs_413c_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
+                }
+        )
+    }
+
+    public func ensureCurrentSyncId(newSyncId: String) throws -> String {
+        return try FfiConverterString.lift(
+            try
+                rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                    tabs_413c_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
+                                                                       FfiConverterString.lower(newSyncId), $0)
+                }
+        )
+    }
+
+    public func prepareForSync(clientData: String) throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_prepare_for_sync(self.pointer,
+                                                             FfiConverterString.lower(clientData), $0)
+            }
+    }
+
+    public func syncStarted() throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_sync_started(self.pointer, $0)
+            }
+    }
+
+    public func storeIncoming(incomingEnvelopesAsJson: [String]) throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_store_incoming(self.pointer,
+                                                           FfiConverterSequenceString.lower(incomingEnvelopesAsJson), $0)
+            }
+    }
+
+    public func apply() throws -> [String] {
+        return try FfiConverterSequenceString.lift(
+            try
+                rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                    tabs_413c_TabsBridgedEngine_apply(self.pointer, $0)
+                }
+        )
+    }
+
+    public func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid]) throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_set_uploaded(self.pointer,
+                                                         FfiConverterInt64.lower(newTimestamp),
+                                                         FfiConverterSequenceTypeTabsGuid.lower(uploadedIds), $0)
+            }
+    }
+
+    public func syncFinished() throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_sync_finished(self.pointer, $0)
+            }
+    }
+
+    public func reset() throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_reset(self.pointer, $0)
+            }
+    }
+
+    public func wipe() throws {
+        try
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsBridgedEngine_wipe(self.pointer, $0)
+            }
+    }
+}
+
+private struct FfiConverterTypeTabsBridgedEngine: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = TabsBridgedEngine
+
+    static func read(from buf: Reader) throws -> TabsBridgedEngine {
+        let v: UInt64 = try buf.readInt()
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    static func write(_ value: TabsBridgedEngine, into buf: Writer) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> TabsBridgedEngine {
+        return TabsBridgedEngine(unsafeFromRawPointer: pointer)
+    }
+
+    static func lower(_ value: TabsBridgedEngine) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
 public protocol TabsStoreProtocol {
     func getAll() -> [ClientRemoteTabs]
     func setLocalTabs(remoteTabs: [RemoteTabRecord])
     func registerWithSyncManager()
     func reset() throws
     func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localId: String) throws -> String
+    func bridgedEngine() -> TabsBridgedEngine
 }
 
 public class TabsStore: TabsStoreProtocol {
@@ -354,21 +523,21 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_709c_TabsStore_new(
+                tabs_413c_TabsStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_709c_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_413c_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(
             try!
                 rustCall {
-                    tabs_709c_TabsStore_get_all(self.pointer, $0)
+                    tabs_413c_TabsStore_get_all(self.pointer, $0)
                 }
         )
     }
@@ -376,7 +545,7 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTabRecord]) {
         try!
             rustCall {
-                tabs_709c_TabsStore_set_local_tabs(self.pointer,
+                tabs_413c_TabsStore_set_local_tabs(self.pointer,
                                                    FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs), $0)
             }
     }
@@ -384,27 +553,36 @@ public class TabsStore: TabsStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_709c_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_413c_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
-            rustCallWithError(FfiConverterTypeTabsError.self) {
-                tabs_709c_TabsStore_reset(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_413c_TabsStore_reset(self.pointer, $0)
             }
     }
 
     public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localId: String) throws -> String {
         return try FfiConverterString.lift(
             try
-                rustCallWithError(FfiConverterTypeTabsError.self) {
-                    tabs_709c_TabsStore_sync(self.pointer,
+                rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                    tabs_413c_TabsStore_sync(self.pointer,
                                              FfiConverterString.lower(keyId),
                                              FfiConverterString.lower(accessToken),
                                              FfiConverterString.lower(syncKey),
                                              FfiConverterString.lower(tokenserverUrl),
                                              FfiConverterString.lower(localId), $0)
+                }
+        )
+    }
+
+    public func bridgedEngine() -> TabsBridgedEngine {
+        return try! FfiConverterTypeTabsBridgedEngine.lift(
+            try!
+                rustCall {
+                    tabs_413c_TabsStore_bridged_engine(self.pointer, $0)
                 }
         )
     }
@@ -616,97 +794,52 @@ private struct FfiConverterTypeTabsDeviceType: FfiConverterRustBuffer {
 
 extension TabsDeviceType: Equatable, Hashable {}
 
-public enum TabsError {
-    // Simple error enums only carry a message
-    case SyncAdapterError(message: String)
-
-    // Simple error enums only carry a message
-    case SyncResetError(message: String)
-
-    // Simple error enums only carry a message
-    case JsonError(message: String)
-
-    // Simple error enums only carry a message
-    case MissingLocalIdError(message: String)
-
-    // Simple error enums only carry a message
-    case UrlParseError(message: String)
-
-    // Simple error enums only carry a message
-    case SqlError(message: String)
-
-    // Simple error enums only carry a message
-    case OpenDatabaseError(message: String)
+public enum TabsApiError {
+    case SyncError(reason: String)
+    case SqlError(reason: String)
+    case UnexpectedTabsError(reason: String)
 }
 
-private struct FfiConverterTypeTabsError: FfiConverterRustBuffer {
-    typealias SwiftType = TabsError
+private struct FfiConverterTypeTabsApiError: FfiConverterRustBuffer {
+    typealias SwiftType = TabsApiError
 
-    static func read(from buf: Reader) throws -> TabsError {
+    static func read(from buf: Reader) throws -> TabsApiError {
         let variant: Int32 = try buf.readInt()
         switch variant {
-        case 1: return .SyncAdapterError(
-                message: try FfiConverterString.read(from: buf)
+        case 1: return .SyncError(
+                reason: try FfiConverterString.read(from: buf)
             )
-
-        case 2: return .SyncResetError(
-                message: try FfiConverterString.read(from: buf)
+        case 2: return .SqlError(
+                reason: try FfiConverterString.read(from: buf)
             )
-
-        case 3: return .JsonError(
-                message: try FfiConverterString.read(from: buf)
-            )
-
-        case 4: return .MissingLocalIdError(
-                message: try FfiConverterString.read(from: buf)
-            )
-
-        case 5: return .UrlParseError(
-                message: try FfiConverterString.read(from: buf)
-            )
-
-        case 6: return .SqlError(
-                message: try FfiConverterString.read(from: buf)
-            )
-
-        case 7: return .OpenDatabaseError(
-                message: try FfiConverterString.read(from: buf)
+        case 3: return .UnexpectedTabsError(
+                reason: try FfiConverterString.read(from: buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
-    static func write(_ value: TabsError, into buf: Writer) {
+    static func write(_ value: TabsApiError, into buf: Writer) {
         switch value {
-        case let .SyncAdapterError(message):
+        case let .SyncError(reason):
             buf.writeInt(Int32(1))
-            FfiConverterString.write(message, into: buf)
-        case let .SyncResetError(message):
+            FfiConverterString.write(reason, into: buf)
+
+        case let .SqlError(reason):
             buf.writeInt(Int32(2))
-            FfiConverterString.write(message, into: buf)
-        case let .JsonError(message):
+            FfiConverterString.write(reason, into: buf)
+
+        case let .UnexpectedTabsError(reason):
             buf.writeInt(Int32(3))
-            FfiConverterString.write(message, into: buf)
-        case let .MissingLocalIdError(message):
-            buf.writeInt(Int32(4))
-            FfiConverterString.write(message, into: buf)
-        case let .UrlParseError(message):
-            buf.writeInt(Int32(5))
-            FfiConverterString.write(message, into: buf)
-        case let .SqlError(message):
-            buf.writeInt(Int32(6))
-            FfiConverterString.write(message, into: buf)
-        case let .OpenDatabaseError(message):
-            buf.writeInt(Int32(7))
-            FfiConverterString.write(message, into: buf)
+            FfiConverterString.write(reason, into: buf)
         }
     }
 }
 
-extension TabsError: Equatable, Hashable {}
+extension TabsApiError: Equatable, Hashable {}
 
-extension TabsError: Error {}
+extension TabsApiError: Error {}
 
 private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
@@ -794,6 +927,35 @@ private struct FfiConverterSequenceTypeRemoteTabRecord: FfiConverterRustBuffer {
         return seq
     }
 }
+
+private struct FfiConverterSequenceTypeTabsGuid: FfiConverterRustBuffer {
+    typealias SwiftType = [TabsGuid]
+
+    static func write(_ value: [TabsGuid], into buf: Writer) {
+        let len = Int32(value.count)
+        buf.writeInt(len)
+        for item in value {
+            FfiConverterTypeTabsGuid.write(item, into: buf)
+        }
+    }
+
+    static func read(from buf: Reader) throws -> [TabsGuid] {
+        let len: Int32 = try buf.readInt()
+        var seq = [TabsGuid]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeTabsGuid.read(from: buf))
+        }
+        return seq
+    }
+}
+
+/**
+ * Typealias from the type name used in the UDL file to the builtin type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias TabsGuid = String
+private typealias FfiConverterTypeTabsGuid = FfiConverterString
 
 /**
  * Top level initializers and tear down methods.

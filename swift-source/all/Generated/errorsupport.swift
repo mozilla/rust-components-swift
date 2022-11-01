@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_errorsupport_b986_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_errorsupport_4a62_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_errorsupport_b986_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_errorsupport_4a62_rustbuffer_free(self, $0) }
     }
 }
 
@@ -430,7 +430,14 @@ private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCal
             // https://github.com/mozilla/uniffi-rs/issues/351
         }
 
-        let cb = try! FfiConverterCallbackInterfaceApplicationErrorReporter.lift(handle)
+        let cb: ApplicationErrorReporter
+        do {
+            cb = try FfiConverterCallbackInterfaceApplicationErrorReporter.lift(handle)
+        } catch {
+            out_buf.pointee = FfiConverterString.lower("ApplicationErrorReporter: Invalid handle")
+            return -1
+        }
+
         switch method {
         case IDX_CALLBACK_FREE:
             FfiConverterCallbackInterfaceApplicationErrorReporter.drop(handle: handle)
@@ -438,17 +445,25 @@ private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCal
             // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
             return 0
         case 1:
-            let buffer = try! invokeReportError(cb, args)
-            out_buf.pointee = buffer
-            // Value written to out buffer.
-            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-            return 1
+            do {
+                out_buf.pointee = try invokeReportError(cb, args)
+                // Value written to out buffer.
+                // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+                return 1
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return -1
+            }
         case 2:
-            let buffer = try! invokeReportBreadcrumb(cb, args)
-            out_buf.pointee = buffer
-            // Value written to out buffer.
-            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-            return 1
+            do {
+                out_buf.pointee = try invokeReportBreadcrumb(cb, args)
+                // Value written to out buffer.
+                // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+                return 1
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return -1
+            }
 
         // This should never happen, because an out of bounds method index won't
         // ever be used. Once we can catch errors, we should return an InternalError.
@@ -466,7 +481,7 @@ private enum FfiConverterCallbackInterfaceApplicationErrorReporter {
     private static var callbackInitialized = false
     private static func initCallback() {
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_errorsupport_b986_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
+            ffi_errorsupport_4a62_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
         }
     }
 
@@ -518,7 +533,7 @@ public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter)
     try!
 
         rustCall {
-            errorsupport_b986_set_application_error_reporter(
+            errorsupport_4a62_set_application_error_reporter(
                 FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
             )
         }
