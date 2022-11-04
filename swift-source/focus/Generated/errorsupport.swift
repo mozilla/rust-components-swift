@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_errorsupport_4a62_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_errorsupport_a6ca_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_errorsupport_4a62_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_errorsupport_a6ca_rustbuffer_free(self, $0) }
     }
 }
 
@@ -481,7 +481,7 @@ private enum FfiConverterCallbackInterfaceApplicationErrorReporter {
     private static var callbackInitialized = false
     private static func initCallback() {
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_errorsupport_4a62_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
+            ffi_errorsupport_a6ca_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
         }
     }
 
@@ -533,9 +533,17 @@ public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter)
     try!
 
         rustCall {
-            errorsupport_4a62_set_application_error_reporter(
+            errorsupport_a6ca_set_application_error_reporter(
                 FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
             )
+        }
+}
+
+public func unsetApplicationErrorReporter() {
+    try!
+
+        rustCall {
+            errorsupport_a6ca_unset_application_error_reporter($0)
         }
 }
 
