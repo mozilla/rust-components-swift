@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_places_a410_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_places_3c5d_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_places_a410_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_places_3c5d_rustbuffer_free(self, $0) }
     }
 }
 
@@ -429,14 +429,14 @@ public class PlacesApi: PlacesApiProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_a410_PlacesApi_object_free(pointer, $0) }
+        try! rustCall { ffi_places_3c5d_PlacesApi_object_free(pointer, $0) }
     }
 
     public func newConnection(connType: ConnectionType) throws -> PlacesConnection {
         return try FfiConverterTypePlacesConnection.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesApi_new_connection(self.pointer,
+                    places_3c5d_PlacesApi_new_connection(self.pointer,
                                                          FfiConverterTypeConnectionType.lower(connType), $0)
                 }
         )
@@ -445,14 +445,14 @@ public class PlacesApi: PlacesApiProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                places_a410_PlacesApi_register_with_sync_manager(self.pointer, $0)
+                places_3c5d_PlacesApi_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func resetHistory() throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesApi_reset_history(self.pointer, $0)
+                places_3c5d_PlacesApi_reset_history(self.pointer, $0)
             }
     }
 
@@ -460,7 +460,7 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesApi_history_sync(self.pointer,
+                    places_3c5d_PlacesApi_history_sync(self.pointer,
                                                        FfiConverterString.lower(keyId),
                                                        FfiConverterString.lower(accessToken),
                                                        FfiConverterString.lower(syncKey),
@@ -473,7 +473,7 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesApi_bookmarks_sync(self.pointer,
+                    places_3c5d_PlacesApi_bookmarks_sync(self.pointer,
                                                          FfiConverterString.lower(keyId),
                                                          FfiConverterString.lower(accessToken),
                                                          FfiConverterString.lower(syncKey),
@@ -486,7 +486,7 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesApi_places_pinned_sites_import_from_fennec(self.pointer,
+                    places_3c5d_PlacesApi_places_pinned_sites_import_from_fennec(self.pointer,
                                                                                  FfiConverterString.lower(dbPath), $0)
                 }
         )
@@ -496,7 +496,7 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesApi_places_history_import_from_fennec(self.pointer,
+                    places_3c5d_PlacesApi_places_history_import_from_fennec(self.pointer,
                                                                             FfiConverterString.lower(dbPath), $0)
                 }
         )
@@ -506,7 +506,7 @@ public class PlacesApi: PlacesApiProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesApi_places_bookmarks_import_from_fennec(self.pointer,
+                    places_3c5d_PlacesApi_places_bookmarks_import_from_fennec(self.pointer,
                                                                               FfiConverterString.lower(dbPath), $0)
                 }
         )
@@ -515,7 +515,7 @@ public class PlacesApi: PlacesApiProtocol {
     public func placesBookmarksImportFromIos(dbPath: String) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesApi_places_bookmarks_import_from_ios(self.pointer,
+                places_3c5d_PlacesApi_places_bookmarks_import_from_ios(self.pointer,
                                                                        FfiConverterString.lower(dbPath), $0)
             }
     }
@@ -523,7 +523,7 @@ public class PlacesApi: PlacesApiProtocol {
     public func bookmarksReset() throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesApi_bookmarks_reset(self.pointer, $0)
+                places_3c5d_PlacesApi_bookmarks_reset(self.pointer, $0)
             }
     }
 }
@@ -585,7 +585,10 @@ public protocol PlacesConnectionProtocol {
     func wipeLocalHistory() throws
     func deleteEverythingHistory() throws
     func pruneDestructively() throws
-    func runMaintenance(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics
+    func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics
+    func runMaintenanceVacuum() throws
+    func runMaintenanceOptimize() throws
+    func runMaintenanceCheckpoint() throws
     func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem?
     func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem?
     func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem]
@@ -610,14 +613,14 @@ public class PlacesConnection: PlacesConnectionProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_a410_PlacesConnection_object_free(pointer, $0) }
+        try! rustCall { ffi_places_3c5d_PlacesConnection_object_free(pointer, $0) }
     }
 
     public func newInterruptHandle() -> SqlInterruptHandle {
         return try! FfiConverterTypeSqlInterruptHandle.lift(
             try!
                 rustCall {
-                    places_a410_PlacesConnection_new_interrupt_handle(self.pointer, $0)
+                    places_3c5d_PlacesConnection_new_interrupt_handle(self.pointer, $0)
                 }
         )
     }
@@ -626,7 +629,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_latest_history_metadata_for_url(self.pointer,
+                    places_3c5d_PlacesConnection_get_latest_history_metadata_for_url(self.pointer,
                                                                                      FfiConverterTypeUrl.lower(url), $0)
                 }
         )
@@ -636,7 +639,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_history_metadata_between(self.pointer,
+                    places_3c5d_PlacesConnection_get_history_metadata_between(self.pointer,
                                                                               FfiConverterTypePlacesTimestamp.lower(start),
                                                                               FfiConverterTypePlacesTimestamp.lower(end), $0)
                 }
@@ -647,7 +650,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_history_metadata_since(self.pointer,
+                    places_3c5d_PlacesConnection_get_history_metadata_since(self.pointer,
                                                                             FfiConverterTypePlacesTimestamp.lower(since), $0)
                 }
         )
@@ -657,7 +660,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeSearchResult.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_query_autocomplete(self.pointer,
+                    places_3c5d_PlacesConnection_query_autocomplete(self.pointer,
                                                                     FfiConverterString.lower(search),
                                                                     FfiConverterInt32.lower(limit), $0)
                 }
@@ -667,7 +670,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func acceptResult(searchString: String, url: String) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_accept_result(self.pointer,
+                places_3c5d_PlacesConnection_accept_result(self.pointer,
                                                            FfiConverterString.lower(searchString),
                                                            FfiConverterString.lower(url), $0)
             }
@@ -677,7 +680,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeUrl.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_match_url(self.pointer,
+                    places_3c5d_PlacesConnection_match_url(self.pointer,
                                                            FfiConverterString.lower(query), $0)
                 }
         )
@@ -687,7 +690,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_query_history_metadata(self.pointer,
+                    places_3c5d_PlacesConnection_query_history_metadata(self.pointer,
                                                                         FfiConverterString.lower(query),
                                                                         FfiConverterInt32.lower(limit), $0)
                 }
@@ -698,7 +701,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryHighlight.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_history_highlights(self.pointer,
+                    places_3c5d_PlacesConnection_get_history_highlights(self.pointer,
                                                                         FfiConverterTypeHistoryHighlightWeights.lower(weights),
                                                                         FfiConverterInt32.lower(limit), $0)
                 }
@@ -708,7 +711,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_note_history_metadata_observation(self.pointer,
+                places_3c5d_PlacesConnection_note_history_metadata_observation(self.pointer,
                                                                                FfiConverterTypeHistoryMetadataObservation.lower(data), $0)
             }
     }
@@ -716,7 +719,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_metadata_delete(self.pointer,
+                places_3c5d_PlacesConnection_metadata_delete(self.pointer,
                                                              FfiConverterTypeUrl.lower(url),
                                                              FfiConverterOptionTypeUrl.lower(referrerUrl),
                                                              FfiConverterOptionString.lower(searchTerm), $0)
@@ -726,7 +729,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_metadata_delete_older_than(self.pointer,
+                places_3c5d_PlacesConnection_metadata_delete_older_than(self.pointer,
                                                                         FfiConverterTypePlacesTimestamp.lower(olderThan), $0)
             }
     }
@@ -734,7 +737,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func applyObservation(visit: VisitObservation) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_apply_observation(self.pointer,
+                places_3c5d_PlacesConnection_apply_observation(self.pointer,
                                                                FfiConverterTypeVisitObservation.lower(visit), $0)
             }
     }
@@ -743,7 +746,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeUrl.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_visited_urls_in_range(self.pointer,
+                    places_3c5d_PlacesConnection_get_visited_urls_in_range(self.pointer,
                                                                            FfiConverterTypePlacesTimestamp.lower(start),
                                                                            FfiConverterTypePlacesTimestamp.lower(end),
                                                                            FfiConverterBool.lower(includeRemote), $0)
@@ -755,7 +758,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_visit_infos(self.pointer,
+                    places_3c5d_PlacesConnection_get_visit_infos(self.pointer,
                                                                  FfiConverterTypePlacesTimestamp.lower(startDate),
                                                                  FfiConverterTypePlacesTimestamp.lower(endDate),
                                                                  FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
@@ -767,7 +770,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterInt64.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_visit_count(self.pointer,
+                    places_3c5d_PlacesConnection_get_visit_count(self.pointer,
                                                                  FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
                 }
         )
@@ -777,7 +780,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_visit_page(self.pointer,
+                    places_3c5d_PlacesConnection_get_visit_page(self.pointer,
                                                                 FfiConverterInt64.lower(offset),
                                                                 FfiConverterInt64.lower(count),
                                                                 FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
@@ -789,7 +792,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterTypeHistoryVisitInfosWithBound.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_visit_page_with_bound(self.pointer,
+                    places_3c5d_PlacesConnection_get_visit_page_with_bound(self.pointer,
                                                                            FfiConverterInt64.lower(bound),
                                                                            FfiConverterInt64.lower(offset),
                                                                            FfiConverterInt64.lower(count),
@@ -802,7 +805,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceBool.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_visited(self.pointer,
+                    places_3c5d_PlacesConnection_get_visited(self.pointer,
                                                              FfiConverterSequenceString.lower(urls), $0)
                 }
         )
@@ -811,7 +814,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func deleteVisitsFor(url: String) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_delete_visits_for(self.pointer,
+                places_3c5d_PlacesConnection_delete_visits_for(self.pointer,
                                                                FfiConverterString.lower(url), $0)
             }
     }
@@ -819,7 +822,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_delete_visits_between(self.pointer,
+                places_3c5d_PlacesConnection_delete_visits_between(self.pointer,
                                                                    FfiConverterTypePlacesTimestamp.lower(start),
                                                                    FfiConverterTypePlacesTimestamp.lower(end), $0)
             }
@@ -828,7 +831,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func deleteVisit(url: String, timestamp: PlacesTimestamp) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_delete_visit(self.pointer,
+                places_3c5d_PlacesConnection_delete_visit(self.pointer,
                                                           FfiConverterString.lower(url),
                                                           FfiConverterTypePlacesTimestamp.lower(timestamp), $0)
             }
@@ -838,7 +841,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeTopFrecentSiteInfo.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_get_top_frecent_site_infos(self.pointer,
+                    places_3c5d_PlacesConnection_get_top_frecent_site_infos(self.pointer,
                                                                             FfiConverterInt32.lower(numItems),
                                                                             FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
                 }
@@ -848,39 +851,60 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func wipeLocalHistory() throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_wipe_local_history(self.pointer, $0)
+                places_3c5d_PlacesConnection_wipe_local_history(self.pointer, $0)
             }
     }
 
     public func deleteEverythingHistory() throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_delete_everything_history(self.pointer, $0)
+                places_3c5d_PlacesConnection_delete_everything_history(self.pointer, $0)
             }
     }
 
     public func pruneDestructively() throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_prune_destructively(self.pointer, $0)
+                places_3c5d_PlacesConnection_prune_destructively(self.pointer, $0)
             }
     }
 
-    public func runMaintenance(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics {
+    public func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics {
         return try FfiConverterTypeRunMaintenanceMetrics.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_run_maintenance(self.pointer,
-                                                                 FfiConverterUInt32.lower(dbSizeLimit), $0)
+                    places_3c5d_PlacesConnection_run_maintenance_prune(self.pointer,
+                                                                       FfiConverterUInt32.lower(dbSizeLimit), $0)
                 }
         )
+    }
+
+    public func runMaintenanceVacuum() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_3c5d_PlacesConnection_run_maintenance_vacuum(self.pointer, $0)
+            }
+    }
+
+    public func runMaintenanceOptimize() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_3c5d_PlacesConnection_run_maintenance_optimize(self.pointer, $0)
+            }
+    }
+
+    public func runMaintenanceCheckpoint() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_3c5d_PlacesConnection_run_maintenance_checkpoint(self.pointer, $0)
+            }
     }
 
     public func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem? {
         return try FfiConverterOptionTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_get_tree(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_get_tree(self.pointer,
                                                                     FfiConverterTypeGuid.lower(itemGuid), $0)
                 }
         )
@@ -890,7 +914,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_get_by_guid(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_get_by_guid(self.pointer,
                                                                        FfiConverterTypeGuid.lower(guid),
                                                                        FfiConverterBool.lower(getDirectChildren), $0)
                 }
@@ -901,7 +925,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_get_all_with_url(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_get_all_with_url(self.pointer,
                                                                             FfiConverterString.lower(url), $0)
                 }
         )
@@ -911,7 +935,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_search(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_search(self.pointer,
                                                                   FfiConverterString.lower(query),
                                                                   FfiConverterInt32.lower(limit), $0)
                 }
@@ -922,7 +946,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_get_recent(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_get_recent(self.pointer,
                                                                       FfiConverterInt32.lower(limit), $0)
                 }
         )
@@ -932,7 +956,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterBool.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_delete(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_delete(self.pointer,
                                                                   FfiConverterTypeGuid.lower(id), $0)
                 }
         )
@@ -941,7 +965,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksDeleteEverything() throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
+                places_3c5d_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
             }
     }
 
@@ -949,7 +973,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterOptionTypeUrl.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer,
                                                                                FfiConverterString.lower(keyword), $0)
                 }
         )
@@ -958,7 +982,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
     public func bookmarksUpdate(data: BookmarkUpdateInfo) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_PlacesConnection_bookmarks_update(self.pointer,
+                places_3c5d_PlacesConnection_bookmarks_update(self.pointer,
                                                               FfiConverterTypeBookmarkUpdateInfo.lower(data), $0)
             }
     }
@@ -967,7 +991,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterTypeGuid.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_bookmarks_insert(self.pointer,
+                    places_3c5d_PlacesConnection_bookmarks_insert(self.pointer,
                                                                   FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
                 }
         )
@@ -977,7 +1001,7 @@ public class PlacesConnection: PlacesConnectionProtocol {
         return try FfiConverterTypeHistoryMigrationResult.lift(
             try
                 rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_a410_PlacesConnection_places_history_import_from_ios(self.pointer,
+                    places_3c5d_PlacesConnection_places_history_import_from_ios(self.pointer,
                                                                                 FfiConverterString.lower(dbPath),
                                                                                 FfiConverterInt64.lower(lastSyncTimestamp), $0)
                 }
@@ -1030,13 +1054,13 @@ public class SqlInterruptHandle: SqlInterruptHandleProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_places_a410_SqlInterruptHandle_object_free(pointer, $0) }
+        try! rustCall { ffi_places_3c5d_SqlInterruptHandle_object_free(pointer, $0) }
     }
 
     public func interrupt() {
         try!
             rustCall {
-                places_a410_SqlInterruptHandle_interrupt(self.pointer, $0)
+                places_3c5d_SqlInterruptHandle_interrupt(self.pointer, $0)
             }
     }
 }
@@ -3423,7 +3447,7 @@ public func placesApiNew(dbPath: String) throws -> PlacesApi {
         try
 
             rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_a410_places_api_new(
+                places_3c5d_places_api_new(
                     FfiConverterString.lower(dbPath), $0
                 )
             }
