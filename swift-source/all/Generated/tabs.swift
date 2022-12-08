@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_413c_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_edc9_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_413c_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_edc9_rustbuffer_free(self, $0) }
     }
 }
 
@@ -359,14 +359,14 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_tabs_413c_TabsBridgedEngine_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_edc9_TabsBridgedEngine_object_free(pointer, $0) }
     }
 
     public func lastSync() throws -> Int64 {
         return try FfiConverterInt64.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_413c_TabsBridgedEngine_last_sync(self.pointer, $0)
+                    tabs_edc9_TabsBridgedEngine_last_sync(self.pointer, $0)
                 }
         )
     }
@@ -374,7 +374,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func setLastSync(lastSync: Int64) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_set_last_sync(self.pointer,
+                tabs_edc9_TabsBridgedEngine_set_last_sync(self.pointer,
                                                           FfiConverterInt64.lower(lastSync), $0)
             }
     }
@@ -383,7 +383,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterOptionString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_413c_TabsBridgedEngine_sync_id(self.pointer, $0)
+                    tabs_edc9_TabsBridgedEngine_sync_id(self.pointer, $0)
                 }
         )
     }
@@ -392,7 +392,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_413c_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
+                    tabs_edc9_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
                 }
         )
     }
@@ -401,7 +401,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_413c_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
+                    tabs_edc9_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
                                                                        FfiConverterString.lower(newSyncId), $0)
                 }
         )
@@ -410,7 +410,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func prepareForSync(clientData: String) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_prepare_for_sync(self.pointer,
+                tabs_edc9_TabsBridgedEngine_prepare_for_sync(self.pointer,
                                                              FfiConverterString.lower(clientData), $0)
             }
     }
@@ -418,14 +418,14 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func syncStarted() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_sync_started(self.pointer, $0)
+                tabs_edc9_TabsBridgedEngine_sync_started(self.pointer, $0)
             }
     }
 
     public func storeIncoming(incomingEnvelopesAsJson: [String]) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_store_incoming(self.pointer,
+                tabs_edc9_TabsBridgedEngine_store_incoming(self.pointer,
                                                            FfiConverterSequenceString.lower(incomingEnvelopesAsJson), $0)
             }
     }
@@ -434,7 +434,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterSequenceString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_413c_TabsBridgedEngine_apply(self.pointer, $0)
+                    tabs_edc9_TabsBridgedEngine_apply(self.pointer, $0)
                 }
         )
     }
@@ -442,7 +442,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid]) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_set_uploaded(self.pointer,
+                tabs_edc9_TabsBridgedEngine_set_uploaded(self.pointer,
                                                          FfiConverterInt64.lower(newTimestamp),
                                                          FfiConverterSequenceTypeTabsGuid.lower(uploadedIds), $0)
             }
@@ -451,21 +451,21 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func syncFinished() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_sync_finished(self.pointer, $0)
+                tabs_edc9_TabsBridgedEngine_sync_finished(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_reset(self.pointer, $0)
+                tabs_edc9_TabsBridgedEngine_reset(self.pointer, $0)
             }
     }
 
     public func wipe() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsBridgedEngine_wipe(self.pointer, $0)
+                tabs_edc9_TabsBridgedEngine_wipe(self.pointer, $0)
             }
     }
 }
@@ -523,21 +523,21 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_413c_TabsStore_new(
+                tabs_edc9_TabsStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_413c_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_edc9_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(
             try!
                 rustCall {
-                    tabs_413c_TabsStore_get_all(self.pointer, $0)
+                    tabs_edc9_TabsStore_get_all(self.pointer, $0)
                 }
         )
     }
@@ -545,7 +545,7 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTabRecord]) {
         try!
             rustCall {
-                tabs_413c_TabsStore_set_local_tabs(self.pointer,
+                tabs_edc9_TabsStore_set_local_tabs(self.pointer,
                                                    FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs), $0)
             }
     }
@@ -553,14 +553,14 @@ public class TabsStore: TabsStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_413c_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_edc9_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_413c_TabsStore_reset(self.pointer, $0)
+                tabs_edc9_TabsStore_reset(self.pointer, $0)
             }
     }
 
@@ -568,7 +568,7 @@ public class TabsStore: TabsStoreProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_413c_TabsStore_sync(self.pointer,
+                    tabs_edc9_TabsStore_sync(self.pointer,
                                              FfiConverterString.lower(keyId),
                                              FfiConverterString.lower(accessToken),
                                              FfiConverterString.lower(syncKey),
@@ -582,7 +582,7 @@ public class TabsStore: TabsStoreProtocol {
         return try! FfiConverterTypeTabsBridgedEngine.lift(
             try!
                 rustCall {
-                    tabs_413c_TabsStore_bridged_engine(self.pointer, $0)
+                    tabs_edc9_TabsStore_bridged_engine(self.pointer, $0)
                 }
         )
     }
@@ -622,14 +622,16 @@ public struct ClientRemoteTabs {
     public var clientId: String
     public var clientName: String
     public var deviceType: TabsDeviceType
+    public var lastModified: Int64
     public var remoteTabs: [RemoteTabRecord]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(clientId: String, clientName: String, deviceType: TabsDeviceType, remoteTabs: [RemoteTabRecord]) {
+    public init(clientId: String, clientName: String, deviceType: TabsDeviceType, lastModified: Int64, remoteTabs: [RemoteTabRecord]) {
         self.clientId = clientId
         self.clientName = clientName
         self.deviceType = deviceType
+        self.lastModified = lastModified
         self.remoteTabs = remoteTabs
     }
 }
@@ -645,6 +647,9 @@ extension ClientRemoteTabs: Equatable, Hashable {
         if lhs.deviceType != rhs.deviceType {
             return false
         }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
         if lhs.remoteTabs != rhs.remoteTabs {
             return false
         }
@@ -655,6 +660,7 @@ extension ClientRemoteTabs: Equatable, Hashable {
         hasher.combine(clientId)
         hasher.combine(clientName)
         hasher.combine(deviceType)
+        hasher.combine(lastModified)
         hasher.combine(remoteTabs)
     }
 }
@@ -665,6 +671,7 @@ private struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
             clientId: FfiConverterString.read(from: buf),
             clientName: FfiConverterString.read(from: buf),
             deviceType: FfiConverterTypeTabsDeviceType.read(from: buf),
+            lastModified: FfiConverterInt64.read(from: buf),
             remoteTabs: FfiConverterSequenceTypeRemoteTabRecord.read(from: buf)
         )
     }
@@ -673,6 +680,7 @@ private struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
         FfiConverterString.write(value.clientId, into: buf)
         FfiConverterString.write(value.clientName, into: buf)
         FfiConverterTypeTabsDeviceType.write(value.deviceType, into: buf)
+        FfiConverterInt64.write(value.lastModified, into: buf)
         FfiConverterSequenceTypeRemoteTabRecord.write(value.remoteTabs, into: buf)
     }
 }
