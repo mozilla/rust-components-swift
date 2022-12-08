@@ -46,119 +46,123 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_nimbus_afbf_NimbusClient_object_free(
+void ffi_nimbus_256f_NimbusClient_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull nimbus_afbf_NimbusClient_new(
+void*_Nonnull nimbus_256f_NimbusClient_new(
       RustBuffer app_ctx,RustBuffer dbpath,RustBuffer remote_settings_config,RustBuffer available_randomization_units,
     RustCallStatus *_Nonnull out_status
     );
-void nimbus_afbf_NimbusClient_initialize(
+void nimbus_256f_NimbusClient_initialize(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_get_experiment_branch(
+RustBuffer nimbus_256f_NimbusClient_get_experiment_branch(
       void*_Nonnull ptr,RustBuffer id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_get_feature_config_variables(
+RustBuffer nimbus_256f_NimbusClient_get_feature_config_variables(
       void*_Nonnull ptr,RustBuffer feature_id,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_get_experiment_branches(
+RustBuffer nimbus_256f_NimbusClient_get_experiment_branches(
       void*_Nonnull ptr,RustBuffer experiment_slug,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_get_active_experiments(
+RustBuffer nimbus_256f_NimbusClient_get_active_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_get_available_experiments(
+RustBuffer nimbus_256f_NimbusClient_get_available_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-int8_t nimbus_afbf_NimbusClient_get_global_user_participation(
+int8_t nimbus_256f_NimbusClient_get_global_user_participation(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_set_global_user_participation(
+RustBuffer nimbus_256f_NimbusClient_set_global_user_participation(
       void*_Nonnull ptr,int8_t opt_in,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_update_experiments(
+RustBuffer nimbus_256f_NimbusClient_update_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void nimbus_afbf_NimbusClient_fetch_experiments(
+void nimbus_256f_NimbusClient_fetch_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_apply_pending_experiments(
+RustBuffer nimbus_256f_NimbusClient_apply_pending_experiments(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void nimbus_afbf_NimbusClient_set_experiments_locally(
+void nimbus_256f_NimbusClient_set_experiments_locally(
       void*_Nonnull ptr,RustBuffer experiments_json,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_opt_in_with_branch(
+RustBuffer nimbus_256f_NimbusClient_opt_in_with_branch(
       void*_Nonnull ptr,RustBuffer experiment_slug,RustBuffer branch,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_opt_out(
+RustBuffer nimbus_256f_NimbusClient_opt_out(
       void*_Nonnull ptr,RustBuffer experiment_slug,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusClient_reset_telemetry_identifiers(
+RustBuffer nimbus_256f_NimbusClient_reset_telemetry_identifiers(
       void*_Nonnull ptr,RustBuffer new_randomization_units,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull nimbus_afbf_NimbusClient_create_targeting_helper(
+void*_Nonnull nimbus_256f_NimbusClient_create_targeting_helper(
       void*_Nonnull ptr,RustBuffer additional_context,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull nimbus_afbf_NimbusClient_create_string_helper(
+void*_Nonnull nimbus_256f_NimbusClient_create_string_helper(
       void*_Nonnull ptr,RustBuffer additional_context,
     RustCallStatus *_Nonnull out_status
     );
-void nimbus_afbf_NimbusClient_record_event(
+void nimbus_256f_NimbusClient_record_event(
       void*_Nonnull ptr,RustBuffer event_id,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_nimbus_afbf_NimbusTargetingHelper_object_free(
+void nimbus_256f_NimbusClient_clear_events(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-int8_t nimbus_afbf_NimbusTargetingHelper_eval_jexl(
+void ffi_nimbus_256f_NimbusTargetingHelper_object_free(
+      void*_Nonnull ptr,
+    RustCallStatus *_Nonnull out_status
+    );
+int8_t nimbus_256f_NimbusTargetingHelper_eval_jexl(
       void*_Nonnull ptr,RustBuffer expression,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_nimbus_afbf_NimbusStringHelper_object_free(
+void ffi_nimbus_256f_NimbusStringHelper_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusStringHelper_string_format(
+RustBuffer nimbus_256f_NimbusStringHelper_string_format(
       void*_Nonnull ptr,RustBuffer template,RustBuffer uuid,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer nimbus_afbf_NimbusStringHelper_get_uuid(
+RustBuffer nimbus_256f_NimbusStringHelper_get_uuid(
       void*_Nonnull ptr,RustBuffer template,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_nimbus_afbf_rustbuffer_alloc(
+RustBuffer ffi_nimbus_256f_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_nimbus_afbf_rustbuffer_from_bytes(
+RustBuffer ffi_nimbus_256f_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_nimbus_afbf_rustbuffer_free(
+void ffi_nimbus_256f_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_nimbus_afbf_rustbuffer_reserve(
+RustBuffer ffi_nimbus_256f_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );
