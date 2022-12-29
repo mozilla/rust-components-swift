@@ -149,6 +149,15 @@ cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/support/error/src/errorsupport.udl"
 
 
+###
+#
+# MerinoClient
+#
+###
+
+# UniFFI bindings.
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/merino_client/src/merino_client.udl"
+
 
 ###################### Swift code generation for Focus ######################
 # Glean metrics.
