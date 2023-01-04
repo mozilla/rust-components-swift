@@ -79,10 +79,7 @@ cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$OUT_DIR"
 # Autofill
 #
 ###
-## None of our consumers currently use autofill, and the swift code has a name conflict with
-## another component, so for now, commented out.
-
-# "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/autofill/src/autofill.udl"
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/autofill/src/autofill.udl"
 
 ###
 #
