@@ -26,7 +26,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 1, day: 19, hour: 15, minute: 6, second: 54))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 2, day: 1, hour: 15, minute: 6, second: 50))
     }
 
     enum NimbusEvents {
@@ -301,6 +301,32 @@ extension GleanMetrics {
                 disabled: true
             )
             , ["feature_id"]
+        )
+
+        /// Measure how long `applyPendingExperiments` takes.
+        /// `applyPendingExperiments` uses disk I/O, and happens at
+        /// startup, as part of the initialization sequence.
+        static let applyPendingExperimentsTime = TimingDistributionMetricType( // generated from nimbus_health.apply_pending_experiments_time
+            CommonMetricData(
+                category: "nimbus_health",
+                name: "apply_pending_experiments_time",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        /// Measures how long `fetchExperiments` takes.
+        static let fetchExperimentsTime = TimingDistributionMetricType( // generated from nimbus_health.fetch_experiments_time
+            CommonMetricData(
+                category: "nimbus_health",
+                name: "fetch_experiments_time",
+                sendInPings: ["metrics"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
         )
 
     }

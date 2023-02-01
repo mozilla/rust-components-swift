@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_edc9_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_dffd_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_edc9_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_dffd_rustbuffer_free(self, $0) }
     }
 }
 
@@ -40,7 +40,7 @@ private extension ForeignBytes {
 // values of that type in a buffer.
 
 // Helper classes/extensions that don't change.
-// Someday, this will be in a libray of its own.
+// Someday, this will be in a library of its own.
 
 private extension Data {
     init(rustBuffer: RustBuffer) {
@@ -50,101 +50,100 @@ private extension Data {
     }
 }
 
-// A helper class to read values out of a byte buffer.
-private class Reader {
-    let data: Data
-    var offset: Data.Index
+// Define reader functionality.  Normally this would be defined in a class or
+// struct, but we use standalone functions instead in order to make external
+// types work.
+//
+// With external types, one swift source file needs to be able to call the read
+// method on another source file's FfiConverter, but then what visibility
+// should Reader have?
+// - If Reader is fileprivate, then this means the read() must also
+//   be fileprivate, which doesn't work with external types.
+// - If Reader is internal/public, we'll get compile errors since both source
+//   files will try define the same type.
+//
+// Instead, the read() method and these helper functions input a tuple of data
 
-    init(data: Data) {
-        self.data = data
-        offset = 0
-    }
-
-    // Reads an integer at the current offset, in big-endian order, and advances
-    // the offset on success. Throws if reading the integer would move the
-    // offset past the end of the buffer.
-    func readInt<T: FixedWidthInteger>() throws -> T {
-        let range = offset ..< offset + MemoryLayout<T>.size
-        guard data.count >= range.upperBound else {
-            throw UniffiInternalError.bufferOverflow
-        }
-        if T.self == UInt8.self {
-            let value = data[offset]
-            offset += 1
-            return value as! T
-        }
-        var value: T = 0
-        let _ = withUnsafeMutableBytes(of: &value) { data.copyBytes(to: $0, from: range) }
-        offset = range.upperBound
-        return value.bigEndian
-    }
-
-    // Reads an arbitrary number of bytes, to be used to read
-    // raw bytes, this is useful when lifting strings
-    func readBytes(count: Int) throws -> [UInt8] {
-        let range = offset ..< (offset + count)
-        guard data.count >= range.upperBound else {
-            throw UniffiInternalError.bufferOverflow
-        }
-        var value = [UInt8](repeating: 0, count: count)
-        value.withUnsafeMutableBufferPointer { buffer in
-            data.copyBytes(to: buffer, from: range)
-        }
-        offset = range.upperBound
-        return value
-    }
-
-    // Reads a float at the current offset.
-    @inlinable
-    func readFloat() throws -> Float {
-        return Float(bitPattern: try readInt())
-    }
-
-    // Reads a float at the current offset.
-    @inlinable
-    func readDouble() throws -> Double {
-        return Double(bitPattern: try readInt())
-    }
-
-    // Indicates if the offset has reached the end of the buffer.
-    @inlinable
-    func hasRemaining() -> Bool {
-        return offset < data.count
-    }
+private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+    (data: data, offset: 0)
 }
 
-// A helper class to write values into a byte buffer.
-private class Writer {
-    var bytes: [UInt8]
-    var offset: Array<UInt8>.Index
-
-    init() {
-        bytes = []
-        offset = 0
+// Reads an integer at the current offset, in big-endian order, and advances
+// the offset on success. Throws if reading the integer would move the
+// offset past the end of the buffer.
+private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+    guard reader.data.count >= range.upperBound else {
+        throw UniffiInternalError.bufferOverflow
     }
-
-    func writeBytes<S>(_ byteArr: S) where S: Sequence, S.Element == UInt8 {
-        bytes.append(contentsOf: byteArr)
+    if T.self == UInt8.self {
+        let value = reader.data[reader.offset]
+        reader.offset += 1
+        return value as! T
     }
+    var value: T = 0
+    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    reader.offset = range.upperBound
+    return value.bigEndian
+}
 
-    // Writes an integer in big-endian order.
-    //
-    // Warning: make sure what you are trying to write
-    // is in the correct type!
-    func writeInt<T: FixedWidthInteger>(_ value: T) {
-        var value = value.bigEndian
-        withUnsafeBytes(of: &value) { bytes.append(contentsOf: $0) }
+// Reads an arbitrary number of bytes, to be used to read
+// raw bytes, this is useful when lifting strings
+private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
+    let range = reader.offset ..< (reader.offset + count)
+    guard reader.data.count >= range.upperBound else {
+        throw UniffiInternalError.bufferOverflow
     }
+    var value = [UInt8](repeating: 0, count: count)
+    value.withUnsafeMutableBufferPointer { buffer in
+        reader.data.copyBytes(to: buffer, from: range)
+    }
+    reader.offset = range.upperBound
+    return value
+}
 
-    @inlinable
-    func writeFloat(_ value: Float) {
-        writeInt(value.bitPattern)
-    }
+// Reads a float at the current offset.
+private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
+}
 
-    @inlinable
-    func writeDouble(_ value: Double) {
-        writeInt(value.bitPattern)
-    }
+// Reads a float at the current offset.
+private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
+}
+
+// Indicates if the offset has reached the end of the buffer.
+private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+    return reader.offset < reader.data.count
+}
+
+// Define writer functionality.  Normally this would be defined in a class or
+// struct, but we use standalone functions instead in order to make external
+// types work.  See the above discussion on Readers for details.
+
+private func createWriter() -> [UInt8] {
+    return []
+}
+
+private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+    writer.append(contentsOf: byteArr)
+}
+
+// Writes an integer in big-endian order.
+//
+// Warning: make sure what you are trying to write
+// is in the correct type!
+private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+    var value = value.bigEndian
+    withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
+}
+
+private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+    writeInt(&writer, value.bitPattern)
+}
+
+private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+    writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
@@ -155,19 +154,19 @@ private protocol FfiConverter {
 
     static func lift(_ value: FfiType) throws -> SwiftType
     static func lower(_ value: SwiftType) -> FfiType
-    static func read(from buf: Reader) throws -> SwiftType
-    static func write(_ value: SwiftType, into buf: Writer)
+    static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType
+    static func write(_ value: SwiftType, into buf: inout [UInt8])
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
 private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
 
 extension FfiConverterPrimitive {
-    static func lift(_ value: FfiType) throws -> SwiftType {
+    public static func lift(_ value: FfiType) throws -> SwiftType {
         return value
     }
 
-    static func lower(_ value: SwiftType) -> FfiType {
+    public static func lower(_ value: SwiftType) -> FfiType {
         return value
     }
 }
@@ -177,20 +176,20 @@ extension FfiConverterPrimitive {
 private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
-    static func lift(_ buf: RustBuffer) throws -> SwiftType {
-        let reader = Reader(data: Data(rustBuffer: buf))
-        let value = try read(from: reader)
-        if reader.hasRemaining() {
+    public static func lift(_ buf: RustBuffer) throws -> SwiftType {
+        var reader = createReader(data: Data(rustBuffer: buf))
+        let value = try read(from: &reader)
+        if hasRemaining(reader) {
             throw UniffiInternalError.incompleteData
         }
         buf.deallocate()
         return value
     }
 
-    static func lower(_ value: SwiftType) -> RustBuffer {
-        let writer = Writer()
-        write(value, into: writer)
-        return RustBuffer(bytes: writer.bytes)
+    public static func lower(_ value: SwiftType) -> RustBuffer {
+        var writer = createWriter()
+        write(value, into: &writer)
+        return RustBuffer(bytes: writer)
     }
 }
 
@@ -285,12 +284,12 @@ private struct FfiConverterInt64: FfiConverterPrimitive {
     typealias FfiType = Int64
     typealias SwiftType = Int64
 
-    static func read(from buf: Reader) throws -> Int64 {
-        return try lift(buf.readInt())
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int64 {
+        return try lift(readInt(&buf))
     }
 
-    static func write(_ value: Int64, into buf: Writer) {
-        buf.writeInt(lower(value))
+    public static func write(_ value: Int64, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
     }
 }
 
@@ -298,7 +297,7 @@ private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
-    static func lift(_ value: RustBuffer) throws -> String {
+    public static func lift(_ value: RustBuffer) throws -> String {
         defer {
             value.deallocate()
         }
@@ -309,7 +308,7 @@ private struct FfiConverterString: FfiConverter {
         return String(bytes: bytes, encoding: String.Encoding.utf8)!
     }
 
-    static func lower(_ value: String) -> RustBuffer {
+    public static func lower(_ value: String) -> RustBuffer {
         return value.utf8CString.withUnsafeBufferPointer { ptr in
             // The swift string gives us int8_t, we want uint8_t.
             ptr.withMemoryRebound(to: UInt8.self) { ptr in
@@ -320,15 +319,15 @@ private struct FfiConverterString: FfiConverter {
         }
     }
 
-    static func read(from buf: Reader) throws -> String {
-        let len: Int32 = try buf.readInt()
-        return String(bytes: try buf.readBytes(count: Int(len)), encoding: String.Encoding.utf8)!
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
+        let len: Int32 = try readInt(&buf)
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
-    static func write(_ value: String, into buf: Writer) {
+    public static func write(_ value: String, into buf: inout [UInt8]) {
         let len = Int32(value.utf8.count)
-        buf.writeInt(len)
-        buf.writeBytes(value.utf8)
+        writeInt(&buf, len)
+        writeBytes(&buf, value.utf8)
     }
 }
 
@@ -359,14 +358,14 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_tabs_edc9_TabsBridgedEngine_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_dffd_TabsBridgedEngine_object_free(pointer, $0) }
     }
 
     public func lastSync() throws -> Int64 {
         return try FfiConverterInt64.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_edc9_TabsBridgedEngine_last_sync(self.pointer, $0)
+                    tabs_dffd_TabsBridgedEngine_last_sync(self.pointer, $0)
                 }
         )
     }
@@ -374,7 +373,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func setLastSync(lastSync: Int64) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_set_last_sync(self.pointer,
+                tabs_dffd_TabsBridgedEngine_set_last_sync(self.pointer,
                                                           FfiConverterInt64.lower(lastSync), $0)
             }
     }
@@ -383,7 +382,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterOptionString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_edc9_TabsBridgedEngine_sync_id(self.pointer, $0)
+                    tabs_dffd_TabsBridgedEngine_sync_id(self.pointer, $0)
                 }
         )
     }
@@ -392,7 +391,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_edc9_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
+                    tabs_dffd_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
                 }
         )
     }
@@ -401,7 +400,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_edc9_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
+                    tabs_dffd_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
                                                                        FfiConverterString.lower(newSyncId), $0)
                 }
         )
@@ -410,7 +409,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func prepareForSync(clientData: String) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_prepare_for_sync(self.pointer,
+                tabs_dffd_TabsBridgedEngine_prepare_for_sync(self.pointer,
                                                              FfiConverterString.lower(clientData), $0)
             }
     }
@@ -418,14 +417,14 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func syncStarted() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_sync_started(self.pointer, $0)
+                tabs_dffd_TabsBridgedEngine_sync_started(self.pointer, $0)
             }
     }
 
     public func storeIncoming(incomingEnvelopesAsJson: [String]) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_store_incoming(self.pointer,
+                tabs_dffd_TabsBridgedEngine_store_incoming(self.pointer,
                                                            FfiConverterSequenceString.lower(incomingEnvelopesAsJson), $0)
             }
     }
@@ -434,7 +433,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
         return try FfiConverterSequenceString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_edc9_TabsBridgedEngine_apply(self.pointer, $0)
+                    tabs_dffd_TabsBridgedEngine_apply(self.pointer, $0)
                 }
         )
     }
@@ -442,7 +441,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid]) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_set_uploaded(self.pointer,
+                tabs_dffd_TabsBridgedEngine_set_uploaded(self.pointer,
                                                          FfiConverterInt64.lower(newTimestamp),
                                                          FfiConverterSequenceTypeTabsGuid.lower(uploadedIds), $0)
             }
@@ -451,31 +450,31 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func syncFinished() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_sync_finished(self.pointer, $0)
+                tabs_dffd_TabsBridgedEngine_sync_finished(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_reset(self.pointer, $0)
+                tabs_dffd_TabsBridgedEngine_reset(self.pointer, $0)
             }
     }
 
     public func wipe() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsBridgedEngine_wipe(self.pointer, $0)
+                tabs_dffd_TabsBridgedEngine_wipe(self.pointer, $0)
             }
     }
 }
 
-private struct FfiConverterTypeTabsBridgedEngine: FfiConverter {
+public struct FfiConverterTypeTabsBridgedEngine: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = TabsBridgedEngine
 
-    static func read(from buf: Reader) throws -> TabsBridgedEngine {
-        let v: UInt64 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsBridgedEngine {
+        let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
@@ -485,17 +484,17 @@ private struct FfiConverterTypeTabsBridgedEngine: FfiConverter {
         return try lift(ptr!)
     }
 
-    static func write(_ value: TabsBridgedEngine, into buf: Writer) {
+    public static func write(_ value: TabsBridgedEngine, into buf: inout [UInt8]) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> TabsBridgedEngine {
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> TabsBridgedEngine {
         return TabsBridgedEngine(unsafeFromRawPointer: pointer)
     }
 
-    static func lower(_ value: TabsBridgedEngine) -> UnsafeMutableRawPointer {
+    public static func lower(_ value: TabsBridgedEngine) -> UnsafeMutableRawPointer {
         return value.pointer
     }
 }
@@ -523,21 +522,21 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_edc9_TabsStore_new(
+                tabs_dffd_TabsStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_edc9_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_dffd_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(
             try!
                 rustCall {
-                    tabs_edc9_TabsStore_get_all(self.pointer, $0)
+                    tabs_dffd_TabsStore_get_all(self.pointer, $0)
                 }
         )
     }
@@ -545,7 +544,7 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTabRecord]) {
         try!
             rustCall {
-                tabs_edc9_TabsStore_set_local_tabs(self.pointer,
+                tabs_dffd_TabsStore_set_local_tabs(self.pointer,
                                                    FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs), $0)
             }
     }
@@ -553,14 +552,14 @@ public class TabsStore: TabsStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_edc9_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_dffd_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_edc9_TabsStore_reset(self.pointer, $0)
+                tabs_dffd_TabsStore_reset(self.pointer, $0)
             }
     }
 
@@ -568,7 +567,7 @@ public class TabsStore: TabsStoreProtocol {
         return try FfiConverterString.lift(
             try
                 rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_edc9_TabsStore_sync(self.pointer,
+                    tabs_dffd_TabsStore_sync(self.pointer,
                                              FfiConverterString.lower(keyId),
                                              FfiConverterString.lower(accessToken),
                                              FfiConverterString.lower(syncKey),
@@ -582,18 +581,18 @@ public class TabsStore: TabsStoreProtocol {
         return try! FfiConverterTypeTabsBridgedEngine.lift(
             try!
                 rustCall {
-                    tabs_edc9_TabsStore_bridged_engine(self.pointer, $0)
+                    tabs_dffd_TabsStore_bridged_engine(self.pointer, $0)
                 }
         )
     }
 }
 
-private struct FfiConverterTypeTabsStore: FfiConverter {
+public struct FfiConverterTypeTabsStore: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = TabsStore
 
-    static func read(from buf: Reader) throws -> TabsStore {
-        let v: UInt64 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsStore {
+        let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
@@ -603,17 +602,17 @@ private struct FfiConverterTypeTabsStore: FfiConverter {
         return try lift(ptr!)
     }
 
-    static func write(_ value: TabsStore, into buf: Writer) {
+    public static func write(_ value: TabsStore, into buf: inout [UInt8]) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
-        buf.writeInt(UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
     }
 
-    static func lift(_ pointer: UnsafeMutableRawPointer) throws -> TabsStore {
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> TabsStore {
         return TabsStore(unsafeFromRawPointer: pointer)
     }
 
-    static func lower(_ value: TabsStore) -> UnsafeMutableRawPointer {
+    public static func lower(_ value: TabsStore) -> UnsafeMutableRawPointer {
         return value.pointer
     }
 }
@@ -665,24 +664,32 @@ extension ClientRemoteTabs: Equatable, Hashable {
     }
 }
 
-private struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> ClientRemoteTabs {
+public struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ClientRemoteTabs {
         return try ClientRemoteTabs(
-            clientId: FfiConverterString.read(from: buf),
-            clientName: FfiConverterString.read(from: buf),
-            deviceType: FfiConverterTypeTabsDeviceType.read(from: buf),
-            lastModified: FfiConverterInt64.read(from: buf),
-            remoteTabs: FfiConverterSequenceTypeRemoteTabRecord.read(from: buf)
+            clientId: FfiConverterString.read(from: &buf),
+            clientName: FfiConverterString.read(from: &buf),
+            deviceType: FfiConverterTypeTabsDeviceType.read(from: &buf),
+            lastModified: FfiConverterInt64.read(from: &buf),
+            remoteTabs: FfiConverterSequenceTypeRemoteTabRecord.read(from: &buf)
         )
     }
 
-    fileprivate static func write(_ value: ClientRemoteTabs, into buf: Writer) {
-        FfiConverterString.write(value.clientId, into: buf)
-        FfiConverterString.write(value.clientName, into: buf)
-        FfiConverterTypeTabsDeviceType.write(value.deviceType, into: buf)
-        FfiConverterInt64.write(value.lastModified, into: buf)
-        FfiConverterSequenceTypeRemoteTabRecord.write(value.remoteTabs, into: buf)
+    public static func write(_ value: ClientRemoteTabs, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.clientId, into: &buf)
+        FfiConverterString.write(value.clientName, into: &buf)
+        FfiConverterTypeTabsDeviceType.write(value.deviceType, into: &buf)
+        FfiConverterInt64.write(value.lastModified, into: &buf)
+        FfiConverterSequenceTypeRemoteTabRecord.write(value.remoteTabs, into: &buf)
     }
+}
+
+public func FfiConverterTypeClientRemoteTabs_lift(_ buf: RustBuffer) throws -> ClientRemoteTabs {
+    return try FfiConverterTypeClientRemoteTabs.lift(buf)
+}
+
+public func FfiConverterTypeClientRemoteTabs_lower(_ value: ClientRemoteTabs) -> RustBuffer {
+    return FfiConverterTypeClientRemoteTabs.lower(value)
 }
 
 public struct RemoteTabRecord {
@@ -726,22 +733,30 @@ extension RemoteTabRecord: Equatable, Hashable {
     }
 }
 
-private struct FfiConverterTypeRemoteTabRecord: FfiConverterRustBuffer {
-    fileprivate static func read(from buf: Reader) throws -> RemoteTabRecord {
+public struct FfiConverterTypeRemoteTabRecord: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteTabRecord {
         return try RemoteTabRecord(
-            title: FfiConverterString.read(from: buf),
-            urlHistory: FfiConverterSequenceString.read(from: buf),
-            icon: FfiConverterOptionString.read(from: buf),
-            lastUsed: FfiConverterInt64.read(from: buf)
+            title: FfiConverterString.read(from: &buf),
+            urlHistory: FfiConverterSequenceString.read(from: &buf),
+            icon: FfiConverterOptionString.read(from: &buf),
+            lastUsed: FfiConverterInt64.read(from: &buf)
         )
     }
 
-    fileprivate static func write(_ value: RemoteTabRecord, into buf: Writer) {
-        FfiConverterString.write(value.title, into: buf)
-        FfiConverterSequenceString.write(value.urlHistory, into: buf)
-        FfiConverterOptionString.write(value.icon, into: buf)
-        FfiConverterInt64.write(value.lastUsed, into: buf)
+    public static func write(_ value: RemoteTabRecord, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.title, into: &buf)
+        FfiConverterSequenceString.write(value.urlHistory, into: &buf)
+        FfiConverterOptionString.write(value.icon, into: &buf)
+        FfiConverterInt64.write(value.lastUsed, into: &buf)
     }
+}
+
+public func FfiConverterTypeRemoteTabRecord_lift(_ buf: RustBuffer) throws -> RemoteTabRecord {
+    return try FfiConverterTypeRemoteTabRecord.lift(buf)
+}
+
+public func FfiConverterTypeRemoteTabRecord_lower(_ value: RemoteTabRecord) -> RustBuffer {
+    return FfiConverterTypeRemoteTabRecord.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -755,11 +770,11 @@ public enum TabsDeviceType {
     case unknown
 }
 
-private struct FfiConverterTypeTabsDeviceType: FfiConverterRustBuffer {
+public struct FfiConverterTypeTabsDeviceType: FfiConverterRustBuffer {
     typealias SwiftType = TabsDeviceType
 
-    static func read(from buf: Reader) throws -> TabsDeviceType {
-        let variant: Int32 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsDeviceType {
+        let variant: Int32 = try readInt(&buf)
         switch variant {
         case 1: return .desktop
 
@@ -777,27 +792,35 @@ private struct FfiConverterTypeTabsDeviceType: FfiConverterRustBuffer {
         }
     }
 
-    static func write(_ value: TabsDeviceType, into buf: Writer) {
+    public static func write(_ value: TabsDeviceType, into buf: inout [UInt8]) {
         switch value {
         case .desktop:
-            buf.writeInt(Int32(1))
+            writeInt(&buf, Int32(1))
 
         case .mobile:
-            buf.writeInt(Int32(2))
+            writeInt(&buf, Int32(2))
 
         case .tablet:
-            buf.writeInt(Int32(3))
+            writeInt(&buf, Int32(3))
 
         case .vr:
-            buf.writeInt(Int32(4))
+            writeInt(&buf, Int32(4))
 
         case .tv:
-            buf.writeInt(Int32(5))
+            writeInt(&buf, Int32(5))
 
         case .unknown:
-            buf.writeInt(Int32(6))
+            writeInt(&buf, Int32(6))
         }
     }
+}
+
+public func FfiConverterTypeTabsDeviceType_lift(_ buf: RustBuffer) throws -> TabsDeviceType {
+    return try FfiConverterTypeTabsDeviceType.lift(buf)
+}
+
+public func FfiConverterTypeTabsDeviceType_lower(_ value: TabsDeviceType) -> RustBuffer {
+    return FfiConverterTypeTabsDeviceType.lower(value)
 }
 
 extension TabsDeviceType: Equatable, Hashable {}
@@ -808,39 +831,39 @@ public enum TabsApiError {
     case UnexpectedTabsError(reason: String)
 }
 
-private struct FfiConverterTypeTabsApiError: FfiConverterRustBuffer {
+public struct FfiConverterTypeTabsApiError: FfiConverterRustBuffer {
     typealias SwiftType = TabsApiError
 
-    static func read(from buf: Reader) throws -> TabsApiError {
-        let variant: Int32 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsApiError {
+        let variant: Int32 = try readInt(&buf)
         switch variant {
         case 1: return .SyncError(
-                reason: try FfiConverterString.read(from: buf)
+                reason: try FfiConverterString.read(from: &buf)
             )
         case 2: return .SqlError(
-                reason: try FfiConverterString.read(from: buf)
+                reason: try FfiConverterString.read(from: &buf)
             )
         case 3: return .UnexpectedTabsError(
-                reason: try FfiConverterString.read(from: buf)
+                reason: try FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
-    static func write(_ value: TabsApiError, into buf: Writer) {
+    public static func write(_ value: TabsApiError, into buf: inout [UInt8]) {
         switch value {
         case let .SyncError(reason):
-            buf.writeInt(Int32(1))
-            FfiConverterString.write(reason, into: buf)
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(reason, into: &buf)
 
         case let .SqlError(reason):
-            buf.writeInt(Int32(2))
-            FfiConverterString.write(reason, into: buf)
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(reason, into: &buf)
 
         case let .UnexpectedTabsError(reason):
-            buf.writeInt(Int32(3))
-            FfiConverterString.write(reason, into: buf)
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(reason, into: &buf)
         }
     }
 }
@@ -852,19 +875,19 @@ extension TabsApiError: Error {}
 private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
-    static func write(_ value: SwiftType, into buf: Writer) {
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
         guard let value = value else {
-            buf.writeInt(Int8(0))
+            writeInt(&buf, Int8(0))
             return
         }
-        buf.writeInt(Int8(1))
-        FfiConverterString.write(value, into: buf)
+        writeInt(&buf, Int8(1))
+        FfiConverterString.write(value, into: &buf)
     }
 
-    static func read(from buf: Reader) throws -> SwiftType {
-        switch try buf.readInt() as Int8 {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
         case 0: return nil
-        case 1: return try FfiConverterString.read(from: buf)
+        case 1: return try FfiConverterString.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -873,20 +896,20 @@ private struct FfiConverterOptionString: FfiConverterRustBuffer {
 private struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
-    static func write(_ value: [String], into buf: Writer) {
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
         let len = Int32(value.count)
-        buf.writeInt(len)
+        writeInt(&buf, len)
         for item in value {
-            FfiConverterString.write(item, into: buf)
+            FfiConverterString.write(item, into: &buf)
         }
     }
 
-    static func read(from buf: Reader) throws -> [String] {
-        let len: Int32 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+        let len: Int32 = try readInt(&buf)
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: buf))
+            seq.append(try FfiConverterString.read(from: &buf))
         }
         return seq
     }
@@ -895,20 +918,20 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
 private struct FfiConverterSequenceTypeClientRemoteTabs: FfiConverterRustBuffer {
     typealias SwiftType = [ClientRemoteTabs]
 
-    static func write(_ value: [ClientRemoteTabs], into buf: Writer) {
+    public static func write(_ value: [ClientRemoteTabs], into buf: inout [UInt8]) {
         let len = Int32(value.count)
-        buf.writeInt(len)
+        writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeClientRemoteTabs.write(item, into: buf)
+            FfiConverterTypeClientRemoteTabs.write(item, into: &buf)
         }
     }
 
-    static func read(from buf: Reader) throws -> [ClientRemoteTabs] {
-        let len: Int32 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ClientRemoteTabs] {
+        let len: Int32 = try readInt(&buf)
         var seq = [ClientRemoteTabs]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeClientRemoteTabs.read(from: buf))
+            seq.append(try FfiConverterTypeClientRemoteTabs.read(from: &buf))
         }
         return seq
     }
@@ -917,20 +940,20 @@ private struct FfiConverterSequenceTypeClientRemoteTabs: FfiConverterRustBuffer 
 private struct FfiConverterSequenceTypeRemoteTabRecord: FfiConverterRustBuffer {
     typealias SwiftType = [RemoteTabRecord]
 
-    static func write(_ value: [RemoteTabRecord], into buf: Writer) {
+    public static func write(_ value: [RemoteTabRecord], into buf: inout [UInt8]) {
         let len = Int32(value.count)
-        buf.writeInt(len)
+        writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeRemoteTabRecord.write(item, into: buf)
+            FfiConverterTypeRemoteTabRecord.write(item, into: &buf)
         }
     }
 
-    static func read(from buf: Reader) throws -> [RemoteTabRecord] {
-        let len: Int32 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [RemoteTabRecord] {
+        let len: Int32 = try readInt(&buf)
         var seq = [RemoteTabRecord]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeRemoteTabRecord.read(from: buf))
+            seq.append(try FfiConverterTypeRemoteTabRecord.read(from: &buf))
         }
         return seq
     }
@@ -939,20 +962,20 @@ private struct FfiConverterSequenceTypeRemoteTabRecord: FfiConverterRustBuffer {
 private struct FfiConverterSequenceTypeTabsGuid: FfiConverterRustBuffer {
     typealias SwiftType = [TabsGuid]
 
-    static func write(_ value: [TabsGuid], into buf: Writer) {
+    public static func write(_ value: [TabsGuid], into buf: inout [UInt8]) {
         let len = Int32(value.count)
-        buf.writeInt(len)
+        writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeTabsGuid.write(item, into: buf)
+            FfiConverterTypeTabsGuid.write(item, into: &buf)
         }
     }
 
-    static func read(from buf: Reader) throws -> [TabsGuid] {
-        let len: Int32 = try buf.readInt()
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TabsGuid] {
+        let len: Int32 = try readInt(&buf)
         var seq = [TabsGuid]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeTabsGuid.read(from: buf))
+            seq.append(try FfiConverterTypeTabsGuid.read(from: &buf))
         }
         return seq
     }
@@ -963,7 +986,23 @@ private struct FfiConverterSequenceTypeTabsGuid: FfiConverterRustBuffer {
  * is needed because the UDL type name is used in function/method signatures.
  */
 public typealias TabsGuid = String
-private typealias FfiConverterTypeTabsGuid = FfiConverterString
+public struct FfiConverterTypeTabsGuid: FfiConverter {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsGuid {
+        return try FfiConverterString.read(from: &buf)
+    }
+
+    public static func write(_ value: TabsGuid, into buf: inout [UInt8]) {
+        return FfiConverterString.write(value, into: &buf)
+    }
+
+    public static func lift(_ value: RustBuffer) throws -> TabsGuid {
+        return try FfiConverterString.lift(value)
+    }
+
+    public static func lower(_ value: TabsGuid) -> RustBuffer {
+        return FfiConverterString.lower(value)
+    }
+}
 
 /**
  * Top level initializers and tear down methods.
