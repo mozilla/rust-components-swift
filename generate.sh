@@ -83,6 +83,13 @@ cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$OUT_DIR"
 
 ###
 #
+# Sync Manager
+#
+###
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/sync_manager/src/syncmanager.udl"
+
+###
+#
 # Push
 #
 ###
