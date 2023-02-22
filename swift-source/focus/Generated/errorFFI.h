@@ -46,31 +46,31 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_errorsupport_a6ca_ApplicationErrorReporter_init_callback(
+void ffi_errorsupport_684e_ApplicationErrorReporter_init_callback(
       ForeignCallback  _Nonnull callback_stub,
     RustCallStatus *_Nonnull out_status
     );
-void errorsupport_a6ca_set_application_error_reporter(
+void errorsupport_684e_set_application_error_reporter(
       uint64_t error_reporter,
     RustCallStatus *_Nonnull out_status
     );
-void errorsupport_a6ca_unset_application_error_reporter(
+void errorsupport_684e_unset_application_error_reporter(
       
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_errorsupport_a6ca_rustbuffer_alloc(
+RustBuffer ffi_errorsupport_684e_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_errorsupport_a6ca_rustbuffer_from_bytes(
+RustBuffer ffi_errorsupport_684e_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_errorsupport_a6ca_rustbuffer_free(
+void ffi_errorsupport_684e_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_errorsupport_a6ca_rustbuffer_reserve(
+RustBuffer ffi_errorsupport_684e_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );
