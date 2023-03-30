@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -342,7 +342,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -380,7 +380,7 @@ public class LoginStore: LoginStoreProtocol {
     }
 
     public convenience init(path: String) throws {
-        self.init(unsafeFromRawPointer: try
+        try self.init(unsafeFromRawPointer:
 
             rustCallWithError(FfiConverterTypeLoginsApiError.self) {
                 logins_ab26_LoginStore_new(
@@ -395,45 +395,41 @@ public class LoginStore: LoginStoreProtocol {
 
     public func add(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         return try FfiConverterTypeEncryptedLogin.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_add(self.pointer,
-                                               FfiConverterTypeLoginEntry.lower(login),
-                                               FfiConverterString.lower(encryptionKey), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_add(self.pointer,
+                                           FfiConverterTypeLoginEntry.lower(login),
+                                           FfiConverterString.lower(encryptionKey), $0)
+            }
         )
     }
 
     public func update(id: String, login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         return try FfiConverterTypeEncryptedLogin.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_update(self.pointer,
-                                                  FfiConverterString.lower(id),
-                                                  FfiConverterTypeLoginEntry.lower(login),
-                                                  FfiConverterString.lower(encryptionKey), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_update(self.pointer,
+                                              FfiConverterString.lower(id),
+                                              FfiConverterTypeLoginEntry.lower(login),
+                                              FfiConverterString.lower(encryptionKey), $0)
+            }
         )
     }
 
     public func addOrUpdate(login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin {
         return try FfiConverterTypeEncryptedLogin.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_add_or_update(self.pointer,
-                                                         FfiConverterTypeLoginEntry.lower(login),
-                                                         FfiConverterString.lower(encryptionKey), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_add_or_update(self.pointer,
+                                                     FfiConverterTypeLoginEntry.lower(login),
+                                                     FfiConverterString.lower(encryptionKey), $0)
+            }
         )
     }
 
     public func delete(id: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_delete(self.pointer,
-                                                  FfiConverterString.lower(id), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_delete(self.pointer,
+                                              FfiConverterString.lower(id), $0)
+            }
         )
     }
 
@@ -468,41 +464,37 @@ public class LoginStore: LoginStoreProtocol {
 
     public func list() throws -> [EncryptedLogin] {
         return try FfiConverterSequenceTypeEncryptedLogin.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_list(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_list(self.pointer, $0)
+            }
         )
     }
 
     public func getByBaseDomain(baseDomain: String) throws -> [EncryptedLogin] {
         return try FfiConverterSequenceTypeEncryptedLogin.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_get_by_base_domain(self.pointer,
-                                                              FfiConverterString.lower(baseDomain), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_get_by_base_domain(self.pointer,
+                                                          FfiConverterString.lower(baseDomain), $0)
+            }
         )
     }
 
     public func findLoginToUpdate(look: LoginEntry, encryptionKey: String) throws -> Login? {
         return try FfiConverterOptionTypeLogin.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_find_login_to_update(self.pointer,
-                                                                FfiConverterTypeLoginEntry.lower(look),
-                                                                FfiConverterString.lower(encryptionKey), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_find_login_to_update(self.pointer,
+                                                            FfiConverterTypeLoginEntry.lower(look),
+                                                            FfiConverterString.lower(encryptionKey), $0)
+            }
         )
     }
 
     public func get(id: String) throws -> EncryptedLogin? {
         return try FfiConverterOptionTypeEncryptedLogin.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_get(self.pointer,
-                                               FfiConverterString.lower(id), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_get(self.pointer,
+                                           FfiConverterString.lower(id), $0)
+            }
         )
     }
 
@@ -515,15 +507,14 @@ public class LoginStore: LoginStoreProtocol {
 
     public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localEncryptionKey: String) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                    logins_ab26_LoginStore_sync(self.pointer,
-                                                FfiConverterString.lower(keyId),
-                                                FfiConverterString.lower(accessToken),
-                                                FfiConverterString.lower(syncKey),
-                                                FfiConverterString.lower(tokenserverUrl),
-                                                FfiConverterString.lower(localEncryptionKey), $0)
-                }
+            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+                logins_ab26_LoginStore_sync(self.pointer,
+                                            FfiConverterString.lower(keyId),
+                                            FfiConverterString.lower(accessToken),
+                                            FfiConverterString.lower(syncKey),
+                                            FfiConverterString.lower(tokenserverUrl),
+                                            FfiConverterString.lower(localEncryptionKey), $0)
+            }
         )
     }
 }
@@ -943,21 +934,21 @@ public struct FfiConverterTypeLoginsApiError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LoginsApiError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .InvalidRecord(
-                reason: try FfiConverterString.read(from: &buf)
+        case 1: return try .InvalidRecord(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 2: return .NoSuchRecord(
-                reason: try FfiConverterString.read(from: &buf)
+        case 2: return try .NoSuchRecord(
+                reason: FfiConverterString.read(from: &buf)
             )
         case 3: return .IncorrectKey
-        case 4: return .Interrupted(
-                reason: try FfiConverterString.read(from: &buf)
+        case 4: return try .Interrupted(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 5: return .SyncAuthInvalid(
-                reason: try FfiConverterString.read(from: &buf)
+        case 5: return try .SyncAuthInvalid(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 6: return .UnexpectedLoginsApiError(
-                reason: try FfiConverterString.read(from: &buf)
+        case 6: return try .UnexpectedLoginsApiError(
+                reason: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1075,7 +1066,7 @@ private struct FfiConverterSequenceTypeEncryptedLogin: FfiConverterRustBuffer {
         var seq = [EncryptedLogin]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeEncryptedLogin.read(from: &buf))
+            try seq.append(FfiConverterTypeEncryptedLogin.read(from: &buf))
         }
         return seq
     }
@@ -1083,90 +1074,76 @@ private struct FfiConverterSequenceTypeEncryptedLogin: FfiConverterRustBuffer {
 
 public func createKey() throws -> String {
     return try FfiConverterString.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                logins_ab26_create_key($0)
-            }
+        rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+            logins_ab26_create_key($0)
+        }
     )
 }
 
 public func decryptLogin(login: EncryptedLogin, encryptionKey: String) throws -> Login {
     return try FfiConverterTypeLogin.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                logins_ab26_decrypt_login(
-                    FfiConverterTypeEncryptedLogin.lower(login),
-                    FfiConverterString.lower(encryptionKey), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+            logins_ab26_decrypt_login(
+                FfiConverterTypeEncryptedLogin.lower(login),
+                FfiConverterString.lower(encryptionKey), $0
+            )
+        }
     )
 }
 
 public func encryptLogin(login: Login, encryptionKey: String) throws -> EncryptedLogin {
     return try FfiConverterTypeEncryptedLogin.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                logins_ab26_encrypt_login(
-                    FfiConverterTypeLogin.lower(login),
-                    FfiConverterString.lower(encryptionKey), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+            logins_ab26_encrypt_login(
+                FfiConverterTypeLogin.lower(login),
+                FfiConverterString.lower(encryptionKey), $0
+            )
+        }
     )
 }
 
 public func decryptFields(secFields: String, encryptionKey: String) throws -> SecureLoginFields {
     return try FfiConverterTypeSecureLoginFields.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                logins_ab26_decrypt_fields(
-                    FfiConverterString.lower(secFields),
-                    FfiConverterString.lower(encryptionKey), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+            logins_ab26_decrypt_fields(
+                FfiConverterString.lower(secFields),
+                FfiConverterString.lower(encryptionKey), $0
+            )
+        }
     )
 }
 
 public func encryptFields(secFields: SecureLoginFields, encryptionKey: String) throws -> String {
     return try FfiConverterString.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                logins_ab26_encrypt_fields(
-                    FfiConverterTypeSecureLoginFields.lower(secFields),
-                    FfiConverterString.lower(encryptionKey), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+            logins_ab26_encrypt_fields(
+                FfiConverterTypeSecureLoginFields.lower(secFields),
+                FfiConverterString.lower(encryptionKey), $0
+            )
+        }
     )
 }
 
 public func createCanary(text: String, encryptionKey: String) throws -> String {
     return try FfiConverterString.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                logins_ab26_create_canary(
-                    FfiConverterString.lower(text),
-                    FfiConverterString.lower(encryptionKey), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+            logins_ab26_create_canary(
+                FfiConverterString.lower(text),
+                FfiConverterString.lower(encryptionKey), $0
+            )
+        }
     )
 }
 
 public func checkCanary(canary: String, text: String, encryptionKey: String) throws -> Bool {
     return try FfiConverterBool.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeLoginsApiError.self) {
-                logins_ab26_check_canary(
-                    FfiConverterString.lower(canary),
-                    FfiConverterString.lower(text),
-                    FfiConverterString.lower(encryptionKey), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeLoginsApiError.self) {
+            logins_ab26_check_canary(
+                FfiConverterString.lower(canary),
+                FfiConverterString.lower(text),
+                FfiConverterString.lower(encryptionKey), $0
+            )
+        }
     )
 }
 

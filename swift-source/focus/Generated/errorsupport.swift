@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -321,7 +321,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -406,9 +406,9 @@ private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCal
             defer { args.deallocate() }
 
             var reader = createReader(data: Data(rustBuffer: args))
-            swiftCallbackInterface.reportError(
-                typeName: try FfiConverterString.read(from: &reader),
-                message: try FfiConverterString.read(from: &reader)
+            try swiftCallbackInterface.reportError(
+                typeName: FfiConverterString.read(from: &reader),
+                message: FfiConverterString.read(from: &reader)
             )
             return RustBuffer()
             // TODO: catch errors and report them back to Rust.
@@ -418,11 +418,11 @@ private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCal
             defer { args.deallocate() }
 
             var reader = createReader(data: Data(rustBuffer: args))
-            swiftCallbackInterface.reportBreadcrumb(
-                message: try FfiConverterString.read(from: &reader),
-                module: try FfiConverterString.read(from: &reader),
-                line: try FfiConverterUInt32.read(from: &reader),
-                column: try FfiConverterUInt32.read(from: &reader)
+            try swiftCallbackInterface.reportBreadcrumb(
+                message: FfiConverterString.read(from: &reader),
+                module: FfiConverterString.read(from: &reader),
+                line: FfiConverterUInt32.read(from: &reader),
+                column: FfiConverterUInt32.read(from: &reader)
             )
             return RustBuffer()
             // TODO: catch errors and report them back to Rust.

@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -329,7 +329,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -411,11 +411,10 @@ public class SyncManager: SyncManagerProtocol {
 
     public func sync(params: SyncParams) throws -> SyncResult {
         return try FfiConverterTypeSyncResult.lift(
-            try
-                rustCallWithError(FfiConverterTypeSyncManagerError.self) {
-                    syncmanager_c8c7_SyncManager_sync(self.pointer,
-                                                      FfiConverterTypeSyncParams.lower(params), $0)
-                }
+            rustCallWithError(FfiConverterTypeSyncManagerError.self) {
+                syncmanager_c8c7_SyncManager_sync(self.pointer,
+                                                  FfiConverterTypeSyncParams.lower(params), $0)
+            }
         )
     }
 
@@ -848,8 +847,8 @@ public struct FfiConverterTypeSyncEngineSelection: FfiConverterRustBuffer {
         switch variant {
         case 1: return .all
 
-        case 2: return .some(
-                engines: try FfiConverterSequenceString.read(from: &buf)
+        case 2: return try .some(
+                engines: FfiConverterSequenceString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1045,40 +1044,40 @@ public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncManagerError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .UnknownEngine(
-                message: try FfiConverterString.read(from: &buf)
+        case 1: return try .UnknownEngine(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 2: return .UnsupportedFeature(
-                message: try FfiConverterString.read(from: &buf)
+        case 2: return try .UnsupportedFeature(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 3: return .Sync15Error(
-                message: try FfiConverterString.read(from: &buf)
+        case 3: return try .Sync15Error(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 4: return .UrlParseError(
-                message: try FfiConverterString.read(from: &buf)
+        case 4: return try .UrlParseError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 5: return .InterruptedError(
-                message: try FfiConverterString.read(from: &buf)
+        case 5: return try .InterruptedError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 6: return .JsonError(
-                message: try FfiConverterString.read(from: &buf)
+        case 6: return try .JsonError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 7: return .LoginsError(
-                message: try FfiConverterString.read(from: &buf)
+        case 7: return try .LoginsError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 8: return .PlacesError(
-                message: try FfiConverterString.read(from: &buf)
+        case 8: return try .PlacesError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 9: return .AnyhowError(
-                message: try FfiConverterString.read(from: &buf)
+        case 9: return try .AnyhowError(
+                message: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1201,7 +1200,7 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
+            try seq.append(FfiConverterString.read(from: &buf))
         }
         return seq
     }

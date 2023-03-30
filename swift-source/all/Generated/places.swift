@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -394,7 +394,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -429,11 +429,10 @@ public class PlacesApi: PlacesApiProtocol {
 
     public func newConnection(connType: ConnectionType) throws -> PlacesConnection {
         return try FfiConverterTypePlacesConnection.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesApi_new_connection(self.pointer,
-                                                         FfiConverterTypeConnectionType.lower(connType), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_new_connection(self.pointer,
+                                                     FfiConverterTypeConnectionType.lower(connType), $0)
+            }
         )
     }
 
@@ -453,27 +452,25 @@ public class PlacesApi: PlacesApiProtocol {
 
     public func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesApi_history_sync(self.pointer,
-                                                       FfiConverterString.lower(keyId),
-                                                       FfiConverterString.lower(accessToken),
-                                                       FfiConverterString.lower(syncKey),
-                                                       FfiConverterTypeUrl.lower(tokenserverUrl), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_history_sync(self.pointer,
+                                                   FfiConverterString.lower(keyId),
+                                                   FfiConverterString.lower(accessToken),
+                                                   FfiConverterString.lower(syncKey),
+                                                   FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+            }
         )
     }
 
     public func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesApi_bookmarks_sync(self.pointer,
-                                                         FfiConverterString.lower(keyId),
-                                                         FfiConverterString.lower(accessToken),
-                                                         FfiConverterString.lower(syncKey),
-                                                         FfiConverterTypeUrl.lower(tokenserverUrl), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_bookmarks_sync(self.pointer,
+                                                     FfiConverterString.lower(keyId),
+                                                     FfiConverterString.lower(accessToken),
+                                                     FfiConverterString.lower(syncKey),
+                                                     FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+            }
         )
     }
 
@@ -584,43 +581,39 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata? {
         return try FfiConverterOptionTypeHistoryMetadata.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_latest_history_metadata_for_url(self.pointer,
-                                                                                     FfiConverterTypeUrl.lower(url), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_latest_history_metadata_for_url(self.pointer,
+                                                                                 FfiConverterTypeUrl.lower(url), $0)
+            }
         )
     }
 
     public func getHistoryMetadataBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws -> [HistoryMetadata] {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_history_metadata_between(self.pointer,
-                                                                              FfiConverterTypePlacesTimestamp.lower(start),
-                                                                              FfiConverterTypePlacesTimestamp.lower(end), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_history_metadata_between(self.pointer,
+                                                                          FfiConverterTypePlacesTimestamp.lower(start),
+                                                                          FfiConverterTypePlacesTimestamp.lower(end), $0)
+            }
         )
     }
 
     public func getHistoryMetadataSince(since: PlacesTimestamp) throws -> [HistoryMetadata] {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_history_metadata_since(self.pointer,
-                                                                            FfiConverterTypePlacesTimestamp.lower(since), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_history_metadata_since(self.pointer,
+                                                                        FfiConverterTypePlacesTimestamp.lower(since), $0)
+            }
         )
     }
 
     public func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult] {
         return try FfiConverterSequenceTypeSearchResult.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_query_autocomplete(self.pointer,
-                                                                    FfiConverterString.lower(search),
-                                                                    FfiConverterInt32.lower(limit), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_query_autocomplete(self.pointer,
+                                                                FfiConverterString.lower(search),
+                                                                FfiConverterInt32.lower(limit), $0)
+            }
         )
     }
 
@@ -635,33 +628,30 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func matchUrl(query: String) throws -> Url? {
         return try FfiConverterOptionTypeUrl.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_match_url(self.pointer,
-                                                           FfiConverterString.lower(query), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_match_url(self.pointer,
+                                                       FfiConverterString.lower(query), $0)
+            }
         )
     }
 
     public func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata] {
         return try FfiConverterSequenceTypeHistoryMetadata.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_query_history_metadata(self.pointer,
-                                                                        FfiConverterString.lower(query),
-                                                                        FfiConverterInt32.lower(limit), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_query_history_metadata(self.pointer,
+                                                                    FfiConverterString.lower(query),
+                                                                    FfiConverterInt32.lower(limit), $0)
+            }
         )
     }
 
     public func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight] {
         return try FfiConverterSequenceTypeHistoryHighlight.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_history_highlights(self.pointer,
-                                                                        FfiConverterTypeHistoryHighlightWeights.lower(weights),
-                                                                        FfiConverterInt32.lower(limit), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_history_highlights(self.pointer,
+                                                                    FfiConverterTypeHistoryHighlightWeights.lower(weights),
+                                                                    FfiConverterInt32.lower(limit), $0)
+            }
         )
     }
 
@@ -701,70 +691,64 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func getVisitedUrlsInRange(start: PlacesTimestamp, end: PlacesTimestamp, includeRemote: Bool) throws -> [Url] {
         return try FfiConverterSequenceTypeUrl.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_visited_urls_in_range(self.pointer,
-                                                                           FfiConverterTypePlacesTimestamp.lower(start),
-                                                                           FfiConverterTypePlacesTimestamp.lower(end),
-                                                                           FfiConverterBool.lower(includeRemote), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visited_urls_in_range(self.pointer,
+                                                                       FfiConverterTypePlacesTimestamp.lower(start),
+                                                                       FfiConverterTypePlacesTimestamp.lower(end),
+                                                                       FfiConverterBool.lower(includeRemote), $0)
+            }
         )
     }
 
     public func getVisitInfos(startDate: PlacesTimestamp, endDate: PlacesTimestamp, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo] {
         return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_visit_infos(self.pointer,
-                                                                 FfiConverterTypePlacesTimestamp.lower(startDate),
-                                                                 FfiConverterTypePlacesTimestamp.lower(endDate),
-                                                                 FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_infos(self.pointer,
+                                                             FfiConverterTypePlacesTimestamp.lower(startDate),
+                                                             FfiConverterTypePlacesTimestamp.lower(endDate),
+                                                             FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
         )
     }
 
     public func getVisitCount(excludeTypes: VisitTransitionSet) throws -> Int64 {
         return try FfiConverterInt64.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_visit_count(self.pointer,
-                                                                 FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_count(self.pointer,
+                                                             FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
         )
     }
 
     public func getVisitPage(offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo] {
         return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_visit_page(self.pointer,
-                                                                FfiConverterInt64.lower(offset),
-                                                                FfiConverterInt64.lower(count),
-                                                                FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_page(self.pointer,
+                                                            FfiConverterInt64.lower(offset),
+                                                            FfiConverterInt64.lower(count),
+                                                            FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
         )
     }
 
     public func getVisitPageWithBound(bound: Int64, offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> HistoryVisitInfosWithBound {
         return try FfiConverterTypeHistoryVisitInfosWithBound.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_visit_page_with_bound(self.pointer,
-                                                                           FfiConverterInt64.lower(bound),
-                                                                           FfiConverterInt64.lower(offset),
-                                                                           FfiConverterInt64.lower(count),
-                                                                           FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_page_with_bound(self.pointer,
+                                                                       FfiConverterInt64.lower(bound),
+                                                                       FfiConverterInt64.lower(offset),
+                                                                       FfiConverterInt64.lower(count),
+                                                                       FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
         )
     }
 
     public func getVisited(urls: [String]) throws -> [Bool] {
         return try FfiConverterSequenceBool.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_visited(self.pointer,
-                                                             FfiConverterSequenceString.lower(urls), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visited(self.pointer,
+                                                         FfiConverterSequenceString.lower(urls), $0)
+            }
         )
     }
 
@@ -796,12 +780,11 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo] {
         return try FfiConverterSequenceTypeTopFrecentSiteInfo.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_get_top_frecent_site_infos(self.pointer,
-                                                                            FfiConverterInt32.lower(numItems),
-                                                                            FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_top_frecent_site_infos(self.pointer,
+                                                                        FfiConverterInt32.lower(numItems),
+                                                                        FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
+            }
         )
     }
 
@@ -828,11 +811,10 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics {
         return try FfiConverterTypeRunMaintenanceMetrics.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_run_maintenance_prune(self.pointer,
-                                                                       FfiConverterUInt32.lower(dbSizeLimit), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_run_maintenance_prune(self.pointer,
+                                                                   FfiConverterUInt32.lower(dbSizeLimit), $0)
+            }
         )
     }
 
@@ -859,63 +841,57 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem? {
         return try FfiConverterOptionTypeBookmarkItem.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_get_tree(self.pointer,
-                                                                    FfiConverterTypeGuid.lower(itemGuid), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_tree(self.pointer,
+                                                                FfiConverterTypeGuid.lower(itemGuid), $0)
+            }
         )
     }
 
     public func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem? {
         return try FfiConverterOptionTypeBookmarkItem.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_get_by_guid(self.pointer,
-                                                                       FfiConverterTypeGuid.lower(guid),
-                                                                       FfiConverterBool.lower(getDirectChildren), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_by_guid(self.pointer,
+                                                                   FfiConverterTypeGuid.lower(guid),
+                                                                   FfiConverterBool.lower(getDirectChildren), $0)
+            }
         )
     }
 
     public func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem] {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_get_all_with_url(self.pointer,
-                                                                            FfiConverterString.lower(url), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_all_with_url(self.pointer,
+                                                                        FfiConverterString.lower(url), $0)
+            }
         )
     }
 
     public func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem] {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_search(self.pointer,
-                                                                  FfiConverterString.lower(query),
-                                                                  FfiConverterInt32.lower(limit), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_search(self.pointer,
+                                                              FfiConverterString.lower(query),
+                                                              FfiConverterInt32.lower(limit), $0)
+            }
         )
     }
 
     public func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem] {
         return try FfiConverterSequenceTypeBookmarkItem.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_get_recent(self.pointer,
-                                                                      FfiConverterInt32.lower(limit), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_recent(self.pointer,
+                                                                  FfiConverterInt32.lower(limit), $0)
+            }
         )
     }
 
     public func bookmarksDelete(id: Guid) throws -> Bool {
         return try FfiConverterBool.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_delete(self.pointer,
-                                                                  FfiConverterTypeGuid.lower(id), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_delete(self.pointer,
+                                                              FfiConverterTypeGuid.lower(id), $0)
+            }
         )
     }
 
@@ -928,11 +904,10 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func bookmarksGetUrlForKeyword(keyword: String) throws -> Url? {
         return try FfiConverterOptionTypeUrl.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer,
-                                                                               FfiConverterString.lower(keyword), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer,
+                                                                           FfiConverterString.lower(keyword), $0)
+            }
         )
     }
 
@@ -946,22 +921,20 @@ public class PlacesConnection: PlacesConnectionProtocol {
 
     public func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid {
         return try FfiConverterTypeGuid.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_bookmarks_insert(self.pointer,
-                                                                  FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_insert(self.pointer,
+                                                              FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
+            }
         )
     }
 
     public func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult {
         return try FfiConverterTypeHistoryMigrationResult.lift(
-            try
-                rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                    places_cac2_PlacesConnection_places_history_import_from_ios(self.pointer,
-                                                                                FfiConverterString.lower(dbPath),
-                                                                                FfiConverterInt64.lower(lastSyncTimestamp), $0)
-                }
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_places_history_import_from_ios(self.pointer,
+                                                                            FfiConverterString.lower(dbPath),
+                                                                            FfiConverterInt64.lower(lastSyncTimestamp), $0)
+            }
         )
     }
 }
@@ -2531,16 +2504,16 @@ public struct FfiConverterTypeBookmarkItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkItem {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .bookmark(
-                b: try FfiConverterTypeBookmarkData.read(from: &buf)
+        case 1: return try .bookmark(
+                b: FfiConverterTypeBookmarkData.read(from: &buf)
             )
 
-        case 2: return .separator(
-                s: try FfiConverterTypeBookmarkSeparator.read(from: &buf)
+        case 2: return try .separator(
+                s: FfiConverterTypeBookmarkSeparator.read(from: &buf)
             )
 
-        case 3: return .folder(
-                f: try FfiConverterTypeBookmarkFolder.read(from: &buf)
+        case 3: return try .folder(
+                f: FfiConverterTypeBookmarkFolder.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2587,8 +2560,8 @@ public struct FfiConverterTypeBookmarkPosition: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkPosition {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .specific(
-                pos: try FfiConverterUInt32.read(from: &buf)
+        case 1: return try .specific(
+                pos: FfiConverterUInt32.read(from: &buf)
             )
 
         case 2: return .append
@@ -2765,16 +2738,16 @@ public struct FfiConverterTypeInsertableBookmarkItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> InsertableBookmarkItem {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .bookmark(
-                b: try FfiConverterTypeInsertableBookmark.read(from: &buf)
+        case 1: return try .bookmark(
+                b: FfiConverterTypeInsertableBookmark.read(from: &buf)
             )
 
-        case 2: return .folder(
-                f: try FfiConverterTypeInsertableBookmarkFolder.read(from: &buf)
+        case 2: return try .folder(
+                f: FfiConverterTypeInsertableBookmarkFolder.read(from: &buf)
             )
 
-        case 3: return .separator(
-                s: try FfiConverterTypeInsertableBookmarkSeparator.read(from: &buf)
+        case 3: return try .separator(
+                s: FfiConverterTypeInsertableBookmarkSeparator.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2973,23 +2946,23 @@ public struct FfiConverterTypePlacesApiError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlacesApiError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .UnexpectedPlacesException(
-                reason: try FfiConverterString.read(from: &buf)
+        case 1: return try .UnexpectedPlacesException(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 2: return .UrlParseFailed(
-                reason: try FfiConverterString.read(from: &buf)
+        case 2: return try .UrlParseFailed(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 3: return .PlacesConnectionBusy(
-                reason: try FfiConverterString.read(from: &buf)
+        case 3: return try .PlacesConnectionBusy(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 4: return .OperationInterrupted(
-                reason: try FfiConverterString.read(from: &buf)
+        case 4: return try .OperationInterrupted(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 5: return .UnknownBookmarkItem(
-                reason: try FfiConverterString.read(from: &buf)
+        case 5: return try .UnknownBookmarkItem(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 6: return .InvalidBookmarkOperation(
-                reason: try FfiConverterString.read(from: &buf)
+        case 6: return try .InvalidBookmarkOperation(
+                reason: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -3339,7 +3312,7 @@ private struct FfiConverterSequenceBool: FfiConverterRustBuffer {
         var seq = [Bool]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterBool.read(from: &buf))
+            try seq.append(FfiConverterBool.read(from: &buf))
         }
         return seq
     }
@@ -3361,7 +3334,7 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
+            try seq.append(FfiConverterString.read(from: &buf))
         }
         return seq
     }
@@ -3383,7 +3356,7 @@ private struct FfiConverterSequenceTypeHistoryHighlight: FfiConverterRustBuffer 
         var seq = [HistoryHighlight]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeHistoryHighlight.read(from: &buf))
+            try seq.append(FfiConverterTypeHistoryHighlight.read(from: &buf))
         }
         return seq
     }
@@ -3405,7 +3378,7 @@ private struct FfiConverterSequenceTypeHistoryMetadata: FfiConverterRustBuffer {
         var seq = [HistoryMetadata]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeHistoryMetadata.read(from: &buf))
+            try seq.append(FfiConverterTypeHistoryMetadata.read(from: &buf))
         }
         return seq
     }
@@ -3427,7 +3400,7 @@ private struct FfiConverterSequenceTypeHistoryVisitInfo: FfiConverterRustBuffer 
         var seq = [HistoryVisitInfo]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeHistoryVisitInfo.read(from: &buf))
+            try seq.append(FfiConverterTypeHistoryVisitInfo.read(from: &buf))
         }
         return seq
     }
@@ -3449,7 +3422,7 @@ private struct FfiConverterSequenceTypeSearchResult: FfiConverterRustBuffer {
         var seq = [SearchResult]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeSearchResult.read(from: &buf))
+            try seq.append(FfiConverterTypeSearchResult.read(from: &buf))
         }
         return seq
     }
@@ -3471,7 +3444,7 @@ private struct FfiConverterSequenceTypeTopFrecentSiteInfo: FfiConverterRustBuffe
         var seq = [TopFrecentSiteInfo]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeTopFrecentSiteInfo.read(from: &buf))
+            try seq.append(FfiConverterTypeTopFrecentSiteInfo.read(from: &buf))
         }
         return seq
     }
@@ -3493,7 +3466,7 @@ private struct FfiConverterSequenceTypeBookmarkItem: FfiConverterRustBuffer {
         var seq = [BookmarkItem]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeBookmarkItem.read(from: &buf))
+            try seq.append(FfiConverterTypeBookmarkItem.read(from: &buf))
         }
         return seq
     }
@@ -3515,7 +3488,7 @@ private struct FfiConverterSequenceTypeInsertableBookmarkItem: FfiConverterRustB
         var seq = [InsertableBookmarkItem]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeInsertableBookmarkItem.read(from: &buf))
+            try seq.append(FfiConverterTypeInsertableBookmarkItem.read(from: &buf))
         }
         return seq
     }
@@ -3537,7 +3510,7 @@ private struct FfiConverterSequenceTypeMatchReason: FfiConverterRustBuffer {
         var seq = [MatchReason]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeMatchReason.read(from: &buf))
+            try seq.append(FfiConverterTypeMatchReason.read(from: &buf))
         }
         return seq
     }
@@ -3559,7 +3532,7 @@ private struct FfiConverterSequenceTypeGuid: FfiConverterRustBuffer {
         var seq = [Guid]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeGuid.read(from: &buf))
+            try seq.append(FfiConverterTypeGuid.read(from: &buf))
         }
         return seq
     }
@@ -3581,7 +3554,7 @@ private struct FfiConverterSequenceTypeUrl: FfiConverterRustBuffer {
         var seq = [Url]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeUrl.read(from: &buf))
+            try seq.append(FfiConverterTypeUrl.read(from: &buf))
         }
         return seq
     }
@@ -3681,13 +3654,11 @@ public struct FfiConverterTypeVisitTransitionSet: FfiConverter {
 
 public func placesApiNew(dbPath: String) throws -> PlacesApi {
     return try FfiConverterTypePlacesApi.lift(
-        try
-
-            rustCallWithError(FfiConverterTypePlacesApiError.self) {
-                places_cac2_places_api_new(
-                    FfiConverterString.lower(dbPath), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypePlacesApiError.self) {
+            places_cac2_places_api_new(
+                FfiConverterString.lower(dbPath), $0
+            )
+        }
     )
 }
 

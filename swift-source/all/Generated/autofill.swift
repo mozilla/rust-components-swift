@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -342,7 +342,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -380,7 +380,7 @@ public class Store: StoreProtocol {
     }
 
     public convenience init(dbpath: String) throws {
-        self.init(unsafeFromRawPointer: try
+        try self.init(unsafeFromRawPointer:
 
             rustCallWithError(FfiConverterTypeAutofillApiError.self) {
                 autofill_7499_Store_new(
@@ -395,30 +395,27 @@ public class Store: StoreProtocol {
 
     public func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard {
         return try FfiConverterTypeCreditCard.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_add_credit_card(self.pointer,
-                                                        FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_add_credit_card(self.pointer,
+                                                    FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
+            }
         )
     }
 
     public func getCreditCard(guid: String) throws -> CreditCard {
         return try FfiConverterTypeCreditCard.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_get_credit_card(self.pointer,
-                                                        FfiConverterString.lower(guid), $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_get_credit_card(self.pointer,
+                                                    FfiConverterString.lower(guid), $0)
+            }
         )
     }
 
     public func getAllCreditCards() throws -> [CreditCard] {
         return try FfiConverterSequenceTypeCreditCard.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_get_all_credit_cards(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_get_all_credit_cards(self.pointer, $0)
+            }
         )
     }
 
@@ -433,11 +430,10 @@ public class Store: StoreProtocol {
 
     public func deleteCreditCard(guid: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_delete_credit_card(self.pointer,
-                                                           FfiConverterString.lower(guid), $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_delete_credit_card(self.pointer,
+                                                       FfiConverterString.lower(guid), $0)
+            }
         )
     }
 
@@ -451,30 +447,27 @@ public class Store: StoreProtocol {
 
     public func addAddress(a: UpdatableAddressFields) throws -> Address {
         return try FfiConverterTypeAddress.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_add_address(self.pointer,
-                                                    FfiConverterTypeUpdatableAddressFields.lower(a), $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_add_address(self.pointer,
+                                                FfiConverterTypeUpdatableAddressFields.lower(a), $0)
+            }
         )
     }
 
     public func getAddress(guid: String) throws -> Address {
         return try FfiConverterTypeAddress.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_get_address(self.pointer,
-                                                    FfiConverterString.lower(guid), $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_get_address(self.pointer,
+                                                FfiConverterString.lower(guid), $0)
+            }
         )
     }
 
     public func getAllAddresses() throws -> [Address] {
         return try FfiConverterSequenceTypeAddress.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_get_all_addresses(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_get_all_addresses(self.pointer, $0)
+            }
         )
     }
 
@@ -489,11 +482,10 @@ public class Store: StoreProtocol {
 
     public func deleteAddress(guid: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            try
-                rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                    autofill_7499_Store_delete_address(self.pointer,
-                                                       FfiConverterString.lower(guid), $0)
-                }
+            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+                autofill_7499_Store_delete_address(self.pointer,
+                                                   FfiConverterString.lower(guid), $0)
+            }
         )
     }
 
@@ -1072,18 +1064,18 @@ public struct FfiConverterTypeAutofillApiError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AutofillApiError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .SqlError(
-                reason: try FfiConverterString.read(from: &buf)
+        case 1: return try .SqlError(
+                reason: FfiConverterString.read(from: &buf)
             )
         case 2: return .InterruptedError
-        case 3: return .CryptoError(
-                reason: try FfiConverterString.read(from: &buf)
+        case 3: return try .CryptoError(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 4: return .NoSuchRecord(
-                guid: try FfiConverterString.read(from: &buf)
+        case 4: return try .NoSuchRecord(
+                guid: FfiConverterString.read(from: &buf)
             )
-        case 5: return .UnexpectedAutofillApiError(
-                reason: try FfiConverterString.read(from: &buf)
+        case 5: return try .UnexpectedAutofillApiError(
+                reason: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1155,7 +1147,7 @@ private struct FfiConverterSequenceTypeAddress: FfiConverterRustBuffer {
         var seq = [Address]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeAddress.read(from: &buf))
+            try seq.append(FfiConverterTypeAddress.read(from: &buf))
         }
         return seq
     }
@@ -1177,7 +1169,7 @@ private struct FfiConverterSequenceTypeCreditCard: FfiConverterRustBuffer {
         var seq = [CreditCard]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeCreditCard.read(from: &buf))
+            try seq.append(FfiConverterTypeCreditCard.read(from: &buf))
         }
         return seq
     }
@@ -1185,37 +1177,31 @@ private struct FfiConverterSequenceTypeCreditCard: FfiConverterRustBuffer {
 
 public func createAutofillKey() throws -> String {
     return try FfiConverterString.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_create_autofill_key($0)
-            }
+        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+            autofill_7499_create_autofill_key($0)
+        }
     )
 }
 
 public func encryptString(key: String, cleartext: String) throws -> String {
     return try FfiConverterString.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_encrypt_string(
-                    FfiConverterString.lower(key),
-                    FfiConverterString.lower(cleartext), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+            autofill_7499_encrypt_string(
+                FfiConverterString.lower(key),
+                FfiConverterString.lower(cleartext), $0
+            )
+        }
     )
 }
 
 public func decryptString(key: String, ciphertext: String) throws -> String {
     return try FfiConverterString.lift(
-        try
-
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_decrypt_string(
-                    FfiConverterString.lower(key),
-                    FfiConverterString.lower(ciphertext), $0
-                )
-            }
+        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+            autofill_7499_decrypt_string(
+                FfiConverterString.lower(key),
+                FfiConverterString.lower(ciphertext), $0
+            )
+        }
     )
 }
 

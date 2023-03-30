@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -321,7 +321,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -363,10 +363,9 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
 
     public func lastSync() throws -> Int64 {
         return try FfiConverterInt64.lift(
-            try
-                rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_dffd_TabsBridgedEngine_last_sync(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_dffd_TabsBridgedEngine_last_sync(self.pointer, $0)
+            }
         )
     }
 
@@ -380,29 +379,26 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
 
     public func syncId() throws -> String? {
         return try FfiConverterOptionString.lift(
-            try
-                rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_dffd_TabsBridgedEngine_sync_id(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_dffd_TabsBridgedEngine_sync_id(self.pointer, $0)
+            }
         )
     }
 
     public func resetSyncId() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_dffd_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_dffd_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
+            }
         )
     }
 
     public func ensureCurrentSyncId(newSyncId: String) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_dffd_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
-                                                                       FfiConverterString.lower(newSyncId), $0)
-                }
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_dffd_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
+                                                                   FfiConverterString.lower(newSyncId), $0)
+            }
         )
     }
 
@@ -431,10 +427,9 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
 
     public func apply() throws -> [String] {
         return try FfiConverterSequenceString.lift(
-            try
-                rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_dffd_TabsBridgedEngine_apply(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_dffd_TabsBridgedEngine_apply(self.pointer, $0)
+            }
         )
     }
 
@@ -565,15 +560,14 @@ public class TabsStore: TabsStoreProtocol {
 
     public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localId: String) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                    tabs_dffd_TabsStore_sync(self.pointer,
-                                             FfiConverterString.lower(keyId),
-                                             FfiConverterString.lower(accessToken),
-                                             FfiConverterString.lower(syncKey),
-                                             FfiConverterString.lower(tokenserverUrl),
-                                             FfiConverterString.lower(localId), $0)
-                }
+            rustCallWithError(FfiConverterTypeTabsApiError.self) {
+                tabs_dffd_TabsStore_sync(self.pointer,
+                                         FfiConverterString.lower(keyId),
+                                         FfiConverterString.lower(accessToken),
+                                         FfiConverterString.lower(syncKey),
+                                         FfiConverterString.lower(tokenserverUrl),
+                                         FfiConverterString.lower(localId), $0)
+            }
         )
     }
 
@@ -837,14 +831,14 @@ public struct FfiConverterTypeTabsApiError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsApiError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .SyncError(
-                reason: try FfiConverterString.read(from: &buf)
+        case 1: return try .SyncError(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 2: return .SqlError(
-                reason: try FfiConverterString.read(from: &buf)
+        case 2: return try .SqlError(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 3: return .UnexpectedTabsError(
-                reason: try FfiConverterString.read(from: &buf)
+        case 3: return try .UnexpectedTabsError(
+                reason: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -909,7 +903,7 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
+            try seq.append(FfiConverterString.read(from: &buf))
         }
         return seq
     }
@@ -931,7 +925,7 @@ private struct FfiConverterSequenceTypeClientRemoteTabs: FfiConverterRustBuffer 
         var seq = [ClientRemoteTabs]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeClientRemoteTabs.read(from: &buf))
+            try seq.append(FfiConverterTypeClientRemoteTabs.read(from: &buf))
         }
         return seq
     }
@@ -953,7 +947,7 @@ private struct FfiConverterSequenceTypeRemoteTabRecord: FfiConverterRustBuffer {
         var seq = [RemoteTabRecord]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeRemoteTabRecord.read(from: &buf))
+            try seq.append(FfiConverterTypeRemoteTabRecord.read(from: &buf))
         }
         return seq
     }
@@ -975,7 +969,7 @@ private struct FfiConverterSequenceTypeTabsGuid: FfiConverterRustBuffer {
         var seq = [TabsGuid]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeTabsGuid.read(from: &buf))
+            try seq.append(FfiConverterTypeTabsGuid.read(from: &buf))
         }
         return seq
     }
