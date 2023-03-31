@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -342,7 +342,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -373,7 +373,7 @@ public class PushManager: PushManagerProtocol {
     }
 
     public convenience init(senderId: String, serverHost: String = "updates.push.services.mozilla.com", httpProtocol: String = "https", bridgeType: BridgeType, registrationId: String = "", databasePath: String = "push.sqlite") throws {
-        self.init(unsafeFromRawPointer: try
+        try self.init(unsafeFromRawPointer:
 
             rustCallWithError(FfiConverterTypePushError.self) {
                 push_7ec0_PushManager_new(
@@ -393,23 +393,21 @@ public class PushManager: PushManagerProtocol {
 
     public func subscribe(channelId: String = "", scope: String = "", appServerSey: String? = nil) throws -> SubscriptionResponse {
         return try FfiConverterTypeSubscriptionResponse.lift(
-            try
-                rustCallWithError(FfiConverterTypePushError.self) {
-                    push_7ec0_PushManager_subscribe(self.pointer,
-                                                    FfiConverterString.lower(channelId),
-                                                    FfiConverterString.lower(scope),
-                                                    FfiConverterOptionString.lower(appServerSey), $0)
-                }
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_subscribe(self.pointer,
+                                                FfiConverterString.lower(channelId),
+                                                FfiConverterString.lower(scope),
+                                                FfiConverterOptionString.lower(appServerSey), $0)
+            }
         )
     }
 
     public func unsubscribe(channelId: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            try
-                rustCallWithError(FfiConverterTypePushError.self) {
-                    push_7ec0_PushManager_unsubscribe(self.pointer,
-                                                      FfiConverterString.lower(channelId), $0)
-                }
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_unsubscribe(self.pointer,
+                                                  FfiConverterString.lower(channelId), $0)
+            }
         )
     }
 
@@ -422,44 +420,40 @@ public class PushManager: PushManagerProtocol {
 
     public func update(registrationToken: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            try
-                rustCallWithError(FfiConverterTypePushError.self) {
-                    push_7ec0_PushManager_update(self.pointer,
-                                                 FfiConverterString.lower(registrationToken), $0)
-                }
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_update(self.pointer,
+                                             FfiConverterString.lower(registrationToken), $0)
+            }
         )
     }
 
     public func verifyConnection() throws -> [PushSubscriptionChanged] {
         return try FfiConverterSequenceTypePushSubscriptionChanged.lift(
-            try
-                rustCallWithError(FfiConverterTypePushError.self) {
-                    push_7ec0_PushManager_verify_connection(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_verify_connection(self.pointer, $0)
+            }
         )
     }
 
     public func decrypt(channelId: String, body: String, encoding: String = "aes128gcm", salt: String = "", dh: String = "") throws -> [Int8] {
         return try FfiConverterSequenceInt8.lift(
-            try
-                rustCallWithError(FfiConverterTypePushError.self) {
-                    push_7ec0_PushManager_decrypt(self.pointer,
-                                                  FfiConverterString.lower(channelId),
-                                                  FfiConverterString.lower(body),
-                                                  FfiConverterString.lower(encoding),
-                                                  FfiConverterString.lower(salt),
-                                                  FfiConverterString.lower(dh), $0)
-                }
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_decrypt(self.pointer,
+                                              FfiConverterString.lower(channelId),
+                                              FfiConverterString.lower(body),
+                                              FfiConverterString.lower(encoding),
+                                              FfiConverterString.lower(salt),
+                                              FfiConverterString.lower(dh), $0)
+            }
         )
     }
 
     public func dispatchInfoForChid(channelId: String) throws -> DispatchInfo? {
         return try FfiConverterOptionTypeDispatchInfo.lift(
-            try
-                rustCallWithError(FfiConverterTypePushError.self) {
-                    push_7ec0_PushManager_dispatch_info_for_chid(self.pointer,
-                                                                 FfiConverterString.lower(channelId), $0)
-                }
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_dispatch_info_for_chid(self.pointer,
+                                                             FfiConverterString.lower(channelId), $0)
+            }
         )
     }
 }
@@ -864,64 +858,64 @@ public struct FfiConverterTypePushError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PushError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .GeneralError(
-                message: try FfiConverterString.read(from: &buf)
+        case 1: return try .GeneralError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 2: return .CryptoError(
-                message: try FfiConverterString.read(from: &buf)
+        case 2: return try .CryptoError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 3: return .CommunicationError(
-                message: try FfiConverterString.read(from: &buf)
+        case 3: return try .CommunicationError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 4: return .CommunicationServerError(
-                message: try FfiConverterString.read(from: &buf)
+        case 4: return try .CommunicationServerError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 5: return .AlreadyRegisteredError(
-                message: try FfiConverterString.read(from: &buf)
+        case 5: return try .AlreadyRegisteredError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 6: return .StorageError(
-                message: try FfiConverterString.read(from: &buf)
+        case 6: return try .StorageError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 7: return .RecordNotFoundError(
-                message: try FfiConverterString.read(from: &buf)
+        case 7: return try .RecordNotFoundError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 8: return .StorageSqlError(
-                message: try FfiConverterString.read(from: &buf)
+        case 8: return try .StorageSqlError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 9: return .MissingRegistrationTokenError(
-                message: try FfiConverterString.read(from: &buf)
+        case 9: return try .MissingRegistrationTokenError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 10: return .TranscodingError(
-                message: try FfiConverterString.read(from: &buf)
+        case 10: return try .TranscodingError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 11: return .UrlParseError(
-                message: try FfiConverterString.read(from: &buf)
+        case 11: return try .UrlParseError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 12: return .JsonDeserializeError(
-                message: try FfiConverterString.read(from: &buf)
+        case 12: return try .JsonDeserializeError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 13: return .UaidNotRecognizedError(
-                message: try FfiConverterString.read(from: &buf)
+        case 13: return try .UaidNotRecognizedError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 14: return .RequestError(
-                message: try FfiConverterString.read(from: &buf)
+        case 14: return try .RequestError(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 15: return .OpenDatabaseError(
-                message: try FfiConverterString.read(from: &buf)
+        case 15: return try .OpenDatabaseError(
+                message: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1041,7 +1035,7 @@ private struct FfiConverterSequenceInt8: FfiConverterRustBuffer {
         var seq = [Int8]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterInt8.read(from: &buf))
+            try seq.append(FfiConverterInt8.read(from: &buf))
         }
         return seq
     }
@@ -1063,7 +1057,7 @@ private struct FfiConverterSequenceTypePushSubscriptionChanged: FfiConverterRust
         var seq = [PushSubscriptionChanged]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypePushSubscriptionChanged.read(from: &buf))
+            try seq.append(FfiConverterTypePushSubscriptionChanged.read(from: &buf))
         }
         return seq
     }

@@ -104,12 +104,12 @@ private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: 
 
 // Reads a float at the current offset.
 private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
 private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
@@ -267,7 +267,7 @@ private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) 
         // with the message.  But if that code panics, then it just sends back
         // an empty buffer.
         if callStatus.errorBuf.len > 0 {
-            throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
         } else {
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
@@ -342,7 +342,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -415,7 +415,7 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     }
 
     public static func fromJson(data: String) throws -> FirefoxAccount {
-        return FirefoxAccount(unsafeFromRawPointer: try
+        return try FirefoxAccount(unsafeFromRawPointer:
 
             rustCallWithError(FfiConverterTypeFxaError.self) {
                 fxa_client_b9ff_FirefoxAccount_from_json(
@@ -426,44 +426,40 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func toJson() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_to_json(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_to_json(self.pointer, $0)
+            }
         )
     }
 
     public func beginOauthFlow(scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_begin_oauth_flow(self.pointer,
-                                                                    FfiConverterSequenceString.lower(scopes),
-                                                                    FfiConverterString.lower(entrypoint),
-                                                                    FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_begin_oauth_flow(self.pointer,
+                                                                FfiConverterSequenceString.lower(scopes),
+                                                                FfiConverterString.lower(entrypoint),
+                                                                FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
+            }
         )
     }
 
     public func getPairingAuthorityUrl() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_pairing_authority_url(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_pairing_authority_url(self.pointer, $0)
+            }
         )
     }
 
     public func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_begin_pairing_flow(self.pointer,
-                                                                      FfiConverterString.lower(pairingUrl),
-                                                                      FfiConverterSequenceString.lower(scopes),
-                                                                      FfiConverterString.lower(entrypoint),
-                                                                      FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_begin_pairing_flow(self.pointer,
+                                                                  FfiConverterString.lower(pairingUrl),
+                                                                  FfiConverterSequenceString.lower(scopes),
+                                                                  FfiConverterString.lower(entrypoint),
+                                                                  FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
+            }
         )
     }
 
@@ -478,10 +474,9 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func checkAuthorizationStatus() throws -> AuthorizationInfo {
         return try FfiConverterTypeAuthorizationInfo.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_check_authorization_status(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_check_authorization_status(self.pointer, $0)
+            }
         )
     }
 
@@ -494,11 +489,10 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func getProfile(ignoreCache: Bool) throws -> Profile {
         return try FfiConverterTypeProfile.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_profile(self.pointer,
-                                                               FfiConverterBool.lower(ignoreCache), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_profile(self.pointer,
+                                                           FfiConverterBool.lower(ignoreCache), $0)
+            }
         )
     }
 
@@ -514,29 +508,26 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func getCurrentDeviceId() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_current_device_id(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_current_device_id(self.pointer, $0)
+            }
         )
     }
 
     public func getDevices(ignoreCache: Bool) throws -> [Device] {
         return try FfiConverterSequenceTypeDevice.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_devices(self.pointer,
-                                                               FfiConverterBool.lower(ignoreCache), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_devices(self.pointer,
+                                                           FfiConverterBool.lower(ignoreCache), $0)
+            }
         )
     }
 
     public func getAttachedClients() throws -> [AttachedClient] {
         return try FfiConverterSequenceTypeAttachedClient.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_attached_clients(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_attached_clients(self.pointer, $0)
+            }
         )
     }
 
@@ -573,20 +564,18 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func handlePushMessage(payload: String) throws -> [AccountEvent] {
         return try FfiConverterSequenceTypeAccountEvent.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_handle_push_message(self.pointer,
-                                                                       FfiConverterString.lower(payload), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_handle_push_message(self.pointer,
+                                                                   FfiConverterString.lower(payload), $0)
+            }
         )
     }
 
     public func pollDeviceCommands() throws -> [IncomingDeviceCommand] {
         return try FfiConverterSequenceTypeIncomingDeviceCommand.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_poll_device_commands(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_poll_device_commands(self.pointer, $0)
+            }
         )
     }
 
@@ -602,59 +591,53 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func getTokenServerEndpointUrl() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_token_server_endpoint_url(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_token_server_endpoint_url(self.pointer, $0)
+            }
         )
     }
 
     public func getConnectionSuccessUrl() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_connection_success_url(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_connection_success_url(self.pointer, $0)
+            }
         )
     }
 
     public func getManageAccountUrl(entrypoint: String) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_manage_account_url(self.pointer,
-                                                                          FfiConverterString.lower(entrypoint), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_manage_account_url(self.pointer,
+                                                                      FfiConverterString.lower(entrypoint), $0)
+            }
         )
     }
 
     public func getManageDevicesUrl(entrypoint: String) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_manage_devices_url(self.pointer,
-                                                                          FfiConverterString.lower(entrypoint), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_manage_devices_url(self.pointer,
+                                                                      FfiConverterString.lower(entrypoint), $0)
+            }
         )
     }
 
     public func getAccessToken(scope: String, ttl: Int64?) throws -> AccessTokenInfo {
         return try FfiConverterTypeAccessTokenInfo.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_access_token(self.pointer,
-                                                                    FfiConverterString.lower(scope),
-                                                                    FfiConverterOptionInt64.lower(ttl), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_access_token(self.pointer,
+                                                                FfiConverterString.lower(scope),
+                                                                FfiConverterOptionInt64.lower(ttl), $0)
+            }
         )
     }
 
     public func getSessionToken() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_get_session_token(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_get_session_token(self.pointer, $0)
+            }
         )
     }
 
@@ -668,11 +651,10 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_authorize_code_using_session_token(self.pointer,
-                                                                                      FfiConverterTypeAuthorizationParameters.lower(params), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_authorize_code_using_session_token(self.pointer,
+                                                                                  FfiConverterTypeAuthorizationParameters.lower(params), $0)
+            }
         )
     }
 
@@ -685,32 +667,29 @@ public class FirefoxAccount: FirefoxAccountProtocol {
 
     public func gatherTelemetry() throws -> String {
         return try FfiConverterString.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_gather_telemetry(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_gather_telemetry(self.pointer, $0)
+            }
         )
     }
 
     public func migrateFromSessionToken(sessionToken: String, kSync: String, kXcs: String, copySessionToken: Bool) throws -> FxAMigrationResult {
         return try FfiConverterTypeFxAMigrationResult.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_migrate_from_session_token(self.pointer,
-                                                                              FfiConverterString.lower(sessionToken),
-                                                                              FfiConverterString.lower(kSync),
-                                                                              FfiConverterString.lower(kXcs),
-                                                                              FfiConverterBool.lower(copySessionToken), $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_migrate_from_session_token(self.pointer,
+                                                                          FfiConverterString.lower(sessionToken),
+                                                                          FfiConverterString.lower(kSync),
+                                                                          FfiConverterString.lower(kXcs),
+                                                                          FfiConverterBool.lower(copySessionToken), $0)
+            }
         )
     }
 
     public func retryMigrateFromSessionToken() throws -> FxAMigrationResult {
         return try FfiConverterTypeFxAMigrationResult.lift(
-            try
-                rustCallWithError(FfiConverterTypeFxaError.self) {
-                    fxa_client_b9ff_FirefoxAccount_retry_migrate_from_session_token(self.pointer, $0)
-                }
+            rustCallWithError(FfiConverterTypeFxaError.self) {
+                fxa_client_b9ff_FirefoxAccount_retry_migrate_from_session_token(self.pointer, $0)
+            }
         )
     }
 
@@ -1567,8 +1546,8 @@ public struct FfiConverterTypeAccountEvent: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccountEvent {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .commandReceived(
-                command: try FfiConverterTypeIncomingDeviceCommand.read(from: &buf)
+        case 1: return try .commandReceived(
+                command: FfiConverterTypeIncomingDeviceCommand.read(from: &buf)
             )
 
         case 2: return .profileUpdated
@@ -1577,13 +1556,13 @@ public struct FfiConverterTypeAccountEvent: FfiConverterRustBuffer {
 
         case 4: return .accountDestroyed
 
-        case 5: return .deviceConnected(
-                deviceName: try FfiConverterString.read(from: &buf)
+        case 5: return try .deviceConnected(
+                deviceName: FfiConverterString.read(from: &buf)
             )
 
-        case 6: return .deviceDisconnected(
-                deviceId: try FfiConverterString.read(from: &buf),
-                isLocalDevice: try FfiConverterBool.read(from: &buf)
+        case 6: return try .deviceDisconnected(
+                deviceId: FfiConverterString.read(from: &buf),
+                isLocalDevice: FfiConverterBool.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1741,9 +1720,9 @@ public struct FfiConverterTypeIncomingDeviceCommand: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IncomingDeviceCommand {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .tabReceived(
-                sender: try FfiConverterOptionTypeDevice.read(from: &buf),
-                payload: try FfiConverterTypeSendTabPayload.read(from: &buf)
+        case 1: return try .tabReceived(
+                sender: FfiConverterOptionTypeDevice.read(from: &buf),
+                payload: FfiConverterTypeSendTabPayload.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1844,28 +1823,28 @@ public struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .Authentication(
-                message: try FfiConverterString.read(from: &buf)
+        case 1: return try .Authentication(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 2: return .Network(
-                message: try FfiConverterString.read(from: &buf)
+        case 2: return try .Network(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 3: return .NoExistingAuthFlow(
-                message: try FfiConverterString.read(from: &buf)
+        case 3: return try .NoExistingAuthFlow(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 4: return .WrongAuthFlow(
-                message: try FfiConverterString.read(from: &buf)
+        case 4: return try .WrongAuthFlow(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 5: return .Panic(
-                message: try FfiConverterString.read(from: &buf)
+        case 5: return try .Panic(
+                message: FfiConverterString.read(from: &buf)
             )
 
-        case 6: return .Other(
-                message: try FfiConverterString.read(from: &buf)
+        case 6: return try .Other(
+                message: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -2063,7 +2042,7 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
+            try seq.append(FfiConverterString.read(from: &buf))
         }
         return seq
     }
@@ -2085,7 +2064,7 @@ private struct FfiConverterSequenceTypeAttachedClient: FfiConverterRustBuffer {
         var seq = [AttachedClient]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeAttachedClient.read(from: &buf))
+            try seq.append(FfiConverterTypeAttachedClient.read(from: &buf))
         }
         return seq
     }
@@ -2107,7 +2086,7 @@ private struct FfiConverterSequenceTypeDevice: FfiConverterRustBuffer {
         var seq = [Device]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeDevice.read(from: &buf))
+            try seq.append(FfiConverterTypeDevice.read(from: &buf))
         }
         return seq
     }
@@ -2129,7 +2108,7 @@ private struct FfiConverterSequenceTypeTabHistoryEntry: FfiConverterRustBuffer {
         var seq = [TabHistoryEntry]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeTabHistoryEntry.read(from: &buf))
+            try seq.append(FfiConverterTypeTabHistoryEntry.read(from: &buf))
         }
         return seq
     }
@@ -2151,7 +2130,7 @@ private struct FfiConverterSequenceTypeAccountEvent: FfiConverterRustBuffer {
         var seq = [AccountEvent]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeAccountEvent.read(from: &buf))
+            try seq.append(FfiConverterTypeAccountEvent.read(from: &buf))
         }
         return seq
     }
@@ -2173,7 +2152,7 @@ private struct FfiConverterSequenceTypeDeviceCapability: FfiConverterRustBuffer 
         var seq = [DeviceCapability]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeDeviceCapability.read(from: &buf))
+            try seq.append(FfiConverterTypeDeviceCapability.read(from: &buf))
         }
         return seq
     }
@@ -2195,7 +2174,7 @@ private struct FfiConverterSequenceTypeIncomingDeviceCommand: FfiConverterRustBu
         var seq = [IncomingDeviceCommand]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeIncomingDeviceCommand.read(from: &buf))
+            try seq.append(FfiConverterTypeIncomingDeviceCommand.read(from: &buf))
         }
         return seq
     }
