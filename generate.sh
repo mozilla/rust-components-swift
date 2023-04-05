@@ -31,7 +31,7 @@ rm -rf "$FOCUS_DIR" && mkdir -p "$FOCUS_DIR"
 # Glean metrics.
 # Run this first, because it appears to delete any other .swift files in the output directory.
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
-SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
+SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml" "$APP_SERVICES_DIR/components/sync_manager/metrics.yaml" "$APP_SERVICES_DIR/components/sync_manager/pings.yaml"
 
 
 
@@ -87,6 +87,8 @@ cp -r "$APP_SERVICES_DIR/components/logins/ios/Logins" "$OUT_DIR"
 #
 ###
 "${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/sync_manager/src/syncmanager.udl"
+# Copy the hand-written Swift, since it all needs to be together in one directory.
+cp -r "$APP_SERVICES_DIR/components/sync_manager/ios/SyncManager" "$OUT_DIR"
 
 ###
 #
