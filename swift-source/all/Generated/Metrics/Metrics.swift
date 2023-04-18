@@ -25,7 +25,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 4, day: 4, hour: 19, minute: 39, second: 48))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 4, day: 18, hour: 15, minute: 13, second: 53))
     }
 
     enum NimbusEvents {
@@ -338,6 +338,880 @@ extension GleanMetrics {
                 disabled: false
             )
             , .millisecond
+        )
+
+    }
+
+    enum AddressesSync {
+        private static let failureReasonLabel = StringMetricType( // generated from addresses_sync.failure_reason
+            CommonMetricData(
+                category: "addresses_sync",
+                name: "failure_reason",
+                sendInPings: ["addresses-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records why the addresses sync failed: either due to an authentication error,
+        /// unexpected exception, or other error. The error strings are truncated and
+        /// sanitized to omit PII, like URLs and file system paths.
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from addresses_sync.failure_reason
+            category: "addresses_sync",
+            name: "failure_reason",
+            sendInPings: ["addresses-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: failureReasonLabel,
+            labels: ["auth", "other", "unexpected"]
+        )
+
+        /// Records when the addresses sync finished. This includes the time to download,
+        /// apply, and upload all records.
+        static let finishedAt = DatetimeMetricType( // generated from addresses_sync.finished_at
+            CommonMetricData(
+                category: "addresses_sync",
+                name: "finished_at",
+                sendInPings: ["addresses-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        private static let incomingLabel = CounterMetricType( // generated from addresses_sync.incoming
+            CommonMetricData(
+                category: "addresses_sync",
+                name: "incoming",
+                sendInPings: ["addresses-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records incoming addresses record counts. `applied` is the number of incoming
+        /// records that were successfully stored or updated in the local database.
+        /// `failed_to_apply` is the number of records that were ignored due to errors.
+        /// `reconciled` is the number of merged records.
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from addresses_sync.incoming
+            category: "addresses_sync",
+            name: "incoming",
+            sendInPings: ["addresses-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: incomingLabel,
+            labels: ["applied", "failed_to_apply", "reconciled"]
+        )
+
+        private static let outgoingLabel = CounterMetricType( // generated from addresses_sync.outgoing
+            CommonMetricData(
+                category: "addresses_sync",
+                name: "outgoing",
+                sendInPings: ["addresses-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records outgoing addresses record counts. `uploaded` is the number of records
+        /// that were successfully sent to the server. `failed_to_upload` is the number of
+        /// records that weren't uploaded, and will be retried on the next sync.
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from addresses_sync.outgoing
+            category: "addresses_sync",
+            name: "outgoing",
+            sendInPings: ["addresses-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: outgoingLabel,
+            labels: ["failed_to_upload", "uploaded"]
+        )
+
+        /// Records the number of batches needed to upload all outgoing records. The Sync
+        /// server has a hard limit on the number of records (and request body bytes) on
+        /// the number of records that can fit into a single batch, and large syncs may
+        /// require multiple batches.
+        static let outgoingBatches = CounterMetricType( // generated from addresses_sync.outgoing_batches
+            CommonMetricData(
+                category: "addresses_sync",
+                name: "outgoing_batches",
+                sendInPings: ["addresses-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records when the addresses sync started.
+        static let startedAt = DatetimeMetricType( // generated from addresses_sync.started_at
+            CommonMetricData(
+                category: "addresses_sync",
+                name: "started_at",
+                sendInPings: ["addresses-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        /// The user's hashed Firefox Account ID.
+        static let uid = StringMetricType( // generated from addresses_sync.uid
+            CommonMetricData(
+                category: "addresses_sync",
+                name: "uid",
+                sendInPings: ["addresses-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum BookmarksSync {
+        private static let failureReasonLabel = StringMetricType( // generated from bookmarks_sync.failure_reason
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "failure_reason",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records bookmark sync failure reasons.
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from bookmarks_sync.failure_reason
+            category: "bookmarks_sync",
+            name: "failure_reason",
+            sendInPings: ["bookmarks-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: failureReasonLabel,
+            labels: ["auth", "other", "unexpected"]
+        )
+
+        /// Records when the bookmark sync finished.
+        static let finishedAt = DatetimeMetricType( // generated from bookmarks_sync.finished_at
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "finished_at",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        private static let incomingLabel = CounterMetricType( // generated from bookmarks_sync.incoming
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "incoming",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records incoming bookmark record counts.
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync.incoming
+            category: "bookmarks_sync",
+            name: "incoming",
+            sendInPings: ["bookmarks-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: incomingLabel,
+            labels: ["applied", "failed_to_apply", "reconciled"]
+        )
+
+        private static let outgoingLabel = CounterMetricType( // generated from bookmarks_sync.outgoing
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "outgoing",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records outgoing bookmark record counts.
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync.outgoing
+            category: "bookmarks_sync",
+            name: "outgoing",
+            sendInPings: ["bookmarks-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: outgoingLabel,
+            labels: ["failed_to_upload", "uploaded"]
+        )
+
+        /// Records the number of batches needed to upload all outgoing records.
+        static let outgoingBatches = CounterMetricType( // generated from bookmarks_sync.outgoing_batches
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "outgoing_batches",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        private static let remoteTreeProblemsLabel = CounterMetricType( // generated from bookmarks_sync.remote_tree_problems
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "remote_tree_problems",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records counts for structure problems and divergences in the remote bookmarks
+        /// tree. These are documented in https://github.com/mozilla/dogear/blob/fbade15f2a
+        /// 4f11215e30b8f428a0a8df3defeaec/src/tree.rs#L1273-L1294.
+        static let remoteTreeProblems = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync.remote_tree_problems
+            category: "bookmarks_sync",
+            name: "remote_tree_problems",
+            sendInPings: ["bookmarks-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: remoteTreeProblemsLabel,
+            labels: ["misparented_roots", "missing_children", "missing_parent_guids", "multiple_parents_by_children", "non_folder_parent_guids", "orphans", "parent_child_disagreements"]
+        )
+
+        /// Records when the bookmark sync started.
+        static let startedAt = DatetimeMetricType( // generated from bookmarks_sync.started_at
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "started_at",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        /// The user's hashed Firefox Account ID.
+        static let uid = StringMetricType( // generated from bookmarks_sync.uid
+            CommonMetricData(
+                category: "bookmarks_sync",
+                name: "uid",
+                sendInPings: ["bookmarks-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum CreditcardsSync {
+        private static let failureReasonLabel = StringMetricType( // generated from creditcards_sync.failure_reason
+            CommonMetricData(
+                category: "creditcards_sync",
+                name: "failure_reason",
+                sendInPings: ["creditcards-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records why the credit cards sync failed: either due to an authentication
+        /// error, unexpected exception, or other error. The error strings are truncated
+        /// and sanitized to omit PII, like URLs and file system paths.
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from creditcards_sync.failure_reason
+            category: "creditcards_sync",
+            name: "failure_reason",
+            sendInPings: ["creditcards-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: failureReasonLabel,
+            labels: ["auth", "other", "unexpected"]
+        )
+
+        /// Records when the credit cards sync finished. This includes the time to
+        /// download, apply, and upload all records.
+        static let finishedAt = DatetimeMetricType( // generated from creditcards_sync.finished_at
+            CommonMetricData(
+                category: "creditcards_sync",
+                name: "finished_at",
+                sendInPings: ["creditcards-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        private static let incomingLabel = CounterMetricType( // generated from creditcards_sync.incoming
+            CommonMetricData(
+                category: "creditcards_sync",
+                name: "incoming",
+                sendInPings: ["creditcards-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records incoming credit cards record counts. `applied` is the number of
+        /// incoming records that were successfully stored or updated in the local
+        /// database. `failed_to_apply` is the number of records that were ignored due to
+        /// errors. `reconciled` is the number of merged records.
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from creditcards_sync.incoming
+            category: "creditcards_sync",
+            name: "incoming",
+            sendInPings: ["creditcards-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: incomingLabel,
+            labels: ["applied", "failed_to_apply", "reconciled"]
+        )
+
+        private static let outgoingLabel = CounterMetricType( // generated from creditcards_sync.outgoing
+            CommonMetricData(
+                category: "creditcards_sync",
+                name: "outgoing",
+                sendInPings: ["creditcards-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records outgoing credit cards record counts. `uploaded` is the number of
+        /// records that were successfully sent to the server. `failed_to_upload` is the
+        /// number of records that weren't uploaded, and will be retried on the next sync.
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from creditcards_sync.outgoing
+            category: "creditcards_sync",
+            name: "outgoing",
+            sendInPings: ["creditcards-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: outgoingLabel,
+            labels: ["failed_to_upload", "uploaded"]
+        )
+
+        /// Records the number of batches needed to upload all outgoing records. The Sync
+        /// server has a hard limit on the number of records (and request body bytes) on
+        /// the number of records that can fit into a single batch, and large syncs may
+        /// require multiple batches.
+        static let outgoingBatches = CounterMetricType( // generated from creditcards_sync.outgoing_batches
+            CommonMetricData(
+                category: "creditcards_sync",
+                name: "outgoing_batches",
+                sendInPings: ["creditcards-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records when the credit cards sync started.
+        static let startedAt = DatetimeMetricType( // generated from creditcards_sync.started_at
+            CommonMetricData(
+                category: "creditcards_sync",
+                name: "started_at",
+                sendInPings: ["creditcards-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        /// The user's hashed Firefox Account ID.
+        static let uid = StringMetricType( // generated from creditcards_sync.uid
+            CommonMetricData(
+                category: "creditcards_sync",
+                name: "uid",
+                sendInPings: ["creditcards-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum HistorySync {
+        private static let failureReasonLabel = StringMetricType( // generated from history_sync.failure_reason
+            CommonMetricData(
+                category: "history_sync",
+                name: "failure_reason",
+                sendInPings: ["history-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records why the history sync failed: either due to an authentication error,
+        /// unexpected exception, or other error. The error strings are truncated and
+        /// sanitized to omit PII, like URLs and file system paths.
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from history_sync.failure_reason
+            category: "history_sync",
+            name: "failure_reason",
+            sendInPings: ["history-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: failureReasonLabel,
+            labels: ["auth", "other", "unexpected"]
+        )
+
+        /// Records when the history sync finished. This includes the time to download,
+        /// apply, and upload all records.
+        static let finishedAt = DatetimeMetricType( // generated from history_sync.finished_at
+            CommonMetricData(
+                category: "history_sync",
+                name: "finished_at",
+                sendInPings: ["history-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        private static let incomingLabel = CounterMetricType( // generated from history_sync.incoming
+            CommonMetricData(
+                category: "history_sync",
+                name: "incoming",
+                sendInPings: ["history-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records incoming history record counts. `applied` is the number of incoming
+        /// history pages that were successfully stored or updated in the local database.
+        /// `failed_to_apply` is the number of pages that were ignored due to errors.
+        /// `reconciled` is the number of pages with new visits locally and remotely, and
+        /// had their visits merged.
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from history_sync.incoming
+            category: "history_sync",
+            name: "incoming",
+            sendInPings: ["history-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: incomingLabel,
+            labels: ["applied", "failed_to_apply", "reconciled"]
+        )
+
+        private static let outgoingLabel = CounterMetricType( // generated from history_sync.outgoing
+            CommonMetricData(
+                category: "history_sync",
+                name: "outgoing",
+                sendInPings: ["history-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records outgoing history record counts. `uploaded` is the number of records
+        /// that were successfully sent to the server. `failed_to_upload` is the number of
+        /// records that weren't uploaded, and will be retried on the next sync.
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from history_sync.outgoing
+            category: "history_sync",
+            name: "outgoing",
+            sendInPings: ["history-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: outgoingLabel,
+            labels: ["failed_to_upload", "uploaded"]
+        )
+
+        /// Records the number of batches needed to upload all outgoing records. The Sync
+        /// server has a hard limit on the number of records (and request body bytes) on
+        /// the number of records that can fit into a single batch, and large syncs may
+        /// require multiple batches.
+        static let outgoingBatches = CounterMetricType( // generated from history_sync.outgoing_batches
+            CommonMetricData(
+                category: "history_sync",
+                name: "outgoing_batches",
+                sendInPings: ["history-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records when the history sync started.
+        static let startedAt = DatetimeMetricType( // generated from history_sync.started_at
+            CommonMetricData(
+                category: "history_sync",
+                name: "started_at",
+                sendInPings: ["history-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        /// The user's hashed Firefox Account ID.
+        static let uid = StringMetricType( // generated from history_sync.uid
+            CommonMetricData(
+                category: "history_sync",
+                name: "uid",
+                sendInPings: ["history-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum LoginsSync {
+        private static let failureReasonLabel = StringMetricType( // generated from logins_sync.failure_reason
+            CommonMetricData(
+                category: "logins_sync",
+                name: "failure_reason",
+                sendInPings: ["logins-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records why the passwords sync failed: either due to an authentication error,
+        /// unexpected exception, or other error. The error strings are truncated and
+        /// sanitized to omit PII, like usernames and passwords.
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from logins_sync.failure_reason
+            category: "logins_sync",
+            name: "failure_reason",
+            sendInPings: ["logins-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: failureReasonLabel,
+            labels: ["auth", "other", "unexpected"]
+        )
+
+        /// Records when the passwords sync finished. This includes the time to download,
+        /// apply, and upload all records.
+        static let finishedAt = DatetimeMetricType( // generated from logins_sync.finished_at
+            CommonMetricData(
+                category: "logins_sync",
+                name: "finished_at",
+                sendInPings: ["logins-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        private static let incomingLabel = CounterMetricType( // generated from logins_sync.incoming
+            CommonMetricData(
+                category: "logins_sync",
+                name: "incoming",
+                sendInPings: ["logins-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records incoming passwords record counts. `applied` is the number of incoming
+        /// passwords entries that were successfully stored or updated in the local
+        /// database. `failed_to_apply` is the number of entries that were ignored due to
+        /// errors. `reconciled` is the number of entries with changes both locally and
+        /// remotely that were merged.
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from logins_sync.incoming
+            category: "logins_sync",
+            name: "incoming",
+            sendInPings: ["logins-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: incomingLabel,
+            labels: ["applied", "failed_to_apply", "reconciled"]
+        )
+
+        private static let outgoingLabel = CounterMetricType( // generated from logins_sync.outgoing
+            CommonMetricData(
+                category: "logins_sync",
+                name: "outgoing",
+                sendInPings: ["logins-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records outgoing passwords record counts. `uploaded` is the number of records
+        /// that were successfully sent to the server. `failed_to_upload` is the number of
+        /// records that weren't uploaded, and will be retried on the next sync.
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from logins_sync.outgoing
+            category: "logins_sync",
+            name: "outgoing",
+            sendInPings: ["logins-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: outgoingLabel,
+            labels: ["failed_to_upload", "uploaded"]
+        )
+
+        /// Records the number of batches needed to upload all outgoing records. The Sync
+        /// server has a hard limit on the number of records (and request body bytes) on
+        /// the number of records that can fit into a single batch, and large syncs may
+        /// require multiple batches.
+        static let outgoingBatches = CounterMetricType( // generated from logins_sync.outgoing_batches
+            CommonMetricData(
+                category: "logins_sync",
+                name: "outgoing_batches",
+                sendInPings: ["logins-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records when the passwords sync started.
+        static let startedAt = DatetimeMetricType( // generated from logins_sync.started_at
+            CommonMetricData(
+                category: "logins_sync",
+                name: "started_at",
+                sendInPings: ["logins-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        /// The user's hashed Firefox Account ID.
+        static let uid = StringMetricType( // generated from logins_sync.uid
+            CommonMetricData(
+                category: "logins_sync",
+                name: "uid",
+                sendInPings: ["logins-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum Sync {
+        private static let failureReasonLabel = StringMetricType( // generated from sync.failure_reason
+            CommonMetricData(
+                category: "sync",
+                name: "failure_reason",
+                sendInPings: ["sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records a global sync failure: either due to an authentication error,
+        /// unexpected exception, or other error that caused the sync to fail. Error
+        /// strings are truncated and sanitized to omit PII, like URLs and file system
+        /// paths.
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from sync.failure_reason
+            category: "sync",
+            name: "failure_reason",
+            sendInPings: ["sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: failureReasonLabel,
+            labels: ["auth", "other", "unexpected"]
+        )
+
+        /// Unique identifier for this sync, used to correlate together individual pings
+        /// for data types that were synchronized together (history, bookmarks, logins). If
+        /// a data type is synchronized by itself via the legacy 'sync' API (as opposed to
+        /// the Sync Manager), then this field will not be set on the corresponding ping.
+        static let syncUuid = UuidMetricType( // generated from sync.sync_uuid
+            CommonMetricData(
+                category: "sync",
+                name: "sync_uuid",
+                sendInPings: ["bookmarks-sync", "history-sync", "logins-sync", "sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    enum TabsSync {
+        private static let failureReasonLabel = StringMetricType( // generated from tabs_sync.failure_reason
+            CommonMetricData(
+                category: "tabs_sync",
+                name: "failure_reason",
+                sendInPings: ["tabs-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records why the tabs sync failed: either due to an authentication error,
+        /// unexpected exception, or other error. The error strings are truncated and
+        /// sanitized to omit PII, like URLs and file system paths.
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from tabs_sync.failure_reason
+            category: "tabs_sync",
+            name: "failure_reason",
+            sendInPings: ["tabs-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: failureReasonLabel,
+            labels: ["auth", "other", "unexpected"]
+        )
+
+        /// Records when the tabs sync finished. This includes the time to download, apply,
+        /// and upload all records.
+        static let finishedAt = DatetimeMetricType( // generated from tabs_sync.finished_at
+            CommonMetricData(
+                category: "tabs_sync",
+                name: "finished_at",
+                sendInPings: ["tabs-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        private static let incomingLabel = CounterMetricType( // generated from tabs_sync.incoming
+            CommonMetricData(
+                category: "tabs_sync",
+                name: "incoming",
+                sendInPings: ["tabs-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records incoming tabs record counts. `applied` is the number of incoming
+        /// records that were successfully stored or updated in the local database.
+        /// `failed_to_apply` is the number of records that were ignored due to errors.
+        /// `reconciled` is the number of merged records.
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from tabs_sync.incoming
+            category: "tabs_sync",
+            name: "incoming",
+            sendInPings: ["tabs-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: incomingLabel,
+            labels: ["applied", "failed_to_apply", "reconciled"]
+        )
+
+        private static let outgoingLabel = CounterMetricType( // generated from tabs_sync.outgoing
+            CommonMetricData(
+                category: "tabs_sync",
+                name: "outgoing",
+                sendInPings: ["tabs-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records outgoing tabs record counts. `uploaded` is the number of records that
+        /// were successfully sent to the server. `failed_to_upload` is the number of
+        /// records that weren't uploaded, and will be retried on the next sync.
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from tabs_sync.outgoing
+            category: "tabs_sync",
+            name: "outgoing",
+            sendInPings: ["tabs-sync"],
+            lifetime: .ping,
+            disabled: false,
+            subMetric: outgoingLabel,
+            labels: ["failed_to_upload", "uploaded"]
+        )
+
+        /// Records the number of batches needed to upload all outgoing records. The Sync
+        /// server has a hard limit on the number of records (and request body bytes) on
+        /// the number of records that can fit into a single batch, and large syncs may
+        /// require multiple batches.
+        static let outgoingBatches = CounterMetricType( // generated from tabs_sync.outgoing_batches
+            CommonMetricData(
+                category: "tabs_sync",
+                name: "outgoing_batches",
+                sendInPings: ["tabs-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+        /// Records when the tabs sync started.
+        static let startedAt = DatetimeMetricType( // generated from tabs_sync.started_at
+            CommonMetricData(
+                category: "tabs_sync",
+                name: "started_at",
+                sendInPings: ["tabs-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , .millisecond
+        )
+
+        /// The user's hashed Firefox Account ID.
+        static let uid = StringMetricType( // generated from tabs_sync.uid
+            CommonMetricData(
+                category: "tabs_sync",
+                name: "uid",
+                sendInPings: ["tabs-sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+        )
+
+    }
+
+    class Pings {
+        public static let shared = Pings()
+        private init() {
+            // Intentionally left private, no external user can instantiate a new global object.
+        }
+
+        /// A ping sent for every Addresses engine sync. It doesn't include the `client_id`
+        /// because it reports a hashed version of the user's Firefox Account ID.
+        let addressesSync = Ping<NoReasonCodes>(
+            name: "addresses-sync",
+            includeClientId: false,
+            sendIfEmpty: false,
+            reasonCodes: []
+        )
+
+        /// A ping sent for every bookmarks sync. It doesn't include the `client_id`
+        /// because it reports a hashed version of the user's Firefox Account ID.
+        let bookmarksSync = Ping<NoReasonCodes>(
+            name: "bookmarks-sync",
+            includeClientId: false,
+            sendIfEmpty: false,
+            reasonCodes: []
+        )
+
+        /// A ping sent for every Credit Cards engine sync. It doesn't include the
+        /// `client_id` because it reports a hashed version of the user's Firefox Account
+        /// ID.
+        let creditcardsSync = Ping<NoReasonCodes>(
+            name: "creditcards-sync",
+            includeClientId: false,
+            sendIfEmpty: false,
+            reasonCodes: []
+        )
+
+        /// A ping sent for every history sync. It doesn't include the `client_id` because
+        /// it reports a hashed version of the user's Firefox Account ID.
+        let historySync = Ping<NoReasonCodes>(
+            name: "history-sync",
+            includeClientId: false,
+            sendIfEmpty: false,
+            reasonCodes: []
+        )
+
+        /// A ping sent for every logins/passwords sync. It doesn't include the `client_id`
+        /// because it reports a hashed version of the user's Firefox Account ID.
+        let loginsSync = Ping<NoReasonCodes>(
+            name: "logins-sync",
+            includeClientId: false,
+            sendIfEmpty: false,
+            reasonCodes: []
+        )
+
+        /// A summary ping, sent every time a sync is performed. During each Sync one or
+        /// more data types could be synchronized, depending on which data types user
+        /// configured to sync. Alongside with 'sync' ping one or more individual data type
+        /// specific pings will be sent. For example, if history and bookmarks data types
+        /// are configured to be synchronized, the following pings will be sent: 'sync',
+        /// 'history-sync' and 'bookmarks-sync'. Alternatively, if only history is
+        /// configured to be synchronized then 'sync' and 'history-sync' pings will be
+        /// sent. In case of a "global failure" where none of the data type syncs could
+        /// even start, e.g. device is offline, only the 'sync' ping will be sent. This
+        /// ping doesn't include the `client_id` because it reports a hashed version of the
+        /// user's Firefox Account ID.
+        let sync = Ping<NoReasonCodes>(
+            name: "sync",
+            includeClientId: false,
+            sendIfEmpty: false,
+            reasonCodes: []
+        )
+
+        /// A ping sent for every Tabs engine sync. It doesn't include the `client_id`
+        /// because it reports a hashed version of the user's Firefox Account ID.
+        let tabsSync = Ping<NoReasonCodes>(
+            name: "tabs-sync",
+            includeClientId: false,
+            sendIfEmpty: false,
+            reasonCodes: []
         )
 
     }
