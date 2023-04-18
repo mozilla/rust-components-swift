@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_nimbus_3867_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_nimbus_aa39_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_nimbus_3867_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_nimbus_aa39_rustbuffer_free(self, $0) }
     }
 }
 
@@ -399,6 +399,7 @@ public protocol NimbusClientProtocol {
     func createStringHelper(additionalContext: JsonObject?) throws -> NimbusStringHelper
     func recordEvent(eventId: String, count: Int64) throws
     func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64) throws
+    func advanceEventTime(bySeconds: Int64) throws
     func clearEvents() throws
 }
 
@@ -416,7 +417,7 @@ public class NimbusClient: NimbusClientProtocol {
         try self.init(unsafeFromRawPointer:
 
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_new(
+                nimbus_aa39_NimbusClient_new(
                     FfiConverterTypeAppContext.lower(appCtx),
                     FfiConverterString.lower(dbpath),
                     FfiConverterOptionTypeRemoteSettingsConfig.lower(remoteSettingsConfig),
@@ -426,20 +427,20 @@ public class NimbusClient: NimbusClientProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_nimbus_3867_NimbusClient_object_free(pointer, $0) }
+        try! rustCall { ffi_nimbus_aa39_NimbusClient_object_free(pointer, $0) }
     }
 
     public func initialize() throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_initialize(self.pointer, $0)
+                nimbus_aa39_NimbusClient_initialize(self.pointer, $0)
             }
     }
 
     public func getExperimentBranch(id: String) throws -> String? {
         return try FfiConverterOptionString.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_get_experiment_branch(self.pointer,
+                nimbus_aa39_NimbusClient_get_experiment_branch(self.pointer,
                                                                FfiConverterString.lower(id), $0)
             }
         )
@@ -448,7 +449,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getFeatureConfigVariables(featureId: String) throws -> String? {
         return try FfiConverterOptionString.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_get_feature_config_variables(self.pointer,
+                nimbus_aa39_NimbusClient_get_feature_config_variables(self.pointer,
                                                                       FfiConverterString.lower(featureId), $0)
             }
         )
@@ -457,7 +458,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch] {
         return try FfiConverterSequenceTypeExperimentBranch.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_get_experiment_branches(self.pointer,
+                nimbus_aa39_NimbusClient_get_experiment_branches(self.pointer,
                                                                  FfiConverterString.lower(experimentSlug), $0)
             }
         )
@@ -466,7 +467,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getActiveExperiments() throws -> [EnrolledExperiment] {
         return try FfiConverterSequenceTypeEnrolledExperiment.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_get_active_experiments(self.pointer, $0)
+                nimbus_aa39_NimbusClient_get_active_experiments(self.pointer, $0)
             }
         )
     }
@@ -474,7 +475,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getEnrollmentByFeature(featureId: String) throws -> EnrolledFeature? {
         return try FfiConverterOptionTypeEnrolledFeature.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_get_enrollment_by_feature(self.pointer,
+                nimbus_aa39_NimbusClient_get_enrollment_by_feature(self.pointer,
                                                                    FfiConverterString.lower(featureId), $0)
             }
         )
@@ -483,7 +484,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getAvailableExperiments() throws -> [AvailableExperiment] {
         return try FfiConverterSequenceTypeAvailableExperiment.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_get_available_experiments(self.pointer, $0)
+                nimbus_aa39_NimbusClient_get_available_experiments(self.pointer, $0)
             }
         )
     }
@@ -491,7 +492,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func getGlobalUserParticipation() throws -> Bool {
         return try FfiConverterBool.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_get_global_user_participation(self.pointer, $0)
+                nimbus_aa39_NimbusClient_get_global_user_participation(self.pointer, $0)
             }
         )
     }
@@ -499,7 +500,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_set_global_user_participation(self.pointer,
+                nimbus_aa39_NimbusClient_set_global_user_participation(self.pointer,
                                                                        FfiConverterBool.lower(optIn), $0)
             }
         )
@@ -508,7 +509,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func updateExperiments() throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_update_experiments(self.pointer, $0)
+                nimbus_aa39_NimbusClient_update_experiments(self.pointer, $0)
             }
         )
     }
@@ -516,14 +517,14 @@ public class NimbusClient: NimbusClientProtocol {
     public func fetchExperiments() throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_fetch_experiments(self.pointer, $0)
+                nimbus_aa39_NimbusClient_fetch_experiments(self.pointer, $0)
             }
     }
 
     public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_apply_pending_experiments(self.pointer, $0)
+                nimbus_aa39_NimbusClient_apply_pending_experiments(self.pointer, $0)
             }
         )
     }
@@ -531,7 +532,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func setExperimentsLocally(experimentsJson: String) throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_set_experiments_locally(self.pointer,
+                nimbus_aa39_NimbusClient_set_experiments_locally(self.pointer,
                                                                  FfiConverterString.lower(experimentsJson), $0)
             }
     }
@@ -539,7 +540,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_opt_in_with_branch(self.pointer,
+                nimbus_aa39_NimbusClient_opt_in_with_branch(self.pointer,
                                                             FfiConverterString.lower(experimentSlug),
                                                             FfiConverterString.lower(branch), $0)
             }
@@ -549,7 +550,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_opt_out(self.pointer,
+                nimbus_aa39_NimbusClient_opt_out(self.pointer,
                                                  FfiConverterString.lower(experimentSlug), $0)
             }
         )
@@ -558,7 +559,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_reset_telemetry_identifiers(self.pointer,
+                nimbus_aa39_NimbusClient_reset_telemetry_identifiers(self.pointer,
                                                                      FfiConverterTypeAvailableRandomizationUnits.lower(newRandomizationUnits), $0)
             }
         )
@@ -567,7 +568,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func createTargetingHelper(additionalContext: JsonObject? = nil) throws -> NimbusTargetingHelper {
         return try FfiConverterTypeNimbusTargetingHelper.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_create_targeting_helper(self.pointer,
+                nimbus_aa39_NimbusClient_create_targeting_helper(self.pointer,
                                                                  FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
             }
         )
@@ -576,7 +577,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func createStringHelper(additionalContext: JsonObject? = nil) throws -> NimbusStringHelper {
         return try FfiConverterTypeNimbusStringHelper.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_create_string_helper(self.pointer,
+                nimbus_aa39_NimbusClient_create_string_helper(self.pointer,
                                                               FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
             }
         )
@@ -585,7 +586,7 @@ public class NimbusClient: NimbusClientProtocol {
     public func recordEvent(eventId: String, count: Int64 = Int64(1)) throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_record_event(self.pointer,
+                nimbus_aa39_NimbusClient_record_event(self.pointer,
                                                       FfiConverterString.lower(eventId),
                                                       FfiConverterInt64.lower(count), $0)
             }
@@ -594,17 +595,25 @@ public class NimbusClient: NimbusClientProtocol {
     public func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64 = Int64(1)) throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_record_past_event(self.pointer,
+                nimbus_aa39_NimbusClient_record_past_event(self.pointer,
                                                            FfiConverterString.lower(eventId),
                                                            FfiConverterInt64.lower(secondsAgo),
                                                            FfiConverterInt64.lower(count), $0)
             }
     }
 
+    public func advanceEventTime(bySeconds: Int64) throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_aa39_NimbusClient_advance_event_time(self.pointer,
+                                                            FfiConverterInt64.lower(bySeconds), $0)
+            }
+    }
+
     public func clearEvents() throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusClient_clear_events(self.pointer, $0)
+                nimbus_aa39_NimbusClient_clear_events(self.pointer, $0)
             }
     }
 }
@@ -655,14 +664,14 @@ public class NimbusStringHelper: NimbusStringHelperProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_nimbus_3867_NimbusStringHelper_object_free(pointer, $0) }
+        try! rustCall { ffi_nimbus_aa39_NimbusStringHelper_object_free(pointer, $0) }
     }
 
     public func stringFormat(template: String, uuid: String? = nil) -> String {
         return try! FfiConverterString.lift(
             try!
                 rustCall {
-                    nimbus_3867_NimbusStringHelper_string_format(self.pointer,
+                    nimbus_aa39_NimbusStringHelper_string_format(self.pointer,
                                                                  FfiConverterString.lower(template),
                                                                  FfiConverterOptionString.lower(uuid), $0)
                 }
@@ -673,7 +682,7 @@ public class NimbusStringHelper: NimbusStringHelperProtocol {
         return try! FfiConverterOptionString.lift(
             try!
                 rustCall {
-                    nimbus_3867_NimbusStringHelper_get_uuid(self.pointer,
+                    nimbus_aa39_NimbusStringHelper_get_uuid(self.pointer,
                                                             FfiConverterString.lower(template), $0)
                 }
         )
@@ -725,13 +734,13 @@ public class NimbusTargetingHelper: NimbusTargetingHelperProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_nimbus_3867_NimbusTargetingHelper_object_free(pointer, $0) }
+        try! rustCall { ffi_nimbus_aa39_NimbusTargetingHelper_object_free(pointer, $0) }
     }
 
     public func evalJexl(expression: String) throws -> Bool {
         return try FfiConverterBool.lift(
             rustCallWithError(FfiConverterTypeNimbusError.self) {
-                nimbus_3867_NimbusTargetingHelper_eval_jexl(self.pointer,
+                nimbus_aa39_NimbusTargetingHelper_eval_jexl(self.pointer,
                                                             FfiConverterString.lower(expression), $0)
             }
         )
