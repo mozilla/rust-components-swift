@@ -46,39 +46,39 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_syncmanager_c8c7_SyncManager_object_free(
+void ffi_syncmanager_a22a_SyncManager_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull syncmanager_c8c7_SyncManager_new(
+void*_Nonnull syncmanager_a22a_SyncManager_new(
       
     RustCallStatus *_Nonnull out_status
     );
-void syncmanager_c8c7_SyncManager_disconnect(
+void syncmanager_a22a_SyncManager_disconnect(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer syncmanager_c8c7_SyncManager_sync(
+RustBuffer syncmanager_a22a_SyncManager_sync(
       void*_Nonnull ptr,RustBuffer params,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer syncmanager_c8c7_SyncManager_get_available_engines(
+RustBuffer syncmanager_a22a_SyncManager_get_available_engines(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_syncmanager_c8c7_rustbuffer_alloc(
+RustBuffer ffi_syncmanager_a22a_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_syncmanager_c8c7_rustbuffer_from_bytes(
+RustBuffer ffi_syncmanager_a22a_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_syncmanager_c8c7_rustbuffer_free(
+void ffi_syncmanager_a22a_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_syncmanager_c8c7_rustbuffer_reserve(
+RustBuffer ffi_syncmanager_a22a_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );

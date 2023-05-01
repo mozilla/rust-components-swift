@@ -73,30 +73,20 @@ def extract_tarball(version, temp_dir):
             tar.extractall(temp_dir)
 
 def replace_all_files(temp_dir):
-    replace_files(temp_dir / "swift-components/swift-sources", "swift-source/all")
-    replace_files(temp_dir / "swift-components/swift-sources", "swift-source/focus")
-    replace_files(temp_dir / "swift-components/generated-swift-sources", "swift-source/all/Generated")
-    replace_files(temp_dir / "swift-components/generated-swift-sources", "swift-source/focus/Generated")
+    replace_files(temp_dir / "swift-components/all", "swift-source/all")
+    replace_files(temp_dir / "swift-components/focus", "swift-source/focus")
 
 """
 Replace files in the git repo with files extracted from the tarball
-
-If a file is present in the source dir and also in the repository, then we will
-replace the repo file.
 
 Args:
     source_dir: directory to look for sources
     repo_dir: relative directory in the repo to replace files in
 """
 def replace_files(source_dir, repo_dir):
-    for dirpath, _, files in os.walk(source_dir):
-        relative_dir = Path(dirpath).relative_to(source_dir)
-        for file in files:
-            repo_path = ROOT_DIR / repo_dir / relative_dir / file
-            source_path = Path(dirpath) / file
-            if repo_path.exists():
-                print("updating: {}".format(Path(repo_dir) / relative_dir / file), flush=True)
-                shutil.copy2(source_path, repo_path)
+    shutil.rmtree(repo_dir)
+    shutil.copytree(source_dir, repo_dir)
+
 
 def swift_artifact_url(version, filename):
     return ("https://firefox-ci-tc.services.mozilla.com"

@@ -19,13 +19,13 @@ fileprivate extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_syncmanager_c8c7_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_syncmanager_a22a_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_syncmanager_c8c7_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_syncmanager_a22a_rustbuffer_free(self, $0) }
     }
 }
 
@@ -396,12 +396,12 @@ public class SyncManager: SyncManagerProtocol {
     
     rustCall() {
     
-    syncmanager_c8c7_SyncManager_new($0)
+    syncmanager_a22a_SyncManager_new($0)
 })
     }
 
     deinit {
-        try! rustCall { ffi_syncmanager_c8c7_SyncManager_object_free(pointer, $0) }
+        try! rustCall { ffi_syncmanager_a22a_SyncManager_object_free(pointer, $0) }
     }
 
     
@@ -411,7 +411,7 @@ public class SyncManager: SyncManagerProtocol {
         try!
     rustCall() {
     
-    syncmanager_c8c7_SyncManager_disconnect(self.pointer, $0
+    syncmanager_a22a_SyncManager_disconnect(self.pointer, $0
     )
 }
     }
@@ -419,7 +419,7 @@ public class SyncManager: SyncManagerProtocol {
         return try FfiConverterTypeSyncResult.lift(
             try
     rustCallWithError(FfiConverterTypeSyncManagerError.self) {
-    syncmanager_c8c7_SyncManager_sync(self.pointer, 
+    syncmanager_a22a_SyncManager_sync(self.pointer, 
         FfiConverterTypeSyncParams.lower(`params`), $0
     )
 }
@@ -430,7 +430,7 @@ public class SyncManager: SyncManagerProtocol {
             try!
     rustCall() {
     
-    syncmanager_c8c7_SyncManager_get_available_engines(self.pointer, $0
+    syncmanager_a22a_SyncManager_get_available_engines(self.pointer, $0
     )
 }
         )
@@ -473,11 +473,11 @@ public struct FfiConverterTypeSyncManager: FfiConverter {
 public struct DeviceSettings {
     public var `fxaDeviceId`: String
     public var `name`: String
-    public var `kind`: SyncManagerDeviceType
+    public var `kind`: DeviceType
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`fxaDeviceId`: String, `name`: String, `kind`: SyncManagerDeviceType) {
+    public init(`fxaDeviceId`: String, `name`: String, `kind`: DeviceType) {
         self.`fxaDeviceId` = `fxaDeviceId`
         self.`name` = `name`
         self.`kind` = `kind`
@@ -512,14 +512,14 @@ public struct FfiConverterTypeDeviceSettings: FfiConverterRustBuffer {
         return try DeviceSettings(
             `fxaDeviceId`: FfiConverterString.read(from: &buf), 
             `name`: FfiConverterString.read(from: &buf), 
-            `kind`: FfiConverterTypeSyncManagerDeviceType.read(from: &buf)
+            `kind`: FfiConverterTypeDeviceType.read(from: &buf)
         )
     }
 
     public static func write(_ value: DeviceSettings, into buf: inout [UInt8]) {
         FfiConverterString.write(value.`fxaDeviceId`, into: &buf)
         FfiConverterString.write(value.`name`, into: &buf)
-        FfiConverterTypeSyncManagerDeviceType.write(value.`kind`, into: &buf)
+        FfiConverterTypeDeviceType.write(value.`kind`, into: &buf)
     }
 }
 
@@ -928,85 +928,6 @@ extension SyncEngineSelection: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-public enum SyncManagerDeviceType {
-    
-    case `desktop`
-    case `mobile`
-    case `tablet`
-    case `vr`
-    case `tv`
-    case `unknown`
-}
-
-public struct FfiConverterTypeSyncManagerDeviceType: FfiConverterRustBuffer {
-    typealias SwiftType = SyncManagerDeviceType
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncManagerDeviceType {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        
-        case 1: return .`desktop`
-        
-        case 2: return .`mobile`
-        
-        case 3: return .`tablet`
-        
-        case 4: return .`vr`
-        
-        case 5: return .`tv`
-        
-        case 6: return .`unknown`
-        
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: SyncManagerDeviceType, into buf: inout [UInt8]) {
-        switch value {
-        
-        
-        case .`desktop`:
-            writeInt(&buf, Int32(1))
-        
-        
-        case .`mobile`:
-            writeInt(&buf, Int32(2))
-        
-        
-        case .`tablet`:
-            writeInt(&buf, Int32(3))
-        
-        
-        case .`vr`:
-            writeInt(&buf, Int32(4))
-        
-        
-        case .`tv`:
-            writeInt(&buf, Int32(5))
-        
-        
-        case .`unknown`:
-            writeInt(&buf, Int32(6))
-        
-        }
-    }
-}
-
-
-public func FfiConverterTypeSyncManagerDeviceType_lift(_ buf: RustBuffer) throws -> SyncManagerDeviceType {
-    return try FfiConverterTypeSyncManagerDeviceType.lift(buf)
-}
-
-public func FfiConverterTypeSyncManagerDeviceType_lower(_ value: SyncManagerDeviceType) -> RustBuffer {
-    return FfiConverterTypeSyncManagerDeviceType.lower(value)
-}
-
-
-extension SyncManagerDeviceType: Equatable, Hashable {}
-
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum SyncReason {
     
     case `scheduled`
@@ -1343,6 +1264,8 @@ fileprivate struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
         return dict
     }
 }
+
+
 
 /**
  * Top level initializers and tear down methods.
