@@ -7,7 +7,7 @@ import fileinput
 import gzip
 import hashlib
 import json
-import os
+import subprocess
 import shutil
 import sys
 import tarfile
@@ -29,6 +29,10 @@ def main():
         temp_dir = Path(temp_dir)
         extract_tarball(version, temp_dir)
         replace_all_files(temp_dir)
+    ## FIXME: https://github.com/mozilla/rust-components-swift/issues/106
+    print("Running format to format swift generated code")
+    subprocess.check_call(['swiftformat', 'swift-source/all/Generated'])
+    subprocess.check_call(['swiftformat', 'swift-source/focus/Generated'])
 
 def parse_args():
     parser = argparse.ArgumentParser(prog='build-and-test-swift.py')

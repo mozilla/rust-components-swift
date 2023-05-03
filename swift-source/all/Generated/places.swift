@@ -6,10 +6,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-import MozillaRustComponents
+    import MozillaRustComponents
 #endif
 
-fileprivate extension RustBuffer {
+private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -29,7 +29,7 @@ fileprivate extension RustBuffer {
     }
 }
 
-fileprivate extension ForeignBytes {
+private extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -42,7 +42,7 @@ fileprivate extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-fileprivate extension Data {
+private extension Data {
     init(rustBuffer: RustBuffer) {
         // TODO: This copies the buffer. Can we read directly from a
         // Rust buffer?
@@ -64,15 +64,15 @@ fileprivate extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
+private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -82,38 +82,38 @@ fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offs
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
+    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
-    let range = reader.offset..<(reader.offset+count)
+private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
+    let range = reader.offset ..< (reader.offset + count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer({ buffer in
+    value.withUnsafeMutableBufferPointer { buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    })
+    }
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
-fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -121,11 +121,11 @@ fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Boo
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-fileprivate func createWriter() -> [UInt8] {
+private func createWriter() -> [UInt8] {
     return []
 }
 
-fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -133,22 +133,22 @@ fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: S
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous go the Rust trait of the same name.
-fileprivate protocol FfiConverter {
+private protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -159,7 +159,7 @@ fileprivate protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
+private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
 
 extension FfiConverterPrimitive {
     public static func lift(_ value: FfiType) throws -> SwiftType {
@@ -173,7 +173,7 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
@@ -187,14 +187,15 @@ extension FfiConverterRustBuffer {
     }
 
     public static func lower(_ value: SwiftType) -> RustBuffer {
-          var writer = createWriter()
-          write(value, into: &writer)
-          return RustBuffer(bytes: writer)
+        var writer = createWriter()
+        write(value, into: &writer)
+        return RustBuffer(bytes: writer)
     }
 }
+
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-fileprivate enum UniffiInternalError: LocalizedError {
+private enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -220,15 +221,15 @@ fileprivate enum UniffiInternalError: LocalizedError {
     }
 }
 
-fileprivate let CALL_SUCCESS: Int8 = 0
-fileprivate let CALL_ERROR: Int8 = 1
-fileprivate let CALL_PANIC: Int8 = 2
+private let CALL_SUCCESS: Int8 = 0
+private let CALL_ERROR: Int8 = 1
+private let CALL_PANIC: Int8 = 2
 
-fileprivate extension RustCallStatus {
+private extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer.init(
+            errorBuf: RustBuffer(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -245,42 +246,41 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 }
 
 private func rustCallWithError<T, F: FfiConverter>
-    (_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
     where F.SwiftType: Error, F.FfiType == RustBuffer
-    {
-    try makeRustCall(callback, errorHandler: { return try errorFfiConverter.lift($0) })
+{
+    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
-    var callStatus = RustCallStatus.init()
+    var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
     switch callStatus.code {
-        case CALL_SUCCESS:
-            return returnedVal
+    case CALL_SUCCESS:
+        return returnedVal
 
-        case CALL_ERROR:
-            throw try errorHandler(callStatus.errorBuf)
+    case CALL_ERROR:
+        throw try errorHandler(callStatus.errorBuf)
 
-        case CALL_PANIC:
-            // When the rust code sees a panic, it tries to construct a RustBuffer
-            // with the message.  But if that code panics, then it just sends back
-            // an empty buffer.
-            if callStatus.errorBuf.len > 0 {
-                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
-            } else {
-                callStatus.errorBuf.deallocate()
-                throw UniffiInternalError.rustPanic("Rust panic")
-            }
+    case CALL_PANIC:
+        // When the rust code sees a panic, it tries to construct a RustBuffer
+        // with the message.  But if that code panics, then it just sends back
+        // an empty buffer.
+        if callStatus.errorBuf.len > 0 {
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.rustPanic("Rust panic")
+        }
 
-        default:
-            throw UniffiInternalError.unexpectedRustCallStatusCode
+    default:
+        throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 // Public interface members begin here.
 
-
-fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
+private struct FfiConverterUInt32: FfiConverterPrimitive {
     typealias FfiType = UInt32
     typealias SwiftType = UInt32
 
@@ -293,7 +293,7 @@ fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
+private struct FfiConverterInt32: FfiConverterPrimitive {
     typealias FfiType = Int32
     typealias SwiftType = Int32
 
@@ -306,7 +306,7 @@ fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
+private struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
 
@@ -319,7 +319,7 @@ fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
+private struct FfiConverterInt64: FfiConverterPrimitive {
     typealias FfiType = Int64
     typealias SwiftType = Int64
 
@@ -332,7 +332,7 @@ fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
+private struct FfiConverterDouble: FfiConverterPrimitive {
     typealias FfiType = Double
     typealias SwiftType = Double
 
@@ -345,7 +345,7 @@ fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterBool : FfiConverter {
+private struct FfiConverterBool: FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
@@ -366,7 +366,7 @@ fileprivate struct FfiConverterBool : FfiConverter {
     }
 }
 
-fileprivate struct FfiConverterString: FfiConverter {
+private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -394,7 +394,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -404,15 +404,13 @@ fileprivate struct FfiConverterString: FfiConverter {
     }
 }
 
-
 public protocol PlacesApiProtocol {
-    func `newConnection`(`connType`: ConnectionType) throws -> PlacesConnection
-    func `registerWithSyncManager`() 
-    func `resetHistory`() throws
-    func `historySync`(`keyId`: String, `accessToken`: String, `syncKey`: String, `tokenserverUrl`: Url) throws -> String
-    func `bookmarksSync`(`keyId`: String, `accessToken`: String, `syncKey`: String, `tokenserverUrl`: Url) throws -> String
-    func `bookmarksReset`() throws
-    
+    func newConnection(connType: ConnectionType) throws -> PlacesConnection
+    func registerWithSyncManager()
+    func resetHistory() throws
+    func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String
+    func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String
+    func bookmarksReset() throws
 }
 
 public class PlacesApi: PlacesApiProtocol {
@@ -429,70 +427,60 @@ public class PlacesApi: PlacesApiProtocol {
         try! rustCall { ffi_places_cac2_PlacesApi_object_free(pointer, $0) }
     }
 
-    
-
-    
-    public func `newConnection`(`connType`: ConnectionType) throws -> PlacesConnection {
+    public func newConnection(connType: ConnectionType) throws -> PlacesConnection {
         return try FfiConverterTypePlacesConnection.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesApi_new_connection(self.pointer, 
-        FfiConverterTypeConnectionType.lower(`connType`), $0
-    )
-}
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_new_connection(self.pointer,
+                                                     FfiConverterTypeConnectionType.lower(connType), $0)
+            }
         )
     }
-    public func `registerWithSyncManager`()  {
-        try!
-    rustCall() {
-    
-    places_cac2_PlacesApi_register_with_sync_manager(self.pointer, $0
-    )
-}
-    }
-    public func `resetHistory`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesApi_reset_history(self.pointer, $0
-    )
-}
-    }
-    public func `historySync`(`keyId`: String, `accessToken`: String, `syncKey`: String, `tokenserverUrl`: Url) throws -> String {
-        return try FfiConverterString.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesApi_history_sync(self.pointer, 
-        FfiConverterString.lower(`keyId`), 
-        FfiConverterString.lower(`accessToken`), 
-        FfiConverterString.lower(`syncKey`), 
-        FfiConverterTypeUrl.lower(`tokenserverUrl`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksSync`(`keyId`: String, `accessToken`: String, `syncKey`: String, `tokenserverUrl`: Url) throws -> String {
-        return try FfiConverterString.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesApi_bookmarks_sync(self.pointer, 
-        FfiConverterString.lower(`keyId`), 
-        FfiConverterString.lower(`accessToken`), 
-        FfiConverterString.lower(`syncKey`), 
-        FfiConverterTypeUrl.lower(`tokenserverUrl`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksReset`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesApi_bookmarks_reset(self.pointer, $0
-    )
-}
-    }
-    
-}
 
+    public func registerWithSyncManager() {
+        try!
+            rustCall {
+                places_cac2_PlacesApi_register_with_sync_manager(self.pointer, $0)
+            }
+    }
+
+    public func resetHistory() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_reset_history(self.pointer, $0)
+            }
+    }
+
+    public func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
+        return try FfiConverterString.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_history_sync(self.pointer,
+                                                   FfiConverterString.lower(keyId),
+                                                   FfiConverterString.lower(accessToken),
+                                                   FfiConverterString.lower(syncKey),
+                                                   FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+            }
+        )
+    }
+
+    public func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
+        return try FfiConverterString.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_bookmarks_sync(self.pointer,
+                                                     FfiConverterString.lower(keyId),
+                                                     FfiConverterString.lower(accessToken),
+                                                     FfiConverterString.lower(syncKey),
+                                                     FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+            }
+        )
+    }
+
+    public func bookmarksReset() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesApi_bookmarks_reset(self.pointer, $0)
+            }
+    }
+}
 
 public struct FfiConverterTypePlacesApi: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -503,7 +491,7 @@ public struct FfiConverterTypePlacesApi: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
+        if ptr == nil {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -524,50 +512,48 @@ public struct FfiConverterTypePlacesApi: FfiConverter {
     }
 }
 
-
 public protocol PlacesConnectionProtocol {
-    func `newInterruptHandle`()  -> SqlInterruptHandle
-    func `getLatestHistoryMetadataForUrl`(`url`: Url) throws -> HistoryMetadata?
-    func `getHistoryMetadataBetween`(`start`: PlacesTimestamp, `end`: PlacesTimestamp) throws -> [HistoryMetadata]
-    func `getHistoryMetadataSince`(`since`: PlacesTimestamp) throws -> [HistoryMetadata]
-    func `queryAutocomplete`(`search`: String, `limit`: Int32) throws -> [SearchResult]
-    func `acceptResult`(`searchString`: String, `url`: String) throws
-    func `matchUrl`(`query`: String) throws -> Url?
-    func `queryHistoryMetadata`(`query`: String, `limit`: Int32) throws -> [HistoryMetadata]
-    func `getHistoryHighlights`(`weights`: HistoryHighlightWeights, `limit`: Int32) throws -> [HistoryHighlight]
-    func `noteHistoryMetadataObservation`(`data`: HistoryMetadataObservation) throws
-    func `metadataDelete`(`url`: Url, `referrerUrl`: Url?, `searchTerm`: String?) throws
-    func `metadataDeleteOlderThan`(`olderThan`: PlacesTimestamp) throws
-    func `applyObservation`(`visit`: VisitObservation) throws
-    func `getVisitedUrlsInRange`(`start`: PlacesTimestamp, `end`: PlacesTimestamp, `includeRemote`: Bool) throws -> [Url]
-    func `getVisitInfos`(`startDate`: PlacesTimestamp, `endDate`: PlacesTimestamp, `excludeTypes`: VisitTransitionSet) throws -> [HistoryVisitInfo]
-    func `getVisitCount`(`excludeTypes`: VisitTransitionSet) throws -> Int64
-    func `getVisitPage`(`offset`: Int64, `count`: Int64, `excludeTypes`: VisitTransitionSet) throws -> [HistoryVisitInfo]
-    func `getVisitPageWithBound`(`bound`: Int64, `offset`: Int64, `count`: Int64, `excludeTypes`: VisitTransitionSet) throws -> HistoryVisitInfosWithBound
-    func `getVisited`(`urls`: [String]) throws -> [Bool]
-    func `deleteVisitsFor`(`url`: String) throws
-    func `deleteVisitsBetween`(`start`: PlacesTimestamp, `end`: PlacesTimestamp) throws
-    func `deleteVisit`(`url`: String, `timestamp`: PlacesTimestamp) throws
-    func `getTopFrecentSiteInfos`(`numItems`: Int32, `thresholdOption`: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo]
-    func `wipeLocalHistory`() throws
-    func `deleteEverythingHistory`() throws
-    func `pruneDestructively`() throws
-    func `runMaintenancePrune`(`dbSizeLimit`: UInt32) throws -> RunMaintenanceMetrics
-    func `runMaintenanceVacuum`() throws
-    func `runMaintenanceOptimize`() throws
-    func `runMaintenanceCheckpoint`() throws
-    func `bookmarksGetTree`(`itemGuid`: Guid) throws -> BookmarkItem?
-    func `bookmarksGetByGuid`(`guid`: Guid, `getDirectChildren`: Bool) throws -> BookmarkItem?
-    func `bookmarksGetAllWithUrl`(`url`: String) throws -> [BookmarkItem]
-    func `bookmarksSearch`(`query`: String, `limit`: Int32) throws -> [BookmarkItem]
-    func `bookmarksGetRecent`(`limit`: Int32) throws -> [BookmarkItem]
-    func `bookmarksDelete`(`id`: Guid) throws -> Bool
-    func `bookmarksDeleteEverything`() throws
-    func `bookmarksGetUrlForKeyword`(`keyword`: String) throws -> Url?
-    func `bookmarksUpdate`(`data`: BookmarkUpdateInfo) throws
-    func `bookmarksInsert`(`bookmark`: InsertableBookmarkItem) throws -> Guid
-    func `placesHistoryImportFromIos`(`dbPath`: String, `lastSyncTimestamp`: Int64) throws -> HistoryMigrationResult
-    
+    func newInterruptHandle() -> SqlInterruptHandle
+    func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata?
+    func getHistoryMetadataBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws -> [HistoryMetadata]
+    func getHistoryMetadataSince(since: PlacesTimestamp) throws -> [HistoryMetadata]
+    func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult]
+    func acceptResult(searchString: String, url: String) throws
+    func matchUrl(query: String) throws -> Url?
+    func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata]
+    func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight]
+    func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws
+    func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws
+    func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws
+    func applyObservation(visit: VisitObservation) throws
+    func getVisitedUrlsInRange(start: PlacesTimestamp, end: PlacesTimestamp, includeRemote: Bool) throws -> [Url]
+    func getVisitInfos(startDate: PlacesTimestamp, endDate: PlacesTimestamp, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo]
+    func getVisitCount(excludeTypes: VisitTransitionSet) throws -> Int64
+    func getVisitPage(offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo]
+    func getVisitPageWithBound(bound: Int64, offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> HistoryVisitInfosWithBound
+    func getVisited(urls: [String]) throws -> [Bool]
+    func deleteVisitsFor(url: String) throws
+    func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws
+    func deleteVisit(url: String, timestamp: PlacesTimestamp) throws
+    func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo]
+    func wipeLocalHistory() throws
+    func deleteEverythingHistory() throws
+    func pruneDestructively() throws
+    func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics
+    func runMaintenanceVacuum() throws
+    func runMaintenanceOptimize() throws
+    func runMaintenanceCheckpoint() throws
+    func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem?
+    func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem?
+    func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem]
+    func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem]
+    func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem]
+    func bookmarksDelete(id: Guid) throws -> Bool
+    func bookmarksDeleteEverything() throws
+    func bookmarksGetUrlForKeyword(keyword: String) throws -> Url?
+    func bookmarksUpdate(data: BookmarkUpdateInfo) throws
+    func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid
+    func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult
 }
 
 public class PlacesConnection: PlacesConnectionProtocol {
@@ -584,405 +570,374 @@ public class PlacesConnection: PlacesConnectionProtocol {
         try! rustCall { ffi_places_cac2_PlacesConnection_object_free(pointer, $0) }
     }
 
-    
-
-    
-    public func `newInterruptHandle`()  -> SqlInterruptHandle {
+    public func newInterruptHandle() -> SqlInterruptHandle {
         return try! FfiConverterTypeSqlInterruptHandle.lift(
             try!
-    rustCall() {
-    
-    places_cac2_PlacesConnection_new_interrupt_handle(self.pointer, $0
-    )
-}
+                rustCall {
+                    places_cac2_PlacesConnection_new_interrupt_handle(self.pointer, $0)
+                }
         )
     }
-    public func `getLatestHistoryMetadataForUrl`(`url`: Url) throws -> HistoryMetadata? {
-        return try FfiConverterOptionTypeHistoryMetadata.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_latest_history_metadata_for_url(self.pointer, 
-        FfiConverterTypeUrl.lower(`url`), $0
-    )
-}
-        )
-    }
-    public func `getHistoryMetadataBetween`(`start`: PlacesTimestamp, `end`: PlacesTimestamp) throws -> [HistoryMetadata] {
-        return try FfiConverterSequenceTypeHistoryMetadata.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_history_metadata_between(self.pointer, 
-        FfiConverterTypePlacesTimestamp.lower(`start`), 
-        FfiConverterTypePlacesTimestamp.lower(`end`), $0
-    )
-}
-        )
-    }
-    public func `getHistoryMetadataSince`(`since`: PlacesTimestamp) throws -> [HistoryMetadata] {
-        return try FfiConverterSequenceTypeHistoryMetadata.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_history_metadata_since(self.pointer, 
-        FfiConverterTypePlacesTimestamp.lower(`since`), $0
-    )
-}
-        )
-    }
-    public func `queryAutocomplete`(`search`: String, `limit`: Int32) throws -> [SearchResult] {
-        return try FfiConverterSequenceTypeSearchResult.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_query_autocomplete(self.pointer, 
-        FfiConverterString.lower(`search`), 
-        FfiConverterInt32.lower(`limit`), $0
-    )
-}
-        )
-    }
-    public func `acceptResult`(`searchString`: String, `url`: String) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_accept_result(self.pointer, 
-        FfiConverterString.lower(`searchString`), 
-        FfiConverterString.lower(`url`), $0
-    )
-}
-    }
-    public func `matchUrl`(`query`: String) throws -> Url? {
-        return try FfiConverterOptionTypeUrl.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_match_url(self.pointer, 
-        FfiConverterString.lower(`query`), $0
-    )
-}
-        )
-    }
-    public func `queryHistoryMetadata`(`query`: String, `limit`: Int32) throws -> [HistoryMetadata] {
-        return try FfiConverterSequenceTypeHistoryMetadata.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_query_history_metadata(self.pointer, 
-        FfiConverterString.lower(`query`), 
-        FfiConverterInt32.lower(`limit`), $0
-    )
-}
-        )
-    }
-    public func `getHistoryHighlights`(`weights`: HistoryHighlightWeights, `limit`: Int32) throws -> [HistoryHighlight] {
-        return try FfiConverterSequenceTypeHistoryHighlight.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_history_highlights(self.pointer, 
-        FfiConverterTypeHistoryHighlightWeights.lower(`weights`), 
-        FfiConverterInt32.lower(`limit`), $0
-    )
-}
-        )
-    }
-    public func `noteHistoryMetadataObservation`(`data`: HistoryMetadataObservation) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_note_history_metadata_observation(self.pointer, 
-        FfiConverterTypeHistoryMetadataObservation.lower(`data`), $0
-    )
-}
-    }
-    public func `metadataDelete`(`url`: Url, `referrerUrl`: Url?, `searchTerm`: String?) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_metadata_delete(self.pointer, 
-        FfiConverterTypeUrl.lower(`url`), 
-        FfiConverterOptionTypeUrl.lower(`referrerUrl`), 
-        FfiConverterOptionString.lower(`searchTerm`), $0
-    )
-}
-    }
-    public func `metadataDeleteOlderThan`(`olderThan`: PlacesTimestamp) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_metadata_delete_older_than(self.pointer, 
-        FfiConverterTypePlacesTimestamp.lower(`olderThan`), $0
-    )
-}
-    }
-    public func `applyObservation`(`visit`: VisitObservation) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_apply_observation(self.pointer, 
-        FfiConverterTypeVisitObservation.lower(`visit`), $0
-    )
-}
-    }
-    public func `getVisitedUrlsInRange`(`start`: PlacesTimestamp, `end`: PlacesTimestamp, `includeRemote`: Bool) throws -> [Url] {
-        return try FfiConverterSequenceTypeUrl.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_visited_urls_in_range(self.pointer, 
-        FfiConverterTypePlacesTimestamp.lower(`start`), 
-        FfiConverterTypePlacesTimestamp.lower(`end`), 
-        FfiConverterBool.lower(`includeRemote`), $0
-    )
-}
-        )
-    }
-    public func `getVisitInfos`(`startDate`: PlacesTimestamp, `endDate`: PlacesTimestamp, `excludeTypes`: VisitTransitionSet) throws -> [HistoryVisitInfo] {
-        return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_visit_infos(self.pointer, 
-        FfiConverterTypePlacesTimestamp.lower(`startDate`), 
-        FfiConverterTypePlacesTimestamp.lower(`endDate`), 
-        FfiConverterTypeVisitTransitionSet.lower(`excludeTypes`), $0
-    )
-}
-        )
-    }
-    public func `getVisitCount`(`excludeTypes`: VisitTransitionSet) throws -> Int64 {
-        return try FfiConverterInt64.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_visit_count(self.pointer, 
-        FfiConverterTypeVisitTransitionSet.lower(`excludeTypes`), $0
-    )
-}
-        )
-    }
-    public func `getVisitPage`(`offset`: Int64, `count`: Int64, `excludeTypes`: VisitTransitionSet) throws -> [HistoryVisitInfo] {
-        return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_visit_page(self.pointer, 
-        FfiConverterInt64.lower(`offset`), 
-        FfiConverterInt64.lower(`count`), 
-        FfiConverterTypeVisitTransitionSet.lower(`excludeTypes`), $0
-    )
-}
-        )
-    }
-    public func `getVisitPageWithBound`(`bound`: Int64, `offset`: Int64, `count`: Int64, `excludeTypes`: VisitTransitionSet) throws -> HistoryVisitInfosWithBound {
-        return try FfiConverterTypeHistoryVisitInfosWithBound.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_visit_page_with_bound(self.pointer, 
-        FfiConverterInt64.lower(`bound`), 
-        FfiConverterInt64.lower(`offset`), 
-        FfiConverterInt64.lower(`count`), 
-        FfiConverterTypeVisitTransitionSet.lower(`excludeTypes`), $0
-    )
-}
-        )
-    }
-    public func `getVisited`(`urls`: [String]) throws -> [Bool] {
-        return try FfiConverterSequenceBool.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_visited(self.pointer, 
-        FfiConverterSequenceString.lower(`urls`), $0
-    )
-}
-        )
-    }
-    public func `deleteVisitsFor`(`url`: String) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_delete_visits_for(self.pointer, 
-        FfiConverterString.lower(`url`), $0
-    )
-}
-    }
-    public func `deleteVisitsBetween`(`start`: PlacesTimestamp, `end`: PlacesTimestamp) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_delete_visits_between(self.pointer, 
-        FfiConverterTypePlacesTimestamp.lower(`start`), 
-        FfiConverterTypePlacesTimestamp.lower(`end`), $0
-    )
-}
-    }
-    public func `deleteVisit`(`url`: String, `timestamp`: PlacesTimestamp) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_delete_visit(self.pointer, 
-        FfiConverterString.lower(`url`), 
-        FfiConverterTypePlacesTimestamp.lower(`timestamp`), $0
-    )
-}
-    }
-    public func `getTopFrecentSiteInfos`(`numItems`: Int32, `thresholdOption`: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo] {
-        return try FfiConverterSequenceTypeTopFrecentSiteInfo.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_get_top_frecent_site_infos(self.pointer, 
-        FfiConverterInt32.lower(`numItems`), 
-        FfiConverterTypeFrecencyThresholdOption.lower(`thresholdOption`), $0
-    )
-}
-        )
-    }
-    public func `wipeLocalHistory`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_wipe_local_history(self.pointer, $0
-    )
-}
-    }
-    public func `deleteEverythingHistory`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_delete_everything_history(self.pointer, $0
-    )
-}
-    }
-    public func `pruneDestructively`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_prune_destructively(self.pointer, $0
-    )
-}
-    }
-    public func `runMaintenancePrune`(`dbSizeLimit`: UInt32) throws -> RunMaintenanceMetrics {
-        return try FfiConverterTypeRunMaintenanceMetrics.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_run_maintenance_prune(self.pointer, 
-        FfiConverterUInt32.lower(`dbSizeLimit`), $0
-    )
-}
-        )
-    }
-    public func `runMaintenanceVacuum`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_run_maintenance_vacuum(self.pointer, $0
-    )
-}
-    }
-    public func `runMaintenanceOptimize`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_run_maintenance_optimize(self.pointer, $0
-    )
-}
-    }
-    public func `runMaintenanceCheckpoint`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_run_maintenance_checkpoint(self.pointer, $0
-    )
-}
-    }
-    public func `bookmarksGetTree`(`itemGuid`: Guid) throws -> BookmarkItem? {
-        return try FfiConverterOptionTypeBookmarkItem.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_get_tree(self.pointer, 
-        FfiConverterTypeGuid.lower(`itemGuid`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksGetByGuid`(`guid`: Guid, `getDirectChildren`: Bool) throws -> BookmarkItem? {
-        return try FfiConverterOptionTypeBookmarkItem.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_get_by_guid(self.pointer, 
-        FfiConverterTypeGuid.lower(`guid`), 
-        FfiConverterBool.lower(`getDirectChildren`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksGetAllWithUrl`(`url`: String) throws -> [BookmarkItem] {
-        return try FfiConverterSequenceTypeBookmarkItem.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_get_all_with_url(self.pointer, 
-        FfiConverterString.lower(`url`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksSearch`(`query`: String, `limit`: Int32) throws -> [BookmarkItem] {
-        return try FfiConverterSequenceTypeBookmarkItem.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_search(self.pointer, 
-        FfiConverterString.lower(`query`), 
-        FfiConverterInt32.lower(`limit`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksGetRecent`(`limit`: Int32) throws -> [BookmarkItem] {
-        return try FfiConverterSequenceTypeBookmarkItem.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_get_recent(self.pointer, 
-        FfiConverterInt32.lower(`limit`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksDelete`(`id`: Guid) throws -> Bool {
-        return try FfiConverterBool.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_delete(self.pointer, 
-        FfiConverterTypeGuid.lower(`id`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksDeleteEverything`() throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_delete_everything(self.pointer, $0
-    )
-}
-    }
-    public func `bookmarksGetUrlForKeyword`(`keyword`: String) throws -> Url? {
-        return try FfiConverterOptionTypeUrl.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer, 
-        FfiConverterString.lower(`keyword`), $0
-    )
-}
-        )
-    }
-    public func `bookmarksUpdate`(`data`: BookmarkUpdateInfo) throws {
-        try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_update(self.pointer, 
-        FfiConverterTypeBookmarkUpdateInfo.lower(`data`), $0
-    )
-}
-    }
-    public func `bookmarksInsert`(`bookmark`: InsertableBookmarkItem) throws -> Guid {
-        return try FfiConverterTypeGuid.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_bookmarks_insert(self.pointer, 
-        FfiConverterTypeInsertableBookmarkItem.lower(`bookmark`), $0
-    )
-}
-        )
-    }
-    public func `placesHistoryImportFromIos`(`dbPath`: String, `lastSyncTimestamp`: Int64) throws -> HistoryMigrationResult {
-        return try FfiConverterTypeHistoryMigrationResult.lift(
-            try
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    places_cac2_PlacesConnection_places_history_import_from_ios(self.pointer, 
-        FfiConverterString.lower(`dbPath`), 
-        FfiConverterInt64.lower(`lastSyncTimestamp`), $0
-    )
-}
-        )
-    }
-    
-}
 
+    public func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata? {
+        return try FfiConverterOptionTypeHistoryMetadata.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_latest_history_metadata_for_url(self.pointer,
+                                                                                 FfiConverterTypeUrl.lower(url), $0)
+            }
+        )
+    }
+
+    public func getHistoryMetadataBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws -> [HistoryMetadata] {
+        return try FfiConverterSequenceTypeHistoryMetadata.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_history_metadata_between(self.pointer,
+                                                                          FfiConverterTypePlacesTimestamp.lower(start),
+                                                                          FfiConverterTypePlacesTimestamp.lower(end), $0)
+            }
+        )
+    }
+
+    public func getHistoryMetadataSince(since: PlacesTimestamp) throws -> [HistoryMetadata] {
+        return try FfiConverterSequenceTypeHistoryMetadata.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_history_metadata_since(self.pointer,
+                                                                        FfiConverterTypePlacesTimestamp.lower(since), $0)
+            }
+        )
+    }
+
+    public func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult] {
+        return try FfiConverterSequenceTypeSearchResult.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_query_autocomplete(self.pointer,
+                                                                FfiConverterString.lower(search),
+                                                                FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func acceptResult(searchString: String, url: String) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_accept_result(self.pointer,
+                                                           FfiConverterString.lower(searchString),
+                                                           FfiConverterString.lower(url), $0)
+            }
+    }
+
+    public func matchUrl(query: String) throws -> Url? {
+        return try FfiConverterOptionTypeUrl.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_match_url(self.pointer,
+                                                       FfiConverterString.lower(query), $0)
+            }
+        )
+    }
+
+    public func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata] {
+        return try FfiConverterSequenceTypeHistoryMetadata.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_query_history_metadata(self.pointer,
+                                                                    FfiConverterString.lower(query),
+                                                                    FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight] {
+        return try FfiConverterSequenceTypeHistoryHighlight.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_history_highlights(self.pointer,
+                                                                    FfiConverterTypeHistoryHighlightWeights.lower(weights),
+                                                                    FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_note_history_metadata_observation(self.pointer,
+                                                                               FfiConverterTypeHistoryMetadataObservation.lower(data), $0)
+            }
+    }
+
+    public func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_metadata_delete(self.pointer,
+                                                             FfiConverterTypeUrl.lower(url),
+                                                             FfiConverterOptionTypeUrl.lower(referrerUrl),
+                                                             FfiConverterOptionString.lower(searchTerm), $0)
+            }
+    }
+
+    public func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_metadata_delete_older_than(self.pointer,
+                                                                        FfiConverterTypePlacesTimestamp.lower(olderThan), $0)
+            }
+    }
+
+    public func applyObservation(visit: VisitObservation) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_apply_observation(self.pointer,
+                                                               FfiConverterTypeVisitObservation.lower(visit), $0)
+            }
+    }
+
+    public func getVisitedUrlsInRange(start: PlacesTimestamp, end: PlacesTimestamp, includeRemote: Bool) throws -> [Url] {
+        return try FfiConverterSequenceTypeUrl.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visited_urls_in_range(self.pointer,
+                                                                       FfiConverterTypePlacesTimestamp.lower(start),
+                                                                       FfiConverterTypePlacesTimestamp.lower(end),
+                                                                       FfiConverterBool.lower(includeRemote), $0)
+            }
+        )
+    }
+
+    public func getVisitInfos(startDate: PlacesTimestamp, endDate: PlacesTimestamp, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo] {
+        return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_infos(self.pointer,
+                                                             FfiConverterTypePlacesTimestamp.lower(startDate),
+                                                             FfiConverterTypePlacesTimestamp.lower(endDate),
+                                                             FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
+        )
+    }
+
+    public func getVisitCount(excludeTypes: VisitTransitionSet) throws -> Int64 {
+        return try FfiConverterInt64.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_count(self.pointer,
+                                                             FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
+        )
+    }
+
+    public func getVisitPage(offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo] {
+        return try FfiConverterSequenceTypeHistoryVisitInfo.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_page(self.pointer,
+                                                            FfiConverterInt64.lower(offset),
+                                                            FfiConverterInt64.lower(count),
+                                                            FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
+        )
+    }
+
+    public func getVisitPageWithBound(bound: Int64, offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> HistoryVisitInfosWithBound {
+        return try FfiConverterTypeHistoryVisitInfosWithBound.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visit_page_with_bound(self.pointer,
+                                                                       FfiConverterInt64.lower(bound),
+                                                                       FfiConverterInt64.lower(offset),
+                                                                       FfiConverterInt64.lower(count),
+                                                                       FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
+            }
+        )
+    }
+
+    public func getVisited(urls: [String]) throws -> [Bool] {
+        return try FfiConverterSequenceBool.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_visited(self.pointer,
+                                                         FfiConverterSequenceString.lower(urls), $0)
+            }
+        )
+    }
+
+    public func deleteVisitsFor(url: String) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_delete_visits_for(self.pointer,
+                                                               FfiConverterString.lower(url), $0)
+            }
+    }
+
+    public func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_delete_visits_between(self.pointer,
+                                                                   FfiConverterTypePlacesTimestamp.lower(start),
+                                                                   FfiConverterTypePlacesTimestamp.lower(end), $0)
+            }
+    }
+
+    public func deleteVisit(url: String, timestamp: PlacesTimestamp) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_delete_visit(self.pointer,
+                                                          FfiConverterString.lower(url),
+                                                          FfiConverterTypePlacesTimestamp.lower(timestamp), $0)
+            }
+    }
+
+    public func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo] {
+        return try FfiConverterSequenceTypeTopFrecentSiteInfo.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_get_top_frecent_site_infos(self.pointer,
+                                                                        FfiConverterInt32.lower(numItems),
+                                                                        FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
+            }
+        )
+    }
+
+    public func wipeLocalHistory() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_wipe_local_history(self.pointer, $0)
+            }
+    }
+
+    public func deleteEverythingHistory() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_delete_everything_history(self.pointer, $0)
+            }
+    }
+
+    public func pruneDestructively() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_prune_destructively(self.pointer, $0)
+            }
+    }
+
+    public func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics {
+        return try FfiConverterTypeRunMaintenanceMetrics.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_run_maintenance_prune(self.pointer,
+                                                                   FfiConverterUInt32.lower(dbSizeLimit), $0)
+            }
+        )
+    }
+
+    public func runMaintenanceVacuum() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_run_maintenance_vacuum(self.pointer, $0)
+            }
+    }
+
+    public func runMaintenanceOptimize() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_run_maintenance_optimize(self.pointer, $0)
+            }
+    }
+
+    public func runMaintenanceCheckpoint() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_run_maintenance_checkpoint(self.pointer, $0)
+            }
+    }
+
+    public func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem? {
+        return try FfiConverterOptionTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_tree(self.pointer,
+                                                                FfiConverterTypeGuid.lower(itemGuid), $0)
+            }
+        )
+    }
+
+    public func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem? {
+        return try FfiConverterOptionTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_by_guid(self.pointer,
+                                                                   FfiConverterTypeGuid.lower(guid),
+                                                                   FfiConverterBool.lower(getDirectChildren), $0)
+            }
+        )
+    }
+
+    public func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem] {
+        return try FfiConverterSequenceTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_all_with_url(self.pointer,
+                                                                        FfiConverterString.lower(url), $0)
+            }
+        )
+    }
+
+    public func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem] {
+        return try FfiConverterSequenceTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_search(self.pointer,
+                                                              FfiConverterString.lower(query),
+                                                              FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem] {
+        return try FfiConverterSequenceTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_recent(self.pointer,
+                                                                  FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func bookmarksDelete(id: Guid) throws -> Bool {
+        return try FfiConverterBool.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_delete(self.pointer,
+                                                              FfiConverterTypeGuid.lower(id), $0)
+            }
+        )
+    }
+
+    public func bookmarksDeleteEverything() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_delete_everything(self.pointer, $0)
+            }
+    }
+
+    public func bookmarksGetUrlForKeyword(keyword: String) throws -> Url? {
+        return try FfiConverterOptionTypeUrl.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_get_url_for_keyword(self.pointer,
+                                                                           FfiConverterString.lower(keyword), $0)
+            }
+        )
+    }
+
+    public func bookmarksUpdate(data: BookmarkUpdateInfo) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_update(self.pointer,
+                                                              FfiConverterTypeBookmarkUpdateInfo.lower(data), $0)
+            }
+    }
+
+    public func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid {
+        return try FfiConverterTypeGuid.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_bookmarks_insert(self.pointer,
+                                                              FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
+            }
+        )
+    }
+
+    public func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult {
+        return try FfiConverterTypeHistoryMigrationResult.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.self) {
+                places_cac2_PlacesConnection_places_history_import_from_ios(self.pointer,
+                                                                            FfiConverterString.lower(dbPath),
+                                                                            FfiConverterInt64.lower(lastSyncTimestamp), $0)
+            }
+        )
+    }
+}
 
 public struct FfiConverterTypePlacesConnection: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -993,7 +948,7 @@ public struct FfiConverterTypePlacesConnection: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
+        if ptr == nil {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -1014,10 +969,8 @@ public struct FfiConverterTypePlacesConnection: FfiConverter {
     }
 }
 
-
 public protocol SqlInterruptHandleProtocol {
-    func `interrupt`() 
-    
+    func interrupt()
 }
 
 public class SqlInterruptHandle: SqlInterruptHandleProtocol {
@@ -1034,20 +987,13 @@ public class SqlInterruptHandle: SqlInterruptHandleProtocol {
         try! rustCall { ffi_places_cac2_SqlInterruptHandle_object_free(pointer, $0) }
     }
 
-    
-
-    
-    public func `interrupt`()  {
+    public func interrupt() {
         try!
-    rustCall() {
-    
-    places_cac2_SqlInterruptHandle_interrupt(self.pointer, $0
-    )
-}
+            rustCall {
+                places_cac2_SqlInterruptHandle_interrupt(self.pointer, $0)
+            }
     }
-    
 }
-
 
 public struct FfiConverterTypeSqlInterruptHandle: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -1058,7 +1004,7 @@ public struct FfiConverterTypeSqlInterruptHandle: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
+        if ptr == nil {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -1079,92 +1025,88 @@ public struct FfiConverterTypeSqlInterruptHandle: FfiConverter {
     }
 }
 
-
 public struct BookmarkData {
-    public var `guid`: Guid
-    public var `parentGuid`: Guid
-    public var `position`: UInt32
-    public var `dateAdded`: PlacesTimestamp
-    public var `lastModified`: PlacesTimestamp
-    public var `url`: Url
-    public var `title`: String?
+    public var guid: Guid
+    public var parentGuid: Guid
+    public var position: UInt32
+    public var dateAdded: PlacesTimestamp
+    public var lastModified: PlacesTimestamp
+    public var url: Url
+    public var title: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`guid`: Guid, `parentGuid`: Guid, `position`: UInt32, `dateAdded`: PlacesTimestamp, `lastModified`: PlacesTimestamp, `url`: Url, `title`: String?) {
-        self.`guid` = `guid`
-        self.`parentGuid` = `parentGuid`
-        self.`position` = `position`
-        self.`dateAdded` = `dateAdded`
-        self.`lastModified` = `lastModified`
-        self.`url` = `url`
-        self.`title` = `title`
+    public init(guid: Guid, parentGuid: Guid, position: UInt32, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, url: Url, title: String?) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.url = url
+        self.title = title
     }
 }
 
-
 extension BookmarkData: Equatable, Hashable {
-    public static func ==(lhs: BookmarkData, rhs: BookmarkData) -> Bool {
-        if lhs.`guid` != rhs.`guid` {
+    public static func == (lhs: BookmarkData, rhs: BookmarkData) -> Bool {
+        if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.`parentGuid` != rhs.`parentGuid` {
+        if lhs.parentGuid != rhs.parentGuid {
             return false
         }
-        if lhs.`position` != rhs.`position` {
+        if lhs.position != rhs.position {
             return false
         }
-        if lhs.`dateAdded` != rhs.`dateAdded` {
+        if lhs.dateAdded != rhs.dateAdded {
             return false
         }
-        if lhs.`lastModified` != rhs.`lastModified` {
+        if lhs.lastModified != rhs.lastModified {
             return false
         }
-        if lhs.`url` != rhs.`url` {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`guid`)
-        hasher.combine(`parentGuid`)
-        hasher.combine(`position`)
-        hasher.combine(`dateAdded`)
-        hasher.combine(`lastModified`)
-        hasher.combine(`url`)
-        hasher.combine(`title`)
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(url)
+        hasher.combine(title)
     }
 }
-
 
 public struct FfiConverterTypeBookmarkData: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkData {
         return try BookmarkData(
-            `guid`: FfiConverterTypeGuid.read(from: &buf), 
-            `parentGuid`: FfiConverterTypeGuid.read(from: &buf), 
-            `position`: FfiConverterUInt32.read(from: &buf), 
-            `dateAdded`: FfiConverterTypePlacesTimestamp.read(from: &buf), 
-            `lastModified`: FfiConverterTypePlacesTimestamp.read(from: &buf), 
-            `url`: FfiConverterTypeUrl.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf)
+            guid: FfiConverterTypeGuid.read(from: &buf),
+            parentGuid: FfiConverterTypeGuid.read(from: &buf),
+            position: FfiConverterUInt32.read(from: &buf),
+            dateAdded: FfiConverterTypePlacesTimestamp.read(from: &buf),
+            lastModified: FfiConverterTypePlacesTimestamp.read(from: &buf),
+            url: FfiConverterTypeUrl.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: BookmarkData, into buf: inout [UInt8]) {
-        FfiConverterTypeGuid.write(value.`guid`, into: &buf)
-        FfiConverterTypeGuid.write(value.`parentGuid`, into: &buf)
-        FfiConverterUInt32.write(value.`position`, into: &buf)
-        FfiConverterTypePlacesTimestamp.write(value.`dateAdded`, into: &buf)
-        FfiConverterTypePlacesTimestamp.write(value.`lastModified`, into: &buf)
-        FfiConverterTypeUrl.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
+        FfiConverterTypeGuid.write(value.guid, into: &buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: &buf)
+        FfiConverterUInt32.write(value.position, into: &buf)
+        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: &buf)
+        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: &buf)
+        FfiConverterTypeUrl.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeBookmarkData_lift(_ buf: RustBuffer) throws -> BookmarkData {
     return try FfiConverterTypeBookmarkData.lift(buf)
@@ -1174,100 +1116,96 @@ public func FfiConverterTypeBookmarkData_lower(_ value: BookmarkData) -> RustBuf
     return FfiConverterTypeBookmarkData.lower(value)
 }
 
-
 public struct BookmarkFolder {
-    public var `guid`: Guid
-    public var `dateAdded`: PlacesTimestamp
-    public var `lastModified`: PlacesTimestamp
-    public var `parentGuid`: Guid?
-    public var `position`: UInt32
-    public var `title`: String?
-    public var `childGuids`: [Guid]?
-    public var `childNodes`: [BookmarkItem]?
+    public var guid: Guid
+    public var dateAdded: PlacesTimestamp
+    public var lastModified: PlacesTimestamp
+    public var parentGuid: Guid?
+    public var position: UInt32
+    public var title: String?
+    public var childGuids: [Guid]?
+    public var childNodes: [BookmarkItem]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`guid`: Guid, `dateAdded`: PlacesTimestamp, `lastModified`: PlacesTimestamp, `parentGuid`: Guid?, `position`: UInt32, `title`: String?, `childGuids`: [Guid]?, `childNodes`: [BookmarkItem]?) {
-        self.`guid` = `guid`
-        self.`dateAdded` = `dateAdded`
-        self.`lastModified` = `lastModified`
-        self.`parentGuid` = `parentGuid`
-        self.`position` = `position`
-        self.`title` = `title`
-        self.`childGuids` = `childGuids`
-        self.`childNodes` = `childNodes`
+    public init(guid: Guid, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, parentGuid: Guid?, position: UInt32, title: String?, childGuids: [Guid]?, childNodes: [BookmarkItem]?) {
+        self.guid = guid
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.parentGuid = parentGuid
+        self.position = position
+        self.title = title
+        self.childGuids = childGuids
+        self.childNodes = childNodes
     }
 }
 
-
 extension BookmarkFolder: Equatable, Hashable {
-    public static func ==(lhs: BookmarkFolder, rhs: BookmarkFolder) -> Bool {
-        if lhs.`guid` != rhs.`guid` {
+    public static func == (lhs: BookmarkFolder, rhs: BookmarkFolder) -> Bool {
+        if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.`dateAdded` != rhs.`dateAdded` {
+        if lhs.dateAdded != rhs.dateAdded {
             return false
         }
-        if lhs.`lastModified` != rhs.`lastModified` {
+        if lhs.lastModified != rhs.lastModified {
             return false
         }
-        if lhs.`parentGuid` != rhs.`parentGuid` {
+        if lhs.parentGuid != rhs.parentGuid {
             return false
         }
-        if lhs.`position` != rhs.`position` {
+        if lhs.position != rhs.position {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`childGuids` != rhs.`childGuids` {
+        if lhs.childGuids != rhs.childGuids {
             return false
         }
-        if lhs.`childNodes` != rhs.`childNodes` {
+        if lhs.childNodes != rhs.childNodes {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`guid`)
-        hasher.combine(`dateAdded`)
-        hasher.combine(`lastModified`)
-        hasher.combine(`parentGuid`)
-        hasher.combine(`position`)
-        hasher.combine(`title`)
-        hasher.combine(`childGuids`)
-        hasher.combine(`childNodes`)
+        hasher.combine(guid)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(title)
+        hasher.combine(childGuids)
+        hasher.combine(childNodes)
     }
 }
-
 
 public struct FfiConverterTypeBookmarkFolder: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkFolder {
         return try BookmarkFolder(
-            `guid`: FfiConverterTypeGuid.read(from: &buf), 
-            `dateAdded`: FfiConverterTypePlacesTimestamp.read(from: &buf), 
-            `lastModified`: FfiConverterTypePlacesTimestamp.read(from: &buf), 
-            `parentGuid`: FfiConverterOptionTypeGuid.read(from: &buf), 
-            `position`: FfiConverterUInt32.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf), 
-            `childGuids`: FfiConverterOptionSequenceTypeGuid.read(from: &buf), 
-            `childNodes`: FfiConverterOptionSequenceTypeBookmarkItem.read(from: &buf)
+            guid: FfiConverterTypeGuid.read(from: &buf),
+            dateAdded: FfiConverterTypePlacesTimestamp.read(from: &buf),
+            lastModified: FfiConverterTypePlacesTimestamp.read(from: &buf),
+            parentGuid: FfiConverterOptionTypeGuid.read(from: &buf),
+            position: FfiConverterUInt32.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf),
+            childGuids: FfiConverterOptionSequenceTypeGuid.read(from: &buf),
+            childNodes: FfiConverterOptionSequenceTypeBookmarkItem.read(from: &buf)
         )
     }
 
     public static func write(_ value: BookmarkFolder, into buf: inout [UInt8]) {
-        FfiConverterTypeGuid.write(value.`guid`, into: &buf)
-        FfiConverterTypePlacesTimestamp.write(value.`dateAdded`, into: &buf)
-        FfiConverterTypePlacesTimestamp.write(value.`lastModified`, into: &buf)
-        FfiConverterOptionTypeGuid.write(value.`parentGuid`, into: &buf)
-        FfiConverterUInt32.write(value.`position`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
-        FfiConverterOptionSequenceTypeGuid.write(value.`childGuids`, into: &buf)
-        FfiConverterOptionSequenceTypeBookmarkItem.write(value.`childNodes`, into: &buf)
+        FfiConverterTypeGuid.write(value.guid, into: &buf)
+        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: &buf)
+        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: &buf)
+        FfiConverterOptionTypeGuid.write(value.parentGuid, into: &buf)
+        FfiConverterUInt32.write(value.position, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
+        FfiConverterOptionSequenceTypeGuid.write(value.childGuids, into: &buf)
+        FfiConverterOptionSequenceTypeBookmarkItem.write(value.childNodes, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeBookmarkFolder_lift(_ buf: RustBuffer) throws -> BookmarkFolder {
     return try FfiConverterTypeBookmarkFolder.lift(buf)
@@ -1277,76 +1215,72 @@ public func FfiConverterTypeBookmarkFolder_lower(_ value: BookmarkFolder) -> Rus
     return FfiConverterTypeBookmarkFolder.lower(value)
 }
 
-
 public struct BookmarkSeparator {
-    public var `guid`: Guid
-    public var `dateAdded`: PlacesTimestamp
-    public var `lastModified`: PlacesTimestamp
-    public var `parentGuid`: Guid
-    public var `position`: UInt32
+    public var guid: Guid
+    public var dateAdded: PlacesTimestamp
+    public var lastModified: PlacesTimestamp
+    public var parentGuid: Guid
+    public var position: UInt32
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`guid`: Guid, `dateAdded`: PlacesTimestamp, `lastModified`: PlacesTimestamp, `parentGuid`: Guid, `position`: UInt32) {
-        self.`guid` = `guid`
-        self.`dateAdded` = `dateAdded`
-        self.`lastModified` = `lastModified`
-        self.`parentGuid` = `parentGuid`
-        self.`position` = `position`
+    public init(guid: Guid, dateAdded: PlacesTimestamp, lastModified: PlacesTimestamp, parentGuid: Guid, position: UInt32) {
+        self.guid = guid
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.parentGuid = parentGuid
+        self.position = position
     }
 }
 
-
 extension BookmarkSeparator: Equatable, Hashable {
-    public static func ==(lhs: BookmarkSeparator, rhs: BookmarkSeparator) -> Bool {
-        if lhs.`guid` != rhs.`guid` {
+    public static func == (lhs: BookmarkSeparator, rhs: BookmarkSeparator) -> Bool {
+        if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.`dateAdded` != rhs.`dateAdded` {
+        if lhs.dateAdded != rhs.dateAdded {
             return false
         }
-        if lhs.`lastModified` != rhs.`lastModified` {
+        if lhs.lastModified != rhs.lastModified {
             return false
         }
-        if lhs.`parentGuid` != rhs.`parentGuid` {
+        if lhs.parentGuid != rhs.parentGuid {
             return false
         }
-        if lhs.`position` != rhs.`position` {
+        if lhs.position != rhs.position {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`guid`)
-        hasher.combine(`dateAdded`)
-        hasher.combine(`lastModified`)
-        hasher.combine(`parentGuid`)
-        hasher.combine(`position`)
+        hasher.combine(guid)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
     }
 }
-
 
 public struct FfiConverterTypeBookmarkSeparator: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkSeparator {
         return try BookmarkSeparator(
-            `guid`: FfiConverterTypeGuid.read(from: &buf), 
-            `dateAdded`: FfiConverterTypePlacesTimestamp.read(from: &buf), 
-            `lastModified`: FfiConverterTypePlacesTimestamp.read(from: &buf), 
-            `parentGuid`: FfiConverterTypeGuid.read(from: &buf), 
-            `position`: FfiConverterUInt32.read(from: &buf)
+            guid: FfiConverterTypeGuid.read(from: &buf),
+            dateAdded: FfiConverterTypePlacesTimestamp.read(from: &buf),
+            lastModified: FfiConverterTypePlacesTimestamp.read(from: &buf),
+            parentGuid: FfiConverterTypeGuid.read(from: &buf),
+            position: FfiConverterUInt32.read(from: &buf)
         )
     }
 
     public static func write(_ value: BookmarkSeparator, into buf: inout [UInt8]) {
-        FfiConverterTypeGuid.write(value.`guid`, into: &buf)
-        FfiConverterTypePlacesTimestamp.write(value.`dateAdded`, into: &buf)
-        FfiConverterTypePlacesTimestamp.write(value.`lastModified`, into: &buf)
-        FfiConverterTypeGuid.write(value.`parentGuid`, into: &buf)
-        FfiConverterUInt32.write(value.`position`, into: &buf)
+        FfiConverterTypeGuid.write(value.guid, into: &buf)
+        FfiConverterTypePlacesTimestamp.write(value.dateAdded, into: &buf)
+        FfiConverterTypePlacesTimestamp.write(value.lastModified, into: &buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: &buf)
+        FfiConverterUInt32.write(value.position, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeBookmarkSeparator_lift(_ buf: RustBuffer) throws -> BookmarkSeparator {
     return try FfiConverterTypeBookmarkSeparator.lift(buf)
@@ -1356,76 +1290,72 @@ public func FfiConverterTypeBookmarkSeparator_lower(_ value: BookmarkSeparator) 
     return FfiConverterTypeBookmarkSeparator.lower(value)
 }
 
-
 public struct BookmarkUpdateInfo {
-    public var `guid`: Guid
-    public var `title`: String?
-    public var `url`: String?
-    public var `parentGuid`: Guid?
-    public var `position`: UInt32?
+    public var guid: Guid
+    public var title: String?
+    public var url: String?
+    public var parentGuid: Guid?
+    public var position: UInt32?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`guid`: Guid, `title`: String?, `url`: String?, `parentGuid`: Guid?, `position`: UInt32?) {
-        self.`guid` = `guid`
-        self.`title` = `title`
-        self.`url` = `url`
-        self.`parentGuid` = `parentGuid`
-        self.`position` = `position`
+    public init(guid: Guid, title: String?, url: String?, parentGuid: Guid?, position: UInt32?) {
+        self.guid = guid
+        self.title = title
+        self.url = url
+        self.parentGuid = parentGuid
+        self.position = position
     }
 }
 
-
 extension BookmarkUpdateInfo: Equatable, Hashable {
-    public static func ==(lhs: BookmarkUpdateInfo, rhs: BookmarkUpdateInfo) -> Bool {
-        if lhs.`guid` != rhs.`guid` {
+    public static func == (lhs: BookmarkUpdateInfo, rhs: BookmarkUpdateInfo) -> Bool {
+        if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`url` != rhs.`url` {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`parentGuid` != rhs.`parentGuid` {
+        if lhs.parentGuid != rhs.parentGuid {
             return false
         }
-        if lhs.`position` != rhs.`position` {
+        if lhs.position != rhs.position {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`guid`)
-        hasher.combine(`title`)
-        hasher.combine(`url`)
-        hasher.combine(`parentGuid`)
-        hasher.combine(`position`)
+        hasher.combine(guid)
+        hasher.combine(title)
+        hasher.combine(url)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
     }
 }
-
 
 public struct FfiConverterTypeBookmarkUpdateInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkUpdateInfo {
         return try BookmarkUpdateInfo(
-            `guid`: FfiConverterTypeGuid.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf), 
-            `url`: FfiConverterOptionString.read(from: &buf), 
-            `parentGuid`: FfiConverterOptionTypeGuid.read(from: &buf), 
-            `position`: FfiConverterOptionUInt32.read(from: &buf)
+            guid: FfiConverterTypeGuid.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf),
+            url: FfiConverterOptionString.read(from: &buf),
+            parentGuid: FfiConverterOptionTypeGuid.read(from: &buf),
+            position: FfiConverterOptionUInt32.read(from: &buf)
         )
     }
 
     public static func write(_ value: BookmarkUpdateInfo, into buf: inout [UInt8]) {
-        FfiConverterTypeGuid.write(value.`guid`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
-        FfiConverterOptionString.write(value.`url`, into: &buf)
-        FfiConverterOptionTypeGuid.write(value.`parentGuid`, into: &buf)
-        FfiConverterOptionUInt32.write(value.`position`, into: &buf)
+        FfiConverterTypeGuid.write(value.guid, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
+        FfiConverterOptionString.write(value.url, into: &buf)
+        FfiConverterOptionTypeGuid.write(value.parentGuid, into: &buf)
+        FfiConverterOptionUInt32.write(value.position, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeBookmarkUpdateInfo_lift(_ buf: RustBuffer) throws -> BookmarkUpdateInfo {
     return try FfiConverterTypeBookmarkUpdateInfo.lift(buf)
@@ -1435,44 +1365,40 @@ public func FfiConverterTypeBookmarkUpdateInfo_lower(_ value: BookmarkUpdateInfo
     return FfiConverterTypeBookmarkUpdateInfo.lower(value)
 }
 
-
 public struct Dummy {
-    public var `md`: [HistoryMetadata]?
+    public var md: [HistoryMetadata]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`md`: [HistoryMetadata]?) {
-        self.`md` = `md`
+    public init(md: [HistoryMetadata]?) {
+        self.md = md
     }
 }
 
-
 extension Dummy: Equatable, Hashable {
-    public static func ==(lhs: Dummy, rhs: Dummy) -> Bool {
-        if lhs.`md` != rhs.`md` {
+    public static func == (lhs: Dummy, rhs: Dummy) -> Bool {
+        if lhs.md != rhs.md {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`md`)
+        hasher.combine(md)
     }
 }
-
 
 public struct FfiConverterTypeDummy: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Dummy {
         return try Dummy(
-            `md`: FfiConverterOptionSequenceTypeHistoryMetadata.read(from: &buf)
+            md: FfiConverterOptionSequenceTypeHistoryMetadata.read(from: &buf)
         )
     }
 
     public static func write(_ value: Dummy, into buf: inout [UInt8]) {
-        FfiConverterOptionSequenceTypeHistoryMetadata.write(value.`md`, into: &buf)
+        FfiConverterOptionSequenceTypeHistoryMetadata.write(value.md, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeDummy_lift(_ buf: RustBuffer) throws -> Dummy {
     return try FfiConverterTypeDummy.lift(buf)
@@ -1482,76 +1408,72 @@ public func FfiConverterTypeDummy_lower(_ value: Dummy) -> RustBuffer {
     return FfiConverterTypeDummy.lower(value)
 }
 
-
 public struct HistoryHighlight {
-    public var `score`: Double
-    public var `placeId`: Int32
-    public var `url`: String
-    public var `title`: String?
-    public var `previewImageUrl`: String?
+    public var score: Double
+    public var placeId: Int32
+    public var url: String
+    public var title: String?
+    public var previewImageUrl: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`score`: Double, `placeId`: Int32, `url`: String, `title`: String?, `previewImageUrl`: String?) {
-        self.`score` = `score`
-        self.`placeId` = `placeId`
-        self.`url` = `url`
-        self.`title` = `title`
-        self.`previewImageUrl` = `previewImageUrl`
+    public init(score: Double, placeId: Int32, url: String, title: String?, previewImageUrl: String?) {
+        self.score = score
+        self.placeId = placeId
+        self.url = url
+        self.title = title
+        self.previewImageUrl = previewImageUrl
     }
 }
 
-
 extension HistoryHighlight: Equatable, Hashable {
-    public static func ==(lhs: HistoryHighlight, rhs: HistoryHighlight) -> Bool {
-        if lhs.`score` != rhs.`score` {
+    public static func == (lhs: HistoryHighlight, rhs: HistoryHighlight) -> Bool {
+        if lhs.score != rhs.score {
             return false
         }
-        if lhs.`placeId` != rhs.`placeId` {
+        if lhs.placeId != rhs.placeId {
             return false
         }
-        if lhs.`url` != rhs.`url` {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`previewImageUrl` != rhs.`previewImageUrl` {
+        if lhs.previewImageUrl != rhs.previewImageUrl {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`score`)
-        hasher.combine(`placeId`)
-        hasher.combine(`url`)
-        hasher.combine(`title`)
-        hasher.combine(`previewImageUrl`)
+        hasher.combine(score)
+        hasher.combine(placeId)
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(previewImageUrl)
     }
 }
-
 
 public struct FfiConverterTypeHistoryHighlight: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryHighlight {
         return try HistoryHighlight(
-            `score`: FfiConverterDouble.read(from: &buf), 
-            `placeId`: FfiConverterInt32.read(from: &buf), 
-            `url`: FfiConverterString.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf), 
-            `previewImageUrl`: FfiConverterOptionString.read(from: &buf)
+            score: FfiConverterDouble.read(from: &buf),
+            placeId: FfiConverterInt32.read(from: &buf),
+            url: FfiConverterString.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf),
+            previewImageUrl: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: HistoryHighlight, into buf: inout [UInt8]) {
-        FfiConverterDouble.write(value.`score`, into: &buf)
-        FfiConverterInt32.write(value.`placeId`, into: &buf)
-        FfiConverterString.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
-        FfiConverterOptionString.write(value.`previewImageUrl`, into: &buf)
+        FfiConverterDouble.write(value.score, into: &buf)
+        FfiConverterInt32.write(value.placeId, into: &buf)
+        FfiConverterString.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
+        FfiConverterOptionString.write(value.previewImageUrl, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeHistoryHighlight_lift(_ buf: RustBuffer) throws -> HistoryHighlight {
     return try FfiConverterTypeHistoryHighlight.lift(buf)
@@ -1561,52 +1483,48 @@ public func FfiConverterTypeHistoryHighlight_lower(_ value: HistoryHighlight) ->
     return FfiConverterTypeHistoryHighlight.lower(value)
 }
 
-
 public struct HistoryHighlightWeights {
-    public var `viewTime`: Double
-    public var `frequency`: Double
+    public var viewTime: Double
+    public var frequency: Double
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`viewTime`: Double, `frequency`: Double) {
-        self.`viewTime` = `viewTime`
-        self.`frequency` = `frequency`
+    public init(viewTime: Double, frequency: Double) {
+        self.viewTime = viewTime
+        self.frequency = frequency
     }
 }
 
-
 extension HistoryHighlightWeights: Equatable, Hashable {
-    public static func ==(lhs: HistoryHighlightWeights, rhs: HistoryHighlightWeights) -> Bool {
-        if lhs.`viewTime` != rhs.`viewTime` {
+    public static func == (lhs: HistoryHighlightWeights, rhs: HistoryHighlightWeights) -> Bool {
+        if lhs.viewTime != rhs.viewTime {
             return false
         }
-        if lhs.`frequency` != rhs.`frequency` {
+        if lhs.frequency != rhs.frequency {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`viewTime`)
-        hasher.combine(`frequency`)
+        hasher.combine(viewTime)
+        hasher.combine(frequency)
     }
 }
-
 
 public struct FfiConverterTypeHistoryHighlightWeights: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryHighlightWeights {
         return try HistoryHighlightWeights(
-            `viewTime`: FfiConverterDouble.read(from: &buf), 
-            `frequency`: FfiConverterDouble.read(from: &buf)
+            viewTime: FfiConverterDouble.read(from: &buf),
+            frequency: FfiConverterDouble.read(from: &buf)
         )
     }
 
     public static func write(_ value: HistoryHighlightWeights, into buf: inout [UInt8]) {
-        FfiConverterDouble.write(value.`viewTime`, into: &buf)
-        FfiConverterDouble.write(value.`frequency`, into: &buf)
+        FfiConverterDouble.write(value.viewTime, into: &buf)
+        FfiConverterDouble.write(value.frequency, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeHistoryHighlightWeights_lift(_ buf: RustBuffer) throws -> HistoryHighlightWeights {
     return try FfiConverterTypeHistoryHighlightWeights.lift(buf)
@@ -1616,108 +1534,104 @@ public func FfiConverterTypeHistoryHighlightWeights_lower(_ value: HistoryHighli
     return FfiConverterTypeHistoryHighlightWeights.lower(value)
 }
 
-
 public struct HistoryMetadata {
-    public var `url`: String
-    public var `title`: String?
-    public var `previewImageUrl`: String?
-    public var `createdAt`: Int64
-    public var `updatedAt`: Int64
-    public var `totalViewTime`: Int32
-    public var `searchTerm`: String?
-    public var `documentType`: DocumentType
-    public var `referrerUrl`: String?
+    public var url: String
+    public var title: String?
+    public var previewImageUrl: String?
+    public var createdAt: Int64
+    public var updatedAt: Int64
+    public var totalViewTime: Int32
+    public var searchTerm: String?
+    public var documentType: DocumentType
+    public var referrerUrl: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`url`: String, `title`: String?, `previewImageUrl`: String?, `createdAt`: Int64, `updatedAt`: Int64, `totalViewTime`: Int32, `searchTerm`: String?, `documentType`: DocumentType, `referrerUrl`: String?) {
-        self.`url` = `url`
-        self.`title` = `title`
-        self.`previewImageUrl` = `previewImageUrl`
-        self.`createdAt` = `createdAt`
-        self.`updatedAt` = `updatedAt`
-        self.`totalViewTime` = `totalViewTime`
-        self.`searchTerm` = `searchTerm`
-        self.`documentType` = `documentType`
-        self.`referrerUrl` = `referrerUrl`
+    public init(url: String, title: String?, previewImageUrl: String?, createdAt: Int64, updatedAt: Int64, totalViewTime: Int32, searchTerm: String?, documentType: DocumentType, referrerUrl: String?) {
+        self.url = url
+        self.title = title
+        self.previewImageUrl = previewImageUrl
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.totalViewTime = totalViewTime
+        self.searchTerm = searchTerm
+        self.documentType = documentType
+        self.referrerUrl = referrerUrl
     }
 }
 
-
 extension HistoryMetadata: Equatable, Hashable {
-    public static func ==(lhs: HistoryMetadata, rhs: HistoryMetadata) -> Bool {
-        if lhs.`url` != rhs.`url` {
+    public static func == (lhs: HistoryMetadata, rhs: HistoryMetadata) -> Bool {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`previewImageUrl` != rhs.`previewImageUrl` {
+        if lhs.previewImageUrl != rhs.previewImageUrl {
             return false
         }
-        if lhs.`createdAt` != rhs.`createdAt` {
+        if lhs.createdAt != rhs.createdAt {
             return false
         }
-        if lhs.`updatedAt` != rhs.`updatedAt` {
+        if lhs.updatedAt != rhs.updatedAt {
             return false
         }
-        if lhs.`totalViewTime` != rhs.`totalViewTime` {
+        if lhs.totalViewTime != rhs.totalViewTime {
             return false
         }
-        if lhs.`searchTerm` != rhs.`searchTerm` {
+        if lhs.searchTerm != rhs.searchTerm {
             return false
         }
-        if lhs.`documentType` != rhs.`documentType` {
+        if lhs.documentType != rhs.documentType {
             return false
         }
-        if lhs.`referrerUrl` != rhs.`referrerUrl` {
+        if lhs.referrerUrl != rhs.referrerUrl {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`url`)
-        hasher.combine(`title`)
-        hasher.combine(`previewImageUrl`)
-        hasher.combine(`createdAt`)
-        hasher.combine(`updatedAt`)
-        hasher.combine(`totalViewTime`)
-        hasher.combine(`searchTerm`)
-        hasher.combine(`documentType`)
-        hasher.combine(`referrerUrl`)
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(previewImageUrl)
+        hasher.combine(createdAt)
+        hasher.combine(updatedAt)
+        hasher.combine(totalViewTime)
+        hasher.combine(searchTerm)
+        hasher.combine(documentType)
+        hasher.combine(referrerUrl)
     }
 }
-
 
 public struct FfiConverterTypeHistoryMetadata: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryMetadata {
         return try HistoryMetadata(
-            `url`: FfiConverterString.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf), 
-            `previewImageUrl`: FfiConverterOptionString.read(from: &buf), 
-            `createdAt`: FfiConverterInt64.read(from: &buf), 
-            `updatedAt`: FfiConverterInt64.read(from: &buf), 
-            `totalViewTime`: FfiConverterInt32.read(from: &buf), 
-            `searchTerm`: FfiConverterOptionString.read(from: &buf), 
-            `documentType`: FfiConverterTypeDocumentType.read(from: &buf), 
-            `referrerUrl`: FfiConverterOptionString.read(from: &buf)
+            url: FfiConverterString.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf),
+            previewImageUrl: FfiConverterOptionString.read(from: &buf),
+            createdAt: FfiConverterInt64.read(from: &buf),
+            updatedAt: FfiConverterInt64.read(from: &buf),
+            totalViewTime: FfiConverterInt32.read(from: &buf),
+            searchTerm: FfiConverterOptionString.read(from: &buf),
+            documentType: FfiConverterTypeDocumentType.read(from: &buf),
+            referrerUrl: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: HistoryMetadata, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
-        FfiConverterOptionString.write(value.`previewImageUrl`, into: &buf)
-        FfiConverterInt64.write(value.`createdAt`, into: &buf)
-        FfiConverterInt64.write(value.`updatedAt`, into: &buf)
-        FfiConverterInt32.write(value.`totalViewTime`, into: &buf)
-        FfiConverterOptionString.write(value.`searchTerm`, into: &buf)
-        FfiConverterTypeDocumentType.write(value.`documentType`, into: &buf)
-        FfiConverterOptionString.write(value.`referrerUrl`, into: &buf)
+        FfiConverterString.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
+        FfiConverterOptionString.write(value.previewImageUrl, into: &buf)
+        FfiConverterInt64.write(value.createdAt, into: &buf)
+        FfiConverterInt64.write(value.updatedAt, into: &buf)
+        FfiConverterInt32.write(value.totalViewTime, into: &buf)
+        FfiConverterOptionString.write(value.searchTerm, into: &buf)
+        FfiConverterTypeDocumentType.write(value.documentType, into: &buf)
+        FfiConverterOptionString.write(value.referrerUrl, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeHistoryMetadata_lift(_ buf: RustBuffer) throws -> HistoryMetadata {
     return try FfiConverterTypeHistoryMetadata.lift(buf)
@@ -1727,84 +1641,80 @@ public func FfiConverterTypeHistoryMetadata_lower(_ value: HistoryMetadata) -> R
     return FfiConverterTypeHistoryMetadata.lower(value)
 }
 
-
 public struct HistoryMetadataObservation {
-    public var `url`: String
-    public var `referrerUrl`: String?
-    public var `searchTerm`: String?
-    public var `viewTime`: Int32?
-    public var `documentType`: DocumentType?
-    public var `title`: String?
+    public var url: String
+    public var referrerUrl: String?
+    public var searchTerm: String?
+    public var viewTime: Int32?
+    public var documentType: DocumentType?
+    public var title: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`url`: String, `referrerUrl`: String? = nil, `searchTerm`: String? = nil, `viewTime`: Int32? = nil, `documentType`: DocumentType? = nil, `title`: String? = nil) {
-        self.`url` = `url`
-        self.`referrerUrl` = `referrerUrl`
-        self.`searchTerm` = `searchTerm`
-        self.`viewTime` = `viewTime`
-        self.`documentType` = `documentType`
-        self.`title` = `title`
+    public init(url: String, referrerUrl: String? = nil, searchTerm: String? = nil, viewTime: Int32? = nil, documentType: DocumentType? = nil, title: String? = nil) {
+        self.url = url
+        self.referrerUrl = referrerUrl
+        self.searchTerm = searchTerm
+        self.viewTime = viewTime
+        self.documentType = documentType
+        self.title = title
     }
 }
 
-
 extension HistoryMetadataObservation: Equatable, Hashable {
-    public static func ==(lhs: HistoryMetadataObservation, rhs: HistoryMetadataObservation) -> Bool {
-        if lhs.`url` != rhs.`url` {
+    public static func == (lhs: HistoryMetadataObservation, rhs: HistoryMetadataObservation) -> Bool {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`referrerUrl` != rhs.`referrerUrl` {
+        if lhs.referrerUrl != rhs.referrerUrl {
             return false
         }
-        if lhs.`searchTerm` != rhs.`searchTerm` {
+        if lhs.searchTerm != rhs.searchTerm {
             return false
         }
-        if lhs.`viewTime` != rhs.`viewTime` {
+        if lhs.viewTime != rhs.viewTime {
             return false
         }
-        if lhs.`documentType` != rhs.`documentType` {
+        if lhs.documentType != rhs.documentType {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`url`)
-        hasher.combine(`referrerUrl`)
-        hasher.combine(`searchTerm`)
-        hasher.combine(`viewTime`)
-        hasher.combine(`documentType`)
-        hasher.combine(`title`)
+        hasher.combine(url)
+        hasher.combine(referrerUrl)
+        hasher.combine(searchTerm)
+        hasher.combine(viewTime)
+        hasher.combine(documentType)
+        hasher.combine(title)
     }
 }
-
 
 public struct FfiConverterTypeHistoryMetadataObservation: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryMetadataObservation {
         return try HistoryMetadataObservation(
-            `url`: FfiConverterString.read(from: &buf), 
-            `referrerUrl`: FfiConverterOptionString.read(from: &buf), 
-            `searchTerm`: FfiConverterOptionString.read(from: &buf), 
-            `viewTime`: FfiConverterOptionInt32.read(from: &buf), 
-            `documentType`: FfiConverterOptionTypeDocumentType.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf)
+            url: FfiConverterString.read(from: &buf),
+            referrerUrl: FfiConverterOptionString.read(from: &buf),
+            searchTerm: FfiConverterOptionString.read(from: &buf),
+            viewTime: FfiConverterOptionInt32.read(from: &buf),
+            documentType: FfiConverterOptionTypeDocumentType.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: HistoryMetadataObservation, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`referrerUrl`, into: &buf)
-        FfiConverterOptionString.write(value.`searchTerm`, into: &buf)
-        FfiConverterOptionInt32.write(value.`viewTime`, into: &buf)
-        FfiConverterOptionTypeDocumentType.write(value.`documentType`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
+        FfiConverterString.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.referrerUrl, into: &buf)
+        FfiConverterOptionString.write(value.searchTerm, into: &buf)
+        FfiConverterOptionInt32.write(value.viewTime, into: &buf)
+        FfiConverterOptionTypeDocumentType.write(value.documentType, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeHistoryMetadataObservation_lift(_ buf: RustBuffer) throws -> HistoryMetadataObservation {
     return try FfiConverterTypeHistoryMetadataObservation.lift(buf)
@@ -1814,68 +1724,64 @@ public func FfiConverterTypeHistoryMetadataObservation_lower(_ value: HistoryMet
     return FfiConverterTypeHistoryMetadataObservation.lower(value)
 }
 
-
 public struct HistoryMigrationResult {
-    public var `numTotal`: UInt32
-    public var `numSucceeded`: UInt32
-    public var `numFailed`: UInt32
-    public var `totalDuration`: UInt64
+    public var numTotal: UInt32
+    public var numSucceeded: UInt32
+    public var numFailed: UInt32
+    public var totalDuration: UInt64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`numTotal`: UInt32, `numSucceeded`: UInt32, `numFailed`: UInt32, `totalDuration`: UInt64) {
-        self.`numTotal` = `numTotal`
-        self.`numSucceeded` = `numSucceeded`
-        self.`numFailed` = `numFailed`
-        self.`totalDuration` = `totalDuration`
+    public init(numTotal: UInt32, numSucceeded: UInt32, numFailed: UInt32, totalDuration: UInt64) {
+        self.numTotal = numTotal
+        self.numSucceeded = numSucceeded
+        self.numFailed = numFailed
+        self.totalDuration = totalDuration
     }
 }
 
-
 extension HistoryMigrationResult: Equatable, Hashable {
-    public static func ==(lhs: HistoryMigrationResult, rhs: HistoryMigrationResult) -> Bool {
-        if lhs.`numTotal` != rhs.`numTotal` {
+    public static func == (lhs: HistoryMigrationResult, rhs: HistoryMigrationResult) -> Bool {
+        if lhs.numTotal != rhs.numTotal {
             return false
         }
-        if lhs.`numSucceeded` != rhs.`numSucceeded` {
+        if lhs.numSucceeded != rhs.numSucceeded {
             return false
         }
-        if lhs.`numFailed` != rhs.`numFailed` {
+        if lhs.numFailed != rhs.numFailed {
             return false
         }
-        if lhs.`totalDuration` != rhs.`totalDuration` {
+        if lhs.totalDuration != rhs.totalDuration {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`numTotal`)
-        hasher.combine(`numSucceeded`)
-        hasher.combine(`numFailed`)
-        hasher.combine(`totalDuration`)
+        hasher.combine(numTotal)
+        hasher.combine(numSucceeded)
+        hasher.combine(numFailed)
+        hasher.combine(totalDuration)
     }
 }
-
 
 public struct FfiConverterTypeHistoryMigrationResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryMigrationResult {
         return try HistoryMigrationResult(
-            `numTotal`: FfiConverterUInt32.read(from: &buf), 
-            `numSucceeded`: FfiConverterUInt32.read(from: &buf), 
-            `numFailed`: FfiConverterUInt32.read(from: &buf), 
-            `totalDuration`: FfiConverterUInt64.read(from: &buf)
+            numTotal: FfiConverterUInt32.read(from: &buf),
+            numSucceeded: FfiConverterUInt32.read(from: &buf),
+            numFailed: FfiConverterUInt32.read(from: &buf),
+            totalDuration: FfiConverterUInt64.read(from: &buf)
         )
     }
 
     public static func write(_ value: HistoryMigrationResult, into buf: inout [UInt8]) {
-        FfiConverterUInt32.write(value.`numTotal`, into: &buf)
-        FfiConverterUInt32.write(value.`numSucceeded`, into: &buf)
-        FfiConverterUInt32.write(value.`numFailed`, into: &buf)
-        FfiConverterUInt64.write(value.`totalDuration`, into: &buf)
+        FfiConverterUInt32.write(value.numTotal, into: &buf)
+        FfiConverterUInt32.write(value.numSucceeded, into: &buf)
+        FfiConverterUInt32.write(value.numFailed, into: &buf)
+        FfiConverterUInt64.write(value.totalDuration, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeHistoryMigrationResult_lift(_ buf: RustBuffer) throws -> HistoryMigrationResult {
     return try FfiConverterTypeHistoryMigrationResult.lift(buf)
@@ -1885,92 +1791,88 @@ public func FfiConverterTypeHistoryMigrationResult_lower(_ value: HistoryMigrati
     return FfiConverterTypeHistoryMigrationResult.lower(value)
 }
 
-
 public struct HistoryVisitInfo {
-    public var `url`: Url
-    public var `title`: String?
-    public var `timestamp`: PlacesTimestamp
-    public var `visitType`: VisitTransition
-    public var `isHidden`: Bool
-    public var `previewImageUrl`: Url?
-    public var `isRemote`: Bool
+    public var url: Url
+    public var title: String?
+    public var timestamp: PlacesTimestamp
+    public var visitType: VisitTransition
+    public var isHidden: Bool
+    public var previewImageUrl: Url?
+    public var isRemote: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`url`: Url, `title`: String?, `timestamp`: PlacesTimestamp, `visitType`: VisitTransition, `isHidden`: Bool, `previewImageUrl`: Url?, `isRemote`: Bool) {
-        self.`url` = `url`
-        self.`title` = `title`
-        self.`timestamp` = `timestamp`
-        self.`visitType` = `visitType`
-        self.`isHidden` = `isHidden`
-        self.`previewImageUrl` = `previewImageUrl`
-        self.`isRemote` = `isRemote`
+    public init(url: Url, title: String?, timestamp: PlacesTimestamp, visitType: VisitTransition, isHidden: Bool, previewImageUrl: Url?, isRemote: Bool) {
+        self.url = url
+        self.title = title
+        self.timestamp = timestamp
+        self.visitType = visitType
+        self.isHidden = isHidden
+        self.previewImageUrl = previewImageUrl
+        self.isRemote = isRemote
     }
 }
 
-
 extension HistoryVisitInfo: Equatable, Hashable {
-    public static func ==(lhs: HistoryVisitInfo, rhs: HistoryVisitInfo) -> Bool {
-        if lhs.`url` != rhs.`url` {
+    public static func == (lhs: HistoryVisitInfo, rhs: HistoryVisitInfo) -> Bool {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`timestamp` != rhs.`timestamp` {
+        if lhs.timestamp != rhs.timestamp {
             return false
         }
-        if lhs.`visitType` != rhs.`visitType` {
+        if lhs.visitType != rhs.visitType {
             return false
         }
-        if lhs.`isHidden` != rhs.`isHidden` {
+        if lhs.isHidden != rhs.isHidden {
             return false
         }
-        if lhs.`previewImageUrl` != rhs.`previewImageUrl` {
+        if lhs.previewImageUrl != rhs.previewImageUrl {
             return false
         }
-        if lhs.`isRemote` != rhs.`isRemote` {
+        if lhs.isRemote != rhs.isRemote {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`url`)
-        hasher.combine(`title`)
-        hasher.combine(`timestamp`)
-        hasher.combine(`visitType`)
-        hasher.combine(`isHidden`)
-        hasher.combine(`previewImageUrl`)
-        hasher.combine(`isRemote`)
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(timestamp)
+        hasher.combine(visitType)
+        hasher.combine(isHidden)
+        hasher.combine(previewImageUrl)
+        hasher.combine(isRemote)
     }
 }
-
 
 public struct FfiConverterTypeHistoryVisitInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryVisitInfo {
         return try HistoryVisitInfo(
-            `url`: FfiConverterTypeUrl.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf), 
-            `timestamp`: FfiConverterTypePlacesTimestamp.read(from: &buf), 
-            `visitType`: FfiConverterTypeVisitTransition.read(from: &buf), 
-            `isHidden`: FfiConverterBool.read(from: &buf), 
-            `previewImageUrl`: FfiConverterOptionTypeUrl.read(from: &buf), 
-            `isRemote`: FfiConverterBool.read(from: &buf)
+            url: FfiConverterTypeUrl.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf),
+            timestamp: FfiConverterTypePlacesTimestamp.read(from: &buf),
+            visitType: FfiConverterTypeVisitTransition.read(from: &buf),
+            isHidden: FfiConverterBool.read(from: &buf),
+            previewImageUrl: FfiConverterOptionTypeUrl.read(from: &buf),
+            isRemote: FfiConverterBool.read(from: &buf)
         )
     }
 
     public static func write(_ value: HistoryVisitInfo, into buf: inout [UInt8]) {
-        FfiConverterTypeUrl.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
-        FfiConverterTypePlacesTimestamp.write(value.`timestamp`, into: &buf)
-        FfiConverterTypeVisitTransition.write(value.`visitType`, into: &buf)
-        FfiConverterBool.write(value.`isHidden`, into: &buf)
-        FfiConverterOptionTypeUrl.write(value.`previewImageUrl`, into: &buf)
-        FfiConverterBool.write(value.`isRemote`, into: &buf)
+        FfiConverterTypeUrl.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
+        FfiConverterTypePlacesTimestamp.write(value.timestamp, into: &buf)
+        FfiConverterTypeVisitTransition.write(value.visitType, into: &buf)
+        FfiConverterBool.write(value.isHidden, into: &buf)
+        FfiConverterOptionTypeUrl.write(value.previewImageUrl, into: &buf)
+        FfiConverterBool.write(value.isRemote, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeHistoryVisitInfo_lift(_ buf: RustBuffer) throws -> HistoryVisitInfo {
     return try FfiConverterTypeHistoryVisitInfo.lift(buf)
@@ -1980,60 +1882,56 @@ public func FfiConverterTypeHistoryVisitInfo_lower(_ value: HistoryVisitInfo) ->
     return FfiConverterTypeHistoryVisitInfo.lower(value)
 }
 
-
 public struct HistoryVisitInfosWithBound {
-    public var `infos`: [HistoryVisitInfo]
-    public var `bound`: Int64
-    public var `offset`: Int64
+    public var infos: [HistoryVisitInfo]
+    public var bound: Int64
+    public var offset: Int64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`infos`: [HistoryVisitInfo], `bound`: Int64, `offset`: Int64) {
-        self.`infos` = `infos`
-        self.`bound` = `bound`
-        self.`offset` = `offset`
+    public init(infos: [HistoryVisitInfo], bound: Int64, offset: Int64) {
+        self.infos = infos
+        self.bound = bound
+        self.offset = offset
     }
 }
 
-
 extension HistoryVisitInfosWithBound: Equatable, Hashable {
-    public static func ==(lhs: HistoryVisitInfosWithBound, rhs: HistoryVisitInfosWithBound) -> Bool {
-        if lhs.`infos` != rhs.`infos` {
+    public static func == (lhs: HistoryVisitInfosWithBound, rhs: HistoryVisitInfosWithBound) -> Bool {
+        if lhs.infos != rhs.infos {
             return false
         }
-        if lhs.`bound` != rhs.`bound` {
+        if lhs.bound != rhs.bound {
             return false
         }
-        if lhs.`offset` != rhs.`offset` {
+        if lhs.offset != rhs.offset {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`infos`)
-        hasher.combine(`bound`)
-        hasher.combine(`offset`)
+        hasher.combine(infos)
+        hasher.combine(bound)
+        hasher.combine(offset)
     }
 }
-
 
 public struct FfiConverterTypeHistoryVisitInfosWithBound: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryVisitInfosWithBound {
         return try HistoryVisitInfosWithBound(
-            `infos`: FfiConverterSequenceTypeHistoryVisitInfo.read(from: &buf), 
-            `bound`: FfiConverterInt64.read(from: &buf), 
-            `offset`: FfiConverterInt64.read(from: &buf)
+            infos: FfiConverterSequenceTypeHistoryVisitInfo.read(from: &buf),
+            bound: FfiConverterInt64.read(from: &buf),
+            offset: FfiConverterInt64.read(from: &buf)
         )
     }
 
     public static func write(_ value: HistoryVisitInfosWithBound, into buf: inout [UInt8]) {
-        FfiConverterSequenceTypeHistoryVisitInfo.write(value.`infos`, into: &buf)
-        FfiConverterInt64.write(value.`bound`, into: &buf)
-        FfiConverterInt64.write(value.`offset`, into: &buf)
+        FfiConverterSequenceTypeHistoryVisitInfo.write(value.infos, into: &buf)
+        FfiConverterInt64.write(value.bound, into: &buf)
+        FfiConverterInt64.write(value.offset, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeHistoryVisitInfosWithBound_lift(_ buf: RustBuffer) throws -> HistoryVisitInfosWithBound {
     return try FfiConverterTypeHistoryVisitInfosWithBound.lift(buf)
@@ -2043,92 +1941,88 @@ public func FfiConverterTypeHistoryVisitInfosWithBound_lower(_ value: HistoryVis
     return FfiConverterTypeHistoryVisitInfosWithBound.lower(value)
 }
 
-
 public struct InsertableBookmark {
-    public var `guid`: Guid?
-    public var `parentGuid`: Guid
-    public var `position`: BookmarkPosition
-    public var `dateAdded`: PlacesTimestamp?
-    public var `lastModified`: PlacesTimestamp?
-    public var `url`: Url
-    public var `title`: String?
+    public var guid: Guid?
+    public var parentGuid: Guid
+    public var position: BookmarkPosition
+    public var dateAdded: PlacesTimestamp?
+    public var lastModified: PlacesTimestamp?
+    public var url: Url
+    public var title: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`guid`: Guid? = nil, `parentGuid`: Guid, `position`: BookmarkPosition, `dateAdded`: PlacesTimestamp? = nil, `lastModified`: PlacesTimestamp? = nil, `url`: Url, `title`: String? = nil) {
-        self.`guid` = `guid`
-        self.`parentGuid` = `parentGuid`
-        self.`position` = `position`
-        self.`dateAdded` = `dateAdded`
-        self.`lastModified` = `lastModified`
-        self.`url` = `url`
-        self.`title` = `title`
+    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil, url: Url, title: String? = nil) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.url = url
+        self.title = title
     }
 }
 
-
 extension InsertableBookmark: Equatable, Hashable {
-    public static func ==(lhs: InsertableBookmark, rhs: InsertableBookmark) -> Bool {
-        if lhs.`guid` != rhs.`guid` {
+    public static func == (lhs: InsertableBookmark, rhs: InsertableBookmark) -> Bool {
+        if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.`parentGuid` != rhs.`parentGuid` {
+        if lhs.parentGuid != rhs.parentGuid {
             return false
         }
-        if lhs.`position` != rhs.`position` {
+        if lhs.position != rhs.position {
             return false
         }
-        if lhs.`dateAdded` != rhs.`dateAdded` {
+        if lhs.dateAdded != rhs.dateAdded {
             return false
         }
-        if lhs.`lastModified` != rhs.`lastModified` {
+        if lhs.lastModified != rhs.lastModified {
             return false
         }
-        if lhs.`url` != rhs.`url` {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`guid`)
-        hasher.combine(`parentGuid`)
-        hasher.combine(`position`)
-        hasher.combine(`dateAdded`)
-        hasher.combine(`lastModified`)
-        hasher.combine(`url`)
-        hasher.combine(`title`)
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(url)
+        hasher.combine(title)
     }
 }
-
 
 public struct FfiConverterTypeInsertableBookmark: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> InsertableBookmark {
         return try InsertableBookmark(
-            `guid`: FfiConverterOptionTypeGuid.read(from: &buf), 
-            `parentGuid`: FfiConverterTypeGuid.read(from: &buf), 
-            `position`: FfiConverterTypeBookmarkPosition.read(from: &buf), 
-            `dateAdded`: FfiConverterOptionTypePlacesTimestamp.read(from: &buf), 
-            `lastModified`: FfiConverterOptionTypePlacesTimestamp.read(from: &buf), 
-            `url`: FfiConverterTypeUrl.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf)
+            guid: FfiConverterOptionTypeGuid.read(from: &buf),
+            parentGuid: FfiConverterTypeGuid.read(from: &buf),
+            position: FfiConverterTypeBookmarkPosition.read(from: &buf),
+            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: &buf),
+            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: &buf),
+            url: FfiConverterTypeUrl.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: InsertableBookmark, into buf: inout [UInt8]) {
-        FfiConverterOptionTypeGuid.write(value.`guid`, into: &buf)
-        FfiConverterTypeGuid.write(value.`parentGuid`, into: &buf)
-        FfiConverterTypeBookmarkPosition.write(value.`position`, into: &buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.`dateAdded`, into: &buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.`lastModified`, into: &buf)
-        FfiConverterTypeUrl.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
+        FfiConverterOptionTypeGuid.write(value.guid, into: &buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: &buf)
+        FfiConverterTypeBookmarkPosition.write(value.position, into: &buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: &buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: &buf)
+        FfiConverterTypeUrl.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeInsertableBookmark_lift(_ buf: RustBuffer) throws -> InsertableBookmark {
     return try FfiConverterTypeInsertableBookmark.lift(buf)
@@ -2138,92 +2032,88 @@ public func FfiConverterTypeInsertableBookmark_lower(_ value: InsertableBookmark
     return FfiConverterTypeInsertableBookmark.lower(value)
 }
 
-
 public struct InsertableBookmarkFolder {
-    public var `guid`: Guid?
-    public var `parentGuid`: Guid
-    public var `position`: BookmarkPosition
-    public var `dateAdded`: PlacesTimestamp?
-    public var `lastModified`: PlacesTimestamp?
-    public var `title`: String?
-    public var `children`: [InsertableBookmarkItem]
+    public var guid: Guid?
+    public var parentGuid: Guid
+    public var position: BookmarkPosition
+    public var dateAdded: PlacesTimestamp?
+    public var lastModified: PlacesTimestamp?
+    public var title: String?
+    public var children: [InsertableBookmarkItem]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`guid`: Guid? = nil, `parentGuid`: Guid, `position`: BookmarkPosition, `dateAdded`: PlacesTimestamp? = nil, `lastModified`: PlacesTimestamp? = nil, `title`: String? = nil, `children`: [InsertableBookmarkItem]) {
-        self.`guid` = `guid`
-        self.`parentGuid` = `parentGuid`
-        self.`position` = `position`
-        self.`dateAdded` = `dateAdded`
-        self.`lastModified` = `lastModified`
-        self.`title` = `title`
-        self.`children` = `children`
+    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil, title: String? = nil, children: [InsertableBookmarkItem]) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
+        self.title = title
+        self.children = children
     }
 }
 
-
 extension InsertableBookmarkFolder: Equatable, Hashable {
-    public static func ==(lhs: InsertableBookmarkFolder, rhs: InsertableBookmarkFolder) -> Bool {
-        if lhs.`guid` != rhs.`guid` {
+    public static func == (lhs: InsertableBookmarkFolder, rhs: InsertableBookmarkFolder) -> Bool {
+        if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.`parentGuid` != rhs.`parentGuid` {
+        if lhs.parentGuid != rhs.parentGuid {
             return false
         }
-        if lhs.`position` != rhs.`position` {
+        if lhs.position != rhs.position {
             return false
         }
-        if lhs.`dateAdded` != rhs.`dateAdded` {
+        if lhs.dateAdded != rhs.dateAdded {
             return false
         }
-        if lhs.`lastModified` != rhs.`lastModified` {
+        if lhs.lastModified != rhs.lastModified {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`children` != rhs.`children` {
+        if lhs.children != rhs.children {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`guid`)
-        hasher.combine(`parentGuid`)
-        hasher.combine(`position`)
-        hasher.combine(`dateAdded`)
-        hasher.combine(`lastModified`)
-        hasher.combine(`title`)
-        hasher.combine(`children`)
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
+        hasher.combine(title)
+        hasher.combine(children)
     }
 }
-
 
 public struct FfiConverterTypeInsertableBookmarkFolder: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> InsertableBookmarkFolder {
         return try InsertableBookmarkFolder(
-            `guid`: FfiConverterOptionTypeGuid.read(from: &buf), 
-            `parentGuid`: FfiConverterTypeGuid.read(from: &buf), 
-            `position`: FfiConverterTypeBookmarkPosition.read(from: &buf), 
-            `dateAdded`: FfiConverterOptionTypePlacesTimestamp.read(from: &buf), 
-            `lastModified`: FfiConverterOptionTypePlacesTimestamp.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf), 
-            `children`: FfiConverterSequenceTypeInsertableBookmarkItem.read(from: &buf)
+            guid: FfiConverterOptionTypeGuid.read(from: &buf),
+            parentGuid: FfiConverterTypeGuid.read(from: &buf),
+            position: FfiConverterTypeBookmarkPosition.read(from: &buf),
+            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: &buf),
+            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf),
+            children: FfiConverterSequenceTypeInsertableBookmarkItem.read(from: &buf)
         )
     }
 
     public static func write(_ value: InsertableBookmarkFolder, into buf: inout [UInt8]) {
-        FfiConverterOptionTypeGuid.write(value.`guid`, into: &buf)
-        FfiConverterTypeGuid.write(value.`parentGuid`, into: &buf)
-        FfiConverterTypeBookmarkPosition.write(value.`position`, into: &buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.`dateAdded`, into: &buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.`lastModified`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
-        FfiConverterSequenceTypeInsertableBookmarkItem.write(value.`children`, into: &buf)
+        FfiConverterOptionTypeGuid.write(value.guid, into: &buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: &buf)
+        FfiConverterTypeBookmarkPosition.write(value.position, into: &buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: &buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
+        FfiConverterSequenceTypeInsertableBookmarkItem.write(value.children, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeInsertableBookmarkFolder_lift(_ buf: RustBuffer) throws -> InsertableBookmarkFolder {
     return try FfiConverterTypeInsertableBookmarkFolder.lift(buf)
@@ -2233,76 +2123,72 @@ public func FfiConverterTypeInsertableBookmarkFolder_lower(_ value: InsertableBo
     return FfiConverterTypeInsertableBookmarkFolder.lower(value)
 }
 
-
 public struct InsertableBookmarkSeparator {
-    public var `guid`: Guid?
-    public var `parentGuid`: Guid
-    public var `position`: BookmarkPosition
-    public var `dateAdded`: PlacesTimestamp?
-    public var `lastModified`: PlacesTimestamp?
+    public var guid: Guid?
+    public var parentGuid: Guid
+    public var position: BookmarkPosition
+    public var dateAdded: PlacesTimestamp?
+    public var lastModified: PlacesTimestamp?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`guid`: Guid? = nil, `parentGuid`: Guid, `position`: BookmarkPosition, `dateAdded`: PlacesTimestamp? = nil, `lastModified`: PlacesTimestamp? = nil) {
-        self.`guid` = `guid`
-        self.`parentGuid` = `parentGuid`
-        self.`position` = `position`
-        self.`dateAdded` = `dateAdded`
-        self.`lastModified` = `lastModified`
+    public init(guid: Guid? = nil, parentGuid: Guid, position: BookmarkPosition, dateAdded: PlacesTimestamp? = nil, lastModified: PlacesTimestamp? = nil) {
+        self.guid = guid
+        self.parentGuid = parentGuid
+        self.position = position
+        self.dateAdded = dateAdded
+        self.lastModified = lastModified
     }
 }
 
-
 extension InsertableBookmarkSeparator: Equatable, Hashable {
-    public static func ==(lhs: InsertableBookmarkSeparator, rhs: InsertableBookmarkSeparator) -> Bool {
-        if lhs.`guid` != rhs.`guid` {
+    public static func == (lhs: InsertableBookmarkSeparator, rhs: InsertableBookmarkSeparator) -> Bool {
+        if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.`parentGuid` != rhs.`parentGuid` {
+        if lhs.parentGuid != rhs.parentGuid {
             return false
         }
-        if lhs.`position` != rhs.`position` {
+        if lhs.position != rhs.position {
             return false
         }
-        if lhs.`dateAdded` != rhs.`dateAdded` {
+        if lhs.dateAdded != rhs.dateAdded {
             return false
         }
-        if lhs.`lastModified` != rhs.`lastModified` {
+        if lhs.lastModified != rhs.lastModified {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`guid`)
-        hasher.combine(`parentGuid`)
-        hasher.combine(`position`)
-        hasher.combine(`dateAdded`)
-        hasher.combine(`lastModified`)
+        hasher.combine(guid)
+        hasher.combine(parentGuid)
+        hasher.combine(position)
+        hasher.combine(dateAdded)
+        hasher.combine(lastModified)
     }
 }
-
 
 public struct FfiConverterTypeInsertableBookmarkSeparator: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> InsertableBookmarkSeparator {
         return try InsertableBookmarkSeparator(
-            `guid`: FfiConverterOptionTypeGuid.read(from: &buf), 
-            `parentGuid`: FfiConverterTypeGuid.read(from: &buf), 
-            `position`: FfiConverterTypeBookmarkPosition.read(from: &buf), 
-            `dateAdded`: FfiConverterOptionTypePlacesTimestamp.read(from: &buf), 
-            `lastModified`: FfiConverterOptionTypePlacesTimestamp.read(from: &buf)
+            guid: FfiConverterOptionTypeGuid.read(from: &buf),
+            parentGuid: FfiConverterTypeGuid.read(from: &buf),
+            position: FfiConverterTypeBookmarkPosition.read(from: &buf),
+            dateAdded: FfiConverterOptionTypePlacesTimestamp.read(from: &buf),
+            lastModified: FfiConverterOptionTypePlacesTimestamp.read(from: &buf)
         )
     }
 
     public static func write(_ value: InsertableBookmarkSeparator, into buf: inout [UInt8]) {
-        FfiConverterOptionTypeGuid.write(value.`guid`, into: &buf)
-        FfiConverterTypeGuid.write(value.`parentGuid`, into: &buf)
-        FfiConverterTypeBookmarkPosition.write(value.`position`, into: &buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.`dateAdded`, into: &buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.`lastModified`, into: &buf)
+        FfiConverterOptionTypeGuid.write(value.guid, into: &buf)
+        FfiConverterTypeGuid.write(value.parentGuid, into: &buf)
+        FfiConverterTypeBookmarkPosition.write(value.position, into: &buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.dateAdded, into: &buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.lastModified, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeInsertableBookmarkSeparator_lift(_ buf: RustBuffer) throws -> InsertableBookmarkSeparator {
     return try FfiConverterTypeInsertableBookmarkSeparator.lift(buf)
@@ -2312,60 +2198,56 @@ public func FfiConverterTypeInsertableBookmarkSeparator_lower(_ value: Insertabl
     return FfiConverterTypeInsertableBookmarkSeparator.lower(value)
 }
 
-
 public struct RunMaintenanceMetrics {
-    public var `prunedVisits`: Bool
-    public var `dbSizeBefore`: UInt32
-    public var `dbSizeAfter`: UInt32
+    public var prunedVisits: Bool
+    public var dbSizeBefore: UInt32
+    public var dbSizeAfter: UInt32
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`prunedVisits`: Bool, `dbSizeBefore`: UInt32, `dbSizeAfter`: UInt32) {
-        self.`prunedVisits` = `prunedVisits`
-        self.`dbSizeBefore` = `dbSizeBefore`
-        self.`dbSizeAfter` = `dbSizeAfter`
+    public init(prunedVisits: Bool, dbSizeBefore: UInt32, dbSizeAfter: UInt32) {
+        self.prunedVisits = prunedVisits
+        self.dbSizeBefore = dbSizeBefore
+        self.dbSizeAfter = dbSizeAfter
     }
 }
 
-
 extension RunMaintenanceMetrics: Equatable, Hashable {
-    public static func ==(lhs: RunMaintenanceMetrics, rhs: RunMaintenanceMetrics) -> Bool {
-        if lhs.`prunedVisits` != rhs.`prunedVisits` {
+    public static func == (lhs: RunMaintenanceMetrics, rhs: RunMaintenanceMetrics) -> Bool {
+        if lhs.prunedVisits != rhs.prunedVisits {
             return false
         }
-        if lhs.`dbSizeBefore` != rhs.`dbSizeBefore` {
+        if lhs.dbSizeBefore != rhs.dbSizeBefore {
             return false
         }
-        if lhs.`dbSizeAfter` != rhs.`dbSizeAfter` {
+        if lhs.dbSizeAfter != rhs.dbSizeAfter {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`prunedVisits`)
-        hasher.combine(`dbSizeBefore`)
-        hasher.combine(`dbSizeAfter`)
+        hasher.combine(prunedVisits)
+        hasher.combine(dbSizeBefore)
+        hasher.combine(dbSizeAfter)
     }
 }
-
 
 public struct FfiConverterTypeRunMaintenanceMetrics: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RunMaintenanceMetrics {
         return try RunMaintenanceMetrics(
-            `prunedVisits`: FfiConverterBool.read(from: &buf), 
-            `dbSizeBefore`: FfiConverterUInt32.read(from: &buf), 
-            `dbSizeAfter`: FfiConverterUInt32.read(from: &buf)
+            prunedVisits: FfiConverterBool.read(from: &buf),
+            dbSizeBefore: FfiConverterUInt32.read(from: &buf),
+            dbSizeAfter: FfiConverterUInt32.read(from: &buf)
         )
     }
 
     public static func write(_ value: RunMaintenanceMetrics, into buf: inout [UInt8]) {
-        FfiConverterBool.write(value.`prunedVisits`, into: &buf)
-        FfiConverterUInt32.write(value.`dbSizeBefore`, into: &buf)
-        FfiConverterUInt32.write(value.`dbSizeAfter`, into: &buf)
+        FfiConverterBool.write(value.prunedVisits, into: &buf)
+        FfiConverterUInt32.write(value.dbSizeBefore, into: &buf)
+        FfiConverterUInt32.write(value.dbSizeAfter, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeRunMaintenanceMetrics_lift(_ buf: RustBuffer) throws -> RunMaintenanceMetrics {
     return try FfiConverterTypeRunMaintenanceMetrics.lift(buf)
@@ -2375,68 +2257,64 @@ public func FfiConverterTypeRunMaintenanceMetrics_lower(_ value: RunMaintenanceM
     return FfiConverterTypeRunMaintenanceMetrics.lower(value)
 }
 
-
 public struct SearchResult {
-    public var `url`: Url
-    public var `title`: String
-    public var `frecency`: Int64
-    public var `reasons`: [MatchReason]
+    public var url: Url
+    public var title: String
+    public var frecency: Int64
+    public var reasons: [MatchReason]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`url`: Url, `title`: String, `frecency`: Int64, `reasons`: [MatchReason]) {
-        self.`url` = `url`
-        self.`title` = `title`
-        self.`frecency` = `frecency`
-        self.`reasons` = `reasons`
+    public init(url: Url, title: String, frecency: Int64, reasons: [MatchReason]) {
+        self.url = url
+        self.title = title
+        self.frecency = frecency
+        self.reasons = reasons
     }
 }
 
-
 extension SearchResult: Equatable, Hashable {
-    public static func ==(lhs: SearchResult, rhs: SearchResult) -> Bool {
-        if lhs.`url` != rhs.`url` {
+    public static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`frecency` != rhs.`frecency` {
+        if lhs.frecency != rhs.frecency {
             return false
         }
-        if lhs.`reasons` != rhs.`reasons` {
+        if lhs.reasons != rhs.reasons {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`url`)
-        hasher.combine(`title`)
-        hasher.combine(`frecency`)
-        hasher.combine(`reasons`)
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(frecency)
+        hasher.combine(reasons)
     }
 }
-
 
 public struct FfiConverterTypeSearchResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SearchResult {
         return try SearchResult(
-            `url`: FfiConverterTypeUrl.read(from: &buf), 
-            `title`: FfiConverterString.read(from: &buf), 
-            `frecency`: FfiConverterInt64.read(from: &buf), 
-            `reasons`: FfiConverterSequenceTypeMatchReason.read(from: &buf)
+            url: FfiConverterTypeUrl.read(from: &buf),
+            title: FfiConverterString.read(from: &buf),
+            frecency: FfiConverterInt64.read(from: &buf),
+            reasons: FfiConverterSequenceTypeMatchReason.read(from: &buf)
         )
     }
 
     public static func write(_ value: SearchResult, into buf: inout [UInt8]) {
-        FfiConverterTypeUrl.write(value.`url`, into: &buf)
-        FfiConverterString.write(value.`title`, into: &buf)
-        FfiConverterInt64.write(value.`frecency`, into: &buf)
-        FfiConverterSequenceTypeMatchReason.write(value.`reasons`, into: &buf)
+        FfiConverterTypeUrl.write(value.url, into: &buf)
+        FfiConverterString.write(value.title, into: &buf)
+        FfiConverterInt64.write(value.frecency, into: &buf)
+        FfiConverterSequenceTypeMatchReason.write(value.reasons, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeSearchResult_lift(_ buf: RustBuffer) throws -> SearchResult {
     return try FfiConverterTypeSearchResult.lift(buf)
@@ -2446,52 +2324,48 @@ public func FfiConverterTypeSearchResult_lower(_ value: SearchResult) -> RustBuf
     return FfiConverterTypeSearchResult.lower(value)
 }
 
-
 public struct TopFrecentSiteInfo {
-    public var `url`: Url
-    public var `title`: String?
+    public var url: Url
+    public var title: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`url`: Url, `title`: String?) {
-        self.`url` = `url`
-        self.`title` = `title`
+    public init(url: Url, title: String?) {
+        self.url = url
+        self.title = title
     }
 }
 
-
 extension TopFrecentSiteInfo: Equatable, Hashable {
-    public static func ==(lhs: TopFrecentSiteInfo, rhs: TopFrecentSiteInfo) -> Bool {
-        if lhs.`url` != rhs.`url` {
+    public static func == (lhs: TopFrecentSiteInfo, rhs: TopFrecentSiteInfo) -> Bool {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`url`)
-        hasher.combine(`title`)
+        hasher.combine(url)
+        hasher.combine(title)
     }
 }
-
 
 public struct FfiConverterTypeTopFrecentSiteInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TopFrecentSiteInfo {
         return try TopFrecentSiteInfo(
-            `url`: FfiConverterTypeUrl.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf)
+            url: FfiConverterTypeUrl.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: TopFrecentSiteInfo, into buf: inout [UInt8]) {
-        FfiConverterTypeUrl.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
+        FfiConverterTypeUrl.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeTopFrecentSiteInfo_lift(_ buf: RustBuffer) throws -> TopFrecentSiteInfo {
     return try FfiConverterTypeTopFrecentSiteInfo.lift(buf)
@@ -2501,116 +2375,112 @@ public func FfiConverterTypeTopFrecentSiteInfo_lower(_ value: TopFrecentSiteInfo
     return FfiConverterTypeTopFrecentSiteInfo.lower(value)
 }
 
-
 public struct VisitObservation {
-    public var `url`: Url
-    public var `title`: String?
-    public var `visitType`: VisitTransition?
-    public var `isError`: Bool?
-    public var `isRedirectSource`: Bool?
-    public var `isPermanentRedirectSource`: Bool?
-    public var `at`: PlacesTimestamp?
-    public var `referrer`: Url?
-    public var `isRemote`: Bool?
-    public var `previewImageUrl`: Url?
+    public var url: Url
+    public var title: String?
+    public var visitType: VisitTransition?
+    public var isError: Bool?
+    public var isRedirectSource: Bool?
+    public var isPermanentRedirectSource: Bool?
+    public var at: PlacesTimestamp?
+    public var referrer: Url?
+    public var isRemote: Bool?
+    public var previewImageUrl: Url?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`url`: Url, `title`: String? = nil, `visitType`: VisitTransition?, `isError`: Bool? = nil, `isRedirectSource`: Bool? = nil, `isPermanentRedirectSource`: Bool? = nil, `at`: PlacesTimestamp? = nil, `referrer`: Url? = nil, `isRemote`: Bool? = nil, `previewImageUrl`: Url? = nil) {
-        self.`url` = `url`
-        self.`title` = `title`
-        self.`visitType` = `visitType`
-        self.`isError` = `isError`
-        self.`isRedirectSource` = `isRedirectSource`
-        self.`isPermanentRedirectSource` = `isPermanentRedirectSource`
-        self.`at` = `at`
-        self.`referrer` = `referrer`
-        self.`isRemote` = `isRemote`
-        self.`previewImageUrl` = `previewImageUrl`
+    public init(url: Url, title: String? = nil, visitType: VisitTransition?, isError: Bool? = nil, isRedirectSource: Bool? = nil, isPermanentRedirectSource: Bool? = nil, at: PlacesTimestamp? = nil, referrer: Url? = nil, isRemote: Bool? = nil, previewImageUrl: Url? = nil) {
+        self.url = url
+        self.title = title
+        self.visitType = visitType
+        self.isError = isError
+        self.isRedirectSource = isRedirectSource
+        self.isPermanentRedirectSource = isPermanentRedirectSource
+        self.at = at
+        self.referrer = referrer
+        self.isRemote = isRemote
+        self.previewImageUrl = previewImageUrl
     }
 }
 
-
 extension VisitObservation: Equatable, Hashable {
-    public static func ==(lhs: VisitObservation, rhs: VisitObservation) -> Bool {
-        if lhs.`url` != rhs.`url` {
+    public static func == (lhs: VisitObservation, rhs: VisitObservation) -> Bool {
+        if lhs.url != rhs.url {
             return false
         }
-        if lhs.`title` != rhs.`title` {
+        if lhs.title != rhs.title {
             return false
         }
-        if lhs.`visitType` != rhs.`visitType` {
+        if lhs.visitType != rhs.visitType {
             return false
         }
-        if lhs.`isError` != rhs.`isError` {
+        if lhs.isError != rhs.isError {
             return false
         }
-        if lhs.`isRedirectSource` != rhs.`isRedirectSource` {
+        if lhs.isRedirectSource != rhs.isRedirectSource {
             return false
         }
-        if lhs.`isPermanentRedirectSource` != rhs.`isPermanentRedirectSource` {
+        if lhs.isPermanentRedirectSource != rhs.isPermanentRedirectSource {
             return false
         }
-        if lhs.`at` != rhs.`at` {
+        if lhs.at != rhs.at {
             return false
         }
-        if lhs.`referrer` != rhs.`referrer` {
+        if lhs.referrer != rhs.referrer {
             return false
         }
-        if lhs.`isRemote` != rhs.`isRemote` {
+        if lhs.isRemote != rhs.isRemote {
             return false
         }
-        if lhs.`previewImageUrl` != rhs.`previewImageUrl` {
+        if lhs.previewImageUrl != rhs.previewImageUrl {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`url`)
-        hasher.combine(`title`)
-        hasher.combine(`visitType`)
-        hasher.combine(`isError`)
-        hasher.combine(`isRedirectSource`)
-        hasher.combine(`isPermanentRedirectSource`)
-        hasher.combine(`at`)
-        hasher.combine(`referrer`)
-        hasher.combine(`isRemote`)
-        hasher.combine(`previewImageUrl`)
+        hasher.combine(url)
+        hasher.combine(title)
+        hasher.combine(visitType)
+        hasher.combine(isError)
+        hasher.combine(isRedirectSource)
+        hasher.combine(isPermanentRedirectSource)
+        hasher.combine(at)
+        hasher.combine(referrer)
+        hasher.combine(isRemote)
+        hasher.combine(previewImageUrl)
     }
 }
-
 
 public struct FfiConverterTypeVisitObservation: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> VisitObservation {
         return try VisitObservation(
-            `url`: FfiConverterTypeUrl.read(from: &buf), 
-            `title`: FfiConverterOptionString.read(from: &buf), 
-            `visitType`: FfiConverterOptionTypeVisitTransition.read(from: &buf), 
-            `isError`: FfiConverterOptionBool.read(from: &buf), 
-            `isRedirectSource`: FfiConverterOptionBool.read(from: &buf), 
-            `isPermanentRedirectSource`: FfiConverterOptionBool.read(from: &buf), 
-            `at`: FfiConverterOptionTypePlacesTimestamp.read(from: &buf), 
-            `referrer`: FfiConverterOptionTypeUrl.read(from: &buf), 
-            `isRemote`: FfiConverterOptionBool.read(from: &buf), 
-            `previewImageUrl`: FfiConverterOptionTypeUrl.read(from: &buf)
+            url: FfiConverterTypeUrl.read(from: &buf),
+            title: FfiConverterOptionString.read(from: &buf),
+            visitType: FfiConverterOptionTypeVisitTransition.read(from: &buf),
+            isError: FfiConverterOptionBool.read(from: &buf),
+            isRedirectSource: FfiConverterOptionBool.read(from: &buf),
+            isPermanentRedirectSource: FfiConverterOptionBool.read(from: &buf),
+            at: FfiConverterOptionTypePlacesTimestamp.read(from: &buf),
+            referrer: FfiConverterOptionTypeUrl.read(from: &buf),
+            isRemote: FfiConverterOptionBool.read(from: &buf),
+            previewImageUrl: FfiConverterOptionTypeUrl.read(from: &buf)
         )
     }
 
     public static func write(_ value: VisitObservation, into buf: inout [UInt8]) {
-        FfiConverterTypeUrl.write(value.`url`, into: &buf)
-        FfiConverterOptionString.write(value.`title`, into: &buf)
-        FfiConverterOptionTypeVisitTransition.write(value.`visitType`, into: &buf)
-        FfiConverterOptionBool.write(value.`isError`, into: &buf)
-        FfiConverterOptionBool.write(value.`isRedirectSource`, into: &buf)
-        FfiConverterOptionBool.write(value.`isPermanentRedirectSource`, into: &buf)
-        FfiConverterOptionTypePlacesTimestamp.write(value.`at`, into: &buf)
-        FfiConverterOptionTypeUrl.write(value.`referrer`, into: &buf)
-        FfiConverterOptionBool.write(value.`isRemote`, into: &buf)
-        FfiConverterOptionTypeUrl.write(value.`previewImageUrl`, into: &buf)
+        FfiConverterTypeUrl.write(value.url, into: &buf)
+        FfiConverterOptionString.write(value.title, into: &buf)
+        FfiConverterOptionTypeVisitTransition.write(value.visitType, into: &buf)
+        FfiConverterOptionBool.write(value.isError, into: &buf)
+        FfiConverterOptionBool.write(value.isRedirectSource, into: &buf)
+        FfiConverterOptionBool.write(value.isPermanentRedirectSource, into: &buf)
+        FfiConverterOptionTypePlacesTimestamp.write(value.at, into: &buf)
+        FfiConverterOptionTypeUrl.write(value.referrer, into: &buf)
+        FfiConverterOptionBool.write(value.isRemote, into: &buf)
+        FfiConverterOptionTypeUrl.write(value.previewImageUrl, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeVisitObservation_lift(_ buf: RustBuffer) throws -> VisitObservation {
     return try FfiConverterTypeVisitObservation.lift(buf)
@@ -2623,10 +2493,9 @@ public func FfiConverterTypeVisitObservation_lower(_ value: VisitObservation) ->
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum BookmarkItem {
-    
-    case `bookmark`(`b`: BookmarkData)
-    case `separator`(`s`: BookmarkSeparator)
-    case `folder`(`f`: BookmarkFolder)
+    case bookmark(b: BookmarkData)
+    case separator(s: BookmarkSeparator)
+    case folder(f: BookmarkFolder)
 }
 
 public struct FfiConverterTypeBookmarkItem: FfiConverterRustBuffer {
@@ -2635,45 +2504,38 @@ public struct FfiConverterTypeBookmarkItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkItem {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`bookmark`(
-            `b`: try FfiConverterTypeBookmarkData.read(from: &buf)
-        )
-        
-        case 2: return .`separator`(
-            `s`: try FfiConverterTypeBookmarkSeparator.read(from: &buf)
-        )
-        
-        case 3: return .`folder`(
-            `f`: try FfiConverterTypeBookmarkFolder.read(from: &buf)
-        )
-        
+        case 1: return try .bookmark(
+                b: FfiConverterTypeBookmarkData.read(from: &buf)
+            )
+
+        case 2: return try .separator(
+                s: FfiConverterTypeBookmarkSeparator.read(from: &buf)
+            )
+
+        case 3: return try .folder(
+                f: FfiConverterTypeBookmarkFolder.read(from: &buf)
+            )
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BookmarkItem, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case let .`bookmark`(`b`):
+        case let .bookmark(b):
             writeInt(&buf, Int32(1))
-            FfiConverterTypeBookmarkData.write(`b`, into: &buf)
-            
-        
-        case let .`separator`(`s`):
+            FfiConverterTypeBookmarkData.write(b, into: &buf)
+
+        case let .separator(s):
             writeInt(&buf, Int32(2))
-            FfiConverterTypeBookmarkSeparator.write(`s`, into: &buf)
-            
-        
-        case let .`folder`(`f`):
+            FfiConverterTypeBookmarkSeparator.write(s, into: &buf)
+
+        case let .folder(f):
             writeInt(&buf, Int32(3))
-            FfiConverterTypeBookmarkFolder.write(`f`, into: &buf)
-            
+            FfiConverterTypeBookmarkFolder.write(f, into: &buf)
         }
     }
 }
-
 
 public func FfiConverterTypeBookmarkItem_lift(_ buf: RustBuffer) throws -> BookmarkItem {
     return try FfiConverterTypeBookmarkItem.lift(buf)
@@ -2683,16 +2545,13 @@ public func FfiConverterTypeBookmarkItem_lower(_ value: BookmarkItem) -> RustBuf
     return FfiConverterTypeBookmarkItem.lower(value)
 }
 
-
 extension BookmarkItem: Equatable, Hashable {}
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum BookmarkPosition {
-    
-    case `specific`(`pos`: UInt32)
-    case `append`
+    case specific(pos: UInt32)
+    case append
 }
 
 public struct FfiConverterTypeBookmarkPosition: FfiConverterRustBuffer {
@@ -2701,33 +2560,27 @@ public struct FfiConverterTypeBookmarkPosition: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BookmarkPosition {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`specific`(
-            `pos`: try FfiConverterUInt32.read(from: &buf)
-        )
-        
-        case 2: return .`append`
-        
+        case 1: return try .specific(
+                pos: FfiConverterUInt32.read(from: &buf)
+            )
+
+        case 2: return .append
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BookmarkPosition, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case let .`specific`(`pos`):
+        case let .specific(pos):
             writeInt(&buf, Int32(1))
-            FfiConverterUInt32.write(`pos`, into: &buf)
-            
-        
-        case .`append`:
+            FfiConverterUInt32.write(pos, into: &buf)
+
+        case .append:
             writeInt(&buf, Int32(2))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeBookmarkPosition_lift(_ buf: RustBuffer) throws -> BookmarkPosition {
     return try FfiConverterTypeBookmarkPosition.lift(buf)
@@ -2737,17 +2590,14 @@ public func FfiConverterTypeBookmarkPosition_lower(_ value: BookmarkPosition) ->
     return FfiConverterTypeBookmarkPosition.lower(value)
 }
 
-
 extension BookmarkPosition: Equatable, Hashable {}
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum ConnectionType {
-    
-    case `readOnly`
-    case `readWrite`
-    case `sync`
+    case readOnly
+    case readWrite
+    case sync
 }
 
 public struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
@@ -2756,36 +2606,29 @@ public struct FfiConverterTypeConnectionType: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ConnectionType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`readOnly`
-        
-        case 2: return .`readWrite`
-        
-        case 3: return .`sync`
-        
+        case 1: return .readOnly
+
+        case 2: return .readWrite
+
+        case 3: return .sync
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ConnectionType, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case .`readOnly`:
+        case .readOnly:
             writeInt(&buf, Int32(1))
-        
-        
-        case .`readWrite`:
+
+        case .readWrite:
             writeInt(&buf, Int32(2))
-        
-        
-        case .`sync`:
+
+        case .sync:
             writeInt(&buf, Int32(3))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeConnectionType_lift(_ buf: RustBuffer) throws -> ConnectionType {
     return try FfiConverterTypeConnectionType.lift(buf)
@@ -2795,16 +2638,13 @@ public func FfiConverterTypeConnectionType_lower(_ value: ConnectionType) -> Rus
     return FfiConverterTypeConnectionType.lower(value)
 }
 
-
 extension ConnectionType: Equatable, Hashable {}
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum DocumentType {
-    
-    case `regular`
-    case `media`
+    case regular
+    case media
 }
 
 public struct FfiConverterTypeDocumentType: FfiConverterRustBuffer {
@@ -2813,30 +2653,24 @@ public struct FfiConverterTypeDocumentType: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DocumentType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`regular`
-        
-        case 2: return .`media`
-        
+        case 1: return .regular
+
+        case 2: return .media
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: DocumentType, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case .`regular`:
+        case .regular:
             writeInt(&buf, Int32(1))
-        
-        
-        case .`media`:
+
+        case .media:
             writeInt(&buf, Int32(2))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeDocumentType_lift(_ buf: RustBuffer) throws -> DocumentType {
     return try FfiConverterTypeDocumentType.lift(buf)
@@ -2846,16 +2680,13 @@ public func FfiConverterTypeDocumentType_lower(_ value: DocumentType) -> RustBuf
     return FfiConverterTypeDocumentType.lower(value)
 }
 
-
 extension DocumentType: Equatable, Hashable {}
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum FrecencyThresholdOption {
-    
-    case `none`
-    case `skipOneTimePages`
+    case none
+    case skipOneTimePages
 }
 
 public struct FfiConverterTypeFrecencyThresholdOption: FfiConverterRustBuffer {
@@ -2864,30 +2695,24 @@ public struct FfiConverterTypeFrecencyThresholdOption: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FrecencyThresholdOption {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`none`
-        
-        case 2: return .`skipOneTimePages`
-        
+        case 1: return .none
+
+        case 2: return .skipOneTimePages
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FrecencyThresholdOption, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case .`none`:
+        case .none:
             writeInt(&buf, Int32(1))
-        
-        
-        case .`skipOneTimePages`:
+
+        case .skipOneTimePages:
             writeInt(&buf, Int32(2))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeFrecencyThresholdOption_lift(_ buf: RustBuffer) throws -> FrecencyThresholdOption {
     return try FfiConverterTypeFrecencyThresholdOption.lift(buf)
@@ -2897,17 +2722,14 @@ public func FfiConverterTypeFrecencyThresholdOption_lower(_ value: FrecencyThres
     return FfiConverterTypeFrecencyThresholdOption.lower(value)
 }
 
-
 extension FrecencyThresholdOption: Equatable, Hashable {}
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum InsertableBookmarkItem {
-    
-    case `bookmark`(`b`: InsertableBookmark)
-    case `folder`(`f`: InsertableBookmarkFolder)
-    case `separator`(`s`: InsertableBookmarkSeparator)
+    case bookmark(b: InsertableBookmark)
+    case folder(f: InsertableBookmarkFolder)
+    case separator(s: InsertableBookmarkSeparator)
 }
 
 public struct FfiConverterTypeInsertableBookmarkItem: FfiConverterRustBuffer {
@@ -2916,45 +2738,38 @@ public struct FfiConverterTypeInsertableBookmarkItem: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> InsertableBookmarkItem {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`bookmark`(
-            `b`: try FfiConverterTypeInsertableBookmark.read(from: &buf)
-        )
-        
-        case 2: return .`folder`(
-            `f`: try FfiConverterTypeInsertableBookmarkFolder.read(from: &buf)
-        )
-        
-        case 3: return .`separator`(
-            `s`: try FfiConverterTypeInsertableBookmarkSeparator.read(from: &buf)
-        )
-        
+        case 1: return try .bookmark(
+                b: FfiConverterTypeInsertableBookmark.read(from: &buf)
+            )
+
+        case 2: return try .folder(
+                f: FfiConverterTypeInsertableBookmarkFolder.read(from: &buf)
+            )
+
+        case 3: return try .separator(
+                s: FfiConverterTypeInsertableBookmarkSeparator.read(from: &buf)
+            )
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: InsertableBookmarkItem, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case let .`bookmark`(`b`):
+        case let .bookmark(b):
             writeInt(&buf, Int32(1))
-            FfiConverterTypeInsertableBookmark.write(`b`, into: &buf)
-            
-        
-        case let .`folder`(`f`):
+            FfiConverterTypeInsertableBookmark.write(b, into: &buf)
+
+        case let .folder(f):
             writeInt(&buf, Int32(2))
-            FfiConverterTypeInsertableBookmarkFolder.write(`f`, into: &buf)
-            
-        
-        case let .`separator`(`s`):
+            FfiConverterTypeInsertableBookmarkFolder.write(f, into: &buf)
+
+        case let .separator(s):
             writeInt(&buf, Int32(3))
-            FfiConverterTypeInsertableBookmarkSeparator.write(`s`, into: &buf)
-            
+            FfiConverterTypeInsertableBookmarkSeparator.write(s, into: &buf)
         }
     }
 }
-
 
 public func FfiConverterTypeInsertableBookmarkItem_lift(_ buf: RustBuffer) throws -> InsertableBookmarkItem {
     return try FfiConverterTypeInsertableBookmarkItem.lift(buf)
@@ -2964,20 +2779,17 @@ public func FfiConverterTypeInsertableBookmarkItem_lower(_ value: InsertableBook
     return FfiConverterTypeInsertableBookmarkItem.lower(value)
 }
 
-
 extension InsertableBookmarkItem: Equatable, Hashable {}
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum MatchReason {
-    
-    case `keyword`
-    case `origin`
-    case `urlMatch`
-    case `previousUse`
-    case `bookmark`
-    case `tags`
+    case keyword
+    case origin
+    case urlMatch
+    case previousUse
+    case bookmark
+    case tags
 }
 
 public struct FfiConverterTypeMatchReason: FfiConverterRustBuffer {
@@ -2986,54 +2798,44 @@ public struct FfiConverterTypeMatchReason: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MatchReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`keyword`
-        
-        case 2: return .`origin`
-        
-        case 3: return .`urlMatch`
-        
-        case 4: return .`previousUse`
-        
-        case 5: return .`bookmark`
-        
-        case 6: return .`tags`
-        
+        case 1: return .keyword
+
+        case 2: return .origin
+
+        case 3: return .urlMatch
+
+        case 4: return .previousUse
+
+        case 5: return .bookmark
+
+        case 6: return .tags
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: MatchReason, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case .`keyword`:
+        case .keyword:
             writeInt(&buf, Int32(1))
-        
-        
-        case .`origin`:
+
+        case .origin:
             writeInt(&buf, Int32(2))
-        
-        
-        case .`urlMatch`:
+
+        case .urlMatch:
             writeInt(&buf, Int32(3))
-        
-        
-        case .`previousUse`:
+
+        case .previousUse:
             writeInt(&buf, Int32(4))
-        
-        
-        case .`bookmark`:
+
+        case .bookmark:
             writeInt(&buf, Int32(5))
-        
-        
-        case .`tags`:
+
+        case .tags:
             writeInt(&buf, Int32(6))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeMatchReason_lift(_ buf: RustBuffer) throws -> MatchReason {
     return try FfiConverterTypeMatchReason.lift(buf)
@@ -3043,23 +2845,20 @@ public func FfiConverterTypeMatchReason_lower(_ value: MatchReason) -> RustBuffe
     return FfiConverterTypeMatchReason.lower(value)
 }
 
-
 extension MatchReason: Equatable, Hashable {}
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum VisitTransition {
-    
-    case `link`
-    case `typed`
-    case `bookmark`
-    case `embed`
-    case `redirectPermanent`
-    case `redirectTemporary`
-    case `download`
-    case `framedLink`
-    case `reload`
+    case link
+    case typed
+    case bookmark
+    case embed
+    case redirectPermanent
+    case redirectTemporary
+    case download
+    case framedLink
+    case reload
 }
 
 public struct FfiConverterTypeVisitTransition: FfiConverterRustBuffer {
@@ -3068,72 +2867,59 @@ public struct FfiConverterTypeVisitTransition: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> VisitTransition {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`link`
-        
-        case 2: return .`typed`
-        
-        case 3: return .`bookmark`
-        
-        case 4: return .`embed`
-        
-        case 5: return .`redirectPermanent`
-        
-        case 6: return .`redirectTemporary`
-        
-        case 7: return .`download`
-        
-        case 8: return .`framedLink`
-        
-        case 9: return .`reload`
-        
+        case 1: return .link
+
+        case 2: return .typed
+
+        case 3: return .bookmark
+
+        case 4: return .embed
+
+        case 5: return .redirectPermanent
+
+        case 6: return .redirectTemporary
+
+        case 7: return .download
+
+        case 8: return .framedLink
+
+        case 9: return .reload
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: VisitTransition, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case .`link`:
+        case .link:
             writeInt(&buf, Int32(1))
-        
-        
-        case .`typed`:
+
+        case .typed:
             writeInt(&buf, Int32(2))
-        
-        
-        case .`bookmark`:
+
+        case .bookmark:
             writeInt(&buf, Int32(3))
-        
-        
-        case .`embed`:
+
+        case .embed:
             writeInt(&buf, Int32(4))
-        
-        
-        case .`redirectPermanent`:
+
+        case .redirectPermanent:
             writeInt(&buf, Int32(5))
-        
-        
-        case .`redirectTemporary`:
+
+        case .redirectTemporary:
             writeInt(&buf, Int32(6))
-        
-        
-        case .`download`:
+
+        case .download:
             writeInt(&buf, Int32(7))
-        
-        
-        case .`framedLink`:
+
+        case .framedLink:
             writeInt(&buf, Int32(8))
-        
-        
-        case .`reload`:
+
+        case .reload:
             writeInt(&buf, Int32(9))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeVisitTransition_lift(_ buf: RustBuffer) throws -> VisitTransition {
     return try FfiConverterTypeVisitTransition.lift(buf)
@@ -3143,21 +2929,15 @@ public func FfiConverterTypeVisitTransition_lower(_ value: VisitTransition) -> R
     return FfiConverterTypeVisitTransition.lower(value)
 }
 
-
 extension VisitTransition: Equatable, Hashable {}
 
-
-
 public enum PlacesApiError {
-
-    
-    
-    case UnexpectedPlacesException(`reason`: String)
-    case UrlParseFailed(`reason`: String)
-    case PlacesConnectionBusy(`reason`: String)
-    case OperationInterrupted(`reason`: String)
-    case UnknownBookmarkItem(`reason`: String)
-    case InvalidBookmarkOperation(`reason`: String)
+    case UnexpectedPlacesException(reason: String)
+    case UrlParseFailed(reason: String)
+    case PlacesConnectionBusy(reason: String)
+    case OperationInterrupted(reason: String)
+    case UnknownBookmarkItem(reason: String)
+    case InvalidBookmarkOperation(reason: String)
 }
 
 public struct FfiConverterTypePlacesApiError: FfiConverterRustBuffer {
@@ -3166,79 +2946,63 @@ public struct FfiConverterTypePlacesApiError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PlacesApiError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-
-        
-
-        
-        case 1: return .UnexpectedPlacesException(
-            `reason`: try FfiConverterString.read(from: &buf)
+        case 1: return try .UnexpectedPlacesException(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 2: return .UrlParseFailed(
-            `reason`: try FfiConverterString.read(from: &buf)
+        case 2: return try .UrlParseFailed(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 3: return .PlacesConnectionBusy(
-            `reason`: try FfiConverterString.read(from: &buf)
+        case 3: return try .PlacesConnectionBusy(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 4: return .OperationInterrupted(
-            `reason`: try FfiConverterString.read(from: &buf)
+        case 4: return try .OperationInterrupted(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 5: return .UnknownBookmarkItem(
-            `reason`: try FfiConverterString.read(from: &buf)
+        case 5: return try .UnknownBookmarkItem(
+                reason: FfiConverterString.read(from: &buf)
             )
-        case 6: return .InvalidBookmarkOperation(
-            `reason`: try FfiConverterString.read(from: &buf)
+        case 6: return try .InvalidBookmarkOperation(
+                reason: FfiConverterString.read(from: &buf)
             )
 
-         default: throw UniffiInternalError.unexpectedEnumCase
+        default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: PlacesApiError, into buf: inout [UInt8]) {
         switch value {
-
-        
-
-        
-        
-        case let .UnexpectedPlacesException(`reason`):
+        case let .UnexpectedPlacesException(reason):
             writeInt(&buf, Int32(1))
-            FfiConverterString.write(`reason`, into: &buf)
-            
-        
-        case let .UrlParseFailed(`reason`):
+            FfiConverterString.write(reason, into: &buf)
+
+        case let .UrlParseFailed(reason):
             writeInt(&buf, Int32(2))
-            FfiConverterString.write(`reason`, into: &buf)
-            
-        
-        case let .PlacesConnectionBusy(`reason`):
+            FfiConverterString.write(reason, into: &buf)
+
+        case let .PlacesConnectionBusy(reason):
             writeInt(&buf, Int32(3))
-            FfiConverterString.write(`reason`, into: &buf)
-            
-        
-        case let .OperationInterrupted(`reason`):
+            FfiConverterString.write(reason, into: &buf)
+
+        case let .OperationInterrupted(reason):
             writeInt(&buf, Int32(4))
-            FfiConverterString.write(`reason`, into: &buf)
-            
-        
-        case let .UnknownBookmarkItem(`reason`):
+            FfiConverterString.write(reason, into: &buf)
+
+        case let .UnknownBookmarkItem(reason):
             writeInt(&buf, Int32(5))
-            FfiConverterString.write(`reason`, into: &buf)
-            
-        
-        case let .InvalidBookmarkOperation(`reason`):
+            FfiConverterString.write(reason, into: &buf)
+
+        case let .InvalidBookmarkOperation(reason):
             writeInt(&buf, Int32(6))
-            FfiConverterString.write(`reason`, into: &buf)
-            
+            FfiConverterString.write(reason, into: &buf)
         }
     }
 }
 
-
 extension PlacesApiError: Equatable, Hashable {}
 
-extension PlacesApiError: Error { }
+extension PlacesApiError: Error {}
 
-fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
+private struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     typealias SwiftType = UInt32?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3259,7 +3023,7 @@ fileprivate struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
+private struct FfiConverterOptionInt32: FfiConverterRustBuffer {
     typealias SwiftType = Int32?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3280,7 +3044,7 @@ fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionBool: FfiConverterRustBuffer {
+private struct FfiConverterOptionBool: FfiConverterRustBuffer {
     typealias SwiftType = Bool?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3301,7 +3065,7 @@ fileprivate struct FfiConverterOptionBool: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3322,7 +3086,7 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypeHistoryMetadata: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeHistoryMetadata: FfiConverterRustBuffer {
     typealias SwiftType = HistoryMetadata?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3343,7 +3107,7 @@ fileprivate struct FfiConverterOptionTypeHistoryMetadata: FfiConverterRustBuffer
     }
 }
 
-fileprivate struct FfiConverterOptionTypeBookmarkItem: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeBookmarkItem: FfiConverterRustBuffer {
     typealias SwiftType = BookmarkItem?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3364,7 +3128,7 @@ fileprivate struct FfiConverterOptionTypeBookmarkItem: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypeDocumentType: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeDocumentType: FfiConverterRustBuffer {
     typealias SwiftType = DocumentType?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3385,7 +3149,7 @@ fileprivate struct FfiConverterOptionTypeDocumentType: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypeVisitTransition: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeVisitTransition: FfiConverterRustBuffer {
     typealias SwiftType = VisitTransition?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3406,7 +3170,7 @@ fileprivate struct FfiConverterOptionTypeVisitTransition: FfiConverterRustBuffer
     }
 }
 
-fileprivate struct FfiConverterOptionSequenceTypeHistoryMetadata: FfiConverterRustBuffer {
+private struct FfiConverterOptionSequenceTypeHistoryMetadata: FfiConverterRustBuffer {
     typealias SwiftType = [HistoryMetadata]?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3427,7 +3191,7 @@ fileprivate struct FfiConverterOptionSequenceTypeHistoryMetadata: FfiConverterRu
     }
 }
 
-fileprivate struct FfiConverterOptionSequenceTypeBookmarkItem: FfiConverterRustBuffer {
+private struct FfiConverterOptionSequenceTypeBookmarkItem: FfiConverterRustBuffer {
     typealias SwiftType = [BookmarkItem]?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3448,7 +3212,7 @@ fileprivate struct FfiConverterOptionSequenceTypeBookmarkItem: FfiConverterRustB
     }
 }
 
-fileprivate struct FfiConverterOptionSequenceTypeGuid: FfiConverterRustBuffer {
+private struct FfiConverterOptionSequenceTypeGuid: FfiConverterRustBuffer {
     typealias SwiftType = [Guid]?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3469,7 +3233,7 @@ fileprivate struct FfiConverterOptionSequenceTypeGuid: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypeGuid: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeGuid: FfiConverterRustBuffer {
     typealias SwiftType = Guid?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3490,7 +3254,7 @@ fileprivate struct FfiConverterOptionTypeGuid: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypePlacesTimestamp: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypePlacesTimestamp: FfiConverterRustBuffer {
     typealias SwiftType = PlacesTimestamp?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3511,7 +3275,7 @@ fileprivate struct FfiConverterOptionTypePlacesTimestamp: FfiConverterRustBuffer
     }
 }
 
-fileprivate struct FfiConverterOptionTypeUrl: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeUrl: FfiConverterRustBuffer {
     typealias SwiftType = Url?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -3532,7 +3296,7 @@ fileprivate struct FfiConverterOptionTypeUrl: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterSequenceBool: FfiConverterRustBuffer {
+private struct FfiConverterSequenceBool: FfiConverterRustBuffer {
     typealias SwiftType = [Bool]
 
     public static func write(_ value: [Bool], into buf: inout [UInt8]) {
@@ -3548,13 +3312,13 @@ fileprivate struct FfiConverterSequenceBool: FfiConverterRustBuffer {
         var seq = [Bool]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterBool.read(from: &buf))
+            try seq.append(FfiConverterBool.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+private struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
     public static func write(_ value: [String], into buf: inout [UInt8]) {
@@ -3570,13 +3334,13 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
+            try seq.append(FfiConverterString.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeHistoryHighlight: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeHistoryHighlight: FfiConverterRustBuffer {
     typealias SwiftType = [HistoryHighlight]
 
     public static func write(_ value: [HistoryHighlight], into buf: inout [UInt8]) {
@@ -3592,13 +3356,13 @@ fileprivate struct FfiConverterSequenceTypeHistoryHighlight: FfiConverterRustBuf
         var seq = [HistoryHighlight]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeHistoryHighlight.read(from: &buf))
+            try seq.append(FfiConverterTypeHistoryHighlight.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeHistoryMetadata: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeHistoryMetadata: FfiConverterRustBuffer {
     typealias SwiftType = [HistoryMetadata]
 
     public static func write(_ value: [HistoryMetadata], into buf: inout [UInt8]) {
@@ -3614,13 +3378,13 @@ fileprivate struct FfiConverterSequenceTypeHistoryMetadata: FfiConverterRustBuff
         var seq = [HistoryMetadata]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeHistoryMetadata.read(from: &buf))
+            try seq.append(FfiConverterTypeHistoryMetadata.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeHistoryVisitInfo: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeHistoryVisitInfo: FfiConverterRustBuffer {
     typealias SwiftType = [HistoryVisitInfo]
 
     public static func write(_ value: [HistoryVisitInfo], into buf: inout [UInt8]) {
@@ -3636,13 +3400,13 @@ fileprivate struct FfiConverterSequenceTypeHistoryVisitInfo: FfiConverterRustBuf
         var seq = [HistoryVisitInfo]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeHistoryVisitInfo.read(from: &buf))
+            try seq.append(FfiConverterTypeHistoryVisitInfo.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeSearchResult: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeSearchResult: FfiConverterRustBuffer {
     typealias SwiftType = [SearchResult]
 
     public static func write(_ value: [SearchResult], into buf: inout [UInt8]) {
@@ -3658,13 +3422,13 @@ fileprivate struct FfiConverterSequenceTypeSearchResult: FfiConverterRustBuffer 
         var seq = [SearchResult]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeSearchResult.read(from: &buf))
+            try seq.append(FfiConverterTypeSearchResult.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeTopFrecentSiteInfo: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeTopFrecentSiteInfo: FfiConverterRustBuffer {
     typealias SwiftType = [TopFrecentSiteInfo]
 
     public static func write(_ value: [TopFrecentSiteInfo], into buf: inout [UInt8]) {
@@ -3680,13 +3444,13 @@ fileprivate struct FfiConverterSequenceTypeTopFrecentSiteInfo: FfiConverterRustB
         var seq = [TopFrecentSiteInfo]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeTopFrecentSiteInfo.read(from: &buf))
+            try seq.append(FfiConverterTypeTopFrecentSiteInfo.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeBookmarkItem: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeBookmarkItem: FfiConverterRustBuffer {
     typealias SwiftType = [BookmarkItem]
 
     public static func write(_ value: [BookmarkItem], into buf: inout [UInt8]) {
@@ -3702,13 +3466,13 @@ fileprivate struct FfiConverterSequenceTypeBookmarkItem: FfiConverterRustBuffer 
         var seq = [BookmarkItem]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeBookmarkItem.read(from: &buf))
+            try seq.append(FfiConverterTypeBookmarkItem.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeInsertableBookmarkItem: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeInsertableBookmarkItem: FfiConverterRustBuffer {
     typealias SwiftType = [InsertableBookmarkItem]
 
     public static func write(_ value: [InsertableBookmarkItem], into buf: inout [UInt8]) {
@@ -3724,13 +3488,13 @@ fileprivate struct FfiConverterSequenceTypeInsertableBookmarkItem: FfiConverterR
         var seq = [InsertableBookmarkItem]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeInsertableBookmarkItem.read(from: &buf))
+            try seq.append(FfiConverterTypeInsertableBookmarkItem.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeMatchReason: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeMatchReason: FfiConverterRustBuffer {
     typealias SwiftType = [MatchReason]
 
     public static func write(_ value: [MatchReason], into buf: inout [UInt8]) {
@@ -3746,13 +3510,13 @@ fileprivate struct FfiConverterSequenceTypeMatchReason: FfiConverterRustBuffer {
         var seq = [MatchReason]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeMatchReason.read(from: &buf))
+            try seq.append(FfiConverterTypeMatchReason.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeGuid: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeGuid: FfiConverterRustBuffer {
     typealias SwiftType = [Guid]
 
     public static func write(_ value: [Guid], into buf: inout [UInt8]) {
@@ -3768,13 +3532,13 @@ fileprivate struct FfiConverterSequenceTypeGuid: FfiConverterRustBuffer {
         var seq = [Guid]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeGuid.read(from: &buf))
+            try seq.append(FfiConverterTypeGuid.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeUrl: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeUrl: FfiConverterRustBuffer {
     typealias SwiftType = [Url]
 
     public static func write(_ value: [Url], into buf: inout [UInt8]) {
@@ -3790,12 +3554,11 @@ fileprivate struct FfiConverterSequenceTypeUrl: FfiConverterRustBuffer {
         var seq = [Url]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeUrl.read(from: &buf))
+            try seq.append(FfiConverterTypeUrl.read(from: &buf))
         }
         return seq
     }
 }
-
 
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
@@ -3820,7 +3583,6 @@ public struct FfiConverterTypeGuid: FfiConverter {
     }
 }
 
-
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -3843,7 +3605,6 @@ public struct FfiConverterTypePlacesTimestamp: FfiConverter {
         return FfiConverterInt64.lower(value)
     }
 }
-
 
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
@@ -3868,7 +3629,6 @@ public struct FfiConverterTypeUrl: FfiConverter {
     }
 }
 
-
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -3892,19 +3652,15 @@ public struct FfiConverterTypeVisitTransitionSet: FfiConverter {
     }
 }
 
-public func `placesApiNew`(`dbPath`: String) throws -> PlacesApi {
+public func placesApiNew(dbPath: String) throws -> PlacesApi {
     return try FfiConverterTypePlacesApi.lift(
-        try
-    
-    rustCallWithError(FfiConverterTypePlacesApiError.self) {
-    
-    places_cac2_places_api_new(
-        FfiConverterString.lower(`dbPath`), $0)
-}
+        rustCallWithError(FfiConverterTypePlacesApiError.self) {
+            places_cac2_places_api_new(
+                FfiConverterString.lower(dbPath), $0
+            )
+        }
     )
 }
-
-
 
 /**
  * Top level initializers and tear down methods.
@@ -3915,6 +3671,5 @@ public enum PlacesLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {
-    }
+    func initialize() {}
 }

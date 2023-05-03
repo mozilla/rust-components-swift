@@ -6,10 +6,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-import MozillaRustComponents
+    import MozillaRustComponents
 #endif
 
-fileprivate extension RustBuffer {
+private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -29,7 +29,7 @@ fileprivate extension RustBuffer {
     }
 }
 
-fileprivate extension ForeignBytes {
+private extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -42,7 +42,7 @@ fileprivate extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-fileprivate extension Data {
+private extension Data {
     init(rustBuffer: RustBuffer) {
         // TODO: This copies the buffer. Can we read directly from a
         // Rust buffer?
@@ -64,15 +64,15 @@ fileprivate extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
+private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -82,38 +82,38 @@ fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offs
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
+    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
-    let range = reader.offset..<(reader.offset+count)
+private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
+    let range = reader.offset ..< (reader.offset + count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer({ buffer in
+    value.withUnsafeMutableBufferPointer { buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    })
+    }
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
-fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -121,11 +121,11 @@ fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Boo
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-fileprivate func createWriter() -> [UInt8] {
+private func createWriter() -> [UInt8] {
     return []
 }
 
-fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -133,22 +133,22 @@ fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: S
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous go the Rust trait of the same name.
-fileprivate protocol FfiConverter {
+private protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -159,7 +159,7 @@ fileprivate protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
+private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
 
 extension FfiConverterPrimitive {
     public static func lift(_ value: FfiType) throws -> SwiftType {
@@ -173,7 +173,7 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
@@ -187,14 +187,15 @@ extension FfiConverterRustBuffer {
     }
 
     public static func lower(_ value: SwiftType) -> RustBuffer {
-          var writer = createWriter()
-          write(value, into: &writer)
-          return RustBuffer(bytes: writer)
+        var writer = createWriter()
+        write(value, into: &writer)
+        return RustBuffer(bytes: writer)
     }
 }
+
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-fileprivate enum UniffiInternalError: LocalizedError {
+private enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -220,15 +221,15 @@ fileprivate enum UniffiInternalError: LocalizedError {
     }
 }
 
-fileprivate let CALL_SUCCESS: Int8 = 0
-fileprivate let CALL_ERROR: Int8 = 1
-fileprivate let CALL_PANIC: Int8 = 2
+private let CALL_SUCCESS: Int8 = 0
+private let CALL_ERROR: Int8 = 1
+private let CALL_PANIC: Int8 = 2
 
-fileprivate extension RustCallStatus {
+private extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer.init(
+            errorBuf: RustBuffer(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -245,42 +246,41 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 }
 
 private func rustCallWithError<T, F: FfiConverter>
-    (_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
     where F.SwiftType: Error, F.FfiType == RustBuffer
-    {
-    try makeRustCall(callback, errorHandler: { return try errorFfiConverter.lift($0) })
+{
+    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
-    var callStatus = RustCallStatus.init()
+    var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
     switch callStatus.code {
-        case CALL_SUCCESS:
-            return returnedVal
+    case CALL_SUCCESS:
+        return returnedVal
 
-        case CALL_ERROR:
-            throw try errorHandler(callStatus.errorBuf)
+    case CALL_ERROR:
+        throw try errorHandler(callStatus.errorBuf)
 
-        case CALL_PANIC:
-            // When the rust code sees a panic, it tries to construct a RustBuffer
-            // with the message.  But if that code panics, then it just sends back
-            // an empty buffer.
-            if callStatus.errorBuf.len > 0 {
-                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
-            } else {
-                callStatus.errorBuf.deallocate()
-                throw UniffiInternalError.rustPanic("Rust panic")
-            }
+    case CALL_PANIC:
+        // When the rust code sees a panic, it tries to construct a RustBuffer
+        // with the message.  But if that code panics, then it just sends back
+        // an empty buffer.
+        if callStatus.errorBuf.len > 0 {
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.rustPanic("Rust panic")
+        }
 
-        default:
-            throw UniffiInternalError.unexpectedRustCallStatusCode
+    default:
+        throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 // Public interface members begin here.
 
-
-fileprivate struct FfiConverterInt8: FfiConverterPrimitive {
+private struct FfiConverterInt8: FfiConverterPrimitive {
     typealias FfiType = Int8
     typealias SwiftType = Int8
 
@@ -293,7 +293,7 @@ fileprivate struct FfiConverterInt8: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
+private struct FfiConverterInt32: FfiConverterPrimitive {
     typealias FfiType = Int32
     typealias SwiftType = Int32
 
@@ -306,7 +306,7 @@ fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
+private struct FfiConverterInt64: FfiConverterPrimitive {
     typealias FfiType = Int64
     typealias SwiftType = Int64
 
@@ -319,7 +319,7 @@ fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterBool : FfiConverter {
+private struct FfiConverterBool: FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
@@ -340,7 +340,7 @@ fileprivate struct FfiConverterBool : FfiConverter {
     }
 }
 
-fileprivate struct FfiConverterString: FfiConverter {
+private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -368,7 +368,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -378,34 +378,32 @@ fileprivate struct FfiConverterString: FfiConverter {
     }
 }
 
-
 public protocol NimbusClientProtocol {
-    func `initialize`() throws
-    func `getExperimentBranch`(`id`: String) throws -> String?
-    func `getFeatureConfigVariables`(`featureId`: String) throws -> String?
-    func `getExperimentBranches`(`experimentSlug`: String) throws -> [ExperimentBranch]
-    func `getActiveExperiments`() throws -> [EnrolledExperiment]
-    func `getEnrollmentByFeature`(`featureId`: String) throws -> EnrolledFeature?
-    func `getAvailableExperiments`() throws -> [AvailableExperiment]
-    func `getGlobalUserParticipation`() throws -> Bool
-    func `setGlobalUserParticipation`(`optIn`: Bool) throws -> [EnrollmentChangeEvent]
-    func `fetchExperiments`() throws
-    func `setFetchEnabled`(`flag`: Bool) throws
-    func `isFetchEnabled`() throws -> Bool
-    func `applyPendingExperiments`() throws -> [EnrollmentChangeEvent]
-    func `setExperimentsLocally`(`experimentsJson`: String) throws
-    func `resetEnrollments`() throws
-    func `optInWithBranch`(`experimentSlug`: String, `branch`: String) throws -> [EnrollmentChangeEvent]
-    func `optOut`(`experimentSlug`: String) throws -> [EnrollmentChangeEvent]
-    func `resetTelemetryIdentifiers`(`newRandomizationUnits`: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent]
-    func `createTargetingHelper`(`additionalContext`: JsonObject?) throws -> NimbusTargetingHelper
-    func `createStringHelper`(`additionalContext`: JsonObject?) throws -> NimbusStringHelper
-    func `recordEvent`(`eventId`: String, `count`: Int64) throws
-    func `recordPastEvent`(`eventId`: String, `secondsAgo`: Int64, `count`: Int64) throws
-    func `advanceEventTime`(`bySeconds`: Int64) throws
-    func `clearEvents`() throws
-    func `dumpStateToLog`() throws
-    
+    func initialize() throws
+    func getExperimentBranch(id: String) throws -> String?
+    func getFeatureConfigVariables(featureId: String) throws -> String?
+    func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch]
+    func getActiveExperiments() throws -> [EnrolledExperiment]
+    func getEnrollmentByFeature(featureId: String) throws -> EnrolledFeature?
+    func getAvailableExperiments() throws -> [AvailableExperiment]
+    func getGlobalUserParticipation() throws -> Bool
+    func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent]
+    func fetchExperiments() throws
+    func setFetchEnabled(flag: Bool) throws
+    func isFetchEnabled() throws -> Bool
+    func applyPendingExperiments() throws -> [EnrollmentChangeEvent]
+    func setExperimentsLocally(experimentsJson: String) throws
+    func resetEnrollments() throws
+    func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent]
+    func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent]
+    func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent]
+    func createTargetingHelper(additionalContext: JsonObject?) throws -> NimbusTargetingHelper
+    func createStringHelper(additionalContext: JsonObject?) throws -> NimbusStringHelper
+    func recordEvent(eventId: String, count: Int64) throws
+    func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64) throws
+    func advanceEventTime(bySeconds: Int64) throws
+    func clearEvents() throws
+    func dumpStateToLog() throws
 }
 
 public class NimbusClient: NimbusClientProtocol {
@@ -417,253 +415,233 @@ public class NimbusClient: NimbusClientProtocol {
     required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
-    public convenience init(`appCtx`: AppContext, `dbpath`: String, `remoteSettingsConfig`: RemoteSettingsConfig?, `availableRandomizationUnits`: AvailableRandomizationUnits) throws {
-        self.init(unsafeFromRawPointer: try
-    
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    
-    nimbus_e811_NimbusClient_new(
-        FfiConverterTypeAppContext.lower(`appCtx`), 
-        FfiConverterString.lower(`dbpath`), 
-        FfiConverterOptionTypeRemoteSettingsConfig.lower(`remoteSettingsConfig`), 
-        FfiConverterTypeAvailableRandomizationUnits.lower(`availableRandomizationUnits`), $0)
-})
+
+    public convenience init(appCtx: AppContext, dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, availableRandomizationUnits: AvailableRandomizationUnits) throws {
+        try self.init(unsafeFromRawPointer:
+
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_new(
+                    FfiConverterTypeAppContext.lower(appCtx),
+                    FfiConverterString.lower(dbpath),
+                    FfiConverterOptionTypeRemoteSettingsConfig.lower(remoteSettingsConfig),
+                    FfiConverterTypeAvailableRandomizationUnits.lower(availableRandomizationUnits), $0
+                )
+            })
     }
 
     deinit {
         try! rustCall { ffi_nimbus_e811_NimbusClient_object_free(pointer, $0) }
     }
 
-    
-
-    
-    public func `initialize`() throws {
+    public func initialize() throws {
         try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_initialize(self.pointer, $0
-    )
-}
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_initialize(self.pointer, $0)
+            }
     }
-    public func `getExperimentBranch`(`id`: String) throws -> String? {
+
+    public func getExperimentBranch(id: String) throws -> String? {
         return try FfiConverterOptionString.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_get_experiment_branch(self.pointer, 
-        FfiConverterString.lower(`id`), $0
-    )
-}
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_get_experiment_branch(self.pointer,
+                                                               FfiConverterString.lower(id), $0)
+            }
         )
     }
-    public func `getFeatureConfigVariables`(`featureId`: String) throws -> String? {
+
+    public func getFeatureConfigVariables(featureId: String) throws -> String? {
         return try FfiConverterOptionString.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_get_feature_config_variables(self.pointer, 
-        FfiConverterString.lower(`featureId`), $0
-    )
-}
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_get_feature_config_variables(self.pointer,
+                                                                      FfiConverterString.lower(featureId), $0)
+            }
         )
     }
-    public func `getExperimentBranches`(`experimentSlug`: String) throws -> [ExperimentBranch] {
+
+    public func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch] {
         return try FfiConverterSequenceTypeExperimentBranch.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_get_experiment_branches(self.pointer, 
-        FfiConverterString.lower(`experimentSlug`), $0
-    )
-}
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_get_experiment_branches(self.pointer,
+                                                                 FfiConverterString.lower(experimentSlug), $0)
+            }
         )
     }
-    public func `getActiveExperiments`() throws -> [EnrolledExperiment] {
-        return try FfiConverterSequenceTypeEnrolledExperiment.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_get_active_experiments(self.pointer, $0
-    )
-}
-        )
-    }
-    public func `getEnrollmentByFeature`(`featureId`: String) throws -> EnrolledFeature? {
-        return try FfiConverterOptionTypeEnrolledFeature.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_get_enrollment_by_feature(self.pointer, 
-        FfiConverterString.lower(`featureId`), $0
-    )
-}
-        )
-    }
-    public func `getAvailableExperiments`() throws -> [AvailableExperiment] {
-        return try FfiConverterSequenceTypeAvailableExperiment.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_get_available_experiments(self.pointer, $0
-    )
-}
-        )
-    }
-    public func `getGlobalUserParticipation`() throws -> Bool {
-        return try FfiConverterBool.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_get_global_user_participation(self.pointer, $0
-    )
-}
-        )
-    }
-    public func `setGlobalUserParticipation`(`optIn`: Bool) throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_set_global_user_participation(self.pointer, 
-        FfiConverterBool.lower(`optIn`), $0
-    )
-}
-        )
-    }
-    public func `fetchExperiments`() throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_fetch_experiments(self.pointer, $0
-    )
-}
-    }
-    public func `setFetchEnabled`(`flag`: Bool) throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_set_fetch_enabled(self.pointer, 
-        FfiConverterBool.lower(`flag`), $0
-    )
-}
-    }
-    public func `isFetchEnabled`() throws -> Bool {
-        return try FfiConverterBool.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_is_fetch_enabled(self.pointer, $0
-    )
-}
-        )
-    }
-    public func `applyPendingExperiments`() throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_apply_pending_experiments(self.pointer, $0
-    )
-}
-        )
-    }
-    public func `setExperimentsLocally`(`experimentsJson`: String) throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_set_experiments_locally(self.pointer, 
-        FfiConverterString.lower(`experimentsJson`), $0
-    )
-}
-    }
-    public func `resetEnrollments`() throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_reset_enrollments(self.pointer, $0
-    )
-}
-    }
-    public func `optInWithBranch`(`experimentSlug`: String, `branch`: String) throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_opt_in_with_branch(self.pointer, 
-        FfiConverterString.lower(`experimentSlug`), 
-        FfiConverterString.lower(`branch`), $0
-    )
-}
-        )
-    }
-    public func `optOut`(`experimentSlug`: String) throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_opt_out(self.pointer, 
-        FfiConverterString.lower(`experimentSlug`), $0
-    )
-}
-        )
-    }
-    public func `resetTelemetryIdentifiers`(`newRandomizationUnits`: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_reset_telemetry_identifiers(self.pointer, 
-        FfiConverterTypeAvailableRandomizationUnits.lower(`newRandomizationUnits`), $0
-    )
-}
-        )
-    }
-    public func `createTargetingHelper`(`additionalContext`: JsonObject? = nil) throws -> NimbusTargetingHelper {
-        return try FfiConverterTypeNimbusTargetingHelper.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_create_targeting_helper(self.pointer, 
-        FfiConverterOptionTypeJsonObject.lower(`additionalContext`), $0
-    )
-}
-        )
-    }
-    public func `createStringHelper`(`additionalContext`: JsonObject? = nil) throws -> NimbusStringHelper {
-        return try FfiConverterTypeNimbusStringHelper.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_create_string_helper(self.pointer, 
-        FfiConverterOptionTypeJsonObject.lower(`additionalContext`), $0
-    )
-}
-        )
-    }
-    public func `recordEvent`(`eventId`: String, `count`: Int64 = Int64(1)) throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_record_event(self.pointer, 
-        FfiConverterString.lower(`eventId`), 
-        FfiConverterInt64.lower(`count`), $0
-    )
-}
-    }
-    public func `recordPastEvent`(`eventId`: String, `secondsAgo`: Int64, `count`: Int64 = Int64(1)) throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_record_past_event(self.pointer, 
-        FfiConverterString.lower(`eventId`), 
-        FfiConverterInt64.lower(`secondsAgo`), 
-        FfiConverterInt64.lower(`count`), $0
-    )
-}
-    }
-    public func `advanceEventTime`(`bySeconds`: Int64) throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_advance_event_time(self.pointer, 
-        FfiConverterInt64.lower(`bySeconds`), $0
-    )
-}
-    }
-    public func `clearEvents`() throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_clear_events(self.pointer, $0
-    )
-}
-    }
-    public func `dumpStateToLog`() throws {
-        try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusClient_dump_state_to_log(self.pointer, $0
-    )
-}
-    }
-    
-}
 
+    public func getActiveExperiments() throws -> [EnrolledExperiment] {
+        return try FfiConverterSequenceTypeEnrolledExperiment.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_get_active_experiments(self.pointer, $0)
+            }
+        )
+    }
+
+    public func getEnrollmentByFeature(featureId: String) throws -> EnrolledFeature? {
+        return try FfiConverterOptionTypeEnrolledFeature.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_get_enrollment_by_feature(self.pointer,
+                                                                   FfiConverterString.lower(featureId), $0)
+            }
+        )
+    }
+
+    public func getAvailableExperiments() throws -> [AvailableExperiment] {
+        return try FfiConverterSequenceTypeAvailableExperiment.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_get_available_experiments(self.pointer, $0)
+            }
+        )
+    }
+
+    public func getGlobalUserParticipation() throws -> Bool {
+        return try FfiConverterBool.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_get_global_user_participation(self.pointer, $0)
+            }
+        )
+    }
+
+    public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_set_global_user_participation(self.pointer,
+                                                                       FfiConverterBool.lower(optIn), $0)
+            }
+        )
+    }
+
+    public func fetchExperiments() throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_fetch_experiments(self.pointer, $0)
+            }
+    }
+
+    public func setFetchEnabled(flag: Bool) throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_set_fetch_enabled(self.pointer,
+                                                           FfiConverterBool.lower(flag), $0)
+            }
+    }
+
+    public func isFetchEnabled() throws -> Bool {
+        return try FfiConverterBool.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_is_fetch_enabled(self.pointer, $0)
+            }
+        )
+    }
+
+    public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_apply_pending_experiments(self.pointer, $0)
+            }
+        )
+    }
+
+    public func setExperimentsLocally(experimentsJson: String) throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_set_experiments_locally(self.pointer,
+                                                                 FfiConverterString.lower(experimentsJson), $0)
+            }
+    }
+
+    public func resetEnrollments() throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_reset_enrollments(self.pointer, $0)
+            }
+    }
+
+    public func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_opt_in_with_branch(self.pointer,
+                                                            FfiConverterString.lower(experimentSlug),
+                                                            FfiConverterString.lower(branch), $0)
+            }
+        )
+    }
+
+    public func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_opt_out(self.pointer,
+                                                 FfiConverterString.lower(experimentSlug), $0)
+            }
+        )
+    }
+
+    public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_reset_telemetry_identifiers(self.pointer,
+                                                                     FfiConverterTypeAvailableRandomizationUnits.lower(newRandomizationUnits), $0)
+            }
+        )
+    }
+
+    public func createTargetingHelper(additionalContext: JsonObject? = nil) throws -> NimbusTargetingHelper {
+        return try FfiConverterTypeNimbusTargetingHelper.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_create_targeting_helper(self.pointer,
+                                                                 FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
+            }
+        )
+    }
+
+    public func createStringHelper(additionalContext: JsonObject? = nil) throws -> NimbusStringHelper {
+        return try FfiConverterTypeNimbusStringHelper.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_create_string_helper(self.pointer,
+                                                              FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
+            }
+        )
+    }
+
+    public func recordEvent(eventId: String, count: Int64 = Int64(1)) throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_record_event(self.pointer,
+                                                      FfiConverterString.lower(eventId),
+                                                      FfiConverterInt64.lower(count), $0)
+            }
+    }
+
+    public func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64 = Int64(1)) throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_record_past_event(self.pointer,
+                                                           FfiConverterString.lower(eventId),
+                                                           FfiConverterInt64.lower(secondsAgo),
+                                                           FfiConverterInt64.lower(count), $0)
+            }
+    }
+
+    public func advanceEventTime(bySeconds: Int64) throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_advance_event_time(self.pointer,
+                                                            FfiConverterInt64.lower(bySeconds), $0)
+            }
+    }
+
+    public func clearEvents() throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_clear_events(self.pointer, $0)
+            }
+    }
+
+    public func dumpStateToLog() throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusClient_dump_state_to_log(self.pointer, $0)
+            }
+    }
+}
 
 public struct FfiConverterTypeNimbusClient: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -674,7 +652,7 @@ public struct FfiConverterTypeNimbusClient: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
+        if ptr == nil {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -695,11 +673,9 @@ public struct FfiConverterTypeNimbusClient: FfiConverter {
     }
 }
 
-
 public protocol NimbusStringHelperProtocol {
-    func `stringFormat`(`template`: String, `uuid`: String?)  -> String
-    func `getUuid`(`template`: String)  -> String?
-    
+    func stringFormat(template: String, uuid: String?) -> String
+    func getUuid(template: String) -> String?
 }
 
 public class NimbusStringHelper: NimbusStringHelperProtocol {
@@ -716,35 +692,27 @@ public class NimbusStringHelper: NimbusStringHelperProtocol {
         try! rustCall { ffi_nimbus_e811_NimbusStringHelper_object_free(pointer, $0) }
     }
 
-    
-
-    
-    public func `stringFormat`(`template`: String, `uuid`: String? = nil)  -> String {
+    public func stringFormat(template: String, uuid: String? = nil) -> String {
         return try! FfiConverterString.lift(
             try!
-    rustCall() {
-    
-    nimbus_e811_NimbusStringHelper_string_format(self.pointer, 
-        FfiConverterString.lower(`template`), 
-        FfiConverterOptionString.lower(`uuid`), $0
-    )
-}
+                rustCall {
+                    nimbus_e811_NimbusStringHelper_string_format(self.pointer,
+                                                                 FfiConverterString.lower(template),
+                                                                 FfiConverterOptionString.lower(uuid), $0)
+                }
         )
     }
-    public func `getUuid`(`template`: String)  -> String? {
+
+    public func getUuid(template: String) -> String? {
         return try! FfiConverterOptionString.lift(
             try!
-    rustCall() {
-    
-    nimbus_e811_NimbusStringHelper_get_uuid(self.pointer, 
-        FfiConverterString.lower(`template`), $0
-    )
-}
+                rustCall {
+                    nimbus_e811_NimbusStringHelper_get_uuid(self.pointer,
+                                                            FfiConverterString.lower(template), $0)
+                }
         )
     }
-    
 }
-
 
 public struct FfiConverterTypeNimbusStringHelper: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -755,7 +723,7 @@ public struct FfiConverterTypeNimbusStringHelper: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
+        if ptr == nil {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -776,10 +744,8 @@ public struct FfiConverterTypeNimbusStringHelper: FfiConverter {
     }
 }
 
-
 public protocol NimbusTargetingHelperProtocol {
-    func `evalJexl`(`expression`: String) throws -> Bool
-    
+    func evalJexl(expression: String) throws -> Bool
 }
 
 public class NimbusTargetingHelper: NimbusTargetingHelperProtocol {
@@ -796,22 +762,15 @@ public class NimbusTargetingHelper: NimbusTargetingHelperProtocol {
         try! rustCall { ffi_nimbus_e811_NimbusTargetingHelper_object_free(pointer, $0) }
     }
 
-    
-
-    
-    public func `evalJexl`(`expression`: String) throws -> Bool {
+    public func evalJexl(expression: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            try
-    rustCallWithError(FfiConverterTypeNimbusError.self) {
-    nimbus_e811_NimbusTargetingHelper_eval_jexl(self.pointer, 
-        FfiConverterString.lower(`expression`), $0
-    )
-}
+            rustCallWithError(FfiConverterTypeNimbusError.self) {
+                nimbus_e811_NimbusTargetingHelper_eval_jexl(self.pointer,
+                                                            FfiConverterString.lower(expression), $0)
+            }
         )
     }
-    
 }
-
 
 public struct FfiConverterTypeNimbusTargetingHelper: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -822,7 +781,7 @@ public struct FfiConverterTypeNimbusTargetingHelper: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
+        if ptr == nil {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -843,164 +802,160 @@ public struct FfiConverterTypeNimbusTargetingHelper: FfiConverter {
     }
 }
 
-
 public struct AppContext {
-    public var `appName`: String
-    public var `appId`: String
-    public var `channel`: String
-    public var `appVersion`: String?
-    public var `appBuild`: String?
-    public var `architecture`: String?
-    public var `deviceManufacturer`: String?
-    public var `deviceModel`: String?
-    public var `locale`: String?
-    public var `os`: String?
-    public var `osVersion`: String?
-    public var `androidSdkVersion`: String?
-    public var `debugTag`: String?
-    public var `installationDate`: Int64?
-    public var `homeDirectory`: String?
-    public var `customTargetingAttributes`: JsonObject?
+    public var appName: String
+    public var appId: String
+    public var channel: String
+    public var appVersion: String?
+    public var appBuild: String?
+    public var architecture: String?
+    public var deviceManufacturer: String?
+    public var deviceModel: String?
+    public var locale: String?
+    public var os: String?
+    public var osVersion: String?
+    public var androidSdkVersion: String?
+    public var debugTag: String?
+    public var installationDate: Int64?
+    public var homeDirectory: String?
+    public var customTargetingAttributes: JsonObject?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`appName`: String, `appId`: String, `channel`: String, `appVersion`: String?, `appBuild`: String?, `architecture`: String?, `deviceManufacturer`: String?, `deviceModel`: String?, `locale`: String?, `os`: String?, `osVersion`: String?, `androidSdkVersion`: String?, `debugTag`: String?, `installationDate`: Int64?, `homeDirectory`: String?, `customTargetingAttributes`: JsonObject?) {
-        self.`appName` = `appName`
-        self.`appId` = `appId`
-        self.`channel` = `channel`
-        self.`appVersion` = `appVersion`
-        self.`appBuild` = `appBuild`
-        self.`architecture` = `architecture`
-        self.`deviceManufacturer` = `deviceManufacturer`
-        self.`deviceModel` = `deviceModel`
-        self.`locale` = `locale`
-        self.`os` = `os`
-        self.`osVersion` = `osVersion`
-        self.`androidSdkVersion` = `androidSdkVersion`
-        self.`debugTag` = `debugTag`
-        self.`installationDate` = `installationDate`
-        self.`homeDirectory` = `homeDirectory`
-        self.`customTargetingAttributes` = `customTargetingAttributes`
+    public init(appName: String, appId: String, channel: String, appVersion: String?, appBuild: String?, architecture: String?, deviceManufacturer: String?, deviceModel: String?, locale: String?, os: String?, osVersion: String?, androidSdkVersion: String?, debugTag: String?, installationDate: Int64?, homeDirectory: String?, customTargetingAttributes: JsonObject?) {
+        self.appName = appName
+        self.appId = appId
+        self.channel = channel
+        self.appVersion = appVersion
+        self.appBuild = appBuild
+        self.architecture = architecture
+        self.deviceManufacturer = deviceManufacturer
+        self.deviceModel = deviceModel
+        self.locale = locale
+        self.os = os
+        self.osVersion = osVersion
+        self.androidSdkVersion = androidSdkVersion
+        self.debugTag = debugTag
+        self.installationDate = installationDate
+        self.homeDirectory = homeDirectory
+        self.customTargetingAttributes = customTargetingAttributes
     }
 }
 
-
 extension AppContext: Equatable, Hashable {
-    public static func ==(lhs: AppContext, rhs: AppContext) -> Bool {
-        if lhs.`appName` != rhs.`appName` {
+    public static func == (lhs: AppContext, rhs: AppContext) -> Bool {
+        if lhs.appName != rhs.appName {
             return false
         }
-        if lhs.`appId` != rhs.`appId` {
+        if lhs.appId != rhs.appId {
             return false
         }
-        if lhs.`channel` != rhs.`channel` {
+        if lhs.channel != rhs.channel {
             return false
         }
-        if lhs.`appVersion` != rhs.`appVersion` {
+        if lhs.appVersion != rhs.appVersion {
             return false
         }
-        if lhs.`appBuild` != rhs.`appBuild` {
+        if lhs.appBuild != rhs.appBuild {
             return false
         }
-        if lhs.`architecture` != rhs.`architecture` {
+        if lhs.architecture != rhs.architecture {
             return false
         }
-        if lhs.`deviceManufacturer` != rhs.`deviceManufacturer` {
+        if lhs.deviceManufacturer != rhs.deviceManufacturer {
             return false
         }
-        if lhs.`deviceModel` != rhs.`deviceModel` {
+        if lhs.deviceModel != rhs.deviceModel {
             return false
         }
-        if lhs.`locale` != rhs.`locale` {
+        if lhs.locale != rhs.locale {
             return false
         }
-        if lhs.`os` != rhs.`os` {
+        if lhs.os != rhs.os {
             return false
         }
-        if lhs.`osVersion` != rhs.`osVersion` {
+        if lhs.osVersion != rhs.osVersion {
             return false
         }
-        if lhs.`androidSdkVersion` != rhs.`androidSdkVersion` {
+        if lhs.androidSdkVersion != rhs.androidSdkVersion {
             return false
         }
-        if lhs.`debugTag` != rhs.`debugTag` {
+        if lhs.debugTag != rhs.debugTag {
             return false
         }
-        if lhs.`installationDate` != rhs.`installationDate` {
+        if lhs.installationDate != rhs.installationDate {
             return false
         }
-        if lhs.`homeDirectory` != rhs.`homeDirectory` {
+        if lhs.homeDirectory != rhs.homeDirectory {
             return false
         }
-        if lhs.`customTargetingAttributes` != rhs.`customTargetingAttributes` {
+        if lhs.customTargetingAttributes != rhs.customTargetingAttributes {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`appName`)
-        hasher.combine(`appId`)
-        hasher.combine(`channel`)
-        hasher.combine(`appVersion`)
-        hasher.combine(`appBuild`)
-        hasher.combine(`architecture`)
-        hasher.combine(`deviceManufacturer`)
-        hasher.combine(`deviceModel`)
-        hasher.combine(`locale`)
-        hasher.combine(`os`)
-        hasher.combine(`osVersion`)
-        hasher.combine(`androidSdkVersion`)
-        hasher.combine(`debugTag`)
-        hasher.combine(`installationDate`)
-        hasher.combine(`homeDirectory`)
-        hasher.combine(`customTargetingAttributes`)
+        hasher.combine(appName)
+        hasher.combine(appId)
+        hasher.combine(channel)
+        hasher.combine(appVersion)
+        hasher.combine(appBuild)
+        hasher.combine(architecture)
+        hasher.combine(deviceManufacturer)
+        hasher.combine(deviceModel)
+        hasher.combine(locale)
+        hasher.combine(os)
+        hasher.combine(osVersion)
+        hasher.combine(androidSdkVersion)
+        hasher.combine(debugTag)
+        hasher.combine(installationDate)
+        hasher.combine(homeDirectory)
+        hasher.combine(customTargetingAttributes)
     }
 }
-
 
 public struct FfiConverterTypeAppContext: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AppContext {
         return try AppContext(
-            `appName`: FfiConverterString.read(from: &buf), 
-            `appId`: FfiConverterString.read(from: &buf), 
-            `channel`: FfiConverterString.read(from: &buf), 
-            `appVersion`: FfiConverterOptionString.read(from: &buf), 
-            `appBuild`: FfiConverterOptionString.read(from: &buf), 
-            `architecture`: FfiConverterOptionString.read(from: &buf), 
-            `deviceManufacturer`: FfiConverterOptionString.read(from: &buf), 
-            `deviceModel`: FfiConverterOptionString.read(from: &buf), 
-            `locale`: FfiConverterOptionString.read(from: &buf), 
-            `os`: FfiConverterOptionString.read(from: &buf), 
-            `osVersion`: FfiConverterOptionString.read(from: &buf), 
-            `androidSdkVersion`: FfiConverterOptionString.read(from: &buf), 
-            `debugTag`: FfiConverterOptionString.read(from: &buf), 
-            `installationDate`: FfiConverterOptionInt64.read(from: &buf), 
-            `homeDirectory`: FfiConverterOptionString.read(from: &buf), 
-            `customTargetingAttributes`: FfiConverterOptionTypeJsonObject.read(from: &buf)
+            appName: FfiConverterString.read(from: &buf),
+            appId: FfiConverterString.read(from: &buf),
+            channel: FfiConverterString.read(from: &buf),
+            appVersion: FfiConverterOptionString.read(from: &buf),
+            appBuild: FfiConverterOptionString.read(from: &buf),
+            architecture: FfiConverterOptionString.read(from: &buf),
+            deviceManufacturer: FfiConverterOptionString.read(from: &buf),
+            deviceModel: FfiConverterOptionString.read(from: &buf),
+            locale: FfiConverterOptionString.read(from: &buf),
+            os: FfiConverterOptionString.read(from: &buf),
+            osVersion: FfiConverterOptionString.read(from: &buf),
+            androidSdkVersion: FfiConverterOptionString.read(from: &buf),
+            debugTag: FfiConverterOptionString.read(from: &buf),
+            installationDate: FfiConverterOptionInt64.read(from: &buf),
+            homeDirectory: FfiConverterOptionString.read(from: &buf),
+            customTargetingAttributes: FfiConverterOptionTypeJsonObject.read(from: &buf)
         )
     }
 
     public static func write(_ value: AppContext, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`appName`, into: &buf)
-        FfiConverterString.write(value.`appId`, into: &buf)
-        FfiConverterString.write(value.`channel`, into: &buf)
-        FfiConverterOptionString.write(value.`appVersion`, into: &buf)
-        FfiConverterOptionString.write(value.`appBuild`, into: &buf)
-        FfiConverterOptionString.write(value.`architecture`, into: &buf)
-        FfiConverterOptionString.write(value.`deviceManufacturer`, into: &buf)
-        FfiConverterOptionString.write(value.`deviceModel`, into: &buf)
-        FfiConverterOptionString.write(value.`locale`, into: &buf)
-        FfiConverterOptionString.write(value.`os`, into: &buf)
-        FfiConverterOptionString.write(value.`osVersion`, into: &buf)
-        FfiConverterOptionString.write(value.`androidSdkVersion`, into: &buf)
-        FfiConverterOptionString.write(value.`debugTag`, into: &buf)
-        FfiConverterOptionInt64.write(value.`installationDate`, into: &buf)
-        FfiConverterOptionString.write(value.`homeDirectory`, into: &buf)
-        FfiConverterOptionTypeJsonObject.write(value.`customTargetingAttributes`, into: &buf)
+        FfiConverterString.write(value.appName, into: &buf)
+        FfiConverterString.write(value.appId, into: &buf)
+        FfiConverterString.write(value.channel, into: &buf)
+        FfiConverterOptionString.write(value.appVersion, into: &buf)
+        FfiConverterOptionString.write(value.appBuild, into: &buf)
+        FfiConverterOptionString.write(value.architecture, into: &buf)
+        FfiConverterOptionString.write(value.deviceManufacturer, into: &buf)
+        FfiConverterOptionString.write(value.deviceModel, into: &buf)
+        FfiConverterOptionString.write(value.locale, into: &buf)
+        FfiConverterOptionString.write(value.os, into: &buf)
+        FfiConverterOptionString.write(value.osVersion, into: &buf)
+        FfiConverterOptionString.write(value.androidSdkVersion, into: &buf)
+        FfiConverterOptionString.write(value.debugTag, into: &buf)
+        FfiConverterOptionInt64.write(value.installationDate, into: &buf)
+        FfiConverterOptionString.write(value.homeDirectory, into: &buf)
+        FfiConverterOptionTypeJsonObject.write(value.customTargetingAttributes, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeAppContext_lift(_ buf: RustBuffer) throws -> AppContext {
     return try FfiConverterTypeAppContext.lift(buf)
@@ -1010,76 +965,72 @@ public func FfiConverterTypeAppContext_lower(_ value: AppContext) -> RustBuffer 
     return FfiConverterTypeAppContext.lower(value)
 }
 
-
 public struct AvailableExperiment {
-    public var `slug`: String
-    public var `userFacingName`: String
-    public var `userFacingDescription`: String
-    public var `branches`: [ExperimentBranch]
-    public var `referenceBranch`: String?
+    public var slug: String
+    public var userFacingName: String
+    public var userFacingDescription: String
+    public var branches: [ExperimentBranch]
+    public var referenceBranch: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`slug`: String, `userFacingName`: String, `userFacingDescription`: String, `branches`: [ExperimentBranch], `referenceBranch`: String?) {
-        self.`slug` = `slug`
-        self.`userFacingName` = `userFacingName`
-        self.`userFacingDescription` = `userFacingDescription`
-        self.`branches` = `branches`
-        self.`referenceBranch` = `referenceBranch`
+    public init(slug: String, userFacingName: String, userFacingDescription: String, branches: [ExperimentBranch], referenceBranch: String?) {
+        self.slug = slug
+        self.userFacingName = userFacingName
+        self.userFacingDescription = userFacingDescription
+        self.branches = branches
+        self.referenceBranch = referenceBranch
     }
 }
 
-
 extension AvailableExperiment: Equatable, Hashable {
-    public static func ==(lhs: AvailableExperiment, rhs: AvailableExperiment) -> Bool {
-        if lhs.`slug` != rhs.`slug` {
+    public static func == (lhs: AvailableExperiment, rhs: AvailableExperiment) -> Bool {
+        if lhs.slug != rhs.slug {
             return false
         }
-        if lhs.`userFacingName` != rhs.`userFacingName` {
+        if lhs.userFacingName != rhs.userFacingName {
             return false
         }
-        if lhs.`userFacingDescription` != rhs.`userFacingDescription` {
+        if lhs.userFacingDescription != rhs.userFacingDescription {
             return false
         }
-        if lhs.`branches` != rhs.`branches` {
+        if lhs.branches != rhs.branches {
             return false
         }
-        if lhs.`referenceBranch` != rhs.`referenceBranch` {
+        if lhs.referenceBranch != rhs.referenceBranch {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`slug`)
-        hasher.combine(`userFacingName`)
-        hasher.combine(`userFacingDescription`)
-        hasher.combine(`branches`)
-        hasher.combine(`referenceBranch`)
+        hasher.combine(slug)
+        hasher.combine(userFacingName)
+        hasher.combine(userFacingDescription)
+        hasher.combine(branches)
+        hasher.combine(referenceBranch)
     }
 }
-
 
 public struct FfiConverterTypeAvailableExperiment: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AvailableExperiment {
         return try AvailableExperiment(
-            `slug`: FfiConverterString.read(from: &buf), 
-            `userFacingName`: FfiConverterString.read(from: &buf), 
-            `userFacingDescription`: FfiConverterString.read(from: &buf), 
-            `branches`: FfiConverterSequenceTypeExperimentBranch.read(from: &buf), 
-            `referenceBranch`: FfiConverterOptionString.read(from: &buf)
+            slug: FfiConverterString.read(from: &buf),
+            userFacingName: FfiConverterString.read(from: &buf),
+            userFacingDescription: FfiConverterString.read(from: &buf),
+            branches: FfiConverterSequenceTypeExperimentBranch.read(from: &buf),
+            referenceBranch: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: AvailableExperiment, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`slug`, into: &buf)
-        FfiConverterString.write(value.`userFacingName`, into: &buf)
-        FfiConverterString.write(value.`userFacingDescription`, into: &buf)
-        FfiConverterSequenceTypeExperimentBranch.write(value.`branches`, into: &buf)
-        FfiConverterOptionString.write(value.`referenceBranch`, into: &buf)
+        FfiConverterString.write(value.slug, into: &buf)
+        FfiConverterString.write(value.userFacingName, into: &buf)
+        FfiConverterString.write(value.userFacingDescription, into: &buf)
+        FfiConverterSequenceTypeExperimentBranch.write(value.branches, into: &buf)
+        FfiConverterOptionString.write(value.referenceBranch, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeAvailableExperiment_lift(_ buf: RustBuffer) throws -> AvailableExperiment {
     return try FfiConverterTypeAvailableExperiment.lift(buf)
@@ -1089,52 +1040,48 @@ public func FfiConverterTypeAvailableExperiment_lower(_ value: AvailableExperime
     return FfiConverterTypeAvailableExperiment.lower(value)
 }
 
-
 public struct AvailableRandomizationUnits {
-    public var `clientId`: String?
-    public var `dummy`: Int8
+    public var clientId: String?
+    public var dummy: Int8
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`clientId`: String?, `dummy`: Int8) {
-        self.`clientId` = `clientId`
-        self.`dummy` = `dummy`
+    public init(clientId: String?, dummy: Int8) {
+        self.clientId = clientId
+        self.dummy = dummy
     }
 }
 
-
 extension AvailableRandomizationUnits: Equatable, Hashable {
-    public static func ==(lhs: AvailableRandomizationUnits, rhs: AvailableRandomizationUnits) -> Bool {
-        if lhs.`clientId` != rhs.`clientId` {
+    public static func == (lhs: AvailableRandomizationUnits, rhs: AvailableRandomizationUnits) -> Bool {
+        if lhs.clientId != rhs.clientId {
             return false
         }
-        if lhs.`dummy` != rhs.`dummy` {
+        if lhs.dummy != rhs.dummy {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`clientId`)
-        hasher.combine(`dummy`)
+        hasher.combine(clientId)
+        hasher.combine(dummy)
     }
 }
-
 
 public struct FfiConverterTypeAvailableRandomizationUnits: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AvailableRandomizationUnits {
         return try AvailableRandomizationUnits(
-            `clientId`: FfiConverterOptionString.read(from: &buf), 
-            `dummy`: FfiConverterInt8.read(from: &buf)
+            clientId: FfiConverterOptionString.read(from: &buf),
+            dummy: FfiConverterInt8.read(from: &buf)
         )
     }
 
     public static func write(_ value: AvailableRandomizationUnits, into buf: inout [UInt8]) {
-        FfiConverterOptionString.write(value.`clientId`, into: &buf)
-        FfiConverterInt8.write(value.`dummy`, into: &buf)
+        FfiConverterOptionString.write(value.clientId, into: &buf)
+        FfiConverterInt8.write(value.dummy, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeAvailableRandomizationUnits_lift(_ buf: RustBuffer) throws -> AvailableRandomizationUnits {
     return try FfiConverterTypeAvailableRandomizationUnits.lift(buf)
@@ -1144,84 +1091,80 @@ public func FfiConverterTypeAvailableRandomizationUnits_lower(_ value: Available
     return FfiConverterTypeAvailableRandomizationUnits.lower(value)
 }
 
-
 public struct EnrolledExperiment {
-    public var `featureIds`: [String]
-    public var `slug`: String
-    public var `userFacingName`: String
-    public var `userFacingDescription`: String
-    public var `branchSlug`: String
-    public var `enrollmentId`: String
+    public var featureIds: [String]
+    public var slug: String
+    public var userFacingName: String
+    public var userFacingDescription: String
+    public var branchSlug: String
+    public var enrollmentId: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`featureIds`: [String], `slug`: String, `userFacingName`: String, `userFacingDescription`: String, `branchSlug`: String, `enrollmentId`: String) {
-        self.`featureIds` = `featureIds`
-        self.`slug` = `slug`
-        self.`userFacingName` = `userFacingName`
-        self.`userFacingDescription` = `userFacingDescription`
-        self.`branchSlug` = `branchSlug`
-        self.`enrollmentId` = `enrollmentId`
+    public init(featureIds: [String], slug: String, userFacingName: String, userFacingDescription: String, branchSlug: String, enrollmentId: String) {
+        self.featureIds = featureIds
+        self.slug = slug
+        self.userFacingName = userFacingName
+        self.userFacingDescription = userFacingDescription
+        self.branchSlug = branchSlug
+        self.enrollmentId = enrollmentId
     }
 }
 
-
 extension EnrolledExperiment: Equatable, Hashable {
-    public static func ==(lhs: EnrolledExperiment, rhs: EnrolledExperiment) -> Bool {
-        if lhs.`featureIds` != rhs.`featureIds` {
+    public static func == (lhs: EnrolledExperiment, rhs: EnrolledExperiment) -> Bool {
+        if lhs.featureIds != rhs.featureIds {
             return false
         }
-        if lhs.`slug` != rhs.`slug` {
+        if lhs.slug != rhs.slug {
             return false
         }
-        if lhs.`userFacingName` != rhs.`userFacingName` {
+        if lhs.userFacingName != rhs.userFacingName {
             return false
         }
-        if lhs.`userFacingDescription` != rhs.`userFacingDescription` {
+        if lhs.userFacingDescription != rhs.userFacingDescription {
             return false
         }
-        if lhs.`branchSlug` != rhs.`branchSlug` {
+        if lhs.branchSlug != rhs.branchSlug {
             return false
         }
-        if lhs.`enrollmentId` != rhs.`enrollmentId` {
+        if lhs.enrollmentId != rhs.enrollmentId {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`featureIds`)
-        hasher.combine(`slug`)
-        hasher.combine(`userFacingName`)
-        hasher.combine(`userFacingDescription`)
-        hasher.combine(`branchSlug`)
-        hasher.combine(`enrollmentId`)
+        hasher.combine(featureIds)
+        hasher.combine(slug)
+        hasher.combine(userFacingName)
+        hasher.combine(userFacingDescription)
+        hasher.combine(branchSlug)
+        hasher.combine(enrollmentId)
     }
 }
-
 
 public struct FfiConverterTypeEnrolledExperiment: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EnrolledExperiment {
         return try EnrolledExperiment(
-            `featureIds`: FfiConverterSequenceString.read(from: &buf), 
-            `slug`: FfiConverterString.read(from: &buf), 
-            `userFacingName`: FfiConverterString.read(from: &buf), 
-            `userFacingDescription`: FfiConverterString.read(from: &buf), 
-            `branchSlug`: FfiConverterString.read(from: &buf), 
-            `enrollmentId`: FfiConverterString.read(from: &buf)
+            featureIds: FfiConverterSequenceString.read(from: &buf),
+            slug: FfiConverterString.read(from: &buf),
+            userFacingName: FfiConverterString.read(from: &buf),
+            userFacingDescription: FfiConverterString.read(from: &buf),
+            branchSlug: FfiConverterString.read(from: &buf),
+            enrollmentId: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: EnrolledExperiment, into buf: inout [UInt8]) {
-        FfiConverterSequenceString.write(value.`featureIds`, into: &buf)
-        FfiConverterString.write(value.`slug`, into: &buf)
-        FfiConverterString.write(value.`userFacingName`, into: &buf)
-        FfiConverterString.write(value.`userFacingDescription`, into: &buf)
-        FfiConverterString.write(value.`branchSlug`, into: &buf)
-        FfiConverterString.write(value.`enrollmentId`, into: &buf)
+        FfiConverterSequenceString.write(value.featureIds, into: &buf)
+        FfiConverterString.write(value.slug, into: &buf)
+        FfiConverterString.write(value.userFacingName, into: &buf)
+        FfiConverterString.write(value.userFacingDescription, into: &buf)
+        FfiConverterString.write(value.branchSlug, into: &buf)
+        FfiConverterString.write(value.enrollmentId, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeEnrolledExperiment_lift(_ buf: RustBuffer) throws -> EnrolledExperiment {
     return try FfiConverterTypeEnrolledExperiment.lift(buf)
@@ -1231,60 +1174,56 @@ public func FfiConverterTypeEnrolledExperiment_lower(_ value: EnrolledExperiment
     return FfiConverterTypeEnrolledExperiment.lower(value)
 }
 
-
 public struct EnrolledFeature {
-    public var `slug`: String
-    public var `branch`: String?
-    public var `featureId`: String
+    public var slug: String
+    public var branch: String?
+    public var featureId: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`slug`: String, `branch`: String?, `featureId`: String) {
-        self.`slug` = `slug`
-        self.`branch` = `branch`
-        self.`featureId` = `featureId`
+    public init(slug: String, branch: String?, featureId: String) {
+        self.slug = slug
+        self.branch = branch
+        self.featureId = featureId
     }
 }
 
-
 extension EnrolledFeature: Equatable, Hashable {
-    public static func ==(lhs: EnrolledFeature, rhs: EnrolledFeature) -> Bool {
-        if lhs.`slug` != rhs.`slug` {
+    public static func == (lhs: EnrolledFeature, rhs: EnrolledFeature) -> Bool {
+        if lhs.slug != rhs.slug {
             return false
         }
-        if lhs.`branch` != rhs.`branch` {
+        if lhs.branch != rhs.branch {
             return false
         }
-        if lhs.`featureId` != rhs.`featureId` {
+        if lhs.featureId != rhs.featureId {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`slug`)
-        hasher.combine(`branch`)
-        hasher.combine(`featureId`)
+        hasher.combine(slug)
+        hasher.combine(branch)
+        hasher.combine(featureId)
     }
 }
-
 
 public struct FfiConverterTypeEnrolledFeature: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EnrolledFeature {
         return try EnrolledFeature(
-            `slug`: FfiConverterString.read(from: &buf), 
-            `branch`: FfiConverterOptionString.read(from: &buf), 
-            `featureId`: FfiConverterString.read(from: &buf)
+            slug: FfiConverterString.read(from: &buf),
+            branch: FfiConverterOptionString.read(from: &buf),
+            featureId: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: EnrolledFeature, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`slug`, into: &buf)
-        FfiConverterOptionString.write(value.`branch`, into: &buf)
-        FfiConverterString.write(value.`featureId`, into: &buf)
+        FfiConverterString.write(value.slug, into: &buf)
+        FfiConverterOptionString.write(value.branch, into: &buf)
+        FfiConverterString.write(value.featureId, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeEnrolledFeature_lift(_ buf: RustBuffer) throws -> EnrolledFeature {
     return try FfiConverterTypeEnrolledFeature.lift(buf)
@@ -1294,76 +1233,72 @@ public func FfiConverterTypeEnrolledFeature_lower(_ value: EnrolledFeature) -> R
     return FfiConverterTypeEnrolledFeature.lower(value)
 }
 
-
 public struct EnrollmentChangeEvent {
-    public var `experimentSlug`: String
-    public var `branchSlug`: String
-    public var `enrollmentId`: String
-    public var `reason`: String?
-    public var `change`: EnrollmentChangeEventType
+    public var experimentSlug: String
+    public var branchSlug: String
+    public var enrollmentId: String
+    public var reason: String?
+    public var change: EnrollmentChangeEventType
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`experimentSlug`: String, `branchSlug`: String, `enrollmentId`: String, `reason`: String?, `change`: EnrollmentChangeEventType) {
-        self.`experimentSlug` = `experimentSlug`
-        self.`branchSlug` = `branchSlug`
-        self.`enrollmentId` = `enrollmentId`
-        self.`reason` = `reason`
-        self.`change` = `change`
+    public init(experimentSlug: String, branchSlug: String, enrollmentId: String, reason: String?, change: EnrollmentChangeEventType) {
+        self.experimentSlug = experimentSlug
+        self.branchSlug = branchSlug
+        self.enrollmentId = enrollmentId
+        self.reason = reason
+        self.change = change
     }
 }
 
-
 extension EnrollmentChangeEvent: Equatable, Hashable {
-    public static func ==(lhs: EnrollmentChangeEvent, rhs: EnrollmentChangeEvent) -> Bool {
-        if lhs.`experimentSlug` != rhs.`experimentSlug` {
+    public static func == (lhs: EnrollmentChangeEvent, rhs: EnrollmentChangeEvent) -> Bool {
+        if lhs.experimentSlug != rhs.experimentSlug {
             return false
         }
-        if lhs.`branchSlug` != rhs.`branchSlug` {
+        if lhs.branchSlug != rhs.branchSlug {
             return false
         }
-        if lhs.`enrollmentId` != rhs.`enrollmentId` {
+        if lhs.enrollmentId != rhs.enrollmentId {
             return false
         }
-        if lhs.`reason` != rhs.`reason` {
+        if lhs.reason != rhs.reason {
             return false
         }
-        if lhs.`change` != rhs.`change` {
+        if lhs.change != rhs.change {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`experimentSlug`)
-        hasher.combine(`branchSlug`)
-        hasher.combine(`enrollmentId`)
-        hasher.combine(`reason`)
-        hasher.combine(`change`)
+        hasher.combine(experimentSlug)
+        hasher.combine(branchSlug)
+        hasher.combine(enrollmentId)
+        hasher.combine(reason)
+        hasher.combine(change)
     }
 }
-
 
 public struct FfiConverterTypeEnrollmentChangeEvent: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EnrollmentChangeEvent {
         return try EnrollmentChangeEvent(
-            `experimentSlug`: FfiConverterString.read(from: &buf), 
-            `branchSlug`: FfiConverterString.read(from: &buf), 
-            `enrollmentId`: FfiConverterString.read(from: &buf), 
-            `reason`: FfiConverterOptionString.read(from: &buf), 
-            `change`: FfiConverterTypeEnrollmentChangeEventType.read(from: &buf)
+            experimentSlug: FfiConverterString.read(from: &buf),
+            branchSlug: FfiConverterString.read(from: &buf),
+            enrollmentId: FfiConverterString.read(from: &buf),
+            reason: FfiConverterOptionString.read(from: &buf),
+            change: FfiConverterTypeEnrollmentChangeEventType.read(from: &buf)
         )
     }
 
     public static func write(_ value: EnrollmentChangeEvent, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`experimentSlug`, into: &buf)
-        FfiConverterString.write(value.`branchSlug`, into: &buf)
-        FfiConverterString.write(value.`enrollmentId`, into: &buf)
-        FfiConverterOptionString.write(value.`reason`, into: &buf)
-        FfiConverterTypeEnrollmentChangeEventType.write(value.`change`, into: &buf)
+        FfiConverterString.write(value.experimentSlug, into: &buf)
+        FfiConverterString.write(value.branchSlug, into: &buf)
+        FfiConverterString.write(value.enrollmentId, into: &buf)
+        FfiConverterOptionString.write(value.reason, into: &buf)
+        FfiConverterTypeEnrollmentChangeEventType.write(value.change, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeEnrollmentChangeEvent_lift(_ buf: RustBuffer) throws -> EnrollmentChangeEvent {
     return try FfiConverterTypeEnrollmentChangeEvent.lift(buf)
@@ -1373,52 +1308,48 @@ public func FfiConverterTypeEnrollmentChangeEvent_lower(_ value: EnrollmentChang
     return FfiConverterTypeEnrollmentChangeEvent.lower(value)
 }
 
-
 public struct ExperimentBranch {
-    public var `slug`: String
-    public var `ratio`: Int32
+    public var slug: String
+    public var ratio: Int32
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`slug`: String, `ratio`: Int32) {
-        self.`slug` = `slug`
-        self.`ratio` = `ratio`
+    public init(slug: String, ratio: Int32) {
+        self.slug = slug
+        self.ratio = ratio
     }
 }
 
-
 extension ExperimentBranch: Equatable, Hashable {
-    public static func ==(lhs: ExperimentBranch, rhs: ExperimentBranch) -> Bool {
-        if lhs.`slug` != rhs.`slug` {
+    public static func == (lhs: ExperimentBranch, rhs: ExperimentBranch) -> Bool {
+        if lhs.slug != rhs.slug {
             return false
         }
-        if lhs.`ratio` != rhs.`ratio` {
+        if lhs.ratio != rhs.ratio {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`slug`)
-        hasher.combine(`ratio`)
+        hasher.combine(slug)
+        hasher.combine(ratio)
     }
 }
-
 
 public struct FfiConverterTypeExperimentBranch: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ExperimentBranch {
         return try ExperimentBranch(
-            `slug`: FfiConverterString.read(from: &buf), 
-            `ratio`: FfiConverterInt32.read(from: &buf)
+            slug: FfiConverterString.read(from: &buf),
+            ratio: FfiConverterInt32.read(from: &buf)
         )
     }
 
     public static func write(_ value: ExperimentBranch, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`slug`, into: &buf)
-        FfiConverterInt32.write(value.`ratio`, into: &buf)
+        FfiConverterString.write(value.slug, into: &buf)
+        FfiConverterInt32.write(value.ratio, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeExperimentBranch_lift(_ buf: RustBuffer) throws -> ExperimentBranch {
     return try FfiConverterTypeExperimentBranch.lift(buf)
@@ -1428,52 +1359,48 @@ public func FfiConverterTypeExperimentBranch_lower(_ value: ExperimentBranch) ->
     return FfiConverterTypeExperimentBranch.lower(value)
 }
 
-
 public struct RemoteSettingsConfig {
-    public var `serverUrl`: String
-    public var `collectionName`: String
+    public var serverUrl: String
+    public var collectionName: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`serverUrl`: String, `collectionName`: String) {
-        self.`serverUrl` = `serverUrl`
-        self.`collectionName` = `collectionName`
+    public init(serverUrl: String, collectionName: String) {
+        self.serverUrl = serverUrl
+        self.collectionName = collectionName
     }
 }
 
-
 extension RemoteSettingsConfig: Equatable, Hashable {
-    public static func ==(lhs: RemoteSettingsConfig, rhs: RemoteSettingsConfig) -> Bool {
-        if lhs.`serverUrl` != rhs.`serverUrl` {
+    public static func == (lhs: RemoteSettingsConfig, rhs: RemoteSettingsConfig) -> Bool {
+        if lhs.serverUrl != rhs.serverUrl {
             return false
         }
-        if lhs.`collectionName` != rhs.`collectionName` {
+        if lhs.collectionName != rhs.collectionName {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`serverUrl`)
-        hasher.combine(`collectionName`)
+        hasher.combine(serverUrl)
+        hasher.combine(collectionName)
     }
 }
-
 
 public struct FfiConverterTypeRemoteSettingsConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsConfig {
         return try RemoteSettingsConfig(
-            `serverUrl`: FfiConverterString.read(from: &buf), 
-            `collectionName`: FfiConverterString.read(from: &buf)
+            serverUrl: FfiConverterString.read(from: &buf),
+            collectionName: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: RemoteSettingsConfig, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`serverUrl`, into: &buf)
-        FfiConverterString.write(value.`collectionName`, into: &buf)
+        FfiConverterString.write(value.serverUrl, into: &buf)
+        FfiConverterString.write(value.collectionName, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeRemoteSettingsConfig_lift(_ buf: RustBuffer) throws -> RemoteSettingsConfig {
     return try FfiConverterTypeRemoteSettingsConfig.lift(buf)
@@ -1486,12 +1413,11 @@ public func FfiConverterTypeRemoteSettingsConfig_lower(_ value: RemoteSettingsCo
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum EnrollmentChangeEventType {
-    
-    case `enrollment`
-    case `enrollFailed`
-    case `disqualification`
-    case `unenrollment`
-    case `unenrollFailed`
+    case enrollment
+    case enrollFailed
+    case disqualification
+    case unenrollment
+    case unenrollFailed
 }
 
 public struct FfiConverterTypeEnrollmentChangeEventType: FfiConverterRustBuffer {
@@ -1500,48 +1426,39 @@ public struct FfiConverterTypeEnrollmentChangeEventType: FfiConverterRustBuffer 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EnrollmentChangeEventType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`enrollment`
-        
-        case 2: return .`enrollFailed`
-        
-        case 3: return .`disqualification`
-        
-        case 4: return .`unenrollment`
-        
-        case 5: return .`unenrollFailed`
-        
+        case 1: return .enrollment
+
+        case 2: return .enrollFailed
+
+        case 3: return .disqualification
+
+        case 4: return .unenrollment
+
+        case 5: return .unenrollFailed
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: EnrollmentChangeEventType, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case .`enrollment`:
+        case .enrollment:
             writeInt(&buf, Int32(1))
-        
-        
-        case .`enrollFailed`:
+
+        case .enrollFailed:
             writeInt(&buf, Int32(2))
-        
-        
-        case .`disqualification`:
+
+        case .disqualification:
             writeInt(&buf, Int32(3))
-        
-        
-        case .`unenrollment`:
+
+        case .unenrollment:
             writeInt(&buf, Int32(4))
-        
-        
-        case .`unenrollFailed`:
+
+        case .unenrollFailed:
             writeInt(&buf, Int32(5))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeEnrollmentChangeEventType_lift(_ buf: RustBuffer) throws -> EnrollmentChangeEventType {
     return try FfiConverterTypeEnrollmentChangeEventType.lift(buf)
@@ -1551,87 +1468,80 @@ public func FfiConverterTypeEnrollmentChangeEventType_lower(_ value: EnrollmentC
     return FfiConverterTypeEnrollmentChangeEventType.lower(value)
 }
 
-
 extension EnrollmentChangeEventType: Equatable, Hashable {}
 
-
-
 public enum NimbusError {
-
-    
-    
     // Simple error enums only carry a message
     case InvalidPersistedData(message: String)
-    
+
     // Simple error enums only carry a message
     case RkvError(message: String)
-    
+
     // Simple error enums only carry a message
     case IoError(message: String)
-    
+
     // Simple error enums only carry a message
     case JsonError(message: String)
-    
+
     // Simple error enums only carry a message
     case EvaluationError(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidExpression(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidFraction(message: String)
-    
+
     // Simple error enums only carry a message
     case TryFromSliceError(message: String)
-    
+
     // Simple error enums only carry a message
     case EmptyRatiosError(message: String)
-    
+
     // Simple error enums only carry a message
     case OutOfBoundsError(message: String)
-    
+
     // Simple error enums only carry a message
     case UrlParsingError(message: String)
-    
+
     // Simple error enums only carry a message
     case UuidError(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidExperimentFormat(message: String)
-    
+
     // Simple error enums only carry a message
     case InvalidPath(message: String)
-    
+
     // Simple error enums only carry a message
     case InternalError(message: String)
-    
+
     // Simple error enums only carry a message
     case NoSuchExperiment(message: String)
-    
+
     // Simple error enums only carry a message
     case NoSuchBranch(message: String)
-    
+
     // Simple error enums only carry a message
     case DatabaseNotReady(message: String)
-    
+
     // Simple error enums only carry a message
     case VersionParsingError(message: String)
-    
+
     // Simple error enums only carry a message
     case BehaviorError(message: String)
-    
+
     // Simple error enums only carry a message
     case TryFromIntError(message: String)
-    
+
     // Simple error enums only carry a message
     case ParseIntError(message: String)
-    
+
     // Simple error enums only carry a message
     case TransformParameterError(message: String)
-    
+
     // Simple error enums only carry a message
     case ClientError(message: String)
-    
 }
 
 public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
@@ -1640,106 +1550,101 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NimbusError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        case 1: return try .InvalidPersistedData(
+                message: FfiConverterString.read(from: &buf)
+            )
 
-        
+        case 2: return try .RkvError(
+                message: FfiConverterString.read(from: &buf)
+            )
 
-        
-        case 1: return .InvalidPersistedData(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 2: return .RkvError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 3: return .IoError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 4: return .JsonError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 5: return .EvaluationError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 6: return .InvalidExpression(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 7: return .InvalidFraction(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 8: return .TryFromSliceError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 9: return .EmptyRatiosError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 10: return .OutOfBoundsError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 11: return .UrlParsingError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 12: return .UuidError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 13: return .InvalidExperimentFormat(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 14: return .InvalidPath(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 15: return .InternalError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 16: return .NoSuchExperiment(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 17: return .NoSuchBranch(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 18: return .DatabaseNotReady(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 19: return .VersionParsingError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 20: return .BehaviorError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 21: return .TryFromIntError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 22: return .ParseIntError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 23: return .TransformParameterError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 24: return .ClientError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
+        case 3: return try .IoError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return try .JsonError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 5: return try .EvaluationError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 6: return try .InvalidExpression(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 7: return try .InvalidFraction(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 8: return try .TryFromSliceError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 9: return try .EmptyRatiosError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 10: return try .OutOfBoundsError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 11: return try .UrlParsingError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 12: return try .UuidError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 13: return try .InvalidExperimentFormat(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 14: return try .InvalidPath(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 15: return try .InternalError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 16: return try .NoSuchExperiment(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 17: return try .NoSuchBranch(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 18: return try .DatabaseNotReady(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 19: return try .VersionParsingError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 20: return try .BehaviorError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 21: return try .TryFromIntError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 22: return try .ParseIntError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 23: return try .TransformParameterError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 24: return try .ClientError(
+                message: FfiConverterString.read(from: &buf)
+            )
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1747,10 +1652,6 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
 
     public static func write(_ value: NimbusError, into buf: inout [UInt8]) {
         switch value {
-
-        
-
-        
         case let .InvalidPersistedData(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
@@ -1823,18 +1724,15 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
         case let .ClientError(message):
             writeInt(&buf, Int32(24))
             FfiConverterString.write(message, into: &buf)
-
-        
         }
     }
 }
 
-
 extension NimbusError: Equatable, Hashable {}
 
-extension NimbusError: Error { }
+extension NimbusError: Error {}
 
-fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
+private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1855,7 +1753,7 @@ fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1876,7 +1774,7 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypeEnrolledFeature: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeEnrolledFeature: FfiConverterRustBuffer {
     typealias SwiftType = EnrolledFeature?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1897,7 +1795,7 @@ fileprivate struct FfiConverterOptionTypeEnrolledFeature: FfiConverterRustBuffer
     }
 }
 
-fileprivate struct FfiConverterOptionTypeRemoteSettingsConfig: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeRemoteSettingsConfig: FfiConverterRustBuffer {
     typealias SwiftType = RemoteSettingsConfig?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1918,7 +1816,7 @@ fileprivate struct FfiConverterOptionTypeRemoteSettingsConfig: FfiConverterRustB
     }
 }
 
-fileprivate struct FfiConverterOptionTypeJsonObject: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeJsonObject: FfiConverterRustBuffer {
     typealias SwiftType = JsonObject?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1939,7 +1837,7 @@ fileprivate struct FfiConverterOptionTypeJsonObject: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+private struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
     public static func write(_ value: [String], into buf: inout [UInt8]) {
@@ -1955,13 +1853,13 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
+            try seq.append(FfiConverterString.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeAvailableExperiment: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeAvailableExperiment: FfiConverterRustBuffer {
     typealias SwiftType = [AvailableExperiment]
 
     public static func write(_ value: [AvailableExperiment], into buf: inout [UInt8]) {
@@ -1977,13 +1875,13 @@ fileprivate struct FfiConverterSequenceTypeAvailableExperiment: FfiConverterRust
         var seq = [AvailableExperiment]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeAvailableExperiment.read(from: &buf))
+            try seq.append(FfiConverterTypeAvailableExperiment.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeEnrolledExperiment: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeEnrolledExperiment: FfiConverterRustBuffer {
     typealias SwiftType = [EnrolledExperiment]
 
     public static func write(_ value: [EnrolledExperiment], into buf: inout [UInt8]) {
@@ -1999,13 +1897,13 @@ fileprivate struct FfiConverterSequenceTypeEnrolledExperiment: FfiConverterRustB
         var seq = [EnrolledExperiment]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeEnrolledExperiment.read(from: &buf))
+            try seq.append(FfiConverterTypeEnrolledExperiment.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeEnrollmentChangeEvent: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeEnrollmentChangeEvent: FfiConverterRustBuffer {
     typealias SwiftType = [EnrollmentChangeEvent]
 
     public static func write(_ value: [EnrollmentChangeEvent], into buf: inout [UInt8]) {
@@ -2021,13 +1919,13 @@ fileprivate struct FfiConverterSequenceTypeEnrollmentChangeEvent: FfiConverterRu
         var seq = [EnrollmentChangeEvent]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeEnrollmentChangeEvent.read(from: &buf))
+            try seq.append(FfiConverterTypeEnrollmentChangeEvent.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypeExperimentBranch: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypeExperimentBranch: FfiConverterRustBuffer {
     typealias SwiftType = [ExperimentBranch]
 
     public static func write(_ value: [ExperimentBranch], into buf: inout [UInt8]) {
@@ -2043,12 +1941,11 @@ fileprivate struct FfiConverterSequenceTypeExperimentBranch: FfiConverterRustBuf
         var seq = [ExperimentBranch]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypeExperimentBranch.read(from: &buf))
+            try seq.append(FfiConverterTypeExperimentBranch.read(from: &buf))
         }
         return seq
     }
 }
-
 
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
@@ -2082,6 +1979,5 @@ public enum NimbusLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {
-    }
+    func initialize() {}
 }

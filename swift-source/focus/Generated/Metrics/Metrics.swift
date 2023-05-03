@@ -10,7 +10,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
 import Glean
 
 // swiftlint:disable superfluous_disable_command
@@ -37,13 +36,13 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let branch = self.branch {
+                if let branch = branch {
                     record["branch"] = String(branch)
                 }
-                if let enrollmentId = self.enrollmentId {
+                if let enrollmentId = enrollmentId {
                     record["enrollment_id"] = String(enrollmentId)
                 }
-                if let experiment = self.experiment {
+                if let experiment = experiment {
                     record["experiment"] = String(experiment)
                 }
 
@@ -59,13 +58,13 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let branch = self.branch {
+                if let branch = branch {
                     record["branch"] = String(branch)
                 }
-                if let experiment = self.experiment {
+                if let experiment = experiment {
                     record["experiment"] = String(experiment)
                 }
-                if let reason = self.reason {
+                if let reason = reason {
                     record["reason"] = String(reason)
                 }
 
@@ -82,16 +81,16 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let branch = self.branch {
+                if let branch = branch {
                     record["branch"] = String(branch)
                 }
-                if let enrollmentId = self.enrollmentId {
+                if let enrollmentId = enrollmentId {
                     record["enrollment_id"] = String(enrollmentId)
                 }
-                if let experiment = self.experiment {
+                if let experiment = experiment {
                     record["experiment"] = String(experiment)
                 }
-                if let experimentType = self.experimentType {
+                if let experimentType = experimentType {
                     record["experiment_type"] = String(experimentType)
                 }
 
@@ -107,13 +106,13 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let branch = self.branch {
+                if let branch = branch {
                     record["branch"] = String(branch)
                 }
-                if let experiment = self.experiment {
+                if let experiment = experiment {
                     record["experiment"] = String(experiment)
                 }
-                if let featureId = self.featureId {
+                if let featureId = featureId {
                     record["feature_id"] = String(featureId)
                 }
 
@@ -130,16 +129,16 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let branch = self.branch {
+                if let branch = branch {
                     record["branch"] = String(branch)
                 }
-                if let experiment = self.experiment {
+                if let experiment = experiment {
                     record["experiment"] = String(experiment)
                 }
-                if let featureId = self.featureId {
+                if let featureId = featureId {
                     record["feature_id"] = String(featureId)
                 }
-                if let partId = self.partId {
+                if let partId = partId {
                     record["part_id"] = String(partId)
                 }
 
@@ -154,10 +153,10 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let experiment = self.experiment {
+                if let experiment = experiment {
                     record["experiment"] = String(experiment)
                 }
-                if let reason = self.reason {
+                if let reason = reason {
                     record["reason"] = String(reason)
                 }
 
@@ -174,16 +173,16 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let branch = self.branch {
+                if let branch = branch {
                     record["branch"] = String(branch)
                 }
-                if let enrollmentId = self.enrollmentId {
+                if let enrollmentId = enrollmentId {
                     record["enrollment_id"] = String(enrollmentId)
                 }
-                if let experiment = self.experiment {
+                if let experiment = experiment {
                     record["experiment"] = String(experiment)
                 }
-                if let reason = self.reason {
+                if let reason = reason {
                     record["reason"] = String(reason)
                 }
 
@@ -201,8 +200,8 @@ extension GleanMetrics {
                 sendInPings: ["events"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , ["branch", "enrollment_id", "experiment"]
+            ),
+            ["branch", "enrollment_id", "experiment"]
         )
 
         /// Recorded when an enrollment fails, including the reason for the failure.
@@ -213,8 +212,8 @@ extension GleanMetrics {
                 sendInPings: ["background-update", "events"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , ["branch", "experiment", "reason"]
+            ),
+            ["branch", "experiment", "reason"]
         )
 
         /// Recorded when a user has met the conditions and is first bucketed into an
@@ -227,8 +226,8 @@ extension GleanMetrics {
                 sendInPings: ["events"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , ["branch", "enrollment_id", "experiment", "experiment_type"]
+            ),
+            ["branch", "enrollment_id", "experiment", "experiment_type"]
         )
 
         /// Recorded when a user actually observes an experimental treatment, or would have
@@ -241,8 +240,8 @@ extension GleanMetrics {
                 sendInPings: ["events"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , ["branch", "experiment", "feature_id"]
+            ),
+            ["branch", "experiment", "feature_id"]
         )
 
         /// Recorded when feature code detects a problem with some part of the feature
@@ -254,8 +253,8 @@ extension GleanMetrics {
                 sendInPings: ["events"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , ["branch", "experiment", "feature_id", "part_id"]
+            ),
+            ["branch", "experiment", "feature_id", "part_id"]
         )
 
         /// Recorded when an unenrollment fails, including the reason for the failure.
@@ -266,8 +265,8 @@ extension GleanMetrics {
                 sendInPings: ["background-update", "events"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , ["experiment", "reason"]
+            ),
+            ["experiment", "reason"]
         )
 
         /// Recorded when either telemetry is disabled, or the experiment has run for its
@@ -280,10 +279,9 @@ extension GleanMetrics {
                 sendInPings: ["events"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , ["branch", "enrollment_id", "experiment", "reason"]
+            ),
+            ["branch", "enrollment_id", "experiment", "reason"]
         )
-
     }
 
     enum NimbusHealth {
@@ -293,7 +291,7 @@ extension GleanMetrics {
             func toExtraRecord() -> [String: String] {
                 var record = [String: String]()
 
-                if let featureId = self.featureId {
+                if let featureId = featureId {
                     record["feature_id"] = String(featureId)
                 }
 
@@ -311,8 +309,8 @@ extension GleanMetrics {
                 sendInPings: ["metrics"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , .millisecond
+            ),
+            .millisecond
         )
 
         /// Recorded when an application or library requests a feature configuration before
@@ -324,8 +322,8 @@ extension GleanMetrics {
                 sendInPings: ["events"],
                 lifetime: .ping,
                 disabled: true
-            )
-            , ["feature_id"]
+            ),
+            ["feature_id"]
         )
 
         /// Measures how long `fetchExperiments` takes.
@@ -336,10 +334,8 @@ extension GleanMetrics {
                 sendInPings: ["metrics"],
                 lifetime: .ping,
                 disabled: false
-            )
-            , .millisecond
+            ),
+            .millisecond
         )
-
     }
-
 }

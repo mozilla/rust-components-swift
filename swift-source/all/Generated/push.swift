@@ -6,10 +6,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-import MozillaRustComponents
+    import MozillaRustComponents
 #endif
 
-fileprivate extension RustBuffer {
+private extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -29,7 +29,7 @@ fileprivate extension RustBuffer {
     }
 }
 
-fileprivate extension ForeignBytes {
+private extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -42,7 +42,7 @@ fileprivate extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-fileprivate extension Data {
+private extension Data {
     init(rustBuffer: RustBuffer) {
         // TODO: This copies the buffer. Can we read directly from a
         // Rust buffer?
@@ -64,15 +64,15 @@ fileprivate extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
+private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -82,38 +82,38 @@ fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offs
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
+    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
-    let range = reader.offset..<(reader.offset+count)
+private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
+    let range = reader.offset ..< (reader.offset + count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer({ buffer in
+    value.withUnsafeMutableBufferPointer { buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    })
+    }
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return Float(bitPattern: try readInt(&reader))
+private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return try Float(bitPattern: readInt(&reader))
 }
 
 // Reads a float at the current offset.
-fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return Double(bitPattern: try readInt(&reader))
+private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return try Double(bitPattern: readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -121,11 +121,11 @@ fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Boo
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-fileprivate func createWriter() -> [UInt8] {
+private func createWriter() -> [UInt8] {
     return []
 }
 
-fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -133,22 +133,22 @@ fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: S
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous go the Rust trait of the same name.
-fileprivate protocol FfiConverter {
+private protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -159,7 +159,7 @@ fileprivate protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
+private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
 
 extension FfiConverterPrimitive {
     public static func lift(_ value: FfiType) throws -> SwiftType {
@@ -173,7 +173,7 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
@@ -187,14 +187,15 @@ extension FfiConverterRustBuffer {
     }
 
     public static func lower(_ value: SwiftType) -> RustBuffer {
-          var writer = createWriter()
-          write(value, into: &writer)
-          return RustBuffer(bytes: writer)
+        var writer = createWriter()
+        write(value, into: &writer)
+        return RustBuffer(bytes: writer)
     }
 }
+
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-fileprivate enum UniffiInternalError: LocalizedError {
+private enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -220,15 +221,15 @@ fileprivate enum UniffiInternalError: LocalizedError {
     }
 }
 
-fileprivate let CALL_SUCCESS: Int8 = 0
-fileprivate let CALL_ERROR: Int8 = 1
-fileprivate let CALL_PANIC: Int8 = 2
+private let CALL_SUCCESS: Int8 = 0
+private let CALL_ERROR: Int8 = 1
+private let CALL_PANIC: Int8 = 2
 
-fileprivate extension RustCallStatus {
+private extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer.init(
+            errorBuf: RustBuffer(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -245,42 +246,41 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 }
 
 private func rustCallWithError<T, F: FfiConverter>
-    (_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
     where F.SwiftType: Error, F.FfiType == RustBuffer
-    {
-    try makeRustCall(callback, errorHandler: { return try errorFfiConverter.lift($0) })
+{
+    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
-    var callStatus = RustCallStatus.init()
+    var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
     switch callStatus.code {
-        case CALL_SUCCESS:
-            return returnedVal
+    case CALL_SUCCESS:
+        return returnedVal
 
-        case CALL_ERROR:
-            throw try errorHandler(callStatus.errorBuf)
+    case CALL_ERROR:
+        throw try errorHandler(callStatus.errorBuf)
 
-        case CALL_PANIC:
-            // When the rust code sees a panic, it tries to construct a RustBuffer
-            // with the message.  But if that code panics, then it just sends back
-            // an empty buffer.
-            if callStatus.errorBuf.len > 0 {
-                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
-            } else {
-                callStatus.errorBuf.deallocate()
-                throw UniffiInternalError.rustPanic("Rust panic")
-            }
+    case CALL_PANIC:
+        // When the rust code sees a panic, it tries to construct a RustBuffer
+        // with the message.  But if that code panics, then it just sends back
+        // an empty buffer.
+        if callStatus.errorBuf.len > 0 {
+            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.rustPanic("Rust panic")
+        }
 
-        default:
-            throw UniffiInternalError.unexpectedRustCallStatusCode
+    default:
+        throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 // Public interface members begin here.
 
-
-fileprivate struct FfiConverterInt8: FfiConverterPrimitive {
+private struct FfiConverterInt8: FfiConverterPrimitive {
     typealias FfiType = Int8
     typealias SwiftType = Int8
 
@@ -293,7 +293,7 @@ fileprivate struct FfiConverterInt8: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterBool : FfiConverter {
+private struct FfiConverterBool: FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
@@ -314,7 +314,7 @@ fileprivate struct FfiConverterBool : FfiConverter {
     }
 }
 
-fileprivate struct FfiConverterString: FfiConverter {
+private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -342,7 +342,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -352,16 +352,14 @@ fileprivate struct FfiConverterString: FfiConverter {
     }
 }
 
-
 public protocol PushManagerProtocol {
-    func `subscribe`(`channelId`: String, `scope`: String, `appServerSey`: String?) throws -> SubscriptionResponse
-    func `unsubscribe`(`channelId`: String) throws -> Bool
-    func `unsubscribeAll`() throws
-    func `update`(`registrationToken`: String) throws -> Bool
-    func `verifyConnection`() throws -> [PushSubscriptionChanged]
-    func `decrypt`(`channelId`: String, `body`: String, `encoding`: String, `salt`: String, `dh`: String) throws -> [Int8]
-    func `dispatchInfoForChid`(`channelId`: String) throws -> DispatchInfo?
-    
+    func subscribe(channelId: String, scope: String, appServerSey: String?) throws -> SubscriptionResponse
+    func unsubscribe(channelId: String) throws -> Bool
+    func unsubscribeAll() throws
+    func update(registrationToken: String) throws -> Bool
+    func verifyConnection() throws -> [PushSubscriptionChanged]
+    func decrypt(channelId: String, body: String, encoding: String, salt: String, dh: String) throws -> [Int8]
+    func dispatchInfoForChid(channelId: String) throws -> DispatchInfo?
 }
 
 public class PushManager: PushManagerProtocol {
@@ -373,103 +371,92 @@ public class PushManager: PushManagerProtocol {
     required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
-    public convenience init(`senderId`: String, `serverHost`: String = "updates.push.services.mozilla.com", `httpProtocol`: String = "https", `bridgeType`: BridgeType, `registrationId`: String = "", `databasePath`: String = "push.sqlite") throws {
-        self.init(unsafeFromRawPointer: try
-    
-    rustCallWithError(FfiConverterTypePushError.self) {
-    
-    push_7ec0_PushManager_new(
-        FfiConverterString.lower(`senderId`), 
-        FfiConverterString.lower(`serverHost`), 
-        FfiConverterString.lower(`httpProtocol`), 
-        FfiConverterTypeBridgeType.lower(`bridgeType`), 
-        FfiConverterString.lower(`registrationId`), 
-        FfiConverterString.lower(`databasePath`), $0)
-})
+
+    public convenience init(senderId: String, serverHost: String = "updates.push.services.mozilla.com", httpProtocol: String = "https", bridgeType: BridgeType, registrationId: String = "", databasePath: String = "push.sqlite") throws {
+        try self.init(unsafeFromRawPointer:
+
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_new(
+                    FfiConverterString.lower(senderId),
+                    FfiConverterString.lower(serverHost),
+                    FfiConverterString.lower(httpProtocol),
+                    FfiConverterTypeBridgeType.lower(bridgeType),
+                    FfiConverterString.lower(registrationId),
+                    FfiConverterString.lower(databasePath), $0
+                )
+            })
     }
 
     deinit {
         try! rustCall { ffi_push_7ec0_PushManager_object_free(pointer, $0) }
     }
 
-    
-
-    
-    public func `subscribe`(`channelId`: String = "", `scope`: String = "", `appServerSey`: String? = nil) throws -> SubscriptionResponse {
+    public func subscribe(channelId: String = "", scope: String = "", appServerSey: String? = nil) throws -> SubscriptionResponse {
         return try FfiConverterTypeSubscriptionResponse.lift(
-            try
-    rustCallWithError(FfiConverterTypePushError.self) {
-    push_7ec0_PushManager_subscribe(self.pointer, 
-        FfiConverterString.lower(`channelId`), 
-        FfiConverterString.lower(`scope`), 
-        FfiConverterOptionString.lower(`appServerSey`), $0
-    )
-}
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_subscribe(self.pointer,
+                                                FfiConverterString.lower(channelId),
+                                                FfiConverterString.lower(scope),
+                                                FfiConverterOptionString.lower(appServerSey), $0)
+            }
         )
     }
-    public func `unsubscribe`(`channelId`: String) throws -> Bool {
-        return try FfiConverterBool.lift(
-            try
-    rustCallWithError(FfiConverterTypePushError.self) {
-    push_7ec0_PushManager_unsubscribe(self.pointer, 
-        FfiConverterString.lower(`channelId`), $0
-    )
-}
-        )
-    }
-    public func `unsubscribeAll`() throws {
-        try
-    rustCallWithError(FfiConverterTypePushError.self) {
-    push_7ec0_PushManager_unsubscribe_all(self.pointer, $0
-    )
-}
-    }
-    public func `update`(`registrationToken`: String) throws -> Bool {
-        return try FfiConverterBool.lift(
-            try
-    rustCallWithError(FfiConverterTypePushError.self) {
-    push_7ec0_PushManager_update(self.pointer, 
-        FfiConverterString.lower(`registrationToken`), $0
-    )
-}
-        )
-    }
-    public func `verifyConnection`() throws -> [PushSubscriptionChanged] {
-        return try FfiConverterSequenceTypePushSubscriptionChanged.lift(
-            try
-    rustCallWithError(FfiConverterTypePushError.self) {
-    push_7ec0_PushManager_verify_connection(self.pointer, $0
-    )
-}
-        )
-    }
-    public func `decrypt`(`channelId`: String, `body`: String, `encoding`: String = "aes128gcm", `salt`: String = "", `dh`: String = "") throws -> [Int8] {
-        return try FfiConverterSequenceInt8.lift(
-            try
-    rustCallWithError(FfiConverterTypePushError.self) {
-    push_7ec0_PushManager_decrypt(self.pointer, 
-        FfiConverterString.lower(`channelId`), 
-        FfiConverterString.lower(`body`), 
-        FfiConverterString.lower(`encoding`), 
-        FfiConverterString.lower(`salt`), 
-        FfiConverterString.lower(`dh`), $0
-    )
-}
-        )
-    }
-    public func `dispatchInfoForChid`(`channelId`: String) throws -> DispatchInfo? {
-        return try FfiConverterOptionTypeDispatchInfo.lift(
-            try
-    rustCallWithError(FfiConverterTypePushError.self) {
-    push_7ec0_PushManager_dispatch_info_for_chid(self.pointer, 
-        FfiConverterString.lower(`channelId`), $0
-    )
-}
-        )
-    }
-    
-}
 
+    public func unsubscribe(channelId: String) throws -> Bool {
+        return try FfiConverterBool.lift(
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_unsubscribe(self.pointer,
+                                                  FfiConverterString.lower(channelId), $0)
+            }
+        )
+    }
+
+    public func unsubscribeAll() throws {
+        try
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_unsubscribe_all(self.pointer, $0)
+            }
+    }
+
+    public func update(registrationToken: String) throws -> Bool {
+        return try FfiConverterBool.lift(
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_update(self.pointer,
+                                             FfiConverterString.lower(registrationToken), $0)
+            }
+        )
+    }
+
+    public func verifyConnection() throws -> [PushSubscriptionChanged] {
+        return try FfiConverterSequenceTypePushSubscriptionChanged.lift(
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_verify_connection(self.pointer, $0)
+            }
+        )
+    }
+
+    public func decrypt(channelId: String, body: String, encoding: String = "aes128gcm", salt: String = "", dh: String = "") throws -> [Int8] {
+        return try FfiConverterSequenceInt8.lift(
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_decrypt(self.pointer,
+                                              FfiConverterString.lower(channelId),
+                                              FfiConverterString.lower(body),
+                                              FfiConverterString.lower(encoding),
+                                              FfiConverterString.lower(salt),
+                                              FfiConverterString.lower(dh), $0)
+            }
+        )
+    }
+
+    public func dispatchInfoForChid(channelId: String) throws -> DispatchInfo? {
+        return try FfiConverterOptionTypeDispatchInfo.lift(
+            rustCallWithError(FfiConverterTypePushError.self) {
+                push_7ec0_PushManager_dispatch_info_for_chid(self.pointer,
+                                                             FfiConverterString.lower(channelId), $0)
+            }
+        )
+    }
+}
 
 public struct FfiConverterTypePushManager: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -480,7 +467,7 @@ public struct FfiConverterTypePushManager: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if (ptr == nil) {
+        if ptr == nil {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -501,60 +488,56 @@ public struct FfiConverterTypePushManager: FfiConverter {
     }
 }
 
-
 public struct DispatchInfo {
-    public var `scope`: String
-    public var `endpoint`: String
-    public var `appServerKey`: String?
+    public var scope: String
+    public var endpoint: String
+    public var appServerKey: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`scope`: String, `endpoint`: String, `appServerKey`: String?) {
-        self.`scope` = `scope`
-        self.`endpoint` = `endpoint`
-        self.`appServerKey` = `appServerKey`
+    public init(scope: String, endpoint: String, appServerKey: String?) {
+        self.scope = scope
+        self.endpoint = endpoint
+        self.appServerKey = appServerKey
     }
 }
 
-
 extension DispatchInfo: Equatable, Hashable {
-    public static func ==(lhs: DispatchInfo, rhs: DispatchInfo) -> Bool {
-        if lhs.`scope` != rhs.`scope` {
+    public static func == (lhs: DispatchInfo, rhs: DispatchInfo) -> Bool {
+        if lhs.scope != rhs.scope {
             return false
         }
-        if lhs.`endpoint` != rhs.`endpoint` {
+        if lhs.endpoint != rhs.endpoint {
             return false
         }
-        if lhs.`appServerKey` != rhs.`appServerKey` {
+        if lhs.appServerKey != rhs.appServerKey {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`scope`)
-        hasher.combine(`endpoint`)
-        hasher.combine(`appServerKey`)
+        hasher.combine(scope)
+        hasher.combine(endpoint)
+        hasher.combine(appServerKey)
     }
 }
-
 
 public struct FfiConverterTypeDispatchInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DispatchInfo {
         return try DispatchInfo(
-            `scope`: FfiConverterString.read(from: &buf), 
-            `endpoint`: FfiConverterString.read(from: &buf), 
-            `appServerKey`: FfiConverterOptionString.read(from: &buf)
+            scope: FfiConverterString.read(from: &buf),
+            endpoint: FfiConverterString.read(from: &buf),
+            appServerKey: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: DispatchInfo, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`scope`, into: &buf)
-        FfiConverterString.write(value.`endpoint`, into: &buf)
-        FfiConverterOptionString.write(value.`appServerKey`, into: &buf)
+        FfiConverterString.write(value.scope, into: &buf)
+        FfiConverterString.write(value.endpoint, into: &buf)
+        FfiConverterOptionString.write(value.appServerKey, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeDispatchInfo_lift(_ buf: RustBuffer) throws -> DispatchInfo {
     return try FfiConverterTypeDispatchInfo.lift(buf)
@@ -564,52 +547,48 @@ public func FfiConverterTypeDispatchInfo_lower(_ value: DispatchInfo) -> RustBuf
     return FfiConverterTypeDispatchInfo.lower(value)
 }
 
-
 public struct KeyInfo {
-    public var `auth`: String
-    public var `p256dh`: String
+    public var auth: String
+    public var p256dh: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`auth`: String, `p256dh`: String) {
-        self.`auth` = `auth`
-        self.`p256dh` = `p256dh`
+    public init(auth: String, p256dh: String) {
+        self.auth = auth
+        self.p256dh = p256dh
     }
 }
 
-
 extension KeyInfo: Equatable, Hashable {
-    public static func ==(lhs: KeyInfo, rhs: KeyInfo) -> Bool {
-        if lhs.`auth` != rhs.`auth` {
+    public static func == (lhs: KeyInfo, rhs: KeyInfo) -> Bool {
+        if lhs.auth != rhs.auth {
             return false
         }
-        if lhs.`p256dh` != rhs.`p256dh` {
+        if lhs.p256dh != rhs.p256dh {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`auth`)
-        hasher.combine(`p256dh`)
+        hasher.combine(auth)
+        hasher.combine(p256dh)
     }
 }
-
 
 public struct FfiConverterTypeKeyInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> KeyInfo {
         return try KeyInfo(
-            `auth`: FfiConverterString.read(from: &buf), 
-            `p256dh`: FfiConverterString.read(from: &buf)
+            auth: FfiConverterString.read(from: &buf),
+            p256dh: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: KeyInfo, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`auth`, into: &buf)
-        FfiConverterString.write(value.`p256dh`, into: &buf)
+        FfiConverterString.write(value.auth, into: &buf)
+        FfiConverterString.write(value.p256dh, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeKeyInfo_lift(_ buf: RustBuffer) throws -> KeyInfo {
     return try FfiConverterTypeKeyInfo.lift(buf)
@@ -619,52 +598,48 @@ public func FfiConverterTypeKeyInfo_lower(_ value: KeyInfo) -> RustBuffer {
     return FfiConverterTypeKeyInfo.lower(value)
 }
 
-
 public struct PushSubscriptionChanged {
-    public var `channelId`: String
-    public var `scope`: String
+    public var channelId: String
+    public var scope: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`channelId`: String, `scope`: String) {
-        self.`channelId` = `channelId`
-        self.`scope` = `scope`
+    public init(channelId: String, scope: String) {
+        self.channelId = channelId
+        self.scope = scope
     }
 }
 
-
 extension PushSubscriptionChanged: Equatable, Hashable {
-    public static func ==(lhs: PushSubscriptionChanged, rhs: PushSubscriptionChanged) -> Bool {
-        if lhs.`channelId` != rhs.`channelId` {
+    public static func == (lhs: PushSubscriptionChanged, rhs: PushSubscriptionChanged) -> Bool {
+        if lhs.channelId != rhs.channelId {
             return false
         }
-        if lhs.`scope` != rhs.`scope` {
+        if lhs.scope != rhs.scope {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`channelId`)
-        hasher.combine(`scope`)
+        hasher.combine(channelId)
+        hasher.combine(scope)
     }
 }
-
 
 public struct FfiConverterTypePushSubscriptionChanged: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PushSubscriptionChanged {
         return try PushSubscriptionChanged(
-            `channelId`: FfiConverterString.read(from: &buf), 
-            `scope`: FfiConverterString.read(from: &buf)
+            channelId: FfiConverterString.read(from: &buf),
+            scope: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: PushSubscriptionChanged, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`channelId`, into: &buf)
-        FfiConverterString.write(value.`scope`, into: &buf)
+        FfiConverterString.write(value.channelId, into: &buf)
+        FfiConverterString.write(value.scope, into: &buf)
     }
 }
-
 
 public func FfiConverterTypePushSubscriptionChanged_lift(_ buf: RustBuffer) throws -> PushSubscriptionChanged {
     return try FfiConverterTypePushSubscriptionChanged.lift(buf)
@@ -674,52 +649,48 @@ public func FfiConverterTypePushSubscriptionChanged_lower(_ value: PushSubscript
     return FfiConverterTypePushSubscriptionChanged.lower(value)
 }
 
-
 public struct SubscriptionInfo {
-    public var `endpoint`: String
-    public var `keys`: KeyInfo
+    public var endpoint: String
+    public var keys: KeyInfo
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`endpoint`: String, `keys`: KeyInfo) {
-        self.`endpoint` = `endpoint`
-        self.`keys` = `keys`
+    public init(endpoint: String, keys: KeyInfo) {
+        self.endpoint = endpoint
+        self.keys = keys
     }
 }
 
-
 extension SubscriptionInfo: Equatable, Hashable {
-    public static func ==(lhs: SubscriptionInfo, rhs: SubscriptionInfo) -> Bool {
-        if lhs.`endpoint` != rhs.`endpoint` {
+    public static func == (lhs: SubscriptionInfo, rhs: SubscriptionInfo) -> Bool {
+        if lhs.endpoint != rhs.endpoint {
             return false
         }
-        if lhs.`keys` != rhs.`keys` {
+        if lhs.keys != rhs.keys {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`endpoint`)
-        hasher.combine(`keys`)
+        hasher.combine(endpoint)
+        hasher.combine(keys)
     }
 }
-
 
 public struct FfiConverterTypeSubscriptionInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SubscriptionInfo {
         return try SubscriptionInfo(
-            `endpoint`: FfiConverterString.read(from: &buf), 
-            `keys`: FfiConverterTypeKeyInfo.read(from: &buf)
+            endpoint: FfiConverterString.read(from: &buf),
+            keys: FfiConverterTypeKeyInfo.read(from: &buf)
         )
     }
 
     public static func write(_ value: SubscriptionInfo, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`endpoint`, into: &buf)
-        FfiConverterTypeKeyInfo.write(value.`keys`, into: &buf)
+        FfiConverterString.write(value.endpoint, into: &buf)
+        FfiConverterTypeKeyInfo.write(value.keys, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeSubscriptionInfo_lift(_ buf: RustBuffer) throws -> SubscriptionInfo {
     return try FfiConverterTypeSubscriptionInfo.lift(buf)
@@ -729,52 +700,48 @@ public func FfiConverterTypeSubscriptionInfo_lower(_ value: SubscriptionInfo) ->
     return FfiConverterTypeSubscriptionInfo.lower(value)
 }
 
-
 public struct SubscriptionResponse {
-    public var `channelId`: String
-    public var `subscriptionInfo`: SubscriptionInfo
+    public var channelId: String
+    public var subscriptionInfo: SubscriptionInfo
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`channelId`: String, `subscriptionInfo`: SubscriptionInfo) {
-        self.`channelId` = `channelId`
-        self.`subscriptionInfo` = `subscriptionInfo`
+    public init(channelId: String, subscriptionInfo: SubscriptionInfo) {
+        self.channelId = channelId
+        self.subscriptionInfo = subscriptionInfo
     }
 }
 
-
 extension SubscriptionResponse: Equatable, Hashable {
-    public static func ==(lhs: SubscriptionResponse, rhs: SubscriptionResponse) -> Bool {
-        if lhs.`channelId` != rhs.`channelId` {
+    public static func == (lhs: SubscriptionResponse, rhs: SubscriptionResponse) -> Bool {
+        if lhs.channelId != rhs.channelId {
             return false
         }
-        if lhs.`subscriptionInfo` != rhs.`subscriptionInfo` {
+        if lhs.subscriptionInfo != rhs.subscriptionInfo {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`channelId`)
-        hasher.combine(`subscriptionInfo`)
+        hasher.combine(channelId)
+        hasher.combine(subscriptionInfo)
     }
 }
-
 
 public struct FfiConverterTypeSubscriptionResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SubscriptionResponse {
         return try SubscriptionResponse(
-            `channelId`: FfiConverterString.read(from: &buf), 
-            `subscriptionInfo`: FfiConverterTypeSubscriptionInfo.read(from: &buf)
+            channelId: FfiConverterString.read(from: &buf),
+            subscriptionInfo: FfiConverterTypeSubscriptionInfo.read(from: &buf)
         )
     }
 
     public static func write(_ value: SubscriptionResponse, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`channelId`, into: &buf)
-        FfiConverterTypeSubscriptionInfo.write(value.`subscriptionInfo`, into: &buf)
+        FfiConverterString.write(value.channelId, into: &buf)
+        FfiConverterTypeSubscriptionInfo.write(value.subscriptionInfo, into: &buf)
     }
 }
-
 
 public func FfiConverterTypeSubscriptionResponse_lift(_ buf: RustBuffer) throws -> SubscriptionResponse {
     return try FfiConverterTypeSubscriptionResponse.lift(buf)
@@ -787,11 +754,10 @@ public func FfiConverterTypeSubscriptionResponse_lower(_ value: SubscriptionResp
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum BridgeType {
-    
-    case `fcm`
-    case `adm`
-    case `apns`
-    case `test`
+    case fcm
+    case adm
+    case apns
+    case test
 }
 
 public struct FfiConverterTypeBridgeType: FfiConverterRustBuffer {
@@ -800,42 +766,34 @@ public struct FfiConverterTypeBridgeType: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BridgeType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        
-        case 1: return .`fcm`
-        
-        case 2: return .`adm`
-        
-        case 3: return .`apns`
-        
-        case 4: return .`test`
-        
+        case 1: return .fcm
+
+        case 2: return .adm
+
+        case 3: return .apns
+
+        case 4: return .test
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: BridgeType, into buf: inout [UInt8]) {
         switch value {
-        
-        
-        case .`fcm`:
+        case .fcm:
             writeInt(&buf, Int32(1))
-        
-        
-        case .`adm`:
+
+        case .adm:
             writeInt(&buf, Int32(2))
-        
-        
-        case .`apns`:
+
+        case .apns:
             writeInt(&buf, Int32(3))
-        
-        
-        case .`test`:
+
+        case .test:
             writeInt(&buf, Int32(4))
-        
         }
     }
 }
-
 
 public func FfiConverterTypeBridgeType_lift(_ buf: RustBuffer) throws -> BridgeType {
     return try FfiConverterTypeBridgeType.lift(buf)
@@ -845,60 +803,53 @@ public func FfiConverterTypeBridgeType_lower(_ value: BridgeType) -> RustBuffer 
     return FfiConverterTypeBridgeType.lower(value)
 }
 
-
 extension BridgeType: Equatable, Hashable {}
 
-
-
 public enum PushError {
-
-    
-    
     // Simple error enums only carry a message
     case GeneralError(message: String)
-    
+
     // Simple error enums only carry a message
     case CryptoError(message: String)
-    
+
     // Simple error enums only carry a message
     case CommunicationError(message: String)
-    
+
     // Simple error enums only carry a message
     case CommunicationServerError(message: String)
-    
+
     // Simple error enums only carry a message
     case AlreadyRegisteredError(message: String)
-    
+
     // Simple error enums only carry a message
     case StorageError(message: String)
-    
+
     // Simple error enums only carry a message
     case RecordNotFoundError(message: String)
-    
+
     // Simple error enums only carry a message
     case StorageSqlError(message: String)
-    
+
     // Simple error enums only carry a message
     case MissingRegistrationTokenError(message: String)
-    
+
     // Simple error enums only carry a message
     case TranscodingError(message: String)
-    
+
     // Simple error enums only carry a message
     case UrlParseError(message: String)
-    
+
     // Simple error enums only carry a message
     case JsonDeserializeError(message: String)
-    
+
     // Simple error enums only carry a message
     case UaidNotRecognizedError(message: String)
-    
+
     // Simple error enums only carry a message
     case RequestError(message: String)
-    
+
     // Simple error enums only carry a message
     case OpenDatabaseError(message: String)
-    
 }
 
 public struct FfiConverterTypePushError: FfiConverterRustBuffer {
@@ -907,70 +858,65 @@ public struct FfiConverterTypePushError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PushError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        case 1: return try .GeneralError(
+                message: FfiConverterString.read(from: &buf)
+            )
 
-        
+        case 2: return try .CryptoError(
+                message: FfiConverterString.read(from: &buf)
+            )
 
-        
-        case 1: return .GeneralError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 2: return .CryptoError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 3: return .CommunicationError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 4: return .CommunicationServerError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 5: return .AlreadyRegisteredError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 6: return .StorageError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 7: return .RecordNotFoundError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 8: return .StorageSqlError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 9: return .MissingRegistrationTokenError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 10: return .TranscodingError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 11: return .UrlParseError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 12: return .JsonDeserializeError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 13: return .UaidNotRecognizedError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 14: return .RequestError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
-        case 15: return .OpenDatabaseError(
-            message: try FfiConverterString.read(from: &buf)
-        )
-        
+        case 3: return try .CommunicationError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return try .CommunicationServerError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 5: return try .AlreadyRegisteredError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 6: return try .StorageError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 7: return try .RecordNotFoundError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 8: return try .StorageSqlError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 9: return try .MissingRegistrationTokenError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 10: return try .TranscodingError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 11: return try .UrlParseError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 12: return try .JsonDeserializeError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 13: return try .UaidNotRecognizedError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 14: return try .RequestError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 15: return try .OpenDatabaseError(
+                message: FfiConverterString.read(from: &buf)
+            )
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -978,10 +924,6 @@ public struct FfiConverterTypePushError: FfiConverterRustBuffer {
 
     public static func write(_ value: PushError, into buf: inout [UInt8]) {
         switch value {
-
-        
-
-        
         case let .GeneralError(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
@@ -1027,18 +969,15 @@ public struct FfiConverterTypePushError: FfiConverterRustBuffer {
         case let .OpenDatabaseError(message):
             writeInt(&buf, Int32(15))
             FfiConverterString.write(message, into: &buf)
-
-        
         }
     }
 }
 
-
 extension PushError: Equatable, Hashable {}
 
-extension PushError: Error { }
+extension PushError: Error {}
 
-fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1059,7 +998,7 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterOptionTypeDispatchInfo: FfiConverterRustBuffer {
+private struct FfiConverterOptionTypeDispatchInfo: FfiConverterRustBuffer {
     typealias SwiftType = DispatchInfo?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1080,7 +1019,7 @@ fileprivate struct FfiConverterOptionTypeDispatchInfo: FfiConverterRustBuffer {
     }
 }
 
-fileprivate struct FfiConverterSequenceInt8: FfiConverterRustBuffer {
+private struct FfiConverterSequenceInt8: FfiConverterRustBuffer {
     typealias SwiftType = [Int8]
 
     public static func write(_ value: [Int8], into buf: inout [UInt8]) {
@@ -1096,13 +1035,13 @@ fileprivate struct FfiConverterSequenceInt8: FfiConverterRustBuffer {
         var seq = [Int8]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterInt8.read(from: &buf))
+            try seq.append(FfiConverterInt8.read(from: &buf))
         }
         return seq
     }
 }
 
-fileprivate struct FfiConverterSequenceTypePushSubscriptionChanged: FfiConverterRustBuffer {
+private struct FfiConverterSequenceTypePushSubscriptionChanged: FfiConverterRustBuffer {
     typealias SwiftType = [PushSubscriptionChanged]
 
     public static func write(_ value: [PushSubscriptionChanged], into buf: inout [UInt8]) {
@@ -1118,7 +1057,7 @@ fileprivate struct FfiConverterSequenceTypePushSubscriptionChanged: FfiConverter
         var seq = [PushSubscriptionChanged]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            seq.append(try FfiConverterTypePushSubscriptionChanged.read(from: &buf))
+            try seq.append(FfiConverterTypePushSubscriptionChanged.read(from: &buf))
         }
         return seq
     }
@@ -1133,6 +1072,5 @@ public enum PushLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {
-    }
+    func initialize() {}
 }
