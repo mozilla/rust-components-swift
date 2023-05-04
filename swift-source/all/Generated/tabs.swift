@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_tabs_dffd_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_tabs_97b9_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_tabs_dffd_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_tabs_97b9_rustbuffer_free(self, $0) }
     }
 }
 
@@ -358,13 +358,13 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     }
 
     deinit {
-        try! rustCall { ffi_tabs_dffd_TabsBridgedEngine_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_97b9_TabsBridgedEngine_object_free(pointer, $0) }
     }
 
     public func lastSync() throws -> Int64 {
         return try FfiConverterInt64.lift(
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_last_sync(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_last_sync(self.pointer, $0)
             }
         )
     }
@@ -372,7 +372,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func setLastSync(lastSync: Int64) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_set_last_sync(self.pointer,
+                tabs_97b9_TabsBridgedEngine_set_last_sync(self.pointer,
                                                           FfiConverterInt64.lower(lastSync), $0)
             }
     }
@@ -380,7 +380,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func syncId() throws -> String? {
         return try FfiConverterOptionString.lift(
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_sync_id(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_sync_id(self.pointer, $0)
             }
         )
     }
@@ -388,7 +388,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func resetSyncId() throws -> String {
         return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_reset_sync_id(self.pointer, $0)
             }
         )
     }
@@ -396,7 +396,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func ensureCurrentSyncId(newSyncId: String) throws -> String {
         return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
+                tabs_97b9_TabsBridgedEngine_ensure_current_sync_id(self.pointer,
                                                                    FfiConverterString.lower(newSyncId), $0)
             }
         )
@@ -405,7 +405,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func prepareForSync(clientData: String) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_prepare_for_sync(self.pointer,
+                tabs_97b9_TabsBridgedEngine_prepare_for_sync(self.pointer,
                                                              FfiConverterString.lower(clientData), $0)
             }
     }
@@ -413,14 +413,14 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func syncStarted() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_sync_started(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_sync_started(self.pointer, $0)
             }
     }
 
     public func storeIncoming(incomingEnvelopesAsJson: [String]) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_store_incoming(self.pointer,
+                tabs_97b9_TabsBridgedEngine_store_incoming(self.pointer,
                                                            FfiConverterSequenceString.lower(incomingEnvelopesAsJson), $0)
             }
     }
@@ -428,7 +428,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func apply() throws -> [String] {
         return try FfiConverterSequenceString.lift(
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_apply(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_apply(self.pointer, $0)
             }
         )
     }
@@ -436,7 +436,7 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid]) throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_set_uploaded(self.pointer,
+                tabs_97b9_TabsBridgedEngine_set_uploaded(self.pointer,
                                                          FfiConverterInt64.lower(newTimestamp),
                                                          FfiConverterSequenceTypeTabsGuid.lower(uploadedIds), $0)
             }
@@ -445,21 +445,21 @@ public class TabsBridgedEngine: TabsBridgedEngineProtocol {
     public func syncFinished() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_sync_finished(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_sync_finished(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_reset(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_reset(self.pointer, $0)
             }
     }
 
     public func wipe() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsBridgedEngine_wipe(self.pointer, $0)
+                tabs_97b9_TabsBridgedEngine_wipe(self.pointer, $0)
             }
     }
 }
@@ -517,21 +517,21 @@ public class TabsStore: TabsStoreProtocol {
         self.init(unsafeFromRawPointer: try!
 
             rustCall {
-                tabs_dffd_TabsStore_new(
+                tabs_97b9_TabsStore_new(
                     FfiConverterString.lower(path), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_tabs_dffd_TabsStore_object_free(pointer, $0) }
+        try! rustCall { ffi_tabs_97b9_TabsStore_object_free(pointer, $0) }
     }
 
     public func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(
             try!
                 rustCall {
-                    tabs_dffd_TabsStore_get_all(self.pointer, $0)
+                    tabs_97b9_TabsStore_get_all(self.pointer, $0)
                 }
         )
     }
@@ -539,7 +539,7 @@ public class TabsStore: TabsStoreProtocol {
     public func setLocalTabs(remoteTabs: [RemoteTabRecord]) {
         try!
             rustCall {
-                tabs_dffd_TabsStore_set_local_tabs(self.pointer,
+                tabs_97b9_TabsStore_set_local_tabs(self.pointer,
                                                    FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs), $0)
             }
     }
@@ -547,21 +547,21 @@ public class TabsStore: TabsStoreProtocol {
     public func registerWithSyncManager() {
         try!
             rustCall {
-                tabs_dffd_TabsStore_register_with_sync_manager(self.pointer, $0)
+                tabs_97b9_TabsStore_register_with_sync_manager(self.pointer, $0)
             }
     }
 
     public func reset() throws {
         try
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsStore_reset(self.pointer, $0)
+                tabs_97b9_TabsStore_reset(self.pointer, $0)
             }
     }
 
     public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localId: String) throws -> String {
         return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeTabsApiError.self) {
-                tabs_dffd_TabsStore_sync(self.pointer,
+                tabs_97b9_TabsStore_sync(self.pointer,
                                          FfiConverterString.lower(keyId),
                                          FfiConverterString.lower(accessToken),
                                          FfiConverterString.lower(syncKey),
@@ -575,7 +575,7 @@ public class TabsStore: TabsStoreProtocol {
         return try! FfiConverterTypeTabsBridgedEngine.lift(
             try!
                 rustCall {
-                    tabs_dffd_TabsStore_bridged_engine(self.pointer, $0)
+                    tabs_97b9_TabsStore_bridged_engine(self.pointer, $0)
                 }
         )
     }
@@ -614,13 +614,13 @@ public struct FfiConverterTypeTabsStore: FfiConverter {
 public struct ClientRemoteTabs {
     public var clientId: String
     public var clientName: String
-    public var deviceType: TabsDeviceType
+    public var deviceType: DeviceType
     public var lastModified: Int64
     public var remoteTabs: [RemoteTabRecord]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(clientId: String, clientName: String, deviceType: TabsDeviceType, lastModified: Int64, remoteTabs: [RemoteTabRecord]) {
+    public init(clientId: String, clientName: String, deviceType: DeviceType, lastModified: Int64, remoteTabs: [RemoteTabRecord]) {
         self.clientId = clientId
         self.clientName = clientName
         self.deviceType = deviceType
@@ -663,7 +663,7 @@ public struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
         return try ClientRemoteTabs(
             clientId: FfiConverterString.read(from: &buf),
             clientName: FfiConverterString.read(from: &buf),
-            deviceType: FfiConverterTypeTabsDeviceType.read(from: &buf),
+            deviceType: FfiConverterTypeDeviceType.read(from: &buf),
             lastModified: FfiConverterInt64.read(from: &buf),
             remoteTabs: FfiConverterSequenceTypeRemoteTabRecord.read(from: &buf)
         )
@@ -672,7 +672,7 @@ public struct FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer {
     public static func write(_ value: ClientRemoteTabs, into buf: inout [UInt8]) {
         FfiConverterString.write(value.clientId, into: &buf)
         FfiConverterString.write(value.clientName, into: &buf)
-        FfiConverterTypeTabsDeviceType.write(value.deviceType, into: &buf)
+        FfiConverterTypeDeviceType.write(value.deviceType, into: &buf)
         FfiConverterInt64.write(value.lastModified, into: &buf)
         FfiConverterSequenceTypeRemoteTabRecord.write(value.remoteTabs, into: &buf)
     }
@@ -752,72 +752,6 @@ public func FfiConverterTypeRemoteTabRecord_lift(_ buf: RustBuffer) throws -> Re
 public func FfiConverterTypeRemoteTabRecord_lower(_ value: RemoteTabRecord) -> RustBuffer {
     return FfiConverterTypeRemoteTabRecord.lower(value)
 }
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-public enum TabsDeviceType {
-    case desktop
-    case mobile
-    case tablet
-    case vr
-    case tv
-    case unknown
-}
-
-public struct FfiConverterTypeTabsDeviceType: FfiConverterRustBuffer {
-    typealias SwiftType = TabsDeviceType
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsDeviceType {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        case 1: return .desktop
-
-        case 2: return .mobile
-
-        case 3: return .tablet
-
-        case 4: return .vr
-
-        case 5: return .tv
-
-        case 6: return .unknown
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: TabsDeviceType, into buf: inout [UInt8]) {
-        switch value {
-        case .desktop:
-            writeInt(&buf, Int32(1))
-
-        case .mobile:
-            writeInt(&buf, Int32(2))
-
-        case .tablet:
-            writeInt(&buf, Int32(3))
-
-        case .vr:
-            writeInt(&buf, Int32(4))
-
-        case .tv:
-            writeInt(&buf, Int32(5))
-
-        case .unknown:
-            writeInt(&buf, Int32(6))
-        }
-    }
-}
-
-public func FfiConverterTypeTabsDeviceType_lift(_ buf: RustBuffer) throws -> TabsDeviceType {
-    return try FfiConverterTypeTabsDeviceType.lift(buf)
-}
-
-public func FfiConverterTypeTabsDeviceType_lower(_ value: TabsDeviceType) -> RustBuffer {
-    return FfiConverterTypeTabsDeviceType.lower(value)
-}
-
-extension TabsDeviceType: Equatable, Hashable {}
 
 public enum TabsApiError {
     case SyncError(reason: String)

@@ -354,6 +354,18 @@ extension Nimbus: NimbusStartup {
         }
     }
 
+    public func setFetchEnabled(_ enabled: Bool) {
+        _ = catchAll(fetchQueue) { _ in
+            try self.nimbusClient.setFetchEnabled(flag: enabled)
+        }
+    }
+
+    public func isFetchEnabled() -> Bool {
+        return catchAll {
+            try self.nimbusClient.isFetchEnabled()
+        } ?? true
+    }
+
     public func applyPendingExperiments() -> Operation {
         catchAll(dbQueue) { _ in
             try self.applyPendingExperimentsOnThisThread()
@@ -387,6 +399,18 @@ extension Nimbus: NimbusStartup {
     public func setExperimentsLocally(_ experimentsJson: String) {
         _ = catchAll(dbQueue) { _ in
             try self.setExperimentsLocallyOnThisThread(experimentsJson)
+        }
+    }
+
+    public func resetEnrollmentsDatabase() -> Operation {
+        catchAll(dbQueue) { _ in
+            try self.nimbusClient.resetEnrollments()
+        }
+    }
+
+    public func dumpStateToLog() {
+        catchAll {
+            try self.nimbusClient.dumpStateToLog()
         }
     }
 }
@@ -452,6 +476,12 @@ public extension NimbusDisabled {
 
     func fetchExperiments() {}
 
+    func setFetchEnabled(_: Bool) {}
+
+    func isFetchEnabled() -> Bool {
+        false
+    }
+
     func applyPendingExperiments() -> Operation {
         BlockOperation()
     }
@@ -463,6 +493,10 @@ public extension NimbusDisabled {
     func setExperimentsLocally(_: URL) {}
 
     func setExperimentsLocally(_: String) {}
+
+    func resetEnrollmentsDatabase() -> Operation {
+        BlockOperation()
+    }
 
     func optOut(_: String) {}
 
@@ -483,6 +517,8 @@ public extension NimbusDisabled {
     func advanceEventTime(by _: TimeInterval) throws {}
 
     func clearEvents() {}
+
+    func dumpStateToLog() {}
 
     func getExperimentBranches(_: String) -> [Branch]? {
         return nil

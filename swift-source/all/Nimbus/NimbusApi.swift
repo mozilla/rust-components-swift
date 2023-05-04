@@ -99,6 +99,31 @@ public protocol NimbusStartup {
     /// - Parameter fileURL the URL of a JSON document in the app `Bundle`.
     ///
     func setExperimentsLocally(_ fileURL: URL)
+
+    /// Testing method to reset the enrollments and experiments database back to its initial state.
+    func resetEnrollmentsDatabase() -> Operation
+
+    /// Enable or disable fetching of experiments.
+    ///
+    /// This is performed on a background thread.
+    ///
+    /// This is only used during QA of the app, and not meant for application developers.
+    /// Application developers should allow users to opt out with `setGlobalUserParticipation`
+    /// instead.
+    ///
+    /// - Parameter enabled
+    func setFetchEnabled(_ enabled: Bool)
+
+    /// The complement for [setFetchEnabled].
+    ///
+    /// This is only used during QA of the app, and not meant for application developers.
+    ///
+    /// - Returns true if fetch is allowed
+    func isFetchEnabled() -> Bool
+
+    /// Dump the state of the Nimbus SDK to the rust log.
+    /// This is only useful for testing.
+    func dumpStateToLog()
 }
 
 public protocol NimbusUserConfiguration {
