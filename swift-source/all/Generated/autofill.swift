@@ -6,10 +6,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-    import MozillaRustComponents
+import MozillaRustComponents
 #endif
 
-private extension RustBuffer {
+fileprivate extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -29,7 +29,7 @@ private extension RustBuffer {
     }
 }
 
-private extension ForeignBytes {
+fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -42,7 +42,7 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
+fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
         // TODO: This copies the buffer. Can we read directly from a
         // Rust buffer?
@@ -64,15 +64,15 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -82,38 +82,38 @@ private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: 
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-    let range = reader.offset ..< (reader.offset + count)
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer { buffer in
+    value.withUnsafeMutableBufferPointer({ buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    }
+    })
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -121,11 +121,11 @@ private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
+fileprivate func createWriter() -> [UInt8] {
     return []
 }
 
-private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -133,22 +133,22 @@ private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Seque
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous go the Rust trait of the same name.
-private protocol FfiConverter {
+fileprivate protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -159,7 +159,7 @@ private protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
     public static func lift(_ value: FfiType) throws -> SwiftType {
@@ -173,7 +173,7 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
@@ -187,15 +187,14 @@ extension FfiConverterRustBuffer {
     }
 
     public static func lower(_ value: SwiftType) -> RustBuffer {
-        var writer = createWriter()
-        write(value, into: &writer)
-        return RustBuffer(bytes: writer)
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
     }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
+fileprivate enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -221,15 +220,15 @@ private enum UniffiInternalError: LocalizedError {
     }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_PANIC: Int8 = 2
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_PANIC: Int8 = 2
 
-private extension RustCallStatus {
+fileprivate extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer(
+            errorBuf: RustBuffer.init(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -246,41 +245,42 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 }
 
 private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+    (_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
     where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+    {
+    try makeRustCall(callback, errorHandler: { return try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
-    var callStatus = RustCallStatus()
+    var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     switch callStatus.code {
-    case CALL_SUCCESS:
-        return returnedVal
+        case CALL_SUCCESS:
+            return returnedVal
 
-    case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        case CALL_ERROR:
+            throw try errorHandler(callStatus.errorBuf)
 
-    case CALL_PANIC:
-        // When the rust code sees a panic, it tries to construct a RustBuffer
-        // with the message.  But if that code panics, then it just sends back
-        // an empty buffer.
-        if callStatus.errorBuf.len > 0 {
-            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.rustPanic("Rust panic")
-        }
+        case CALL_PANIC:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
 
-    default:
-        throw UniffiInternalError.unexpectedRustCallStatusCode
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 // Public interface members begin here.
 
-private struct FfiConverterInt64: FfiConverterPrimitive {
+
+fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     typealias FfiType = Int64
     typealias SwiftType = Int64
 
@@ -293,7 +293,7 @@ private struct FfiConverterInt64: FfiConverterPrimitive {
     }
 }
 
-private struct FfiConverterBool: FfiConverter {
+fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
@@ -314,7 +314,7 @@ private struct FfiConverterBool: FfiConverter {
     }
 }
 
-private struct FfiConverterString: FfiConverter {
+fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -342,7 +342,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -352,21 +352,23 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+
 public protocol StoreProtocol {
-    func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard
-    func getCreditCard(guid: String) throws -> CreditCard
-    func getAllCreditCards() throws -> [CreditCard]
-    func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws
-    func deleteCreditCard(guid: String) throws -> Bool
-    func touchCreditCard(guid: String) throws
-    func addAddress(a: UpdatableAddressFields) throws -> Address
-    func getAddress(guid: String) throws -> Address
-    func getAllAddresses() throws -> [Address]
-    func updateAddress(guid: String, a: UpdatableAddressFields) throws
-    func deleteAddress(guid: String) throws -> Bool
-    func touchAddress(guid: String) throws
-    func scrubEncryptedData() throws
-    func registerWithSyncManager()
+    func `addCreditCard`(`cc`: UpdatableCreditCardFields) throws -> CreditCard
+    func `getCreditCard`(`guid`: String) throws -> CreditCard
+    func `getAllCreditCards`() throws -> [CreditCard]
+    func `updateCreditCard`(`guid`: String, `cc`: UpdatableCreditCardFields) throws
+    func `deleteCreditCard`(`guid`: String) throws -> Bool
+    func `touchCreditCard`(`guid`: String) throws
+    func `addAddress`(`a`: UpdatableAddressFields) throws -> Address
+    func `getAddress`(`guid`: String) throws -> Address
+    func `getAllAddresses`() throws -> [Address]
+    func `updateAddress`(`guid`: String, `a`: UpdatableAddressFields) throws
+    func `deleteAddress`(`guid`: String) throws -> Bool
+    func `touchAddress`(`guid`: String) throws
+    func `scrubEncryptedData`() throws
+    func `registerWithSyncManager`() 
+    
 }
 
 public class Store: StoreProtocol {
@@ -378,139 +380,153 @@ public class Store: StoreProtocol {
     required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
-
-    public convenience init(dbpath: String) throws {
-        try self.init(unsafeFromRawPointer:
-
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_new(
-                    FfiConverterString.lower(dbpath), $0
-                )
-            })
+    public convenience init(`dbpath`: String) throws {
+        self.init(unsafeFromRawPointer: try
+    
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    
+    autofill_7499_Store_new(
+        FfiConverterString.lower(`dbpath`), $0)
+})
     }
 
     deinit {
         try! rustCall { ffi_autofill_7499_Store_object_free(pointer, $0) }
     }
 
-    public func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard {
+    
+
+    
+    public func `addCreditCard`(`cc`: UpdatableCreditCardFields) throws -> CreditCard {
         return try FfiConverterTypeCreditCard.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_add_credit_card(self.pointer,
-                                                    FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
-            }
-        )
-    }
-
-    public func getCreditCard(guid: String) throws -> CreditCard {
-        return try FfiConverterTypeCreditCard.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_credit_card(self.pointer,
-                                                    FfiConverterString.lower(guid), $0)
-            }
-        )
-    }
-
-    public func getAllCreditCards() throws -> [CreditCard] {
-        return try FfiConverterSequenceTypeCreditCard.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_all_credit_cards(self.pointer, $0)
-            }
-        )
-    }
-
-    public func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws {
-        try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_update_credit_card(self.pointer,
-                                                       FfiConverterString.lower(guid),
-                                                       FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
-            }
-    }
-
-    public func deleteCreditCard(guid: String) throws -> Bool {
-        return try FfiConverterBool.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_delete_credit_card(self.pointer,
-                                                       FfiConverterString.lower(guid), $0)
-            }
-        )
-    }
-
-    public func touchCreditCard(guid: String) throws {
-        try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_touch_credit_card(self.pointer,
-                                                      FfiConverterString.lower(guid), $0)
-            }
-    }
-
-    public func addAddress(a: UpdatableAddressFields) throws -> Address {
-        return try FfiConverterTypeAddress.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_add_address(self.pointer,
-                                                FfiConverterTypeUpdatableAddressFields.lower(a), $0)
-            }
-        )
-    }
-
-    public func getAddress(guid: String) throws -> Address {
-        return try FfiConverterTypeAddress.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_address(self.pointer,
-                                                FfiConverterString.lower(guid), $0)
-            }
-        )
-    }
-
-    public func getAllAddresses() throws -> [Address] {
-        return try FfiConverterSequenceTypeAddress.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_all_addresses(self.pointer, $0)
-            }
-        )
-    }
-
-    public func updateAddress(guid: String, a: UpdatableAddressFields) throws {
-        try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_update_address(self.pointer,
-                                                   FfiConverterString.lower(guid),
-                                                   FfiConverterTypeUpdatableAddressFields.lower(a), $0)
-            }
-    }
-
-    public func deleteAddress(guid: String) throws -> Bool {
-        return try FfiConverterBool.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_delete_address(self.pointer,
-                                                   FfiConverterString.lower(guid), $0)
-            }
-        )
-    }
-
-    public func touchAddress(guid: String) throws {
-        try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_touch_address(self.pointer,
-                                                  FfiConverterString.lower(guid), $0)
-            }
-    }
-
-    public func scrubEncryptedData() throws {
-        try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_scrub_encrypted_data(self.pointer, $0)
-            }
-    }
-
-    public func registerWithSyncManager() {
-        try!
-            rustCall {
-                autofill_7499_Store_register_with_sync_manager(self.pointer, $0)
-            }
-    }
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_add_credit_card(self.pointer, 
+        FfiConverterTypeUpdatableCreditCardFields.lower(`cc`), $0
+    )
 }
+        )
+    }
+    public func `getCreditCard`(`guid`: String) throws -> CreditCard {
+        return try FfiConverterTypeCreditCard.lift(
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_get_credit_card(self.pointer, 
+        FfiConverterString.lower(`guid`), $0
+    )
+}
+        )
+    }
+    public func `getAllCreditCards`() throws -> [CreditCard] {
+        return try FfiConverterSequenceTypeCreditCard.lift(
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_get_all_credit_cards(self.pointer, $0
+    )
+}
+        )
+    }
+    public func `updateCreditCard`(`guid`: String, `cc`: UpdatableCreditCardFields) throws {
+        try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_update_credit_card(self.pointer, 
+        FfiConverterString.lower(`guid`), 
+        FfiConverterTypeUpdatableCreditCardFields.lower(`cc`), $0
+    )
+}
+    }
+    public func `deleteCreditCard`(`guid`: String) throws -> Bool {
+        return try FfiConverterBool.lift(
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_delete_credit_card(self.pointer, 
+        FfiConverterString.lower(`guid`), $0
+    )
+}
+        )
+    }
+    public func `touchCreditCard`(`guid`: String) throws {
+        try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_touch_credit_card(self.pointer, 
+        FfiConverterString.lower(`guid`), $0
+    )
+}
+    }
+    public func `addAddress`(`a`: UpdatableAddressFields) throws -> Address {
+        return try FfiConverterTypeAddress.lift(
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_add_address(self.pointer, 
+        FfiConverterTypeUpdatableAddressFields.lower(`a`), $0
+    )
+}
+        )
+    }
+    public func `getAddress`(`guid`: String) throws -> Address {
+        return try FfiConverterTypeAddress.lift(
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_get_address(self.pointer, 
+        FfiConverterString.lower(`guid`), $0
+    )
+}
+        )
+    }
+    public func `getAllAddresses`() throws -> [Address] {
+        return try FfiConverterSequenceTypeAddress.lift(
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_get_all_addresses(self.pointer, $0
+    )
+}
+        )
+    }
+    public func `updateAddress`(`guid`: String, `a`: UpdatableAddressFields) throws {
+        try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_update_address(self.pointer, 
+        FfiConverterString.lower(`guid`), 
+        FfiConverterTypeUpdatableAddressFields.lower(`a`), $0
+    )
+}
+    }
+    public func `deleteAddress`(`guid`: String) throws -> Bool {
+        return try FfiConverterBool.lift(
+            try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_delete_address(self.pointer, 
+        FfiConverterString.lower(`guid`), $0
+    )
+}
+        )
+    }
+    public func `touchAddress`(`guid`: String) throws {
+        try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_touch_address(self.pointer, 
+        FfiConverterString.lower(`guid`), $0
+    )
+}
+    }
+    public func `scrubEncryptedData`() throws {
+        try
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    autofill_7499_Store_scrub_encrypted_data(self.pointer, $0
+    )
+}
+    }
+    public func `registerWithSyncManager`()  {
+        try!
+    rustCall() {
+    
+    autofill_7499_Store_register_with_sync_manager(self.pointer, $0
+    )
+}
+    }
+    
+}
+
 
 public struct FfiConverterTypeStore: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -521,7 +537,7 @@ public struct FfiConverterTypeStore: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
+        if (ptr == nil) {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -542,168 +558,172 @@ public struct FfiConverterTypeStore: FfiConverter {
     }
 }
 
+
 public struct Address {
-    public var guid: String
-    public var givenName: String
-    public var additionalName: String
-    public var familyName: String
-    public var organization: String
-    public var streetAddress: String
-    public var addressLevel3: String
-    public var addressLevel2: String
-    public var addressLevel1: String
-    public var postalCode: String
-    public var country: String
-    public var tel: String
-    public var email: String
-    public var timeCreated: Int64
-    public var timeLastUsed: Int64?
-    public var timeLastModified: Int64
-    public var timesUsed: Int64
+    public var `guid`: String
+    public var `givenName`: String
+    public var `additionalName`: String
+    public var `familyName`: String
+    public var `organization`: String
+    public var `streetAddress`: String
+    public var `addressLevel3`: String
+    public var `addressLevel2`: String
+    public var `addressLevel1`: String
+    public var `postalCode`: String
+    public var `country`: String
+    public var `tel`: String
+    public var `email`: String
+    public var `timeCreated`: Int64
+    public var `timeLastUsed`: Int64?
+    public var `timeLastModified`: Int64
+    public var `timesUsed`: Int64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(guid: String, givenName: String, additionalName: String, familyName: String, organization: String, streetAddress: String, addressLevel3: String, addressLevel2: String, addressLevel1: String, postalCode: String, country: String, tel: String, email: String, timeCreated: Int64, timeLastUsed: Int64?, timeLastModified: Int64, timesUsed: Int64) {
-        self.guid = guid
-        self.givenName = givenName
-        self.additionalName = additionalName
-        self.familyName = familyName
-        self.organization = organization
-        self.streetAddress = streetAddress
-        self.addressLevel3 = addressLevel3
-        self.addressLevel2 = addressLevel2
-        self.addressLevel1 = addressLevel1
-        self.postalCode = postalCode
-        self.country = country
-        self.tel = tel
-        self.email = email
-        self.timeCreated = timeCreated
-        self.timeLastUsed = timeLastUsed
-        self.timeLastModified = timeLastModified
-        self.timesUsed = timesUsed
+    public init(`guid`: String, `givenName`: String, `additionalName`: String, `familyName`: String, `organization`: String, `streetAddress`: String, `addressLevel3`: String, `addressLevel2`: String, `addressLevel1`: String, `postalCode`: String, `country`: String, `tel`: String, `email`: String, `timeCreated`: Int64, `timeLastUsed`: Int64?, `timeLastModified`: Int64, `timesUsed`: Int64) {
+        self.`guid` = `guid`
+        self.`givenName` = `givenName`
+        self.`additionalName` = `additionalName`
+        self.`familyName` = `familyName`
+        self.`organization` = `organization`
+        self.`streetAddress` = `streetAddress`
+        self.`addressLevel3` = `addressLevel3`
+        self.`addressLevel2` = `addressLevel2`
+        self.`addressLevel1` = `addressLevel1`
+        self.`postalCode` = `postalCode`
+        self.`country` = `country`
+        self.`tel` = `tel`
+        self.`email` = `email`
+        self.`timeCreated` = `timeCreated`
+        self.`timeLastUsed` = `timeLastUsed`
+        self.`timeLastModified` = `timeLastModified`
+        self.`timesUsed` = `timesUsed`
     }
 }
 
+
 extension Address: Equatable, Hashable {
-    public static func == (lhs: Address, rhs: Address) -> Bool {
-        if lhs.guid != rhs.guid {
+    public static func ==(lhs: Address, rhs: Address) -> Bool {
+        if lhs.`guid` != rhs.`guid` {
             return false
         }
-        if lhs.givenName != rhs.givenName {
+        if lhs.`givenName` != rhs.`givenName` {
             return false
         }
-        if lhs.additionalName != rhs.additionalName {
+        if lhs.`additionalName` != rhs.`additionalName` {
             return false
         }
-        if lhs.familyName != rhs.familyName {
+        if lhs.`familyName` != rhs.`familyName` {
             return false
         }
-        if lhs.organization != rhs.organization {
+        if lhs.`organization` != rhs.`organization` {
             return false
         }
-        if lhs.streetAddress != rhs.streetAddress {
+        if lhs.`streetAddress` != rhs.`streetAddress` {
             return false
         }
-        if lhs.addressLevel3 != rhs.addressLevel3 {
+        if lhs.`addressLevel3` != rhs.`addressLevel3` {
             return false
         }
-        if lhs.addressLevel2 != rhs.addressLevel2 {
+        if lhs.`addressLevel2` != rhs.`addressLevel2` {
             return false
         }
-        if lhs.addressLevel1 != rhs.addressLevel1 {
+        if lhs.`addressLevel1` != rhs.`addressLevel1` {
             return false
         }
-        if lhs.postalCode != rhs.postalCode {
+        if lhs.`postalCode` != rhs.`postalCode` {
             return false
         }
-        if lhs.country != rhs.country {
+        if lhs.`country` != rhs.`country` {
             return false
         }
-        if lhs.tel != rhs.tel {
+        if lhs.`tel` != rhs.`tel` {
             return false
         }
-        if lhs.email != rhs.email {
+        if lhs.`email` != rhs.`email` {
             return false
         }
-        if lhs.timeCreated != rhs.timeCreated {
+        if lhs.`timeCreated` != rhs.`timeCreated` {
             return false
         }
-        if lhs.timeLastUsed != rhs.timeLastUsed {
+        if lhs.`timeLastUsed` != rhs.`timeLastUsed` {
             return false
         }
-        if lhs.timeLastModified != rhs.timeLastModified {
+        if lhs.`timeLastModified` != rhs.`timeLastModified` {
             return false
         }
-        if lhs.timesUsed != rhs.timesUsed {
+        if lhs.`timesUsed` != rhs.`timesUsed` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(givenName)
-        hasher.combine(additionalName)
-        hasher.combine(familyName)
-        hasher.combine(organization)
-        hasher.combine(streetAddress)
-        hasher.combine(addressLevel3)
-        hasher.combine(addressLevel2)
-        hasher.combine(addressLevel1)
-        hasher.combine(postalCode)
-        hasher.combine(country)
-        hasher.combine(tel)
-        hasher.combine(email)
-        hasher.combine(timeCreated)
-        hasher.combine(timeLastUsed)
-        hasher.combine(timeLastModified)
-        hasher.combine(timesUsed)
+        hasher.combine(`guid`)
+        hasher.combine(`givenName`)
+        hasher.combine(`additionalName`)
+        hasher.combine(`familyName`)
+        hasher.combine(`organization`)
+        hasher.combine(`streetAddress`)
+        hasher.combine(`addressLevel3`)
+        hasher.combine(`addressLevel2`)
+        hasher.combine(`addressLevel1`)
+        hasher.combine(`postalCode`)
+        hasher.combine(`country`)
+        hasher.combine(`tel`)
+        hasher.combine(`email`)
+        hasher.combine(`timeCreated`)
+        hasher.combine(`timeLastUsed`)
+        hasher.combine(`timeLastModified`)
+        hasher.combine(`timesUsed`)
     }
 }
+
 
 public struct FfiConverterTypeAddress: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Address {
         return try Address(
-            guid: FfiConverterString.read(from: &buf),
-            givenName: FfiConverterString.read(from: &buf),
-            additionalName: FfiConverterString.read(from: &buf),
-            familyName: FfiConverterString.read(from: &buf),
-            organization: FfiConverterString.read(from: &buf),
-            streetAddress: FfiConverterString.read(from: &buf),
-            addressLevel3: FfiConverterString.read(from: &buf),
-            addressLevel2: FfiConverterString.read(from: &buf),
-            addressLevel1: FfiConverterString.read(from: &buf),
-            postalCode: FfiConverterString.read(from: &buf),
-            country: FfiConverterString.read(from: &buf),
-            tel: FfiConverterString.read(from: &buf),
-            email: FfiConverterString.read(from: &buf),
-            timeCreated: FfiConverterInt64.read(from: &buf),
-            timeLastUsed: FfiConverterOptionInt64.read(from: &buf),
-            timeLastModified: FfiConverterInt64.read(from: &buf),
-            timesUsed: FfiConverterInt64.read(from: &buf)
+            `guid`: FfiConverterString.read(from: &buf), 
+            `givenName`: FfiConverterString.read(from: &buf), 
+            `additionalName`: FfiConverterString.read(from: &buf), 
+            `familyName`: FfiConverterString.read(from: &buf), 
+            `organization`: FfiConverterString.read(from: &buf), 
+            `streetAddress`: FfiConverterString.read(from: &buf), 
+            `addressLevel3`: FfiConverterString.read(from: &buf), 
+            `addressLevel2`: FfiConverterString.read(from: &buf), 
+            `addressLevel1`: FfiConverterString.read(from: &buf), 
+            `postalCode`: FfiConverterString.read(from: &buf), 
+            `country`: FfiConverterString.read(from: &buf), 
+            `tel`: FfiConverterString.read(from: &buf), 
+            `email`: FfiConverterString.read(from: &buf), 
+            `timeCreated`: FfiConverterInt64.read(from: &buf), 
+            `timeLastUsed`: FfiConverterOptionInt64.read(from: &buf), 
+            `timeLastModified`: FfiConverterInt64.read(from: &buf), 
+            `timesUsed`: FfiConverterInt64.read(from: &buf)
         )
     }
 
     public static func write(_ value: Address, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.guid, into: &buf)
-        FfiConverterString.write(value.givenName, into: &buf)
-        FfiConverterString.write(value.additionalName, into: &buf)
-        FfiConverterString.write(value.familyName, into: &buf)
-        FfiConverterString.write(value.organization, into: &buf)
-        FfiConverterString.write(value.streetAddress, into: &buf)
-        FfiConverterString.write(value.addressLevel3, into: &buf)
-        FfiConverterString.write(value.addressLevel2, into: &buf)
-        FfiConverterString.write(value.addressLevel1, into: &buf)
-        FfiConverterString.write(value.postalCode, into: &buf)
-        FfiConverterString.write(value.country, into: &buf)
-        FfiConverterString.write(value.tel, into: &buf)
-        FfiConverterString.write(value.email, into: &buf)
-        FfiConverterInt64.write(value.timeCreated, into: &buf)
-        FfiConverterOptionInt64.write(value.timeLastUsed, into: &buf)
-        FfiConverterInt64.write(value.timeLastModified, into: &buf)
-        FfiConverterInt64.write(value.timesUsed, into: &buf)
+        FfiConverterString.write(value.`guid`, into: &buf)
+        FfiConverterString.write(value.`givenName`, into: &buf)
+        FfiConverterString.write(value.`additionalName`, into: &buf)
+        FfiConverterString.write(value.`familyName`, into: &buf)
+        FfiConverterString.write(value.`organization`, into: &buf)
+        FfiConverterString.write(value.`streetAddress`, into: &buf)
+        FfiConverterString.write(value.`addressLevel3`, into: &buf)
+        FfiConverterString.write(value.`addressLevel2`, into: &buf)
+        FfiConverterString.write(value.`addressLevel1`, into: &buf)
+        FfiConverterString.write(value.`postalCode`, into: &buf)
+        FfiConverterString.write(value.`country`, into: &buf)
+        FfiConverterString.write(value.`tel`, into: &buf)
+        FfiConverterString.write(value.`email`, into: &buf)
+        FfiConverterInt64.write(value.`timeCreated`, into: &buf)
+        FfiConverterOptionInt64.write(value.`timeLastUsed`, into: &buf)
+        FfiConverterInt64.write(value.`timeLastModified`, into: &buf)
+        FfiConverterInt64.write(value.`timesUsed`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeAddress_lift(_ buf: RustBuffer) throws -> Address {
     return try FfiConverterTypeAddress.lift(buf)
@@ -713,120 +733,124 @@ public func FfiConverterTypeAddress_lower(_ value: Address) -> RustBuffer {
     return FfiConverterTypeAddress.lower(value)
 }
 
+
 public struct CreditCard {
-    public var guid: String
-    public var ccName: String
-    public var ccNumberEnc: String
-    public var ccNumberLast4: String
-    public var ccExpMonth: Int64
-    public var ccExpYear: Int64
-    public var ccType: String
-    public var timeCreated: Int64
-    public var timeLastUsed: Int64?
-    public var timeLastModified: Int64
-    public var timesUsed: Int64
+    public var `guid`: String
+    public var `ccName`: String
+    public var `ccNumberEnc`: String
+    public var `ccNumberLast4`: String
+    public var `ccExpMonth`: Int64
+    public var `ccExpYear`: Int64
+    public var `ccType`: String
+    public var `timeCreated`: Int64
+    public var `timeLastUsed`: Int64?
+    public var `timeLastModified`: Int64
+    public var `timesUsed`: Int64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(guid: String, ccName: String, ccNumberEnc: String, ccNumberLast4: String, ccExpMonth: Int64, ccExpYear: Int64, ccType: String, timeCreated: Int64, timeLastUsed: Int64?, timeLastModified: Int64, timesUsed: Int64) {
-        self.guid = guid
-        self.ccName = ccName
-        self.ccNumberEnc = ccNumberEnc
-        self.ccNumberLast4 = ccNumberLast4
-        self.ccExpMonth = ccExpMonth
-        self.ccExpYear = ccExpYear
-        self.ccType = ccType
-        self.timeCreated = timeCreated
-        self.timeLastUsed = timeLastUsed
-        self.timeLastModified = timeLastModified
-        self.timesUsed = timesUsed
+    public init(`guid`: String, `ccName`: String, `ccNumberEnc`: String, `ccNumberLast4`: String, `ccExpMonth`: Int64, `ccExpYear`: Int64, `ccType`: String, `timeCreated`: Int64, `timeLastUsed`: Int64?, `timeLastModified`: Int64, `timesUsed`: Int64) {
+        self.`guid` = `guid`
+        self.`ccName` = `ccName`
+        self.`ccNumberEnc` = `ccNumberEnc`
+        self.`ccNumberLast4` = `ccNumberLast4`
+        self.`ccExpMonth` = `ccExpMonth`
+        self.`ccExpYear` = `ccExpYear`
+        self.`ccType` = `ccType`
+        self.`timeCreated` = `timeCreated`
+        self.`timeLastUsed` = `timeLastUsed`
+        self.`timeLastModified` = `timeLastModified`
+        self.`timesUsed` = `timesUsed`
     }
 }
 
+
 extension CreditCard: Equatable, Hashable {
-    public static func == (lhs: CreditCard, rhs: CreditCard) -> Bool {
-        if lhs.guid != rhs.guid {
+    public static func ==(lhs: CreditCard, rhs: CreditCard) -> Bool {
+        if lhs.`guid` != rhs.`guid` {
             return false
         }
-        if lhs.ccName != rhs.ccName {
+        if lhs.`ccName` != rhs.`ccName` {
             return false
         }
-        if lhs.ccNumberEnc != rhs.ccNumberEnc {
+        if lhs.`ccNumberEnc` != rhs.`ccNumberEnc` {
             return false
         }
-        if lhs.ccNumberLast4 != rhs.ccNumberLast4 {
+        if lhs.`ccNumberLast4` != rhs.`ccNumberLast4` {
             return false
         }
-        if lhs.ccExpMonth != rhs.ccExpMonth {
+        if lhs.`ccExpMonth` != rhs.`ccExpMonth` {
             return false
         }
-        if lhs.ccExpYear != rhs.ccExpYear {
+        if lhs.`ccExpYear` != rhs.`ccExpYear` {
             return false
         }
-        if lhs.ccType != rhs.ccType {
+        if lhs.`ccType` != rhs.`ccType` {
             return false
         }
-        if lhs.timeCreated != rhs.timeCreated {
+        if lhs.`timeCreated` != rhs.`timeCreated` {
             return false
         }
-        if lhs.timeLastUsed != rhs.timeLastUsed {
+        if lhs.`timeLastUsed` != rhs.`timeLastUsed` {
             return false
         }
-        if lhs.timeLastModified != rhs.timeLastModified {
+        if lhs.`timeLastModified` != rhs.`timeLastModified` {
             return false
         }
-        if lhs.timesUsed != rhs.timesUsed {
+        if lhs.`timesUsed` != rhs.`timesUsed` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(guid)
-        hasher.combine(ccName)
-        hasher.combine(ccNumberEnc)
-        hasher.combine(ccNumberLast4)
-        hasher.combine(ccExpMonth)
-        hasher.combine(ccExpYear)
-        hasher.combine(ccType)
-        hasher.combine(timeCreated)
-        hasher.combine(timeLastUsed)
-        hasher.combine(timeLastModified)
-        hasher.combine(timesUsed)
+        hasher.combine(`guid`)
+        hasher.combine(`ccName`)
+        hasher.combine(`ccNumberEnc`)
+        hasher.combine(`ccNumberLast4`)
+        hasher.combine(`ccExpMonth`)
+        hasher.combine(`ccExpYear`)
+        hasher.combine(`ccType`)
+        hasher.combine(`timeCreated`)
+        hasher.combine(`timeLastUsed`)
+        hasher.combine(`timeLastModified`)
+        hasher.combine(`timesUsed`)
     }
 }
+
 
 public struct FfiConverterTypeCreditCard: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CreditCard {
         return try CreditCard(
-            guid: FfiConverterString.read(from: &buf),
-            ccName: FfiConverterString.read(from: &buf),
-            ccNumberEnc: FfiConverterString.read(from: &buf),
-            ccNumberLast4: FfiConverterString.read(from: &buf),
-            ccExpMonth: FfiConverterInt64.read(from: &buf),
-            ccExpYear: FfiConverterInt64.read(from: &buf),
-            ccType: FfiConverterString.read(from: &buf),
-            timeCreated: FfiConverterInt64.read(from: &buf),
-            timeLastUsed: FfiConverterOptionInt64.read(from: &buf),
-            timeLastModified: FfiConverterInt64.read(from: &buf),
-            timesUsed: FfiConverterInt64.read(from: &buf)
+            `guid`: FfiConverterString.read(from: &buf), 
+            `ccName`: FfiConverterString.read(from: &buf), 
+            `ccNumberEnc`: FfiConverterString.read(from: &buf), 
+            `ccNumberLast4`: FfiConverterString.read(from: &buf), 
+            `ccExpMonth`: FfiConverterInt64.read(from: &buf), 
+            `ccExpYear`: FfiConverterInt64.read(from: &buf), 
+            `ccType`: FfiConverterString.read(from: &buf), 
+            `timeCreated`: FfiConverterInt64.read(from: &buf), 
+            `timeLastUsed`: FfiConverterOptionInt64.read(from: &buf), 
+            `timeLastModified`: FfiConverterInt64.read(from: &buf), 
+            `timesUsed`: FfiConverterInt64.read(from: &buf)
         )
     }
 
     public static func write(_ value: CreditCard, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.guid, into: &buf)
-        FfiConverterString.write(value.ccName, into: &buf)
-        FfiConverterString.write(value.ccNumberEnc, into: &buf)
-        FfiConverterString.write(value.ccNumberLast4, into: &buf)
-        FfiConverterInt64.write(value.ccExpMonth, into: &buf)
-        FfiConverterInt64.write(value.ccExpYear, into: &buf)
-        FfiConverterString.write(value.ccType, into: &buf)
-        FfiConverterInt64.write(value.timeCreated, into: &buf)
-        FfiConverterOptionInt64.write(value.timeLastUsed, into: &buf)
-        FfiConverterInt64.write(value.timeLastModified, into: &buf)
-        FfiConverterInt64.write(value.timesUsed, into: &buf)
+        FfiConverterString.write(value.`guid`, into: &buf)
+        FfiConverterString.write(value.`ccName`, into: &buf)
+        FfiConverterString.write(value.`ccNumberEnc`, into: &buf)
+        FfiConverterString.write(value.`ccNumberLast4`, into: &buf)
+        FfiConverterInt64.write(value.`ccExpMonth`, into: &buf)
+        FfiConverterInt64.write(value.`ccExpYear`, into: &buf)
+        FfiConverterString.write(value.`ccType`, into: &buf)
+        FfiConverterInt64.write(value.`timeCreated`, into: &buf)
+        FfiConverterOptionInt64.write(value.`timeLastUsed`, into: &buf)
+        FfiConverterInt64.write(value.`timeLastModified`, into: &buf)
+        FfiConverterInt64.write(value.`timesUsed`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeCreditCard_lift(_ buf: RustBuffer) throws -> CreditCard {
     return try FfiConverterTypeCreditCard.lift(buf)
@@ -836,128 +860,132 @@ public func FfiConverterTypeCreditCard_lower(_ value: CreditCard) -> RustBuffer 
     return FfiConverterTypeCreditCard.lower(value)
 }
 
+
 public struct UpdatableAddressFields {
-    public var givenName: String
-    public var additionalName: String
-    public var familyName: String
-    public var organization: String
-    public var streetAddress: String
-    public var addressLevel3: String
-    public var addressLevel2: String
-    public var addressLevel1: String
-    public var postalCode: String
-    public var country: String
-    public var tel: String
-    public var email: String
+    public var `givenName`: String
+    public var `additionalName`: String
+    public var `familyName`: String
+    public var `organization`: String
+    public var `streetAddress`: String
+    public var `addressLevel3`: String
+    public var `addressLevel2`: String
+    public var `addressLevel1`: String
+    public var `postalCode`: String
+    public var `country`: String
+    public var `tel`: String
+    public var `email`: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(givenName: String, additionalName: String, familyName: String, organization: String, streetAddress: String, addressLevel3: String, addressLevel2: String, addressLevel1: String, postalCode: String, country: String, tel: String, email: String) {
-        self.givenName = givenName
-        self.additionalName = additionalName
-        self.familyName = familyName
-        self.organization = organization
-        self.streetAddress = streetAddress
-        self.addressLevel3 = addressLevel3
-        self.addressLevel2 = addressLevel2
-        self.addressLevel1 = addressLevel1
-        self.postalCode = postalCode
-        self.country = country
-        self.tel = tel
-        self.email = email
+    public init(`givenName`: String, `additionalName`: String, `familyName`: String, `organization`: String, `streetAddress`: String, `addressLevel3`: String, `addressLevel2`: String, `addressLevel1`: String, `postalCode`: String, `country`: String, `tel`: String, `email`: String) {
+        self.`givenName` = `givenName`
+        self.`additionalName` = `additionalName`
+        self.`familyName` = `familyName`
+        self.`organization` = `organization`
+        self.`streetAddress` = `streetAddress`
+        self.`addressLevel3` = `addressLevel3`
+        self.`addressLevel2` = `addressLevel2`
+        self.`addressLevel1` = `addressLevel1`
+        self.`postalCode` = `postalCode`
+        self.`country` = `country`
+        self.`tel` = `tel`
+        self.`email` = `email`
     }
 }
 
+
 extension UpdatableAddressFields: Equatable, Hashable {
-    public static func == (lhs: UpdatableAddressFields, rhs: UpdatableAddressFields) -> Bool {
-        if lhs.givenName != rhs.givenName {
+    public static func ==(lhs: UpdatableAddressFields, rhs: UpdatableAddressFields) -> Bool {
+        if lhs.`givenName` != rhs.`givenName` {
             return false
         }
-        if lhs.additionalName != rhs.additionalName {
+        if lhs.`additionalName` != rhs.`additionalName` {
             return false
         }
-        if lhs.familyName != rhs.familyName {
+        if lhs.`familyName` != rhs.`familyName` {
             return false
         }
-        if lhs.organization != rhs.organization {
+        if lhs.`organization` != rhs.`organization` {
             return false
         }
-        if lhs.streetAddress != rhs.streetAddress {
+        if lhs.`streetAddress` != rhs.`streetAddress` {
             return false
         }
-        if lhs.addressLevel3 != rhs.addressLevel3 {
+        if lhs.`addressLevel3` != rhs.`addressLevel3` {
             return false
         }
-        if lhs.addressLevel2 != rhs.addressLevel2 {
+        if lhs.`addressLevel2` != rhs.`addressLevel2` {
             return false
         }
-        if lhs.addressLevel1 != rhs.addressLevel1 {
+        if lhs.`addressLevel1` != rhs.`addressLevel1` {
             return false
         }
-        if lhs.postalCode != rhs.postalCode {
+        if lhs.`postalCode` != rhs.`postalCode` {
             return false
         }
-        if lhs.country != rhs.country {
+        if lhs.`country` != rhs.`country` {
             return false
         }
-        if lhs.tel != rhs.tel {
+        if lhs.`tel` != rhs.`tel` {
             return false
         }
-        if lhs.email != rhs.email {
+        if lhs.`email` != rhs.`email` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(givenName)
-        hasher.combine(additionalName)
-        hasher.combine(familyName)
-        hasher.combine(organization)
-        hasher.combine(streetAddress)
-        hasher.combine(addressLevel3)
-        hasher.combine(addressLevel2)
-        hasher.combine(addressLevel1)
-        hasher.combine(postalCode)
-        hasher.combine(country)
-        hasher.combine(tel)
-        hasher.combine(email)
+        hasher.combine(`givenName`)
+        hasher.combine(`additionalName`)
+        hasher.combine(`familyName`)
+        hasher.combine(`organization`)
+        hasher.combine(`streetAddress`)
+        hasher.combine(`addressLevel3`)
+        hasher.combine(`addressLevel2`)
+        hasher.combine(`addressLevel1`)
+        hasher.combine(`postalCode`)
+        hasher.combine(`country`)
+        hasher.combine(`tel`)
+        hasher.combine(`email`)
     }
 }
+
 
 public struct FfiConverterTypeUpdatableAddressFields: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UpdatableAddressFields {
         return try UpdatableAddressFields(
-            givenName: FfiConverterString.read(from: &buf),
-            additionalName: FfiConverterString.read(from: &buf),
-            familyName: FfiConverterString.read(from: &buf),
-            organization: FfiConverterString.read(from: &buf),
-            streetAddress: FfiConverterString.read(from: &buf),
-            addressLevel3: FfiConverterString.read(from: &buf),
-            addressLevel2: FfiConverterString.read(from: &buf),
-            addressLevel1: FfiConverterString.read(from: &buf),
-            postalCode: FfiConverterString.read(from: &buf),
-            country: FfiConverterString.read(from: &buf),
-            tel: FfiConverterString.read(from: &buf),
-            email: FfiConverterString.read(from: &buf)
+            `givenName`: FfiConverterString.read(from: &buf), 
+            `additionalName`: FfiConverterString.read(from: &buf), 
+            `familyName`: FfiConverterString.read(from: &buf), 
+            `organization`: FfiConverterString.read(from: &buf), 
+            `streetAddress`: FfiConverterString.read(from: &buf), 
+            `addressLevel3`: FfiConverterString.read(from: &buf), 
+            `addressLevel2`: FfiConverterString.read(from: &buf), 
+            `addressLevel1`: FfiConverterString.read(from: &buf), 
+            `postalCode`: FfiConverterString.read(from: &buf), 
+            `country`: FfiConverterString.read(from: &buf), 
+            `tel`: FfiConverterString.read(from: &buf), 
+            `email`: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: UpdatableAddressFields, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.givenName, into: &buf)
-        FfiConverterString.write(value.additionalName, into: &buf)
-        FfiConverterString.write(value.familyName, into: &buf)
-        FfiConverterString.write(value.organization, into: &buf)
-        FfiConverterString.write(value.streetAddress, into: &buf)
-        FfiConverterString.write(value.addressLevel3, into: &buf)
-        FfiConverterString.write(value.addressLevel2, into: &buf)
-        FfiConverterString.write(value.addressLevel1, into: &buf)
-        FfiConverterString.write(value.postalCode, into: &buf)
-        FfiConverterString.write(value.country, into: &buf)
-        FfiConverterString.write(value.tel, into: &buf)
-        FfiConverterString.write(value.email, into: &buf)
+        FfiConverterString.write(value.`givenName`, into: &buf)
+        FfiConverterString.write(value.`additionalName`, into: &buf)
+        FfiConverterString.write(value.`familyName`, into: &buf)
+        FfiConverterString.write(value.`organization`, into: &buf)
+        FfiConverterString.write(value.`streetAddress`, into: &buf)
+        FfiConverterString.write(value.`addressLevel3`, into: &buf)
+        FfiConverterString.write(value.`addressLevel2`, into: &buf)
+        FfiConverterString.write(value.`addressLevel1`, into: &buf)
+        FfiConverterString.write(value.`postalCode`, into: &buf)
+        FfiConverterString.write(value.`country`, into: &buf)
+        FfiConverterString.write(value.`tel`, into: &buf)
+        FfiConverterString.write(value.`email`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeUpdatableAddressFields_lift(_ buf: RustBuffer) throws -> UpdatableAddressFields {
     return try FfiConverterTypeUpdatableAddressFields.lift(buf)
@@ -967,80 +995,84 @@ public func FfiConverterTypeUpdatableAddressFields_lower(_ value: UpdatableAddre
     return FfiConverterTypeUpdatableAddressFields.lower(value)
 }
 
+
 public struct UpdatableCreditCardFields {
-    public var ccName: String
-    public var ccNumberEnc: String
-    public var ccNumberLast4: String
-    public var ccExpMonth: Int64
-    public var ccExpYear: Int64
-    public var ccType: String
+    public var `ccName`: String
+    public var `ccNumberEnc`: String
+    public var `ccNumberLast4`: String
+    public var `ccExpMonth`: Int64
+    public var `ccExpYear`: Int64
+    public var `ccType`: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(ccName: String, ccNumberEnc: String, ccNumberLast4: String, ccExpMonth: Int64, ccExpYear: Int64, ccType: String) {
-        self.ccName = ccName
-        self.ccNumberEnc = ccNumberEnc
-        self.ccNumberLast4 = ccNumberLast4
-        self.ccExpMonth = ccExpMonth
-        self.ccExpYear = ccExpYear
-        self.ccType = ccType
+    public init(`ccName`: String, `ccNumberEnc`: String, `ccNumberLast4`: String, `ccExpMonth`: Int64, `ccExpYear`: Int64, `ccType`: String) {
+        self.`ccName` = `ccName`
+        self.`ccNumberEnc` = `ccNumberEnc`
+        self.`ccNumberLast4` = `ccNumberLast4`
+        self.`ccExpMonth` = `ccExpMonth`
+        self.`ccExpYear` = `ccExpYear`
+        self.`ccType` = `ccType`
     }
 }
 
+
 extension UpdatableCreditCardFields: Equatable, Hashable {
-    public static func == (lhs: UpdatableCreditCardFields, rhs: UpdatableCreditCardFields) -> Bool {
-        if lhs.ccName != rhs.ccName {
+    public static func ==(lhs: UpdatableCreditCardFields, rhs: UpdatableCreditCardFields) -> Bool {
+        if lhs.`ccName` != rhs.`ccName` {
             return false
         }
-        if lhs.ccNumberEnc != rhs.ccNumberEnc {
+        if lhs.`ccNumberEnc` != rhs.`ccNumberEnc` {
             return false
         }
-        if lhs.ccNumberLast4 != rhs.ccNumberLast4 {
+        if lhs.`ccNumberLast4` != rhs.`ccNumberLast4` {
             return false
         }
-        if lhs.ccExpMonth != rhs.ccExpMonth {
+        if lhs.`ccExpMonth` != rhs.`ccExpMonth` {
             return false
         }
-        if lhs.ccExpYear != rhs.ccExpYear {
+        if lhs.`ccExpYear` != rhs.`ccExpYear` {
             return false
         }
-        if lhs.ccType != rhs.ccType {
+        if lhs.`ccType` != rhs.`ccType` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(ccName)
-        hasher.combine(ccNumberEnc)
-        hasher.combine(ccNumberLast4)
-        hasher.combine(ccExpMonth)
-        hasher.combine(ccExpYear)
-        hasher.combine(ccType)
+        hasher.combine(`ccName`)
+        hasher.combine(`ccNumberEnc`)
+        hasher.combine(`ccNumberLast4`)
+        hasher.combine(`ccExpMonth`)
+        hasher.combine(`ccExpYear`)
+        hasher.combine(`ccType`)
     }
 }
+
 
 public struct FfiConverterTypeUpdatableCreditCardFields: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UpdatableCreditCardFields {
         return try UpdatableCreditCardFields(
-            ccName: FfiConverterString.read(from: &buf),
-            ccNumberEnc: FfiConverterString.read(from: &buf),
-            ccNumberLast4: FfiConverterString.read(from: &buf),
-            ccExpMonth: FfiConverterInt64.read(from: &buf),
-            ccExpYear: FfiConverterInt64.read(from: &buf),
-            ccType: FfiConverterString.read(from: &buf)
+            `ccName`: FfiConverterString.read(from: &buf), 
+            `ccNumberEnc`: FfiConverterString.read(from: &buf), 
+            `ccNumberLast4`: FfiConverterString.read(from: &buf), 
+            `ccExpMonth`: FfiConverterInt64.read(from: &buf), 
+            `ccExpYear`: FfiConverterInt64.read(from: &buf), 
+            `ccType`: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: UpdatableCreditCardFields, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.ccName, into: &buf)
-        FfiConverterString.write(value.ccNumberEnc, into: &buf)
-        FfiConverterString.write(value.ccNumberLast4, into: &buf)
-        FfiConverterInt64.write(value.ccExpMonth, into: &buf)
-        FfiConverterInt64.write(value.ccExpYear, into: &buf)
-        FfiConverterString.write(value.ccType, into: &buf)
+        FfiConverterString.write(value.`ccName`, into: &buf)
+        FfiConverterString.write(value.`ccNumberEnc`, into: &buf)
+        FfiConverterString.write(value.`ccNumberLast4`, into: &buf)
+        FfiConverterInt64.write(value.`ccExpMonth`, into: &buf)
+        FfiConverterInt64.write(value.`ccExpYear`, into: &buf)
+        FfiConverterString.write(value.`ccType`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeUpdatableCreditCardFields_lift(_ buf: RustBuffer) throws -> UpdatableCreditCardFields {
     return try FfiConverterTypeUpdatableCreditCardFields.lift(buf)
@@ -1050,12 +1082,16 @@ public func FfiConverterTypeUpdatableCreditCardFields_lower(_ value: UpdatableCr
     return FfiConverterTypeUpdatableCreditCardFields.lower(value)
 }
 
+
 public enum AutofillApiError {
-    case SqlError(reason: String)
+
+    
+    
+    case SqlError(`reason`: String)
     case InterruptedError
-    case CryptoError(reason: String)
-    case NoSuchRecord(guid: String)
-    case UnexpectedAutofillApiError(reason: String)
+    case CryptoError(`reason`: String)
+    case NoSuchRecord(`guid`: String)
+    case UnexpectedAutofillApiError(`reason`: String)
 }
 
 public struct FfiConverterTypeAutofillApiError: FfiConverterRustBuffer {
@@ -1064,53 +1100,68 @@ public struct FfiConverterTypeAutofillApiError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AutofillApiError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .SqlError(
-                reason: FfiConverterString.read(from: &buf)
+
+        
+
+        
+        case 1: return .SqlError(
+            `reason`: try FfiConverterString.read(from: &buf)
             )
         case 2: return .InterruptedError
-        case 3: return try .CryptoError(
-                reason: FfiConverterString.read(from: &buf)
+        case 3: return .CryptoError(
+            `reason`: try FfiConverterString.read(from: &buf)
             )
-        case 4: return try .NoSuchRecord(
-                guid: FfiConverterString.read(from: &buf)
+        case 4: return .NoSuchRecord(
+            `guid`: try FfiConverterString.read(from: &buf)
             )
-        case 5: return try .UnexpectedAutofillApiError(
-                reason: FfiConverterString.read(from: &buf)
+        case 5: return .UnexpectedAutofillApiError(
+            `reason`: try FfiConverterString.read(from: &buf)
             )
 
-        default: throw UniffiInternalError.unexpectedEnumCase
+         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AutofillApiError, into buf: inout [UInt8]) {
         switch value {
-        case let .SqlError(reason):
-            writeInt(&buf, Int32(1))
-            FfiConverterString.write(reason, into: &buf)
 
+        
+
+        
+        
+        case let .SqlError(`reason`):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(`reason`, into: &buf)
+            
+        
         case .InterruptedError:
             writeInt(&buf, Int32(2))
-
-        case let .CryptoError(reason):
+        
+        
+        case let .CryptoError(`reason`):
             writeInt(&buf, Int32(3))
-            FfiConverterString.write(reason, into: &buf)
-
-        case let .NoSuchRecord(guid):
+            FfiConverterString.write(`reason`, into: &buf)
+            
+        
+        case let .NoSuchRecord(`guid`):
             writeInt(&buf, Int32(4))
-            FfiConverterString.write(guid, into: &buf)
-
-        case let .UnexpectedAutofillApiError(reason):
+            FfiConverterString.write(`guid`, into: &buf)
+            
+        
+        case let .UnexpectedAutofillApiError(`reason`):
             writeInt(&buf, Int32(5))
-            FfiConverterString.write(reason, into: &buf)
+            FfiConverterString.write(`reason`, into: &buf)
+            
         }
     }
 }
 
+
 extension AutofillApiError: Equatable, Hashable {}
 
-extension AutofillApiError: Error {}
+extension AutofillApiError: Error { }
 
-private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
+fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1131,7 +1182,7 @@ private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypeAddress: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceTypeAddress: FfiConverterRustBuffer {
     typealias SwiftType = [Address]
 
     public static func write(_ value: [Address], into buf: inout [UInt8]) {
@@ -1147,13 +1198,13 @@ private struct FfiConverterSequenceTypeAddress: FfiConverterRustBuffer {
         var seq = [Address]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeAddress.read(from: &buf))
+            seq.append(try FfiConverterTypeAddress.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterSequenceTypeCreditCard: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceTypeCreditCard: FfiConverterRustBuffer {
     typealias SwiftType = [CreditCard]
 
     public static func write(_ value: [CreditCard], into buf: inout [UInt8]) {
@@ -1169,41 +1220,54 @@ private struct FfiConverterSequenceTypeCreditCard: FfiConverterRustBuffer {
         var seq = [CreditCard]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeCreditCard.read(from: &buf))
+            seq.append(try FfiConverterTypeCreditCard.read(from: &buf))
         }
         return seq
     }
 }
 
-public func createAutofillKey() throws -> String {
+public func `createAutofillKey`() throws -> String {
     return try FfiConverterString.lift(
-        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-            autofill_7499_create_autofill_key($0)
-        }
+        try
+    
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    
+    autofill_7499_create_autofill_key($0)
+}
     )
 }
 
-public func encryptString(key: String, cleartext: String) throws -> String {
+
+
+public func `encryptString`(`key`: String, `cleartext`: String) throws -> String {
     return try FfiConverterString.lift(
-        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-            autofill_7499_encrypt_string(
-                FfiConverterString.lower(key),
-                FfiConverterString.lower(cleartext), $0
-            )
-        }
+        try
+    
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    
+    autofill_7499_encrypt_string(
+        FfiConverterString.lower(`key`), 
+        FfiConverterString.lower(`cleartext`), $0)
+}
     )
 }
 
-public func decryptString(key: String, ciphertext: String) throws -> String {
+
+
+public func `decryptString`(`key`: String, `ciphertext`: String) throws -> String {
     return try FfiConverterString.lift(
-        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-            autofill_7499_decrypt_string(
-                FfiConverterString.lower(key),
-                FfiConverterString.lower(ciphertext), $0
-            )
-        }
+        try
+    
+    rustCallWithError(FfiConverterTypeAutofillApiError.self) {
+    
+    autofill_7499_decrypt_string(
+        FfiConverterString.lower(`key`), 
+        FfiConverterString.lower(`ciphertext`), $0)
+}
     )
 }
+
+
 
 /**
  * Top level initializers and tear down methods.
@@ -1214,5 +1278,6 @@ public enum AutofillLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {}
+    func initialize() {
+    }
 }

@@ -6,10 +6,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-    import MozillaRustComponents
+import MozillaRustComponents
 #endif
 
-private extension RustBuffer {
+fileprivate extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -29,7 +29,7 @@ private extension RustBuffer {
     }
 }
 
-private extension ForeignBytes {
+fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -42,7 +42,7 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
+fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
         // TODO: This copies the buffer. Can we read directly from a
         // Rust buffer?
@@ -64,15 +64,15 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -82,38 +82,38 @@ private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: 
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-    let range = reader.offset ..< (reader.offset + count)
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer { buffer in
+    value.withUnsafeMutableBufferPointer({ buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    }
+    })
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -121,11 +121,11 @@ private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
+fileprivate func createWriter() -> [UInt8] {
     return []
 }
 
-private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -133,22 +133,22 @@ private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Seque
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous go the Rust trait of the same name.
-private protocol FfiConverter {
+fileprivate protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -159,7 +159,7 @@ private protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
     public static func lift(_ value: FfiType) throws -> SwiftType {
@@ -173,7 +173,7 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
@@ -187,15 +187,14 @@ extension FfiConverterRustBuffer {
     }
 
     public static func lower(_ value: SwiftType) -> RustBuffer {
-        var writer = createWriter()
-        write(value, into: &writer)
-        return RustBuffer(bytes: writer)
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
     }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
+fileprivate enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -221,15 +220,15 @@ private enum UniffiInternalError: LocalizedError {
     }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_PANIC: Int8 = 2
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_PANIC: Int8 = 2
 
-private extension RustCallStatus {
+fileprivate extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer(
+            errorBuf: RustBuffer.init(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -246,41 +245,42 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 }
 
 private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+    (_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
     where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+    {
+    try makeRustCall(callback, errorHandler: { return try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
-    var callStatus = RustCallStatus()
+    var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     switch callStatus.code {
-    case CALL_SUCCESS:
-        return returnedVal
+        case CALL_SUCCESS:
+            return returnedVal
 
-    case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        case CALL_ERROR:
+            throw try errorHandler(callStatus.errorBuf)
 
-    case CALL_PANIC:
-        // When the rust code sees a panic, it tries to construct a RustBuffer
-        // with the message.  But if that code panics, then it just sends back
-        // an empty buffer.
-        if callStatus.errorBuf.len > 0 {
-            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.rustPanic("Rust panic")
-        }
+        case CALL_PANIC:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
 
-    default:
-        throw UniffiInternalError.unexpectedRustCallStatusCode
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 // Public interface members begin here.
 
-private struct FfiConverterUInt32: FfiConverterPrimitive {
+
+fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
     typealias FfiType = UInt32
     typealias SwiftType = UInt32
 
@@ -293,7 +293,7 @@ private struct FfiConverterUInt32: FfiConverterPrimitive {
     }
 }
 
-private struct FfiConverterString: FfiConverter {
+fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -321,7 +321,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -331,16 +331,16 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
-private extension NSLock {
+fileprivate extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
-        lock()
+        self.lock()
         defer { self.unlock() }
         return try f()
     }
 }
 
-private typealias UniFFICallbackHandle = UInt64
-private class UniFFICallbackHandleMap<T> {
+fileprivate typealias UniFFICallbackHandle = UInt64
+fileprivate class UniFFICallbackHandleMap<T> {
     private var leftMap: [UniFFICallbackHandle: T] = [:]
     private var counter: [UniFFICallbackHandle: UInt64] = [:]
     private var rightMap: [ObjectIdentifier: UniFFICallbackHandle] = [:]
@@ -394,40 +394,44 @@ private let IDX_CALLBACK_FREE: Int32 = 0
 
 // Declaration and FfiConverters for ApplicationErrorReporter Callback Interface
 
-public protocol ApplicationErrorReporter: AnyObject {
-    func reportError(typeName: String, message: String)
-    func reportBreadcrumb(message: String, module: String, line: UInt32, column: UInt32)
+public protocol ApplicationErrorReporter : AnyObject {
+    func `reportError`(`typeName`: String, `message`: String) 
+    func `reportBreadcrumb`(`message`: String, `module`: String, `line`: UInt32, `column`: UInt32) 
+    
 }
 
 // The ForeignCallback that is passed to Rust.
-private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCallback =
+fileprivate let foreignCallbackCallbackInterfaceApplicationErrorReporter : ForeignCallback =
     { (handle: UniFFICallbackHandle, method: Int32, args: RustBuffer, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
-        func invokeReportError(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
-            defer { args.deallocate() }
+        func `invokeReportError`(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
+        defer { args.deallocate() }
 
             var reader = createReader(data: Data(rustBuffer: args))
-            try swiftCallbackInterface.reportError(
-                typeName: FfiConverterString.read(from: &reader),
-                message: FfiConverterString.read(from: &reader)
-            )
+            swiftCallbackInterface.`reportError`(
+                    `typeName`:  try FfiConverterString.read(from: &reader), 
+                    `message`:  try FfiConverterString.read(from: &reader)
+                    )
             return RustBuffer()
-            // TODO: catch errors and report them back to Rust.
-            // https://github.com/mozilla/uniffi-rs/issues/351
+                // TODO catch errors and report them back to Rust.
+                // https://github.com/mozilla/uniffi-rs/issues/351
+
         }
-        func invokeReportBreadcrumb(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
-            defer { args.deallocate() }
+        func `invokeReportBreadcrumb`(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
+        defer { args.deallocate() }
 
             var reader = createReader(data: Data(rustBuffer: args))
-            try swiftCallbackInterface.reportBreadcrumb(
-                message: FfiConverterString.read(from: &reader),
-                module: FfiConverterString.read(from: &reader),
-                line: FfiConverterUInt32.read(from: &reader),
-                column: FfiConverterUInt32.read(from: &reader)
-            )
+            swiftCallbackInterface.`reportBreadcrumb`(
+                    `message`:  try FfiConverterString.read(from: &reader), 
+                    `module`:  try FfiConverterString.read(from: &reader), 
+                    `line`:  try FfiConverterUInt32.read(from: &reader), 
+                    `column`:  try FfiConverterUInt32.read(from: &reader)
+                    )
             return RustBuffer()
-            // TODO: catch errors and report them back to Rust.
-            // https://github.com/mozilla/uniffi-rs/issues/351
+                // TODO catch errors and report them back to Rust.
+                // https://github.com/mozilla/uniffi-rs/issues/351
+
         }
+        
 
         let cb: ApplicationErrorReporter
         do {
@@ -438,52 +442,51 @@ private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCal
         }
 
         switch method {
-        case IDX_CALLBACK_FREE:
-            FfiConverterCallbackInterfaceApplicationErrorReporter.drop(handle: handle)
-            // No return value.
-            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-            return 0
-        case 1:
-            do {
-                out_buf.pointee = try invokeReportError(cb, args)
-                // Value written to out buffer.
+            case IDX_CALLBACK_FREE:
+                FfiConverterCallbackInterfaceApplicationErrorReporter.drop(handle: handle)
+                // No return value.
                 // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-                return 1
-            } catch {
-                out_buf.pointee = FfiConverterString.lower(String(describing: error))
-                return -1
-            }
-        case 2:
-            do {
-                out_buf.pointee = try invokeReportBreadcrumb(cb, args)
-                // Value written to out buffer.
+                return 0
+            case 1:
+                do {
+                    out_buf.pointee = try `invokeReportError`(cb, args)
+                    // Value written to out buffer.
+                    // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+                    return 1
+                } catch let error {
+                    out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                    return -1
+                }
+            case 2:
+                do {
+                    out_buf.pointee = try `invokeReportBreadcrumb`(cb, args)
+                    // Value written to out buffer.
+                    // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
+                    return 1
+                } catch let error {
+                    out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                    return -1
+                }
+            
+            // This should never happen, because an out of bounds method index won't
+            // ever be used. Once we can catch errors, we should return an InternalError.
+            // https://github.com/mozilla/uniffi-rs/issues/351
+            default:
+                // An unexpected error happened.
                 // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-                return 1
-            } catch {
-                out_buf.pointee = FfiConverterString.lower(String(describing: error))
                 return -1
-            }
-
-        // This should never happen, because an out of bounds method index won't
-        // ever be used. Once we can catch errors, we should return an InternalError.
-        // https://github.com/mozilla/uniffi-rs/issues/351
-        default:
-            // An unexpected error happened.
-            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-            return -1
         }
     }
 
 // FfiConverter protocol for callback interfaces
-private enum FfiConverterCallbackInterfaceApplicationErrorReporter {
+fileprivate struct FfiConverterCallbackInterfaceApplicationErrorReporter {
     // Initialize our callback method with the scaffolding code
     private static var callbackInitialized = false
     private static func initCallback() {
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_errorsupport_684e_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
+                ffi_errorsupport_684e_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
         }
     }
-
     private static func ensureCallbackinitialized() {
         if !callbackInitialized {
             initCallback()
@@ -498,13 +501,13 @@ private enum FfiConverterCallbackInterfaceApplicationErrorReporter {
     private static var handleMap = UniFFICallbackHandleMap<ApplicationErrorReporter>()
 }
 
-extension FfiConverterCallbackInterfaceApplicationErrorReporter: FfiConverter {
+extension FfiConverterCallbackInterfaceApplicationErrorReporter : FfiConverter {
     typealias SwiftType = ApplicationErrorReporter
     // We can use Handle as the FfiType because it's a typealias to UInt64
     typealias FfiType = UniFFICallbackHandle
 
     public static func lift(_ handle: UniFFICallbackHandle) throws -> SwiftType {
-        ensureCallbackinitialized()
+        ensureCallbackinitialized();
         guard let callback = handleMap.get(handle: handle) else {
             throw UniffiInternalError.unexpectedStaleHandle
         }
@@ -512,39 +515,42 @@ extension FfiConverterCallbackInterfaceApplicationErrorReporter: FfiConverter {
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        ensureCallbackinitialized()
+        ensureCallbackinitialized();
         let handle: UniFFICallbackHandle = try readInt(&buf)
         return try lift(handle)
     }
 
     public static func lower(_ v: SwiftType) -> UniFFICallbackHandle {
-        ensureCallbackinitialized()
+        ensureCallbackinitialized();
         return handleMap.insert(obj: v)
     }
 
     public static func write(_ v: SwiftType, into buf: inout [UInt8]) {
-        ensureCallbackinitialized()
+        ensureCallbackinitialized();
         writeInt(&buf, lower(v))
     }
 }
 
-public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter) {
+public func `setApplicationErrorReporter`(`errorReporter`: ApplicationErrorReporter)  {
     try!
-
-        rustCall {
-            errorsupport_684e_set_application_error_reporter(
-                FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
-            )
-        }
+    
+    rustCall() {
+    
+    errorsupport_684e_set_application_error_reporter(
+        FfiConverterCallbackInterfaceApplicationErrorReporter.lower(`errorReporter`), $0)
+}
 }
 
-public func unsetApplicationErrorReporter() {
-    try!
 
-        rustCall {
-            errorsupport_684e_unset_application_error_reporter($0)
-        }
+public func `unsetApplicationErrorReporter`()  {
+    try!
+    
+    rustCall() {
+    
+    errorsupport_684e_unset_application_error_reporter($0)
 }
+}
+
 
 /**
  * Top level initializers and tear down methods.
@@ -555,5 +561,6 @@ public enum ErrorsupportLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {}
+    func initialize() {
+    }
 }

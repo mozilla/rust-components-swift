@@ -6,10 +6,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-    import MozillaRustComponents
+import MozillaRustComponents
 #endif
 
-private extension RustBuffer {
+fileprivate extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -29,7 +29,7 @@ private extension RustBuffer {
     }
 }
 
-private extension ForeignBytes {
+fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -42,7 +42,7 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
+fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
         // TODO: This copies the buffer. Can we read directly from a
         // Rust buffer?
@@ -64,15 +64,15 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -82,38 +82,38 @@ private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: 
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-    let range = reader.offset ..< (reader.offset + count)
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer { buffer in
+    value.withUnsafeMutableBufferPointer({ buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    }
+    })
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -121,11 +121,11 @@ private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
+fileprivate func createWriter() -> [UInt8] {
     return []
 }
 
-private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -133,22 +133,22 @@ private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Seque
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous go the Rust trait of the same name.
-private protocol FfiConverter {
+fileprivate protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -159,7 +159,7 @@ private protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
     public static func lift(_ value: FfiType) throws -> SwiftType {
@@ -173,7 +173,7 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
@@ -187,15 +187,14 @@ extension FfiConverterRustBuffer {
     }
 
     public static func lower(_ value: SwiftType) -> RustBuffer {
-        var writer = createWriter()
-        write(value, into: &writer)
-        return RustBuffer(bytes: writer)
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
     }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
+fileprivate enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -221,15 +220,15 @@ private enum UniffiInternalError: LocalizedError {
     }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_PANIC: Int8 = 2
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_PANIC: Int8 = 2
 
-private extension RustCallStatus {
+fileprivate extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer(
+            errorBuf: RustBuffer.init(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -246,41 +245,42 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 }
 
 private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
+    (_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
     where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+    {
+    try makeRustCall(callback, errorHandler: { return try errorFfiConverter.lift($0) })
 }
 
 private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
-    var callStatus = RustCallStatus()
+    var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     switch callStatus.code {
-    case CALL_SUCCESS:
-        return returnedVal
+        case CALL_SUCCESS:
+            return returnedVal
 
-    case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        case CALL_ERROR:
+            throw try errorHandler(callStatus.errorBuf)
 
-    case CALL_PANIC:
-        // When the rust code sees a panic, it tries to construct a RustBuffer
-        // with the message.  But if that code panics, then it just sends back
-        // an empty buffer.
-        if callStatus.errorBuf.len > 0 {
-            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.rustPanic("Rust panic")
-        }
+        case CALL_PANIC:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
 
-    default:
-        throw UniffiInternalError.unexpectedRustCallStatusCode
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 // Public interface members begin here.
 
-private struct FfiConverterBool: FfiConverter {
+
+fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
@@ -301,7 +301,7 @@ private struct FfiConverterBool: FfiConverter {
     }
 }
 
-private struct FfiConverterString: FfiConverter {
+fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -329,7 +329,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -339,7 +339,7 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
-private struct FfiConverterTimestamp: FfiConverterRustBuffer {
+fileprivate struct FfiConverterTimestamp: FfiConverterRustBuffer {
     typealias SwiftType = Date
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Date {
@@ -347,10 +347,10 @@ private struct FfiConverterTimestamp: FfiConverterRustBuffer {
         let nanoseconds: UInt32 = try readInt(&buf)
         if seconds >= 0 {
             let delta = Double(seconds) + (Double(nanoseconds) / 1.0e9)
-            return Date(timeIntervalSince1970: delta)
+            return Date.init(timeIntervalSince1970: delta)
         } else {
             let delta = Double(seconds) - (Double(nanoseconds) / 1.0e9)
-            return Date(timeIntervalSince1970: delta)
+            return Date.init(timeIntervalSince1970: delta)
         }
     }
 
@@ -374,10 +374,12 @@ private struct FfiConverterTimestamp: FfiConverterRustBuffer {
     }
 }
 
+
 public protocol SyncManagerProtocol {
-    func disconnect()
-    func sync(params: SyncParams) throws -> SyncResult
-    func getAvailableEngines() -> [String]
+    func `disconnect`() 
+    func `sync`(`params`: SyncParams) throws -> SyncResult
+    func `getAvailableEngines`()  -> [String]
+    
 }
 
 public class SyncManager: SyncManagerProtocol {
@@ -389,44 +391,53 @@ public class SyncManager: SyncManagerProtocol {
     required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
-
-    public convenience init() {
+    public convenience init()  {
         self.init(unsafeFromRawPointer: try!
-
-            rustCall {
-                syncmanager_a22a_SyncManager_new($0)
-            })
+    
+    rustCall() {
+    
+    syncmanager_a22a_SyncManager_new($0)
+})
     }
 
     deinit {
         try! rustCall { ffi_syncmanager_a22a_SyncManager_object_free(pointer, $0) }
     }
 
-    public func disconnect() {
-        try!
-            rustCall {
-                syncmanager_a22a_SyncManager_disconnect(self.pointer, $0)
-            }
-    }
+    
 
-    public func sync(params: SyncParams) throws -> SyncResult {
+    
+    public func `disconnect`()  {
+        try!
+    rustCall() {
+    
+    syncmanager_a22a_SyncManager_disconnect(self.pointer, $0
+    )
+}
+    }
+    public func `sync`(`params`: SyncParams) throws -> SyncResult {
         return try FfiConverterTypeSyncResult.lift(
-            rustCallWithError(FfiConverterTypeSyncManagerError.self) {
-                syncmanager_a22a_SyncManager_sync(self.pointer,
-                                                  FfiConverterTypeSyncParams.lower(params), $0)
-            }
+            try
+    rustCallWithError(FfiConverterTypeSyncManagerError.self) {
+    syncmanager_a22a_SyncManager_sync(self.pointer, 
+        FfiConverterTypeSyncParams.lower(`params`), $0
+    )
+}
         )
     }
-
-    public func getAvailableEngines() -> [String] {
+    public func `getAvailableEngines`()  -> [String] {
         return try! FfiConverterSequenceString.lift(
             try!
-                rustCall {
-                    syncmanager_a22a_SyncManager_get_available_engines(self.pointer, $0)
-                }
+    rustCall() {
+    
+    syncmanager_a22a_SyncManager_get_available_engines(self.pointer, $0
+    )
+}
         )
     }
+    
 }
+
 
 public struct FfiConverterTypeSyncManager: FfiConverter {
     typealias FfiType = UnsafeMutableRawPointer
@@ -437,7 +448,7 @@ public struct FfiConverterTypeSyncManager: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
+        if (ptr == nil) {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -458,56 +469,60 @@ public struct FfiConverterTypeSyncManager: FfiConverter {
     }
 }
 
+
 public struct DeviceSettings {
-    public var fxaDeviceId: String
-    public var name: String
-    public var kind: DeviceType
+    public var `fxaDeviceId`: String
+    public var `name`: String
+    public var `kind`: DeviceType
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(fxaDeviceId: String, name: String, kind: DeviceType) {
-        self.fxaDeviceId = fxaDeviceId
-        self.name = name
-        self.kind = kind
+    public init(`fxaDeviceId`: String, `name`: String, `kind`: DeviceType) {
+        self.`fxaDeviceId` = `fxaDeviceId`
+        self.`name` = `name`
+        self.`kind` = `kind`
     }
 }
 
+
 extension DeviceSettings: Equatable, Hashable {
-    public static func == (lhs: DeviceSettings, rhs: DeviceSettings) -> Bool {
-        if lhs.fxaDeviceId != rhs.fxaDeviceId {
+    public static func ==(lhs: DeviceSettings, rhs: DeviceSettings) -> Bool {
+        if lhs.`fxaDeviceId` != rhs.`fxaDeviceId` {
             return false
         }
-        if lhs.name != rhs.name {
+        if lhs.`name` != rhs.`name` {
             return false
         }
-        if lhs.kind != rhs.kind {
+        if lhs.`kind` != rhs.`kind` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(fxaDeviceId)
-        hasher.combine(name)
-        hasher.combine(kind)
+        hasher.combine(`fxaDeviceId`)
+        hasher.combine(`name`)
+        hasher.combine(`kind`)
     }
 }
+
 
 public struct FfiConverterTypeDeviceSettings: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DeviceSettings {
         return try DeviceSettings(
-            fxaDeviceId: FfiConverterString.read(from: &buf),
-            name: FfiConverterString.read(from: &buf),
-            kind: FfiConverterTypeDeviceType.read(from: &buf)
+            `fxaDeviceId`: FfiConverterString.read(from: &buf), 
+            `name`: FfiConverterString.read(from: &buf), 
+            `kind`: FfiConverterTypeDeviceType.read(from: &buf)
         )
     }
 
     public static func write(_ value: DeviceSettings, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.fxaDeviceId, into: &buf)
-        FfiConverterString.write(value.name, into: &buf)
-        FfiConverterTypeDeviceType.write(value.kind, into: &buf)
+        FfiConverterString.write(value.`fxaDeviceId`, into: &buf)
+        FfiConverterString.write(value.`name`, into: &buf)
+        FfiConverterTypeDeviceType.write(value.`kind`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeDeviceSettings_lift(_ buf: RustBuffer) throws -> DeviceSettings {
     return try FfiConverterTypeDeviceSettings.lift(buf)
@@ -517,64 +532,68 @@ public func FfiConverterTypeDeviceSettings_lower(_ value: DeviceSettings) -> Rus
     return FfiConverterTypeDeviceSettings.lower(value)
 }
 
+
 public struct SyncAuthInfo {
-    public var kid: String
-    public var fxaAccessToken: String
-    public var syncKey: String
-    public var tokenserverUrl: String
+    public var `kid`: String
+    public var `fxaAccessToken`: String
+    public var `syncKey`: String
+    public var `tokenserverUrl`: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(kid: String, fxaAccessToken: String, syncKey: String, tokenserverUrl: String) {
-        self.kid = kid
-        self.fxaAccessToken = fxaAccessToken
-        self.syncKey = syncKey
-        self.tokenserverUrl = tokenserverUrl
+    public init(`kid`: String, `fxaAccessToken`: String, `syncKey`: String, `tokenserverUrl`: String) {
+        self.`kid` = `kid`
+        self.`fxaAccessToken` = `fxaAccessToken`
+        self.`syncKey` = `syncKey`
+        self.`tokenserverUrl` = `tokenserverUrl`
     }
 }
 
+
 extension SyncAuthInfo: Equatable, Hashable {
-    public static func == (lhs: SyncAuthInfo, rhs: SyncAuthInfo) -> Bool {
-        if lhs.kid != rhs.kid {
+    public static func ==(lhs: SyncAuthInfo, rhs: SyncAuthInfo) -> Bool {
+        if lhs.`kid` != rhs.`kid` {
             return false
         }
-        if lhs.fxaAccessToken != rhs.fxaAccessToken {
+        if lhs.`fxaAccessToken` != rhs.`fxaAccessToken` {
             return false
         }
-        if lhs.syncKey != rhs.syncKey {
+        if lhs.`syncKey` != rhs.`syncKey` {
             return false
         }
-        if lhs.tokenserverUrl != rhs.tokenserverUrl {
+        if lhs.`tokenserverUrl` != rhs.`tokenserverUrl` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(kid)
-        hasher.combine(fxaAccessToken)
-        hasher.combine(syncKey)
-        hasher.combine(tokenserverUrl)
+        hasher.combine(`kid`)
+        hasher.combine(`fxaAccessToken`)
+        hasher.combine(`syncKey`)
+        hasher.combine(`tokenserverUrl`)
     }
 }
+
 
 public struct FfiConverterTypeSyncAuthInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncAuthInfo {
         return try SyncAuthInfo(
-            kid: FfiConverterString.read(from: &buf),
-            fxaAccessToken: FfiConverterString.read(from: &buf),
-            syncKey: FfiConverterString.read(from: &buf),
-            tokenserverUrl: FfiConverterString.read(from: &buf)
+            `kid`: FfiConverterString.read(from: &buf), 
+            `fxaAccessToken`: FfiConverterString.read(from: &buf), 
+            `syncKey`: FfiConverterString.read(from: &buf), 
+            `tokenserverUrl`: FfiConverterString.read(from: &buf)
         )
     }
 
     public static func write(_ value: SyncAuthInfo, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.kid, into: &buf)
-        FfiConverterString.write(value.fxaAccessToken, into: &buf)
-        FfiConverterString.write(value.syncKey, into: &buf)
-        FfiConverterString.write(value.tokenserverUrl, into: &buf)
+        FfiConverterString.write(value.`kid`, into: &buf)
+        FfiConverterString.write(value.`fxaAccessToken`, into: &buf)
+        FfiConverterString.write(value.`syncKey`, into: &buf)
+        FfiConverterString.write(value.`tokenserverUrl`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeSyncAuthInfo_lift(_ buf: RustBuffer) throws -> SyncAuthInfo {
     return try FfiConverterTypeSyncAuthInfo.lift(buf)
@@ -584,88 +603,92 @@ public func FfiConverterTypeSyncAuthInfo_lower(_ value: SyncAuthInfo) -> RustBuf
     return FfiConverterTypeSyncAuthInfo.lower(value)
 }
 
+
 public struct SyncParams {
-    public var reason: SyncReason
-    public var engines: SyncEngineSelection
-    public var enabledChanges: [String: Bool]
-    public var localEncryptionKeys: [String: String]
-    public var authInfo: SyncAuthInfo
-    public var persistedState: String?
-    public var deviceSettings: DeviceSettings
+    public var `reason`: SyncReason
+    public var `engines`: SyncEngineSelection
+    public var `enabledChanges`: [String: Bool]
+    public var `localEncryptionKeys`: [String: String]
+    public var `authInfo`: SyncAuthInfo
+    public var `persistedState`: String?
+    public var `deviceSettings`: DeviceSettings
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(reason: SyncReason, engines: SyncEngineSelection, enabledChanges: [String: Bool], localEncryptionKeys: [String: String], authInfo: SyncAuthInfo, persistedState: String?, deviceSettings: DeviceSettings) {
-        self.reason = reason
-        self.engines = engines
-        self.enabledChanges = enabledChanges
-        self.localEncryptionKeys = localEncryptionKeys
-        self.authInfo = authInfo
-        self.persistedState = persistedState
-        self.deviceSettings = deviceSettings
+    public init(`reason`: SyncReason, `engines`: SyncEngineSelection, `enabledChanges`: [String: Bool], `localEncryptionKeys`: [String: String], `authInfo`: SyncAuthInfo, `persistedState`: String?, `deviceSettings`: DeviceSettings) {
+        self.`reason` = `reason`
+        self.`engines` = `engines`
+        self.`enabledChanges` = `enabledChanges`
+        self.`localEncryptionKeys` = `localEncryptionKeys`
+        self.`authInfo` = `authInfo`
+        self.`persistedState` = `persistedState`
+        self.`deviceSettings` = `deviceSettings`
     }
 }
 
+
 extension SyncParams: Equatable, Hashable {
-    public static func == (lhs: SyncParams, rhs: SyncParams) -> Bool {
-        if lhs.reason != rhs.reason {
+    public static func ==(lhs: SyncParams, rhs: SyncParams) -> Bool {
+        if lhs.`reason` != rhs.`reason` {
             return false
         }
-        if lhs.engines != rhs.engines {
+        if lhs.`engines` != rhs.`engines` {
             return false
         }
-        if lhs.enabledChanges != rhs.enabledChanges {
+        if lhs.`enabledChanges` != rhs.`enabledChanges` {
             return false
         }
-        if lhs.localEncryptionKeys != rhs.localEncryptionKeys {
+        if lhs.`localEncryptionKeys` != rhs.`localEncryptionKeys` {
             return false
         }
-        if lhs.authInfo != rhs.authInfo {
+        if lhs.`authInfo` != rhs.`authInfo` {
             return false
         }
-        if lhs.persistedState != rhs.persistedState {
+        if lhs.`persistedState` != rhs.`persistedState` {
             return false
         }
-        if lhs.deviceSettings != rhs.deviceSettings {
+        if lhs.`deviceSettings` != rhs.`deviceSettings` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(reason)
-        hasher.combine(engines)
-        hasher.combine(enabledChanges)
-        hasher.combine(localEncryptionKeys)
-        hasher.combine(authInfo)
-        hasher.combine(persistedState)
-        hasher.combine(deviceSettings)
+        hasher.combine(`reason`)
+        hasher.combine(`engines`)
+        hasher.combine(`enabledChanges`)
+        hasher.combine(`localEncryptionKeys`)
+        hasher.combine(`authInfo`)
+        hasher.combine(`persistedState`)
+        hasher.combine(`deviceSettings`)
     }
 }
+
 
 public struct FfiConverterTypeSyncParams: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncParams {
         return try SyncParams(
-            reason: FfiConverterTypeSyncReason.read(from: &buf),
-            engines: FfiConverterTypeSyncEngineSelection.read(from: &buf),
-            enabledChanges: FfiConverterDictionaryStringBool.read(from: &buf),
-            localEncryptionKeys: FfiConverterDictionaryStringString.read(from: &buf),
-            authInfo: FfiConverterTypeSyncAuthInfo.read(from: &buf),
-            persistedState: FfiConverterOptionString.read(from: &buf),
-            deviceSettings: FfiConverterTypeDeviceSettings.read(from: &buf)
+            `reason`: FfiConverterTypeSyncReason.read(from: &buf), 
+            `engines`: FfiConverterTypeSyncEngineSelection.read(from: &buf), 
+            `enabledChanges`: FfiConverterDictionaryStringBool.read(from: &buf), 
+            `localEncryptionKeys`: FfiConverterDictionaryStringString.read(from: &buf), 
+            `authInfo`: FfiConverterTypeSyncAuthInfo.read(from: &buf), 
+            `persistedState`: FfiConverterOptionString.read(from: &buf), 
+            `deviceSettings`: FfiConverterTypeDeviceSettings.read(from: &buf)
         )
     }
 
     public static func write(_ value: SyncParams, into buf: inout [UInt8]) {
-        FfiConverterTypeSyncReason.write(value.reason, into: &buf)
-        FfiConverterTypeSyncEngineSelection.write(value.engines, into: &buf)
-        FfiConverterDictionaryStringBool.write(value.enabledChanges, into: &buf)
-        FfiConverterDictionaryStringString.write(value.localEncryptionKeys, into: &buf)
-        FfiConverterTypeSyncAuthInfo.write(value.authInfo, into: &buf)
-        FfiConverterOptionString.write(value.persistedState, into: &buf)
-        FfiConverterTypeDeviceSettings.write(value.deviceSettings, into: &buf)
+        FfiConverterTypeSyncReason.write(value.`reason`, into: &buf)
+        FfiConverterTypeSyncEngineSelection.write(value.`engines`, into: &buf)
+        FfiConverterDictionaryStringBool.write(value.`enabledChanges`, into: &buf)
+        FfiConverterDictionaryStringString.write(value.`localEncryptionKeys`, into: &buf)
+        FfiConverterTypeSyncAuthInfo.write(value.`authInfo`, into: &buf)
+        FfiConverterOptionString.write(value.`persistedState`, into: &buf)
+        FfiConverterTypeDeviceSettings.write(value.`deviceSettings`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeSyncParams_lift(_ buf: RustBuffer) throws -> SyncParams {
     return try FfiConverterTypeSyncParams.lift(buf)
@@ -675,88 +698,92 @@ public func FfiConverterTypeSyncParams_lower(_ value: SyncParams) -> RustBuffer 
     return FfiConverterTypeSyncParams.lower(value)
 }
 
+
 public struct SyncResult {
-    public var status: ServiceStatus
-    public var successful: [String]
-    public var failures: [String: String]
-    public var persistedState: String
-    public var declined: [String]?
-    public var nextSyncAllowedAt: Date?
-    public var telemetryJson: String?
+    public var `status`: ServiceStatus
+    public var `successful`: [String]
+    public var `failures`: [String: String]
+    public var `persistedState`: String
+    public var `declined`: [String]?
+    public var `nextSyncAllowedAt`: Date?
+    public var `telemetryJson`: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(status: ServiceStatus, successful: [String], failures: [String: String], persistedState: String, declined: [String]?, nextSyncAllowedAt: Date?, telemetryJson: String?) {
-        self.status = status
-        self.successful = successful
-        self.failures = failures
-        self.persistedState = persistedState
-        self.declined = declined
-        self.nextSyncAllowedAt = nextSyncAllowedAt
-        self.telemetryJson = telemetryJson
+    public init(`status`: ServiceStatus, `successful`: [String], `failures`: [String: String], `persistedState`: String, `declined`: [String]?, `nextSyncAllowedAt`: Date?, `telemetryJson`: String?) {
+        self.`status` = `status`
+        self.`successful` = `successful`
+        self.`failures` = `failures`
+        self.`persistedState` = `persistedState`
+        self.`declined` = `declined`
+        self.`nextSyncAllowedAt` = `nextSyncAllowedAt`
+        self.`telemetryJson` = `telemetryJson`
     }
 }
 
+
 extension SyncResult: Equatable, Hashable {
-    public static func == (lhs: SyncResult, rhs: SyncResult) -> Bool {
-        if lhs.status != rhs.status {
+    public static func ==(lhs: SyncResult, rhs: SyncResult) -> Bool {
+        if lhs.`status` != rhs.`status` {
             return false
         }
-        if lhs.successful != rhs.successful {
+        if lhs.`successful` != rhs.`successful` {
             return false
         }
-        if lhs.failures != rhs.failures {
+        if lhs.`failures` != rhs.`failures` {
             return false
         }
-        if lhs.persistedState != rhs.persistedState {
+        if lhs.`persistedState` != rhs.`persistedState` {
             return false
         }
-        if lhs.declined != rhs.declined {
+        if lhs.`declined` != rhs.`declined` {
             return false
         }
-        if lhs.nextSyncAllowedAt != rhs.nextSyncAllowedAt {
+        if lhs.`nextSyncAllowedAt` != rhs.`nextSyncAllowedAt` {
             return false
         }
-        if lhs.telemetryJson != rhs.telemetryJson {
+        if lhs.`telemetryJson` != rhs.`telemetryJson` {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(status)
-        hasher.combine(successful)
-        hasher.combine(failures)
-        hasher.combine(persistedState)
-        hasher.combine(declined)
-        hasher.combine(nextSyncAllowedAt)
-        hasher.combine(telemetryJson)
+        hasher.combine(`status`)
+        hasher.combine(`successful`)
+        hasher.combine(`failures`)
+        hasher.combine(`persistedState`)
+        hasher.combine(`declined`)
+        hasher.combine(`nextSyncAllowedAt`)
+        hasher.combine(`telemetryJson`)
     }
 }
+
 
 public struct FfiConverterTypeSyncResult: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncResult {
         return try SyncResult(
-            status: FfiConverterTypeServiceStatus.read(from: &buf),
-            successful: FfiConverterSequenceString.read(from: &buf),
-            failures: FfiConverterDictionaryStringString.read(from: &buf),
-            persistedState: FfiConverterString.read(from: &buf),
-            declined: FfiConverterOptionSequenceString.read(from: &buf),
-            nextSyncAllowedAt: FfiConverterOptionTimestamp.read(from: &buf),
-            telemetryJson: FfiConverterOptionString.read(from: &buf)
+            `status`: FfiConverterTypeServiceStatus.read(from: &buf), 
+            `successful`: FfiConverterSequenceString.read(from: &buf), 
+            `failures`: FfiConverterDictionaryStringString.read(from: &buf), 
+            `persistedState`: FfiConverterString.read(from: &buf), 
+            `declined`: FfiConverterOptionSequenceString.read(from: &buf), 
+            `nextSyncAllowedAt`: FfiConverterOptionTimestamp.read(from: &buf), 
+            `telemetryJson`: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: SyncResult, into buf: inout [UInt8]) {
-        FfiConverterTypeServiceStatus.write(value.status, into: &buf)
-        FfiConverterSequenceString.write(value.successful, into: &buf)
-        FfiConverterDictionaryStringString.write(value.failures, into: &buf)
-        FfiConverterString.write(value.persistedState, into: &buf)
-        FfiConverterOptionSequenceString.write(value.declined, into: &buf)
-        FfiConverterOptionTimestamp.write(value.nextSyncAllowedAt, into: &buf)
-        FfiConverterOptionString.write(value.telemetryJson, into: &buf)
+        FfiConverterTypeServiceStatus.write(value.`status`, into: &buf)
+        FfiConverterSequenceString.write(value.`successful`, into: &buf)
+        FfiConverterDictionaryStringString.write(value.`failures`, into: &buf)
+        FfiConverterString.write(value.`persistedState`, into: &buf)
+        FfiConverterOptionSequenceString.write(value.`declined`, into: &buf)
+        FfiConverterOptionTimestamp.write(value.`nextSyncAllowedAt`, into: &buf)
+        FfiConverterOptionString.write(value.`telemetryJson`, into: &buf)
     }
 }
+
 
 public func FfiConverterTypeSyncResult_lift(_ buf: RustBuffer) throws -> SyncResult {
     return try FfiConverterTypeSyncResult.lift(buf)
@@ -769,12 +796,13 @@ public func FfiConverterTypeSyncResult_lower(_ value: SyncResult) -> RustBuffer 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum ServiceStatus {
-    case ok
-    case networkError
-    case serviceError
-    case authError
-    case backedOff
-    case otherError
+    
+    case `ok`
+    case `networkError`
+    case `serviceError`
+    case `authError`
+    case `backedOff`
+    case `otherError`
 }
 
 public struct FfiConverterTypeServiceStatus: FfiConverterRustBuffer {
@@ -783,44 +811,54 @@ public struct FfiConverterTypeServiceStatus: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ServiceStatus {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .ok
-
-        case 2: return .networkError
-
-        case 3: return .serviceError
-
-        case 4: return .authError
-
-        case 5: return .backedOff
-
-        case 6: return .otherError
-
+        
+        case 1: return .`ok`
+        
+        case 2: return .`networkError`
+        
+        case 3: return .`serviceError`
+        
+        case 4: return .`authError`
+        
+        case 5: return .`backedOff`
+        
+        case 6: return .`otherError`
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: ServiceStatus, into buf: inout [UInt8]) {
         switch value {
-        case .ok:
+        
+        
+        case .`ok`:
             writeInt(&buf, Int32(1))
-
-        case .networkError:
+        
+        
+        case .`networkError`:
             writeInt(&buf, Int32(2))
-
-        case .serviceError:
+        
+        
+        case .`serviceError`:
             writeInt(&buf, Int32(3))
-
-        case .authError:
+        
+        
+        case .`authError`:
             writeInt(&buf, Int32(4))
-
-        case .backedOff:
+        
+        
+        case .`backedOff`:
             writeInt(&buf, Int32(5))
-
-        case .otherError:
+        
+        
+        case .`otherError`:
             writeInt(&buf, Int32(6))
+        
         }
     }
 }
+
 
 public func FfiConverterTypeServiceStatus_lift(_ buf: RustBuffer) throws -> ServiceStatus {
     return try FfiConverterTypeServiceStatus.lift(buf)
@@ -830,13 +868,16 @@ public func FfiConverterTypeServiceStatus_lower(_ value: ServiceStatus) -> RustB
     return FfiConverterTypeServiceStatus.lower(value)
 }
 
+
 extension ServiceStatus: Equatable, Hashable {}
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum SyncEngineSelection {
-    case all
-    case some(engines: [String])
+    
+    case `all`
+    case `some`(`engines`: [String])
 }
 
 public struct FfiConverterTypeSyncEngineSelection: FfiConverterRustBuffer {
@@ -845,27 +886,33 @@ public struct FfiConverterTypeSyncEngineSelection: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncEngineSelection {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .all
-
-        case 2: return try .some(
-                engines: FfiConverterSequenceString.read(from: &buf)
-            )
-
+        
+        case 1: return .`all`
+        
+        case 2: return .`some`(
+            `engines`: try FfiConverterSequenceString.read(from: &buf)
+        )
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SyncEngineSelection, into buf: inout [UInt8]) {
         switch value {
-        case .all:
+        
+        
+        case .`all`:
             writeInt(&buf, Int32(1))
-
-        case let .some(engines):
+        
+        
+        case let .`some`(`engines`):
             writeInt(&buf, Int32(2))
-            FfiConverterSequenceString.write(engines, into: &buf)
+            FfiConverterSequenceString.write(`engines`, into: &buf)
+            
         }
     }
 }
+
 
 public func FfiConverterTypeSyncEngineSelection_lift(_ buf: RustBuffer) throws -> SyncEngineSelection {
     return try FfiConverterTypeSyncEngineSelection.lift(buf)
@@ -875,17 +922,20 @@ public func FfiConverterTypeSyncEngineSelection_lower(_ value: SyncEngineSelecti
     return FfiConverterTypeSyncEngineSelection.lower(value)
 }
 
+
 extension SyncEngineSelection: Equatable, Hashable {}
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum SyncReason {
-    case scheduled
-    case user
-    case preSleep
-    case startup
-    case enabledChange
-    case backgrounded
+    
+    case `scheduled`
+    case `user`
+    case `preSleep`
+    case `startup`
+    case `enabledChange`
+    case `backgrounded`
 }
 
 public struct FfiConverterTypeSyncReason: FfiConverterRustBuffer {
@@ -894,44 +944,54 @@ public struct FfiConverterTypeSyncReason: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncReason {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return .scheduled
-
-        case 2: return .user
-
-        case 3: return .preSleep
-
-        case 4: return .startup
-
-        case 5: return .enabledChange
-
-        case 6: return .backgrounded
-
+        
+        case 1: return .`scheduled`
+        
+        case 2: return .`user`
+        
+        case 3: return .`preSleep`
+        
+        case 4: return .`startup`
+        
+        case 5: return .`enabledChange`
+        
+        case 6: return .`backgrounded`
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: SyncReason, into buf: inout [UInt8]) {
         switch value {
-        case .scheduled:
+        
+        
+        case .`scheduled`:
             writeInt(&buf, Int32(1))
-
-        case .user:
+        
+        
+        case .`user`:
             writeInt(&buf, Int32(2))
-
-        case .preSleep:
+        
+        
+        case .`preSleep`:
             writeInt(&buf, Int32(3))
-
-        case .startup:
+        
+        
+        case .`startup`:
             writeInt(&buf, Int32(4))
-
-        case .enabledChange:
+        
+        
+        case .`enabledChange`:
             writeInt(&buf, Int32(5))
-
-        case .backgrounded:
+        
+        
+        case .`backgrounded`:
             writeInt(&buf, Int32(6))
+        
         }
     }
 }
+
 
 public func FfiConverterTypeSyncReason_lift(_ buf: RustBuffer) throws -> SyncReason {
     return try FfiConverterTypeSyncReason.lift(buf)
@@ -941,35 +1001,42 @@ public func FfiConverterTypeSyncReason_lower(_ value: SyncReason) -> RustBuffer 
     return FfiConverterTypeSyncReason.lower(value)
 }
 
+
 extension SyncReason: Equatable, Hashable {}
 
+
+
 public enum SyncManagerError {
+
+    
+    
     // Simple error enums only carry a message
     case UnknownEngine(message: String)
-
+    
     // Simple error enums only carry a message
     case UnsupportedFeature(message: String)
-
+    
     // Simple error enums only carry a message
     case Sync15Error(message: String)
-
+    
     // Simple error enums only carry a message
     case UrlParseError(message: String)
-
+    
     // Simple error enums only carry a message
     case InterruptedError(message: String)
-
+    
     // Simple error enums only carry a message
     case JsonError(message: String)
-
+    
     // Simple error enums only carry a message
     case LoginsError(message: String)
-
+    
     // Simple error enums only carry a message
     case PlacesError(message: String)
-
+    
     // Simple error enums only carry a message
     case AnyhowError(message: String)
+    
 }
 
 public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
@@ -978,41 +1045,46 @@ public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncManagerError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .UnknownEngine(
-                message: FfiConverterString.read(from: &buf)
-            )
 
-        case 2: return try .UnsupportedFeature(
-                message: FfiConverterString.read(from: &buf)
-            )
+        
 
-        case 3: return try .Sync15Error(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 4: return try .UrlParseError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 5: return try .InterruptedError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 6: return try .JsonError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 7: return try .LoginsError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 8: return try .PlacesError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 9: return try .AnyhowError(
-                message: FfiConverterString.read(from: &buf)
-            )
+        
+        case 1: return .UnknownEngine(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .UnsupportedFeature(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .Sync15Error(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 4: return .UrlParseError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 5: return .InterruptedError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 6: return .JsonError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 7: return .LoginsError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 8: return .PlacesError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 9: return .AnyhowError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1020,6 +1092,10 @@ public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
 
     public static func write(_ value: SyncManagerError, into buf: inout [UInt8]) {
         switch value {
+
+        
+
+        
         case let .UnknownEngine(message):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(message, into: &buf)
@@ -1047,15 +1123,18 @@ public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
         case let .AnyhowError(message):
             writeInt(&buf, Int32(9))
             FfiConverterString.write(message, into: &buf)
+
+        
         }
     }
 }
 
+
 extension SyncManagerError: Equatable, Hashable {}
 
-extension SyncManagerError: Error {}
+extension SyncManagerError: Error { }
 
-private struct FfiConverterOptionString: FfiConverterRustBuffer {
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1076,7 +1155,7 @@ private struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionTimestamp: FfiConverterRustBuffer {
+fileprivate struct FfiConverterOptionTimestamp: FfiConverterRustBuffer {
     typealias SwiftType = Date?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1097,7 +1176,7 @@ private struct FfiConverterOptionTimestamp: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
+fileprivate struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1118,7 +1197,7 @@ private struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceString: FfiConverterRustBuffer {
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
     public static func write(_ value: [String], into buf: inout [UInt8]) {
@@ -1134,13 +1213,13 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterString.read(from: &buf))
+            seq.append(try FfiConverterString.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterDictionaryStringBool: FfiConverterRustBuffer {
+fileprivate struct FfiConverterDictionaryStringBool: FfiConverterRustBuffer {
     public static func write(_ value: [String: Bool], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
@@ -1154,7 +1233,7 @@ private struct FfiConverterDictionaryStringBool: FfiConverterRustBuffer {
         let len: Int32 = try readInt(&buf)
         var dict = [String: Bool]()
         dict.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
+        for _ in 0..<len {
             let key = try FfiConverterString.read(from: &buf)
             let value = try FfiConverterBool.read(from: &buf)
             dict[key] = value
@@ -1163,7 +1242,7 @@ private struct FfiConverterDictionaryStringBool: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
+fileprivate struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
     public static func write(_ value: [String: String], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
@@ -1177,7 +1256,7 @@ private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
         let len: Int32 = try readInt(&buf)
         var dict = [String: String]()
         dict.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
+        for _ in 0..<len {
             let key = try FfiConverterString.read(from: &buf)
             let value = try FfiConverterString.read(from: &buf)
             dict[key] = value
@@ -1185,6 +1264,8 @@ private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
         return dict
     }
 }
+
+
 
 /**
  * Top level initializers and tear down methods.
@@ -1195,5 +1276,6 @@ public enum SyncmanagerLifecycle {
     /**
      * Initialize the FFI and Rust library. This should be only called once per application.
      */
-    func initialize() {}
+    func initialize() {
+    }
 }
