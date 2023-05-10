@@ -1,0 +1,38 @@
+name: Create a PR for release with the newest A-S version available
+
+# Controls when the workflow will run
+on:
+  schedule:
+  # Runs every minute of the 3pm UTC hour of each day
+  - cron: '0 15 * * *'
+  workflow_dispatch:
+
+jobs:
+  release-pr:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1
+      matrix:
+        python-version: [3.7]
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      # Checks out the rust-components-swift repository
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: 'recursive'
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ./automation/requirements.txt
+      - name: Setup git information
+        run: |
+          git config user.email "sync-team@mozilla.com"
+          git config user.name "Firefox Sync Engineering"
+      - name: Run nightly update
+        run: python automation/update-from-application-services.py nightly --create-pr

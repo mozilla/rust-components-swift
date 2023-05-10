@@ -4,9 +4,11 @@ from pathlib import Path
 from urllib.request import urlopen
 import argparse
 import fileinput
+import github
 import gzip
 import hashlib
 import json
+import os
 import subprocess
 import shutil
 import sys
@@ -21,6 +23,33 @@ NIGHTLY_JSON_URL = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task
 def main():
     args = parse_args()
     version = calc_version(args)
+
+    if args.create_pr:
+        create_pr_with_updated_source(version)
+    else:
+        update_source(version)
+
+def create_pr_with_updated_source(version):
+    g = github.Github(os.environ['GITHUB_TOKEN'])
+    branch = f"update-as-{version}"
+    if branch_exists(branch):
+        print(f"branch {branch} already exists, quitting")
+        sys.exit(1)
+    subprocess.check_call(["git", "checkout", "-b", branch])
+    update_source(version)
+    subprocess.check_call([
+        "git",
+        "commit",
+        "-a",
+        "--author",
+        "Firefox Sync Engineering<sync-team@mozilla.com>",
+        "--message",
+        f"Nightly auto-update ({version})"
+    ])
+    subprocess.check_call(["git", "push", "origin", branch])
+    create_pr(g, branch, version)
+
+def update_source(version):
     print("Updating Package.swift xcframework info", flush=True)
     update_package_swift(version)
 
@@ -37,6 +66,8 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser(prog='build-and-test-swift.py')
     parser.add_argument('version', help="version to use (or `nightly`)")
+    parser.add_argument('--create-pr', help="Create a pull-request for the change",
+                        action="store_true")
     return parser.parse_args()
 
 def calc_version(args):
@@ -47,6 +78,13 @@ def calc_version(args):
     with urlopen(NIGHTLY_JSON_URL) as stream:
         data = json.loads(gzip.decompress(stream.read()))
     return data['version']
+
+def branch_exists(branch):
+    result = subprocess.run(
+            ["git", "rev-parse", "--verify", branch],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL)
+    return result.returncode == 0
 
 def update_package_swift(version):
     url = swift_artifact_url(version, "MozillaRustComponents.xcframework.zip")
@@ -96,6 +134,11 @@ def swift_artifact_url(version, filename):
     return ("https://firefox-ci-tc.services.mozilla.com"
             "/api/index/v1/task/project.application-services.v2"
             f".swift.{version}/artifacts/public%2Fbuild%2F{filename}")
+
+def create_pr(g, branch, version):
+    repo = g.get_repo("mozilla/rust-components-swift")
+    title = f"Nightly auto-update ({version})"
+    repo.create_pull(title=title, body=title, head=branch, base="main")
 
 if __name__ == '__main__':
     main()
