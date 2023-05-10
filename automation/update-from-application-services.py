@@ -20,7 +20,26 @@ NIGHTLY_JSON_URL = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task
 
 def main():
     args = parse_args()
-    version = calc_version(args)
+    tag = version = calc_version(args)
+    if rev_exists(tag):
+        print(f"Tag {tag} already exists, quitting")
+        sys.exit(1)
+    update_source(version)
+    subprocess.check_call([
+        "git",
+        "commit",
+        "-a",
+        "--author",
+        "Firefox Sync Engineering<sync-team@mozilla.com>",
+        "--message",
+        f"Nightly auto-update ({version})"
+    ])
+    subprocess.check_call(["git", "tag", tag])
+    if args.push:
+        subprocess.check_call(["git", "push", args.remote])
+        subprocess.check_call(["git", "push", args.remote, tag])
+
+def update_source(version):
     print("Updating Package.swift xcframework info", flush=True)
     update_package_swift(version)
 
@@ -33,6 +52,9 @@ def main():
 def parse_args():
     parser = argparse.ArgumentParser(prog='build-and-test-swift.py')
     parser.add_argument('version', help="version to use (or `nightly`)")
+    parser.add_argument('--push', help="Push changes to remote repository",
+                        action="store_true")
+    parser.add_argument('--remote', help="Remote repository name", default="origin")
     return parser.parse_args()
 
 def calc_version(args):
@@ -43,6 +65,13 @@ def calc_version(args):
     with urlopen(NIGHTLY_JSON_URL) as stream:
         data = json.loads(gzip.decompress(stream.read()))
     return data['version']
+
+def rev_exists(branch):
+    result = subprocess.run(
+            ["git", "rev-parse", "--verify", branch],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL)
+    return result.returncode == 0
 
 def update_package_swift(version):
     url = swift_artifact_url(version, "MozillaRustComponents.xcframework.zip")
@@ -86,7 +115,6 @@ Args:
 def replace_files(source_dir, repo_dir):
     shutil.rmtree(repo_dir)
     shutil.copytree(source_dir, repo_dir)
-
 
 def swift_artifact_url(version, filename):
     return ("https://firefox-ci-tc.services.mozilla.com"
