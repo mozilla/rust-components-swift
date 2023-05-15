@@ -52,3 +52,6 @@ Check out the instructions in the [docs in `application-services` for adding a n
 
 ## Testing
 For testing instructions, you can checkout the [docs in the `application-services`](https://github.com/mozilla/application-services/tree/main/docs/howtos) which are published for convenience in <https://mozilla.github.io/application-services/book/index.html>
+
+## Filing issues with rust-components-swift
+Please open a ticket in https://github.com/mozilla/application-services/issues for any rust-component-swift related issues.
