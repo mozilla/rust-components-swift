@@ -2,7 +2,7 @@
 import PackageDescription
 
 let checksum = "3d22beccbb7d0174493fd21183a84a30fe90e65b8df247168c434e382f119c2e"
-let version = "115.20230518050343"
+let version = "115.0.20230518050343"
 let url = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/project.application-services.v2.swift.115.20230518050343/artifacts/public%2Fbuild%2FMozillaRustComponents.xcframework.zip"
 
 // Focus xcframework
