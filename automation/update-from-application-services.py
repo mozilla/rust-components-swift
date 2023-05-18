@@ -20,7 +20,8 @@ NIGHTLY_JSON_URL = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task
 
 def main():
     args = parse_args()
-    tag = version = calc_version(args)
+    version = VersionInfo(args.version)
+    tag = version.swift_version
     if rev_exists(tag):
         print(f"Tag {tag} already exists, quitting")
         sys.exit(1)
@@ -32,7 +33,7 @@ def main():
         "--author",
         "Firefox Sync Engineering<sync-team@mozilla.com>",
         "--message",
-        f"Nightly auto-update ({version})"
+        f"Nightly auto-update ({version.swift_version})"
     ])
     subprocess.check_call(["git", "tag", tag])
     if args.push:
@@ -57,14 +58,21 @@ def parse_args():
     parser.add_argument('--remote', help="Remote repository name", default="origin")
     return parser.parse_args()
 
-def calc_version(args):
-    # release versions are specified dirctly on the command line
-    if args.version != "nightly":
-        return args.version
+class VersionInfo:
+    def __init__(self, app_services_version):
+        if app_services_version == "nightly":
+            with urlopen(NIGHTLY_JSON_URL) as stream:
+                data = json.loads(gzip.decompress(stream.read()))
+                app_services_version = data['version']
+        components = app_services_version.split(".")
+        if len(components) != 2:
+            raise ValueError(f"Invalid app_services_version: {app_services_version}")
 
-    with urlopen(NIGHTLY_JSON_URL) as stream:
-        data = json.loads(gzip.decompress(stream.read()))
-    return data['version']
+
+        # app_services_version is the 2-component version we normally use for application services
+        self.app_services_version = app_services_version
+        # swift_version is the 3-component version we use for Swift so that it's semver-compatible
+        self.swift_version = f"{components[0]}.0.{components[1]}"
 
 def rev_exists(branch):
     result = subprocess.run(
@@ -79,7 +87,7 @@ def update_package_swift(version):
     checksum = compute_checksum(url)
     focus_checksum = compute_checksum(focus_url)
     replacements = {
-        "let version =": f'let version = "{version}"',
+        "let version =": f'let version = "{version.swift_version}"',
         "let url =": f'let url = "{url}"',
         "let checksum =": f'let checksum = "{checksum}"',
         "let focusUrl =": f'let focusUrl = "{focus_url}"',
@@ -119,7 +127,7 @@ def replace_files(source_dir, repo_dir):
 def swift_artifact_url(version, filename):
     return ("https://firefox-ci-tc.services.mozilla.com"
             "/api/index/v1/task/project.application-services.v2"
-            f".swift.{version}/artifacts/public%2Fbuild%2F{filename}")
+            f".swift.{version.app_services_version}/artifacts/public%2Fbuild%2F{filename}")
 
 if __name__ == '__main__':
     main()
