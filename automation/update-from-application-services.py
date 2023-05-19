@@ -29,7 +29,6 @@ def main():
     subprocess.check_call([
         "git",
         "commit",
-        "-a",
         "--author",
         "Firefox Sync Engineering<sync-team@mozilla.com>",
         "--message",
@@ -99,6 +98,7 @@ def update_package_swift(version):
                 line = f"{replacement}\n"
                 break
         sys.stdout.write(line)
+    subprocess.check_call(["git", "add", PACKAGE_SWIFT])
 
 def compute_checksum(url):
     with urlopen(url) as stream:
@@ -107,11 +107,14 @@ def compute_checksum(url):
 def extract_tarball(version, temp_dir):
     with urlopen(swift_artifact_url(version, "swift-components.tar.xz")) as f:
         with tarfile.open(mode="r|xz", fileobj=f) as tar:
-            tar.extractall(temp_dir)
+            for member in tar:
+                if not Path(member.name).name.startswith("._"):
+                    tar.extract(member, path=temp_dir)
 
 def replace_all_files(temp_dir):
     replace_files(temp_dir / "swift-components/all", "swift-source/all")
     replace_files(temp_dir / "swift-components/focus", "swift-source/focus")
+    subprocess.check_call(["git", "add", "swift-source"])
 
 """
 Replace files in the git repo with files extracted from the tarball
