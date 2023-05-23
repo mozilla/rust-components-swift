@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_remote_settings_5484_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_remote_settings_9450_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_remote_settings_5484_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_remote_settings_9450_rustbuffer_free(self, $0) }
     }
 }
 
@@ -351,20 +351,20 @@ public class RemoteSettings: RemoteSettingsProtocol {
         try self.init(unsafeFromRawPointer:
 
             rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_5484_RemoteSettings_new(
+                remote_settings_9450_RemoteSettings_new(
                     FfiConverterTypeRemoteSettingsConfig.lower(remoteSettingsConfig), $0
                 )
             })
     }
 
     deinit {
-        try! rustCall { ffi_remote_settings_5484_RemoteSettings_object_free(pointer, $0) }
+        try! rustCall { ffi_remote_settings_9450_RemoteSettings_object_free(pointer, $0) }
     }
 
     public func getRecords() throws -> RemoteSettingsResponse {
         return try FfiConverterTypeRemoteSettingsResponse.lift(
             rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_5484_RemoteSettings_get_records(self.pointer, $0)
+                remote_settings_9450_RemoteSettings_get_records(self.pointer, $0)
             }
         )
     }
@@ -372,7 +372,7 @@ public class RemoteSettings: RemoteSettingsProtocol {
     public func getRecordsSince(timestamp: UInt64) throws -> RemoteSettingsResponse {
         return try FfiConverterTypeRemoteSettingsResponse.lift(
             rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_5484_RemoteSettings_get_records_since(self.pointer,
+                remote_settings_9450_RemoteSettings_get_records_since(self.pointer,
                                                                       FfiConverterUInt64.lower(timestamp), $0)
             }
         )
@@ -381,7 +381,7 @@ public class RemoteSettings: RemoteSettingsProtocol {
     public func downloadAttachmentToPath(attachmentId: String, path: String) throws {
         try
             rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_5484_RemoteSettings_download_attachment_to_path(self.pointer,
+                remote_settings_9450_RemoteSettings_download_attachment_to_path(self.pointer,
                                                                                 FfiConverterString.lower(attachmentId),
                                                                                 FfiConverterString.lower(path), $0)
             }
@@ -493,73 +493,6 @@ public func FfiConverterTypeAttachment_lower(_ value: Attachment) -> RustBuffer 
     return FfiConverterTypeAttachment.lower(value)
 }
 
-public struct Record {
-    public var id: String
-    public var lastModified: UInt64
-    public var attachment: Attachment?
-    public var fields: RsJsonObject
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(id: String, lastModified: UInt64, attachment: Attachment?, fields: RsJsonObject) {
-        self.id = id
-        self.lastModified = lastModified
-        self.attachment = attachment
-        self.fields = fields
-    }
-}
-
-extension Record: Equatable, Hashable {
-    public static func == (lhs: Record, rhs: Record) -> Bool {
-        if lhs.id != rhs.id {
-            return false
-        }
-        if lhs.lastModified != rhs.lastModified {
-            return false
-        }
-        if lhs.attachment != rhs.attachment {
-            return false
-        }
-        if lhs.fields != rhs.fields {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(lastModified)
-        hasher.combine(attachment)
-        hasher.combine(fields)
-    }
-}
-
-public struct FfiConverterTypeRecord: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Record {
-        return try Record(
-            id: FfiConverterString.read(from: &buf),
-            lastModified: FfiConverterUInt64.read(from: &buf),
-            attachment: FfiConverterOptionTypeAttachment.read(from: &buf),
-            fields: FfiConverterTypeRsJsonObject.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: Record, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.id, into: &buf)
-        FfiConverterUInt64.write(value.lastModified, into: &buf)
-        FfiConverterOptionTypeAttachment.write(value.attachment, into: &buf)
-        FfiConverterTypeRsJsonObject.write(value.fields, into: &buf)
-    }
-}
-
-public func FfiConverterTypeRecord_lift(_ buf: RustBuffer) throws -> Record {
-    return try FfiConverterTypeRecord.lift(buf)
-}
-
-public func FfiConverterTypeRecord_lower(_ value: Record) -> RustBuffer {
-    return FfiConverterTypeRecord.lower(value)
-}
-
 public struct RemoteSettingsConfig {
     public var serverUrl: String?
     public var bucketName: String?
@@ -619,13 +552,80 @@ public func FfiConverterTypeRemoteSettingsConfig_lower(_ value: RemoteSettingsCo
     return FfiConverterTypeRemoteSettingsConfig.lower(value)
 }
 
+public struct RemoteSettingsRecord {
+    public var id: String
+    public var lastModified: UInt64
+    public var attachment: Attachment?
+    public var fields: RsJsonObject
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, lastModified: UInt64, attachment: Attachment?, fields: RsJsonObject) {
+        self.id = id
+        self.lastModified = lastModified
+        self.attachment = attachment
+        self.fields = fields
+    }
+}
+
+extension RemoteSettingsRecord: Equatable, Hashable {
+    public static func == (lhs: RemoteSettingsRecord, rhs: RemoteSettingsRecord) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.attachment != rhs.attachment {
+            return false
+        }
+        if lhs.fields != rhs.fields {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(lastModified)
+        hasher.combine(attachment)
+        hasher.combine(fields)
+    }
+}
+
+public struct FfiConverterTypeRemoteSettingsRecord: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsRecord {
+        return try RemoteSettingsRecord(
+            id: FfiConverterString.read(from: &buf),
+            lastModified: FfiConverterUInt64.read(from: &buf),
+            attachment: FfiConverterOptionTypeAttachment.read(from: &buf),
+            fields: FfiConverterTypeRsJsonObject.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: RemoteSettingsRecord, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterUInt64.write(value.lastModified, into: &buf)
+        FfiConverterOptionTypeAttachment.write(value.attachment, into: &buf)
+        FfiConverterTypeRsJsonObject.write(value.fields, into: &buf)
+    }
+}
+
+public func FfiConverterTypeRemoteSettingsRecord_lift(_ buf: RustBuffer) throws -> RemoteSettingsRecord {
+    return try FfiConverterTypeRemoteSettingsRecord.lift(buf)
+}
+
+public func FfiConverterTypeRemoteSettingsRecord_lower(_ value: RemoteSettingsRecord) -> RustBuffer {
+    return FfiConverterTypeRemoteSettingsRecord.lower(value)
+}
+
 public struct RemoteSettingsResponse {
-    public var records: [Record]
+    public var records: [RemoteSettingsRecord]
     public var lastModified: UInt64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(records: [Record], lastModified: UInt64) {
+    public init(records: [RemoteSettingsRecord], lastModified: UInt64) {
         self.records = records
         self.lastModified = lastModified
     }
@@ -651,13 +651,13 @@ extension RemoteSettingsResponse: Equatable, Hashable {
 public struct FfiConverterTypeRemoteSettingsResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsResponse {
         return try RemoteSettingsResponse(
-            records: FfiConverterSequenceTypeRecord.read(from: &buf),
+            records: FfiConverterSequenceTypeRemoteSettingsRecord.read(from: &buf),
             lastModified: FfiConverterUInt64.read(from: &buf)
         )
     }
 
     public static func write(_ value: RemoteSettingsResponse, into buf: inout [UInt8]) {
-        FfiConverterSequenceTypeRecord.write(value.records, into: &buf)
+        FfiConverterSequenceTypeRemoteSettingsRecord.write(value.records, into: &buf)
         FfiConverterUInt64.write(value.lastModified, into: &buf)
     }
 }
@@ -814,23 +814,23 @@ private struct FfiConverterOptionTypeAttachment: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceTypeRecord: FfiConverterRustBuffer {
-    typealias SwiftType = [Record]
+private struct FfiConverterSequenceTypeRemoteSettingsRecord: FfiConverterRustBuffer {
+    typealias SwiftType = [RemoteSettingsRecord]
 
-    public static func write(_ value: [Record], into buf: inout [UInt8]) {
+    public static func write(_ value: [RemoteSettingsRecord], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
         for item in value {
-            FfiConverterTypeRecord.write(item, into: &buf)
+            FfiConverterTypeRemoteSettingsRecord.write(item, into: &buf)
         }
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Record] {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [RemoteSettingsRecord] {
         let len: Int32 = try readInt(&buf)
-        var seq = [Record]()
+        var seq = [RemoteSettingsRecord]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeRecord.read(from: &buf))
+            try seq.append(FfiConverterTypeRemoteSettingsRecord.read(from: &buf))
         }
         return seq
     }

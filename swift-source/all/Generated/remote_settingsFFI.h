@@ -46,39 +46,39 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_remote_settings_5484_RemoteSettings_object_free(
+void ffi_remote_settings_9450_RemoteSettings_object_free(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-void*_Nonnull remote_settings_5484_RemoteSettings_new(
+void*_Nonnull remote_settings_9450_RemoteSettings_new(
       RustBuffer remote_settings_config,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer remote_settings_5484_RemoteSettings_get_records(
+RustBuffer remote_settings_9450_RemoteSettings_get_records(
       void*_Nonnull ptr,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer remote_settings_5484_RemoteSettings_get_records_since(
+RustBuffer remote_settings_9450_RemoteSettings_get_records_since(
       void*_Nonnull ptr,uint64_t timestamp,
     RustCallStatus *_Nonnull out_status
     );
-void remote_settings_5484_RemoteSettings_download_attachment_to_path(
+void remote_settings_9450_RemoteSettings_download_attachment_to_path(
       void*_Nonnull ptr,RustBuffer attachment_id,RustBuffer path,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_remote_settings_5484_rustbuffer_alloc(
+RustBuffer ffi_remote_settings_9450_rustbuffer_alloc(
       int32_t size,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_remote_settings_5484_rustbuffer_from_bytes(
+RustBuffer ffi_remote_settings_9450_rustbuffer_from_bytes(
       ForeignBytes bytes,
     RustCallStatus *_Nonnull out_status
     );
-void ffi_remote_settings_5484_rustbuffer_free(
+void ffi_remote_settings_9450_rustbuffer_free(
       RustBuffer buf,
     RustCallStatus *_Nonnull out_status
     );
-RustBuffer ffi_remote_settings_5484_rustbuffer_reserve(
+RustBuffer ffi_remote_settings_9450_rustbuffer_reserve(
       RustBuffer buf,int32_t additional,
     RustCallStatus *_Nonnull out_status
     );
