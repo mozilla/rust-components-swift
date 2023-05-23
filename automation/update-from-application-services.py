@@ -26,6 +26,9 @@ def main():
         print(f"Tag {tag} already exists, quitting")
         sys.exit(1)
     update_source(version)
+    if repo_has_changes():
+        print("No changes detected, quitting")
+        sys.exit(1)
     subprocess.check_call([
         "git",
         "commit",
@@ -131,6 +134,15 @@ def swift_artifact_url(version, filename):
     return ("https://firefox-ci-tc.services.mozilla.com"
             "/api/index/v1/task/project.application-services.v2"
             f".swift.{version.app_services_version}/artifacts/public%2Fbuild%2F{filename}")
+
+def repo_has_changes():
+    result = subprocess.run([
+        "git",
+        "diff-index",
+        "--quiet",
+        "HEAD",
+    ])
+    return result.returncode != 0
 
 if __name__ == '__main__':
     main()

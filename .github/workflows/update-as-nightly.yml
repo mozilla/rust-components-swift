@@ -3,8 +3,8 @@ name: Create a PR for release with the newest A-S version available
 # Controls when the workflow will run
 on:
   schedule:
-  # Runs every minute of the 3pm UTC hour of each day
-  - cron: '0 15 * * *'
+  # Runs 8:00am UTC each day
+  - cron: '0 8 * * *'
   workflow_dispatch:
 
 jobs:
