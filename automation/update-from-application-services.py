@@ -26,7 +26,7 @@ def main():
         print(f"Tag {tag} already exists, quitting")
         sys.exit(1)
     update_source(version)
-    if repo_has_changes():
+    if not repo_has_changes():
         print("No changes detected, quitting")
         sys.exit(1)
     subprocess.check_call([
