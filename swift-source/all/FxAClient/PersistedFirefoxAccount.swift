@@ -173,7 +173,7 @@ class PersistedFirefoxAccount {
         }
     }
 
-    public func handlePushMessage(payload: String) throws -> [AccountEvent] {
+    public func handlePushMessage(payload: String) throws -> AccountEvent {
         defer { tryPersistState() }
         return try notifyAuthErrors {
             try self.inner.handlePushMessage(payload: payload)
