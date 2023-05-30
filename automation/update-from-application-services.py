@@ -28,7 +28,7 @@ def main():
     update_source(version)
     if not repo_has_changes():
         print("No changes detected, quitting")
-        sys.exit(1)
+        sys.exit(0)
     subprocess.check_call([
         "git",
         "commit",
