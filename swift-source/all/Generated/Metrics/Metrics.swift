@@ -25,7 +25,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 6, day: 6, hour: 5, minute: 30, second: 37))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 6, day: 7, hour: 5, minute: 43, second: 26))
     }
 
     enum NimbusEvents {
@@ -342,10 +342,10 @@ extension GleanMetrics {
 
     }
 
-    enum AddressesSync {
-        private static let failureReasonLabel = StringMetricType( // generated from addresses_sync.failure_reason
+    enum AddressesSyncV2 {
+        private static let failureReasonLabel = StringMetricType( // generated from addresses_sync_v2.failure_reason
             CommonMetricData(
-                category: "addresses_sync",
+                category: "addresses_sync_v2",
                 name: "failure_reason",
                 sendInPings: ["addresses-sync"],
                 lifetime: .ping,
@@ -356,8 +356,8 @@ extension GleanMetrics {
         /// Records why the addresses sync failed: either due to an authentication error,
         /// unexpected exception, or other error. The error strings are truncated and
         /// sanitized to omit PII, like URLs and file system paths.
-        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from addresses_sync.failure_reason
-            category: "addresses_sync",
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from addresses_sync_v2.failure_reason
+            category: "addresses_sync_v2",
             name: "failure_reason",
             sendInPings: ["addresses-sync"],
             lifetime: .ping,
@@ -368,9 +368,9 @@ extension GleanMetrics {
 
         /// Records when the addresses sync finished. This includes the time to download,
         /// apply, and upload all records.
-        static let finishedAt = DatetimeMetricType( // generated from addresses_sync.finished_at
+        static let finishedAt = DatetimeMetricType( // generated from addresses_sync_v2.finished_at
             CommonMetricData(
-                category: "addresses_sync",
+                category: "addresses_sync_v2",
                 name: "finished_at",
                 sendInPings: ["addresses-sync"],
                 lifetime: .ping,
@@ -379,9 +379,9 @@ extension GleanMetrics {
             , .millisecond
         )
 
-        private static let incomingLabel = CounterMetricType( // generated from addresses_sync.incoming
+        private static let incomingLabel = CounterMetricType( // generated from addresses_sync_v2.incoming
             CommonMetricData(
-                category: "addresses_sync",
+                category: "addresses_sync_v2",
                 name: "incoming",
                 sendInPings: ["addresses-sync"],
                 lifetime: .ping,
@@ -393,8 +393,8 @@ extension GleanMetrics {
         /// records that were successfully stored or updated in the local database.
         /// `failed_to_apply` is the number of records that were ignored due to errors.
         /// `reconciled` is the number of merged records.
-        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from addresses_sync.incoming
-            category: "addresses_sync",
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from addresses_sync_v2.incoming
+            category: "addresses_sync_v2",
             name: "incoming",
             sendInPings: ["addresses-sync"],
             lifetime: .ping,
@@ -403,9 +403,9 @@ extension GleanMetrics {
             labels: ["applied", "failed_to_apply", "reconciled"]
         )
 
-        private static let outgoingLabel = CounterMetricType( // generated from addresses_sync.outgoing
+        private static let outgoingLabel = CounterMetricType( // generated from addresses_sync_v2.outgoing
             CommonMetricData(
-                category: "addresses_sync",
+                category: "addresses_sync_v2",
                 name: "outgoing",
                 sendInPings: ["addresses-sync"],
                 lifetime: .ping,
@@ -416,8 +416,8 @@ extension GleanMetrics {
         /// Records outgoing addresses record counts. `uploaded` is the number of records
         /// that were successfully sent to the server. `failed_to_upload` is the number of
         /// records that weren't uploaded, and will be retried on the next sync.
-        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from addresses_sync.outgoing
-            category: "addresses_sync",
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from addresses_sync_v2.outgoing
+            category: "addresses_sync_v2",
             name: "outgoing",
             sendInPings: ["addresses-sync"],
             lifetime: .ping,
@@ -430,9 +430,9 @@ extension GleanMetrics {
         /// server has a hard limit on the number of records (and request body bytes) on
         /// the number of records that can fit into a single batch, and large syncs may
         /// require multiple batches.
-        static let outgoingBatches = CounterMetricType( // generated from addresses_sync.outgoing_batches
+        static let outgoingBatches = CounterMetricType( // generated from addresses_sync_v2.outgoing_batches
             CommonMetricData(
-                category: "addresses_sync",
+                category: "addresses_sync_v2",
                 name: "outgoing_batches",
                 sendInPings: ["addresses-sync"],
                 lifetime: .ping,
@@ -441,9 +441,9 @@ extension GleanMetrics {
         )
 
         /// Records when the addresses sync started.
-        static let startedAt = DatetimeMetricType( // generated from addresses_sync.started_at
+        static let startedAt = DatetimeMetricType( // generated from addresses_sync_v2.started_at
             CommonMetricData(
-                category: "addresses_sync",
+                category: "addresses_sync_v2",
                 name: "started_at",
                 sendInPings: ["addresses-sync"],
                 lifetime: .ping,
@@ -453,9 +453,9 @@ extension GleanMetrics {
         )
 
         /// The user's hashed Firefox Account ID.
-        static let uid = StringMetricType( // generated from addresses_sync.uid
+        static let uid = StringMetricType( // generated from addresses_sync_v2.uid
             CommonMetricData(
-                category: "addresses_sync",
+                category: "addresses_sync_v2",
                 name: "uid",
                 sendInPings: ["addresses-sync"],
                 lifetime: .ping,
@@ -465,10 +465,10 @@ extension GleanMetrics {
 
     }
 
-    enum BookmarksSync {
-        private static let failureReasonLabel = StringMetricType( // generated from bookmarks_sync.failure_reason
+    enum BookmarksSyncV2 {
+        private static let failureReasonLabel = StringMetricType( // generated from bookmarks_sync_v2.failure_reason
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "failure_reason",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -477,8 +477,8 @@ extension GleanMetrics {
         )
 
         /// Records bookmark sync failure reasons.
-        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from bookmarks_sync.failure_reason
-            category: "bookmarks_sync",
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from bookmarks_sync_v2.failure_reason
+            category: "bookmarks_sync_v2",
             name: "failure_reason",
             sendInPings: ["bookmarks-sync"],
             lifetime: .ping,
@@ -488,9 +488,9 @@ extension GleanMetrics {
         )
 
         /// Records when the bookmark sync finished.
-        static let finishedAt = DatetimeMetricType( // generated from bookmarks_sync.finished_at
+        static let finishedAt = DatetimeMetricType( // generated from bookmarks_sync_v2.finished_at
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "finished_at",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -499,9 +499,9 @@ extension GleanMetrics {
             , .millisecond
         )
 
-        private static let incomingLabel = CounterMetricType( // generated from bookmarks_sync.incoming
+        private static let incomingLabel = CounterMetricType( // generated from bookmarks_sync_v2.incoming
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "incoming",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -510,8 +510,8 @@ extension GleanMetrics {
         )
 
         /// Records incoming bookmark record counts.
-        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync.incoming
-            category: "bookmarks_sync",
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync_v2.incoming
+            category: "bookmarks_sync_v2",
             name: "incoming",
             sendInPings: ["bookmarks-sync"],
             lifetime: .ping,
@@ -520,9 +520,9 @@ extension GleanMetrics {
             labels: ["applied", "failed_to_apply", "reconciled"]
         )
 
-        private static let outgoingLabel = CounterMetricType( // generated from bookmarks_sync.outgoing
+        private static let outgoingLabel = CounterMetricType( // generated from bookmarks_sync_v2.outgoing
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "outgoing",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -531,8 +531,8 @@ extension GleanMetrics {
         )
 
         /// Records outgoing bookmark record counts.
-        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync.outgoing
-            category: "bookmarks_sync",
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync_v2.outgoing
+            category: "bookmarks_sync_v2",
             name: "outgoing",
             sendInPings: ["bookmarks-sync"],
             lifetime: .ping,
@@ -542,9 +542,9 @@ extension GleanMetrics {
         )
 
         /// Records the number of batches needed to upload all outgoing records.
-        static let outgoingBatches = CounterMetricType( // generated from bookmarks_sync.outgoing_batches
+        static let outgoingBatches = CounterMetricType( // generated from bookmarks_sync_v2.outgoing_batches
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "outgoing_batches",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -552,9 +552,9 @@ extension GleanMetrics {
             )
         )
 
-        private static let remoteTreeProblemsLabel = CounterMetricType( // generated from bookmarks_sync.remote_tree_problems
+        private static let remoteTreeProblemsLabel = CounterMetricType( // generated from bookmarks_sync_v2.remote_tree_problems
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "remote_tree_problems",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -565,8 +565,8 @@ extension GleanMetrics {
         /// Records counts for structure problems and divergences in the remote bookmarks
         /// tree. These are documented in https://github.com/mozilla/dogear/blob/fbade15f2a
         /// 4f11215e30b8f428a0a8df3defeaec/src/tree.rs#L1273-L1294.
-        static let remoteTreeProblems = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync.remote_tree_problems
-            category: "bookmarks_sync",
+        static let remoteTreeProblems = try! LabeledMetricType<CounterMetricType>( // generated from bookmarks_sync_v2.remote_tree_problems
+            category: "bookmarks_sync_v2",
             name: "remote_tree_problems",
             sendInPings: ["bookmarks-sync"],
             lifetime: .ping,
@@ -576,9 +576,9 @@ extension GleanMetrics {
         )
 
         /// Records when the bookmark sync started.
-        static let startedAt = DatetimeMetricType( // generated from bookmarks_sync.started_at
+        static let startedAt = DatetimeMetricType( // generated from bookmarks_sync_v2.started_at
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "started_at",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -588,9 +588,9 @@ extension GleanMetrics {
         )
 
         /// The user's hashed Firefox Account ID.
-        static let uid = StringMetricType( // generated from bookmarks_sync.uid
+        static let uid = StringMetricType( // generated from bookmarks_sync_v2.uid
             CommonMetricData(
-                category: "bookmarks_sync",
+                category: "bookmarks_sync_v2",
                 name: "uid",
                 sendInPings: ["bookmarks-sync"],
                 lifetime: .ping,
@@ -600,10 +600,10 @@ extension GleanMetrics {
 
     }
 
-    enum CreditcardsSync {
-        private static let failureReasonLabel = StringMetricType( // generated from creditcards_sync.failure_reason
+    enum CreditcardsSyncV2 {
+        private static let failureReasonLabel = StringMetricType( // generated from creditcards_sync_v2.failure_reason
             CommonMetricData(
-                category: "creditcards_sync",
+                category: "creditcards_sync_v2",
                 name: "failure_reason",
                 sendInPings: ["creditcards-sync"],
                 lifetime: .ping,
@@ -614,8 +614,8 @@ extension GleanMetrics {
         /// Records why the credit cards sync failed: either due to an authentication
         /// error, unexpected exception, or other error. The error strings are truncated
         /// and sanitized to omit PII, like URLs and file system paths.
-        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from creditcards_sync.failure_reason
-            category: "creditcards_sync",
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from creditcards_sync_v2.failure_reason
+            category: "creditcards_sync_v2",
             name: "failure_reason",
             sendInPings: ["creditcards-sync"],
             lifetime: .ping,
@@ -626,9 +626,9 @@ extension GleanMetrics {
 
         /// Records when the credit cards sync finished. This includes the time to
         /// download, apply, and upload all records.
-        static let finishedAt = DatetimeMetricType( // generated from creditcards_sync.finished_at
+        static let finishedAt = DatetimeMetricType( // generated from creditcards_sync_v2.finished_at
             CommonMetricData(
-                category: "creditcards_sync",
+                category: "creditcards_sync_v2",
                 name: "finished_at",
                 sendInPings: ["creditcards-sync"],
                 lifetime: .ping,
@@ -637,9 +637,9 @@ extension GleanMetrics {
             , .millisecond
         )
 
-        private static let incomingLabel = CounterMetricType( // generated from creditcards_sync.incoming
+        private static let incomingLabel = CounterMetricType( // generated from creditcards_sync_v2.incoming
             CommonMetricData(
-                category: "creditcards_sync",
+                category: "creditcards_sync_v2",
                 name: "incoming",
                 sendInPings: ["creditcards-sync"],
                 lifetime: .ping,
@@ -651,8 +651,8 @@ extension GleanMetrics {
         /// incoming records that were successfully stored or updated in the local
         /// database. `failed_to_apply` is the number of records that were ignored due to
         /// errors. `reconciled` is the number of merged records.
-        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from creditcards_sync.incoming
-            category: "creditcards_sync",
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from creditcards_sync_v2.incoming
+            category: "creditcards_sync_v2",
             name: "incoming",
             sendInPings: ["creditcards-sync"],
             lifetime: .ping,
@@ -661,9 +661,9 @@ extension GleanMetrics {
             labels: ["applied", "failed_to_apply", "reconciled"]
         )
 
-        private static let outgoingLabel = CounterMetricType( // generated from creditcards_sync.outgoing
+        private static let outgoingLabel = CounterMetricType( // generated from creditcards_sync_v2.outgoing
             CommonMetricData(
-                category: "creditcards_sync",
+                category: "creditcards_sync_v2",
                 name: "outgoing",
                 sendInPings: ["creditcards-sync"],
                 lifetime: .ping,
@@ -674,8 +674,8 @@ extension GleanMetrics {
         /// Records outgoing credit cards record counts. `uploaded` is the number of
         /// records that were successfully sent to the server. `failed_to_upload` is the
         /// number of records that weren't uploaded, and will be retried on the next sync.
-        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from creditcards_sync.outgoing
-            category: "creditcards_sync",
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from creditcards_sync_v2.outgoing
+            category: "creditcards_sync_v2",
             name: "outgoing",
             sendInPings: ["creditcards-sync"],
             lifetime: .ping,
@@ -688,9 +688,9 @@ extension GleanMetrics {
         /// server has a hard limit on the number of records (and request body bytes) on
         /// the number of records that can fit into a single batch, and large syncs may
         /// require multiple batches.
-        static let outgoingBatches = CounterMetricType( // generated from creditcards_sync.outgoing_batches
+        static let outgoingBatches = CounterMetricType( // generated from creditcards_sync_v2.outgoing_batches
             CommonMetricData(
-                category: "creditcards_sync",
+                category: "creditcards_sync_v2",
                 name: "outgoing_batches",
                 sendInPings: ["creditcards-sync"],
                 lifetime: .ping,
@@ -699,9 +699,9 @@ extension GleanMetrics {
         )
 
         /// Records when the credit cards sync started.
-        static let startedAt = DatetimeMetricType( // generated from creditcards_sync.started_at
+        static let startedAt = DatetimeMetricType( // generated from creditcards_sync_v2.started_at
             CommonMetricData(
-                category: "creditcards_sync",
+                category: "creditcards_sync_v2",
                 name: "started_at",
                 sendInPings: ["creditcards-sync"],
                 lifetime: .ping,
@@ -711,9 +711,9 @@ extension GleanMetrics {
         )
 
         /// The user's hashed Firefox Account ID.
-        static let uid = StringMetricType( // generated from creditcards_sync.uid
+        static let uid = StringMetricType( // generated from creditcards_sync_v2.uid
             CommonMetricData(
-                category: "creditcards_sync",
+                category: "creditcards_sync_v2",
                 name: "uid",
                 sendInPings: ["creditcards-sync"],
                 lifetime: .ping,
@@ -723,10 +723,81 @@ extension GleanMetrics {
 
     }
 
-    enum HistorySync {
-        private static let failureReasonLabel = StringMetricType( // generated from history_sync.failure_reason
+    enum FxaTabV2 {
+        struct ReceivedExtra: EventExtras {
+            var flowId: String?
+            var reason: String?
+            var streamId: String?
+
+            func toExtraRecord() -> [String: String] {
+                var record = [String: String]()
+
+                if let flowId = self.flowId {
+                    record["flow_id"] = String(flowId)
+                }
+                if let reason = self.reason {
+                    record["reason"] = String(reason)
+                }
+                if let streamId = self.streamId {
+                    record["stream_id"] = String(streamId)
+                }
+
+                return record
+            }
+        }
+
+        struct SentExtra: EventExtras {
+            var flowId: String?
+            var streamId: String?
+
+            func toExtraRecord() -> [String: String] {
+                var record = [String: String]()
+
+                if let flowId = self.flowId {
+                    record["flow_id"] = String(flowId)
+                }
+                if let streamId = self.streamId {
+                    record["stream_id"] = String(streamId)
+                }
+
+                return record
+            }
+        }
+
+        /// Recorded when a tab is received.  Also sent by desktop - see also the docs at
+        /// https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/data/sync-
+        /// ping.html
+        static let received = EventMetricType<ReceivedExtra>( // generated from fxa_tab_v2.received
             CommonMetricData(
-                category: "history_sync",
+                category: "fxa_tab_v2",
+                name: "received",
+                sendInPings: ["sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , ["flow_id", "reason", "stream_id"]
+        )
+
+        /// Recorded when a tab is sent. Also sent by desktop - see also the docs at
+        /// https://firefox-source-docs.mozilla.org/toolkit/components/telemetry/data/sync-
+        /// ping.html
+        static let sent = EventMetricType<SentExtra>( // generated from fxa_tab_v2.sent
+            CommonMetricData(
+                category: "fxa_tab_v2",
+                name: "sent",
+                sendInPings: ["sync"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , ["flow_id", "stream_id"]
+        )
+
+    }
+
+    enum HistorySyncV2 {
+        private static let failureReasonLabel = StringMetricType( // generated from history_sync_v2.failure_reason
+            CommonMetricData(
+                category: "history_sync_v2",
                 name: "failure_reason",
                 sendInPings: ["history-sync"],
                 lifetime: .ping,
@@ -737,8 +808,8 @@ extension GleanMetrics {
         /// Records why the history sync failed: either due to an authentication error,
         /// unexpected exception, or other error. The error strings are truncated and
         /// sanitized to omit PII, like URLs and file system paths.
-        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from history_sync.failure_reason
-            category: "history_sync",
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from history_sync_v2.failure_reason
+            category: "history_sync_v2",
             name: "failure_reason",
             sendInPings: ["history-sync"],
             lifetime: .ping,
@@ -749,9 +820,9 @@ extension GleanMetrics {
 
         /// Records when the history sync finished. This includes the time to download,
         /// apply, and upload all records.
-        static let finishedAt = DatetimeMetricType( // generated from history_sync.finished_at
+        static let finishedAt = DatetimeMetricType( // generated from history_sync_v2.finished_at
             CommonMetricData(
-                category: "history_sync",
+                category: "history_sync_v2",
                 name: "finished_at",
                 sendInPings: ["history-sync"],
                 lifetime: .ping,
@@ -760,9 +831,9 @@ extension GleanMetrics {
             , .millisecond
         )
 
-        private static let incomingLabel = CounterMetricType( // generated from history_sync.incoming
+        private static let incomingLabel = CounterMetricType( // generated from history_sync_v2.incoming
             CommonMetricData(
-                category: "history_sync",
+                category: "history_sync_v2",
                 name: "incoming",
                 sendInPings: ["history-sync"],
                 lifetime: .ping,
@@ -775,8 +846,8 @@ extension GleanMetrics {
         /// `failed_to_apply` is the number of pages that were ignored due to errors.
         /// `reconciled` is the number of pages with new visits locally and remotely, and
         /// had their visits merged.
-        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from history_sync.incoming
-            category: "history_sync",
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from history_sync_v2.incoming
+            category: "history_sync_v2",
             name: "incoming",
             sendInPings: ["history-sync"],
             lifetime: .ping,
@@ -785,9 +856,9 @@ extension GleanMetrics {
             labels: ["applied", "failed_to_apply", "reconciled"]
         )
 
-        private static let outgoingLabel = CounterMetricType( // generated from history_sync.outgoing
+        private static let outgoingLabel = CounterMetricType( // generated from history_sync_v2.outgoing
             CommonMetricData(
-                category: "history_sync",
+                category: "history_sync_v2",
                 name: "outgoing",
                 sendInPings: ["history-sync"],
                 lifetime: .ping,
@@ -798,8 +869,8 @@ extension GleanMetrics {
         /// Records outgoing history record counts. `uploaded` is the number of records
         /// that were successfully sent to the server. `failed_to_upload` is the number of
         /// records that weren't uploaded, and will be retried on the next sync.
-        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from history_sync.outgoing
-            category: "history_sync",
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from history_sync_v2.outgoing
+            category: "history_sync_v2",
             name: "outgoing",
             sendInPings: ["history-sync"],
             lifetime: .ping,
@@ -812,9 +883,9 @@ extension GleanMetrics {
         /// server has a hard limit on the number of records (and request body bytes) on
         /// the number of records that can fit into a single batch, and large syncs may
         /// require multiple batches.
-        static let outgoingBatches = CounterMetricType( // generated from history_sync.outgoing_batches
+        static let outgoingBatches = CounterMetricType( // generated from history_sync_v2.outgoing_batches
             CommonMetricData(
-                category: "history_sync",
+                category: "history_sync_v2",
                 name: "outgoing_batches",
                 sendInPings: ["history-sync"],
                 lifetime: .ping,
@@ -823,9 +894,9 @@ extension GleanMetrics {
         )
 
         /// Records when the history sync started.
-        static let startedAt = DatetimeMetricType( // generated from history_sync.started_at
+        static let startedAt = DatetimeMetricType( // generated from history_sync_v2.started_at
             CommonMetricData(
-                category: "history_sync",
+                category: "history_sync_v2",
                 name: "started_at",
                 sendInPings: ["history-sync"],
                 lifetime: .ping,
@@ -835,9 +906,9 @@ extension GleanMetrics {
         )
 
         /// The user's hashed Firefox Account ID.
-        static let uid = StringMetricType( // generated from history_sync.uid
+        static let uid = StringMetricType( // generated from history_sync_v2.uid
             CommonMetricData(
-                category: "history_sync",
+                category: "history_sync_v2",
                 name: "uid",
                 sendInPings: ["history-sync"],
                 lifetime: .ping,
@@ -847,10 +918,10 @@ extension GleanMetrics {
 
     }
 
-    enum LoginsSync {
-        private static let failureReasonLabel = StringMetricType( // generated from logins_sync.failure_reason
+    enum LoginsSyncV2 {
+        private static let failureReasonLabel = StringMetricType( // generated from logins_sync_v2.failure_reason
             CommonMetricData(
-                category: "logins_sync",
+                category: "logins_sync_v2",
                 name: "failure_reason",
                 sendInPings: ["logins-sync"],
                 lifetime: .ping,
@@ -861,8 +932,8 @@ extension GleanMetrics {
         /// Records why the passwords sync failed: either due to an authentication error,
         /// unexpected exception, or other error. The error strings are truncated and
         /// sanitized to omit PII, like usernames and passwords.
-        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from logins_sync.failure_reason
-            category: "logins_sync",
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from logins_sync_v2.failure_reason
+            category: "logins_sync_v2",
             name: "failure_reason",
             sendInPings: ["logins-sync"],
             lifetime: .ping,
@@ -873,9 +944,9 @@ extension GleanMetrics {
 
         /// Records when the passwords sync finished. This includes the time to download,
         /// apply, and upload all records.
-        static let finishedAt = DatetimeMetricType( // generated from logins_sync.finished_at
+        static let finishedAt = DatetimeMetricType( // generated from logins_sync_v2.finished_at
             CommonMetricData(
-                category: "logins_sync",
+                category: "logins_sync_v2",
                 name: "finished_at",
                 sendInPings: ["logins-sync"],
                 lifetime: .ping,
@@ -884,9 +955,9 @@ extension GleanMetrics {
             , .millisecond
         )
 
-        private static let incomingLabel = CounterMetricType( // generated from logins_sync.incoming
+        private static let incomingLabel = CounterMetricType( // generated from logins_sync_v2.incoming
             CommonMetricData(
-                category: "logins_sync",
+                category: "logins_sync_v2",
                 name: "incoming",
                 sendInPings: ["logins-sync"],
                 lifetime: .ping,
@@ -899,8 +970,8 @@ extension GleanMetrics {
         /// database. `failed_to_apply` is the number of entries that were ignored due to
         /// errors. `reconciled` is the number of entries with changes both locally and
         /// remotely that were merged.
-        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from logins_sync.incoming
-            category: "logins_sync",
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from logins_sync_v2.incoming
+            category: "logins_sync_v2",
             name: "incoming",
             sendInPings: ["logins-sync"],
             lifetime: .ping,
@@ -909,9 +980,9 @@ extension GleanMetrics {
             labels: ["applied", "failed_to_apply", "reconciled"]
         )
 
-        private static let outgoingLabel = CounterMetricType( // generated from logins_sync.outgoing
+        private static let outgoingLabel = CounterMetricType( // generated from logins_sync_v2.outgoing
             CommonMetricData(
-                category: "logins_sync",
+                category: "logins_sync_v2",
                 name: "outgoing",
                 sendInPings: ["logins-sync"],
                 lifetime: .ping,
@@ -922,8 +993,8 @@ extension GleanMetrics {
         /// Records outgoing passwords record counts. `uploaded` is the number of records
         /// that were successfully sent to the server. `failed_to_upload` is the number of
         /// records that weren't uploaded, and will be retried on the next sync.
-        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from logins_sync.outgoing
-            category: "logins_sync",
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from logins_sync_v2.outgoing
+            category: "logins_sync_v2",
             name: "outgoing",
             sendInPings: ["logins-sync"],
             lifetime: .ping,
@@ -936,9 +1007,9 @@ extension GleanMetrics {
         /// server has a hard limit on the number of records (and request body bytes) on
         /// the number of records that can fit into a single batch, and large syncs may
         /// require multiple batches.
-        static let outgoingBatches = CounterMetricType( // generated from logins_sync.outgoing_batches
+        static let outgoingBatches = CounterMetricType( // generated from logins_sync_v2.outgoing_batches
             CommonMetricData(
-                category: "logins_sync",
+                category: "logins_sync_v2",
                 name: "outgoing_batches",
                 sendInPings: ["logins-sync"],
                 lifetime: .ping,
@@ -947,9 +1018,9 @@ extension GleanMetrics {
         )
 
         /// Records when the passwords sync started.
-        static let startedAt = DatetimeMetricType( // generated from logins_sync.started_at
+        static let startedAt = DatetimeMetricType( // generated from logins_sync_v2.started_at
             CommonMetricData(
-                category: "logins_sync",
+                category: "logins_sync_v2",
                 name: "started_at",
                 sendInPings: ["logins-sync"],
                 lifetime: .ping,
@@ -959,9 +1030,9 @@ extension GleanMetrics {
         )
 
         /// The user's hashed Firefox Account ID.
-        static let uid = StringMetricType( // generated from logins_sync.uid
+        static let uid = StringMetricType( // generated from logins_sync_v2.uid
             CommonMetricData(
-                category: "logins_sync",
+                category: "logins_sync_v2",
                 name: "uid",
                 sendInPings: ["logins-sync"],
                 lifetime: .ping,
@@ -971,10 +1042,10 @@ extension GleanMetrics {
 
     }
 
-    enum Sync {
-        private static let failureReasonLabel = StringMetricType( // generated from sync.failure_reason
+    enum SyncV2 {
+        private static let failureReasonLabel = StringMetricType( // generated from sync_v2.failure_reason
             CommonMetricData(
-                category: "sync",
+                category: "sync_v2",
                 name: "failure_reason",
                 sendInPings: ["sync"],
                 lifetime: .ping,
@@ -986,8 +1057,8 @@ extension GleanMetrics {
         /// unexpected exception, or other error that caused the sync to fail. Error
         /// strings are truncated and sanitized to omit PII, like URLs and file system
         /// paths.
-        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from sync.failure_reason
-            category: "sync",
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from sync_v2.failure_reason
+            category: "sync_v2",
             name: "failure_reason",
             sendInPings: ["sync"],
             lifetime: .ping,
@@ -1000,9 +1071,9 @@ extension GleanMetrics {
         /// for data types that were synchronized together (history, bookmarks, logins). If
         /// a data type is synchronized by itself via the legacy 'sync' API (as opposed to
         /// the Sync Manager), then this field will not be set on the corresponding ping.
-        static let syncUuid = UuidMetricType( // generated from sync.sync_uuid
+        static let syncUuid = UuidMetricType( // generated from sync_v2.sync_uuid
             CommonMetricData(
-                category: "sync",
+                category: "sync_v2",
                 name: "sync_uuid",
                 sendInPings: ["bookmarks-sync", "history-sync", "logins-sync", "sync"],
                 lifetime: .ping,
@@ -1012,10 +1083,10 @@ extension GleanMetrics {
 
     }
 
-    enum TabsSync {
-        private static let failureReasonLabel = StringMetricType( // generated from tabs_sync.failure_reason
+    enum TabsSyncV2 {
+        private static let failureReasonLabel = StringMetricType( // generated from tabs_sync_v2.failure_reason
             CommonMetricData(
-                category: "tabs_sync",
+                category: "tabs_sync_v2",
                 name: "failure_reason",
                 sendInPings: ["tabs-sync"],
                 lifetime: .ping,
@@ -1026,8 +1097,8 @@ extension GleanMetrics {
         /// Records why the tabs sync failed: either due to an authentication error,
         /// unexpected exception, or other error. The error strings are truncated and
         /// sanitized to omit PII, like URLs and file system paths.
-        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from tabs_sync.failure_reason
-            category: "tabs_sync",
+        static let failureReason = try! LabeledMetricType<StringMetricType>( // generated from tabs_sync_v2.failure_reason
+            category: "tabs_sync_v2",
             name: "failure_reason",
             sendInPings: ["tabs-sync"],
             lifetime: .ping,
@@ -1038,9 +1109,9 @@ extension GleanMetrics {
 
         /// Records when the tabs sync finished. This includes the time to download, apply,
         /// and upload all records.
-        static let finishedAt = DatetimeMetricType( // generated from tabs_sync.finished_at
+        static let finishedAt = DatetimeMetricType( // generated from tabs_sync_v2.finished_at
             CommonMetricData(
-                category: "tabs_sync",
+                category: "tabs_sync_v2",
                 name: "finished_at",
                 sendInPings: ["tabs-sync"],
                 lifetime: .ping,
@@ -1049,9 +1120,9 @@ extension GleanMetrics {
             , .millisecond
         )
 
-        private static let incomingLabel = CounterMetricType( // generated from tabs_sync.incoming
+        private static let incomingLabel = CounterMetricType( // generated from tabs_sync_v2.incoming
             CommonMetricData(
-                category: "tabs_sync",
+                category: "tabs_sync_v2",
                 name: "incoming",
                 sendInPings: ["tabs-sync"],
                 lifetime: .ping,
@@ -1063,8 +1134,8 @@ extension GleanMetrics {
         /// records that were successfully stored or updated in the local database.
         /// `failed_to_apply` is the number of records that were ignored due to errors.
         /// `reconciled` is the number of merged records.
-        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from tabs_sync.incoming
-            category: "tabs_sync",
+        static let incoming = try! LabeledMetricType<CounterMetricType>( // generated from tabs_sync_v2.incoming
+            category: "tabs_sync_v2",
             name: "incoming",
             sendInPings: ["tabs-sync"],
             lifetime: .ping,
@@ -1073,9 +1144,9 @@ extension GleanMetrics {
             labels: ["applied", "failed_to_apply", "reconciled"]
         )
 
-        private static let outgoingLabel = CounterMetricType( // generated from tabs_sync.outgoing
+        private static let outgoingLabel = CounterMetricType( // generated from tabs_sync_v2.outgoing
             CommonMetricData(
-                category: "tabs_sync",
+                category: "tabs_sync_v2",
                 name: "outgoing",
                 sendInPings: ["tabs-sync"],
                 lifetime: .ping,
@@ -1086,8 +1157,8 @@ extension GleanMetrics {
         /// Records outgoing tabs record counts. `uploaded` is the number of records that
         /// were successfully sent to the server. `failed_to_upload` is the number of
         /// records that weren't uploaded, and will be retried on the next sync.
-        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from tabs_sync.outgoing
-            category: "tabs_sync",
+        static let outgoing = try! LabeledMetricType<CounterMetricType>( // generated from tabs_sync_v2.outgoing
+            category: "tabs_sync_v2",
             name: "outgoing",
             sendInPings: ["tabs-sync"],
             lifetime: .ping,
@@ -1100,9 +1171,9 @@ extension GleanMetrics {
         /// server has a hard limit on the number of records (and request body bytes) on
         /// the number of records that can fit into a single batch, and large syncs may
         /// require multiple batches.
-        static let outgoingBatches = CounterMetricType( // generated from tabs_sync.outgoing_batches
+        static let outgoingBatches = CounterMetricType( // generated from tabs_sync_v2.outgoing_batches
             CommonMetricData(
-                category: "tabs_sync",
+                category: "tabs_sync_v2",
                 name: "outgoing_batches",
                 sendInPings: ["tabs-sync"],
                 lifetime: .ping,
@@ -1111,9 +1182,9 @@ extension GleanMetrics {
         )
 
         /// Records when the tabs sync started.
-        static let startedAt = DatetimeMetricType( // generated from tabs_sync.started_at
+        static let startedAt = DatetimeMetricType( // generated from tabs_sync_v2.started_at
             CommonMetricData(
-                category: "tabs_sync",
+                category: "tabs_sync_v2",
                 name: "started_at",
                 sendInPings: ["tabs-sync"],
                 lifetime: .ping,
@@ -1123,9 +1194,9 @@ extension GleanMetrics {
         )
 
         /// The user's hashed Firefox Account ID.
-        static let uid = StringMetricType( // generated from tabs_sync.uid
+        static let uid = StringMetricType( // generated from tabs_sync_v2.uid
             CommonMetricData(
-                category: "tabs_sync",
+                category: "tabs_sync_v2",
                 name: "uid",
                 sendInPings: ["tabs-sync"],
                 lifetime: .ping,
