@@ -62,7 +62,8 @@ def parse_args():
 
 class VersionInfo:
     def __init__(self, app_services_version):
-        if app_services_version == "nightly":
+        self.is_nightly = app_services_version == "nightly"
+        if self.is_nightly:
             with urlopen(NIGHTLY_JSON_URL) as stream:
                 data = json.loads(gzip.decompress(stream.read()))
                 app_services_version = data['version']
@@ -131,9 +132,14 @@ def replace_files(source_dir, repo_dir):
     shutil.copytree(source_dir, repo_dir)
 
 def swift_artifact_url(version, filename):
-    return ("https://firefox-ci-tc.services.mozilla.com"
-            "/api/index/v1/task/project.application-services.v2"
-            f".swift.{version.app_services_version}/artifacts/public%2Fbuild%2F{filename}")
+    if version.is_nightly:
+        return ("https://firefox-ci-tc.services.mozilla.com"
+                "/api/index/v1/task/project.application-services.v2"
+                f".swift.{version.app_services_version}/artifacts/public/build/{filename}")
+    else:
+        return ("https://archive.mozilla.org"
+                "/pub/app-services/releases/"
+                f"{version.app_services_version}/{filename}")
 
 def repo_has_changes():
     result = subprocess.run([
