@@ -33,7 +33,12 @@ rm -rf "$FOCUS_DIR" && mkdir -p "$FOCUS_DIR"
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
 SOURCE_ROOT="$THIS_DIR" PROJECT="MozillaAppServices" "$GLEAN_GENERATOR" -o "$OUT_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml" "$APP_SERVICES_DIR/components/sync_manager/metrics.yaml" "$APP_SERVICES_DIR/components/sync_manager/pings.yaml"
 
-
+###
+#
+# Remote settings depended on by Nimbus
+#
+###
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/remote_settings/src/remote_settings.udl"
 
 ###
 #
@@ -126,8 +131,11 @@ cp -r "$APP_SERVICES_DIR/components/places/ios/Places" "$OUT_DIR"
 # Sync15
 #
 ###
+# UniFFI generated code for sync15
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$OUT_DIR/Generated" "$APP_SERVICES_DIR/components/sync15/src/sync15.udl"
 
-# We only need to copy the hand-written Swift, sync15 does not use `uniffi` yet
+
+# Hand-written Swift for sync15
 cp -r "$APP_SERVICES_DIR/components/sync15/ios/" $OUT_DIR
 
 ###
@@ -164,6 +172,15 @@ cp -r "$APP_SERVICES_DIR/components/viaduct/ios/" $OUT_DIR
 # Run this first, because it appears to delete any other .swift files in the output directory.
 # Also, it wants to be run from inside Xcode, so we set some env vars to fake it out.
 SOURCE_ROOT="$THIS_DIR" PROJECT="FocusAppServices" "$GLEAN_GENERATOR" -o "$FOCUS_DIR/Generated/Metrics/" "$APP_SERVICES_DIR/components/nimbus/metrics.yaml"
+
+
+###
+#
+# Remote settings depended on by Nimbus
+#
+###
+"${UNIFFI_BINDGEN[@]}" generate -l swift -o "$FOCUS_DIR/Generated" "$APP_SERVICES_DIR/components/remote_settings/src/remote_settings.udl"
+
 
 
 
