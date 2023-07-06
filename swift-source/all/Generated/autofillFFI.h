@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // The following structs are used to implement the lowest level
@@ -28,7 +29,19 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef int32_t (*ForeignCallback)(uint64_t, int32_t, RustBuffer, RustBuffer *_Nonnull);
+typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
+
+// Task defined in Rust that Swift executes
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+
+// Callback to execute Rust tasks using a Swift Task
+//
+// Args:
+//   executor: ForeignExecutor lowered into a size_t value
+//   delay: Delay in MS
+//   task: UniFfiRustTaskCallback to call
+//   task_data: data to pass the task callback
+typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -46,95 +59,115 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_autofill_7499_Store_object_free(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void*_Nonnull autofill_7499_Store_new(
-      RustBuffer dbpath,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_Store_add_credit_card(
-      void*_Nonnull ptr,RustBuffer cc,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_Store_get_credit_card(
-      void*_Nonnull ptr,RustBuffer guid,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_Store_get_all_credit_cards(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void autofill_7499_Store_update_credit_card(
-      void*_Nonnull ptr,RustBuffer guid,RustBuffer cc,
-    RustCallStatus *_Nonnull out_status
-    );
-int8_t autofill_7499_Store_delete_credit_card(
-      void*_Nonnull ptr,RustBuffer guid,
-    RustCallStatus *_Nonnull out_status
-    );
-void autofill_7499_Store_touch_credit_card(
-      void*_Nonnull ptr,RustBuffer guid,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_Store_add_address(
-      void*_Nonnull ptr,RustBuffer a,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_Store_get_address(
-      void*_Nonnull ptr,RustBuffer guid,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_Store_get_all_addresses(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void autofill_7499_Store_update_address(
-      void*_Nonnull ptr,RustBuffer guid,RustBuffer a,
-    RustCallStatus *_Nonnull out_status
-    );
-int8_t autofill_7499_Store_delete_address(
-      void*_Nonnull ptr,RustBuffer guid,
-    RustCallStatus *_Nonnull out_status
-    );
-void autofill_7499_Store_touch_address(
-      void*_Nonnull ptr,RustBuffer guid,
-    RustCallStatus *_Nonnull out_status
-    );
-void autofill_7499_Store_scrub_encrypted_data(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void autofill_7499_Store_register_with_sync_manager(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_create_autofill_key(
-      
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_encrypt_string(
-      RustBuffer key,RustBuffer cleartext,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer autofill_7499_decrypt_string(
-      RustBuffer key,RustBuffer ciphertext,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_autofill_7499_rustbuffer_alloc(
-      int32_t size,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_autofill_7499_rustbuffer_from_bytes(
-      ForeignBytes bytes,
-    RustCallStatus *_Nonnull out_status
-    );
-void ffi_autofill_7499_rustbuffer_free(
-      RustBuffer buf,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_autofill_7499_rustbuffer_reserve(
-      RustBuffer buf,int32_t additional,
-    RustCallStatus *_Nonnull out_status
-    );
+// Callbacks for UniFFI Futures
+typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackInt8)(const void * _Nonnull, int8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+
+// Scaffolding functions
+void uniffi_autofill_fn_free_store(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_autofill_fn_constructor_store_new(RustBuffer dbpath, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_method_store_add_credit_card(void*_Nonnull ptr, RustBuffer cc, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_method_store_get_credit_card(void*_Nonnull ptr, RustBuffer guid, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_method_store_get_all_credit_cards(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_autofill_fn_method_store_update_credit_card(void*_Nonnull ptr, RustBuffer guid, RustBuffer cc, RustCallStatus *_Nonnull out_status
+);
+int8_t uniffi_autofill_fn_method_store_delete_credit_card(void*_Nonnull ptr, RustBuffer guid, RustCallStatus *_Nonnull out_status
+);
+void uniffi_autofill_fn_method_store_touch_credit_card(void*_Nonnull ptr, RustBuffer guid, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_method_store_add_address(void*_Nonnull ptr, RustBuffer a, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_method_store_get_address(void*_Nonnull ptr, RustBuffer guid, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_method_store_get_all_addresses(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_autofill_fn_method_store_update_address(void*_Nonnull ptr, RustBuffer guid, RustBuffer a, RustCallStatus *_Nonnull out_status
+);
+int8_t uniffi_autofill_fn_method_store_delete_address(void*_Nonnull ptr, RustBuffer guid, RustCallStatus *_Nonnull out_status
+);
+void uniffi_autofill_fn_method_store_touch_address(void*_Nonnull ptr, RustBuffer guid, RustCallStatus *_Nonnull out_status
+);
+void uniffi_autofill_fn_method_store_scrub_encrypted_data(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_autofill_fn_method_store_register_with_sync_manager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_func_create_autofill_key(RustCallStatus *_Nonnull out_status
+    
+);
+RustBuffer uniffi_autofill_fn_func_encrypt_string(RustBuffer key, RustBuffer cleartext, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_autofill_fn_func_decrypt_string(RustBuffer key, RustBuffer ciphertext, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_autofill_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_autofill_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
+);
+void ffi_autofill_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_autofill_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_autofill_checksum_func_create_autofill_key(void
+    
+);
+uint16_t uniffi_autofill_checksum_func_encrypt_string(void
+    
+);
+uint16_t uniffi_autofill_checksum_func_decrypt_string(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_add_credit_card(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_get_credit_card(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_get_all_credit_cards(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_update_credit_card(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_delete_credit_card(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_touch_credit_card(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_add_address(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_get_address(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_get_all_addresses(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_update_address(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_delete_address(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_touch_address(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_scrub_encrypted_data(void
+    
+);
+uint16_t uniffi_autofill_checksum_method_store_register_with_sync_manager(void
+    
+);
+uint16_t uniffi_autofill_checksum_constructor_store_new(void
+    
+);
+uint32_t ffi_autofill_uniffi_contract_version(void
+    
+);
+

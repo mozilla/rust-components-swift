@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_push_3e7f_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_push_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_push_3e7f_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_push_rustbuffer_free(self, $0) }
     }
 }
 
@@ -239,28 +239,42 @@ private extension RustCallStatus {
 }
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: {
-        $0.deallocate()
-        return UniffiInternalError.unexpectedRustCallError
-    })
+    try makeRustCall(callback, errorHandler: nil)
 }
 
-private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
-    where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+private func rustCallWithError<T>(
+    _ errorHandler: @escaping (RustBuffer) throws -> Error,
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
+) throws -> T {
+    try makeRustCall(callback, errorHandler: errorHandler)
 }
 
-private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
+private func makeRustCall<T>(
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws -> T {
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
+    try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
+    return returnedVal
+}
+
+private func uniffiCheckCallStatus(
+    callStatus: RustCallStatus,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws {
     switch callStatus.code {
     case CALL_SUCCESS:
-        return returnedVal
+        return
 
     case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        if let errorHandler = errorHandler {
+            throw try errorHandler(callStatus.errorBuf)
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.unexpectedRustCallError
+        }
 
     case CALL_PANIC:
         // When the rust code sees a panic, it tries to construct a RustBuffer
@@ -386,76 +400,74 @@ public class PushManager: PushManagerProtocol {
     }
 
     public convenience init(config: PushConfiguration) throws {
-        try self.init(unsafeFromRawPointer:
-
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_new(
-                    FfiConverterTypePushConfiguration.lower(config), $0
-                )
-            })
+        try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypePushApiError.lift) {
+            uniffi_push_fn_constructor_pushmanager_new(
+                FfiConverterTypePushConfiguration.lower(config), $0
+            )
+        })
     }
 
     deinit {
-        try! rustCall { ffi_push_3e7f_PushManager_object_free(pointer, $0) }
+        try! rustCall { uniffi_push_fn_free_pushmanager(pointer, $0) }
     }
 
     public func subscribe(scope: String, appServerSey: String? = nil) throws -> SubscriptionResponse {
         return try FfiConverterTypeSubscriptionResponse.lift(
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_subscribe(self.pointer,
-                                                FfiConverterString.lower(scope),
-                                                FfiConverterOptionString.lower(appServerSey), $0)
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_subscribe(self.pointer,
+                                                            FfiConverterString.lower(scope),
+                                                            FfiConverterOptionString.lower(appServerSey), $0)
             }
         )
     }
 
     public func getSubscription(scope: String) throws -> SubscriptionResponse? {
         return try FfiConverterOptionTypeSubscriptionResponse.lift(
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_get_subscription(self.pointer,
-                                                       FfiConverterString.lower(scope), $0)
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_get_subscription(self.pointer,
+                                                                   FfiConverterString.lower(scope), $0)
             }
         )
     }
 
     public func unsubscribe(scope: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_unsubscribe(self.pointer,
-                                                  FfiConverterString.lower(scope), $0)
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_unsubscribe(self.pointer,
+                                                              FfiConverterString.lower(scope), $0)
             }
         )
     }
 
     public func unsubscribeAll() throws {
         try
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_unsubscribe_all(self.pointer, $0)
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_unsubscribe_all(self.pointer, $0)
             }
     }
 
     public func update(registrationToken: String) throws {
         try
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_update(self.pointer,
-                                             FfiConverterString.lower(registrationToken), $0)
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_update(self.pointer,
+                                                         FfiConverterString.lower(registrationToken), $0)
             }
     }
 
     public func verifyConnection(forceVerify: Bool = false) throws -> [PushSubscriptionChanged] {
         return try FfiConverterSequenceTypePushSubscriptionChanged.lift(
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_verify_connection(self.pointer,
-                                                        FfiConverterBool.lower(forceVerify), $0)
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_verify_connection(self.pointer,
+                                                                    FfiConverterBool.lower(forceVerify), $0)
             }
         )
     }
 
     public func decrypt(payload: [String: String]) throws -> DecryptResponse {
         return try FfiConverterTypeDecryptResponse.lift(
-            rustCallWithError(FfiConverterTypePushApiError.self) {
-                push_3e7f_PushManager_decrypt(self.pointer,
-                                              FfiConverterDictionaryStringString.lower(payload), $0)
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_decrypt(self.pointer,
+                                                          FfiConverterDictionaryStringString.lower(payload), $0)
             }
         )
     }
@@ -489,6 +501,14 @@ public struct FfiConverterTypePushManager: FfiConverter {
     public static func lower(_ value: PushManager) -> UnsafeMutableRawPointer {
         return value.pointer
     }
+}
+
+public func FfiConverterTypePushManager_lift(_ pointer: UnsafeMutableRawPointer) throws -> PushManager {
+    return try FfiConverterTypePushManager.lift(pointer)
+}
+
+public func FfiConverterTypePushManager_lower(_ value: PushManager) -> UnsafeMutableRawPointer {
+    return FfiConverterTypePushManager.lower(value)
 }
 
 public struct DecryptResponse {
@@ -877,6 +897,59 @@ public func FfiConverterTypeBridgeType_lower(_ value: BridgeType) -> RustBuffer 
 
 extension BridgeType: Equatable, Hashable {}
 
+public enum PushApiError {
+    // Simple error enums only carry a message
+    case UaidNotRecognizedError(message: String)
+
+    // Simple error enums only carry a message
+    case RecordNotFoundError(message: String)
+
+    // Simple error enums only carry a message
+    case InternalError(message: String)
+
+    fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
+        return try FfiConverterTypePushApiError.lift(error)
+    }
+}
+
+public struct FfiConverterTypePushApiError: FfiConverterRustBuffer {
+    typealias SwiftType = PushApiError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PushApiError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return try .UaidNotRecognizedError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 2: return try .RecordNotFoundError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 3: return try .InternalError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: PushApiError, into buf: inout [UInt8]) {
+        switch value {
+        case let .UaidNotRecognizedError(message):
+            writeInt(&buf, Int32(1))
+        case let .RecordNotFoundError(message):
+            writeInt(&buf, Int32(2))
+        case let .InternalError(message):
+            writeInt(&buf, Int32(3))
+        }
+    }
+}
+
+extension PushApiError: Equatable, Hashable {}
+
+extension PushApiError: Error {}
+
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum PushHttpProtocol {
@@ -918,58 +991,6 @@ public func FfiConverterTypePushHttpProtocol_lower(_ value: PushHttpProtocol) ->
 }
 
 extension PushHttpProtocol: Equatable, Hashable {}
-
-public enum PushApiError {
-    // Simple error enums only carry a message
-    case UaidNotRecognizedError(message: String)
-
-    // Simple error enums only carry a message
-    case RecordNotFoundError(message: String)
-
-    // Simple error enums only carry a message
-    case InternalError(message: String)
-}
-
-public struct FfiConverterTypePushApiError: FfiConverterRustBuffer {
-    typealias SwiftType = PushApiError
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PushApiError {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        case 1: return try .UaidNotRecognizedError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 2: return try .RecordNotFoundError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 3: return try .InternalError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: PushApiError, into buf: inout [UInt8]) {
-        switch value {
-        case let .UaidNotRecognizedError(message):
-            writeInt(&buf, Int32(1))
-            FfiConverterString.write(message, into: &buf)
-        case let .RecordNotFoundError(message):
-            writeInt(&buf, Int32(2))
-            FfiConverterString.write(message, into: &buf)
-        case let .InternalError(message):
-            writeInt(&buf, Int32(3))
-            FfiConverterString.write(message, into: &buf)
-        }
-    }
-}
-
-extension PushApiError: Equatable, Hashable {}
-
-extension PushApiError: Error {}
 
 private struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
     typealias SwiftType = UInt64?
@@ -1101,14 +1122,57 @@ private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
     }
 }
 
-/**
- * Top level initializers and tear down methods.
- *
- * This is generated by uniffi.
- */
-public enum PushLifecycle {
-    /**
-     * Initialize the FFI and Rust library. This should be only called once per application.
-     */
-    func initialize() {}
+private enum InitializationResult {
+    case ok
+    case contractVersionMismatch
+    case apiChecksumMismatch
+}
+
+// Use a global variables to perform the versioning checks. Swift ensures that
+// the code inside is only computed once.
+private var initializationResult: InitializationResult {
+    // Get the bindings contract version from our ComponentInterface
+    let bindings_contract_version = 22
+    // Get the scaffolding contract version by calling the into the dylib
+    let scaffolding_contract_version = ffi_push_uniffi_contract_version()
+    if bindings_contract_version != scaffolding_contract_version {
+        return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_push_checksum_method_pushmanager_subscribe() != 14735 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_push_checksum_method_pushmanager_get_subscription() != 56522 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_push_checksum_method_pushmanager_unsubscribe() != 51690 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_push_checksum_method_pushmanager_unsubscribe_all() != 3459 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_push_checksum_method_pushmanager_update() != 1735 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_push_checksum_method_pushmanager_verify_connection() != 42522 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_push_checksum_method_pushmanager_decrypt() != 7991 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_push_checksum_constructor_pushmanager_new() != 55042 {
+        return InitializationResult.apiChecksumMismatch
+    }
+
+    return InitializationResult.ok
+}
+
+private func uniffiEnsureInitialized() {
+    switch initializationResult {
+    case .ok:
+        break
+    case .contractVersionMismatch:
+        fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
+    case .apiChecksumMismatch:
+        fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
 }

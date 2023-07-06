@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_syncmanager_a22a_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_syncmanager_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_syncmanager_a22a_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_syncmanager_rustbuffer_free(self, $0) }
     }
 }
 
@@ -239,28 +239,42 @@ private extension RustCallStatus {
 }
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: {
-        $0.deallocate()
-        return UniffiInternalError.unexpectedRustCallError
-    })
+    try makeRustCall(callback, errorHandler: nil)
 }
 
-private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
-    where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+private func rustCallWithError<T>(
+    _ errorHandler: @escaping (RustBuffer) throws -> Error,
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
+) throws -> T {
+    try makeRustCall(callback, errorHandler: errorHandler)
 }
 
-private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
+private func makeRustCall<T>(
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws -> T {
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
+    try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
+    return returnedVal
+}
+
+private func uniffiCheckCallStatus(
+    callStatus: RustCallStatus,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws {
     switch callStatus.code {
     case CALL_SUCCESS:
-        return returnedVal
+        return
 
     case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        if let errorHandler = errorHandler {
+            throw try errorHandler(callStatus.errorBuf)
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.unexpectedRustCallError
+        }
 
     case CALL_PANIC:
         // When the rust code sees a panic, it tries to construct a RustBuffer
@@ -391,29 +405,27 @@ public class SyncManager: SyncManagerProtocol {
     }
 
     public convenience init() {
-        self.init(unsafeFromRawPointer: try!
-
-            rustCall {
-                syncmanager_a22a_SyncManager_new($0)
-            })
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_syncmanager_fn_constructor_syncmanager_new($0)
+        })
     }
 
     deinit {
-        try! rustCall { ffi_syncmanager_a22a_SyncManager_object_free(pointer, $0) }
+        try! rustCall { uniffi_syncmanager_fn_free_syncmanager(pointer, $0) }
     }
 
     public func disconnect() {
         try!
             rustCall {
-                syncmanager_a22a_SyncManager_disconnect(self.pointer, $0)
+                uniffi_syncmanager_fn_method_syncmanager_disconnect(self.pointer, $0)
             }
     }
 
     public func sync(params: SyncParams) throws -> SyncResult {
         return try FfiConverterTypeSyncResult.lift(
-            rustCallWithError(FfiConverterTypeSyncManagerError.self) {
-                syncmanager_a22a_SyncManager_sync(self.pointer,
-                                                  FfiConverterTypeSyncParams.lower(params), $0)
+            rustCallWithError(FfiConverterTypeSyncManagerError.lift) {
+                uniffi_syncmanager_fn_method_syncmanager_sync(self.pointer,
+                                                              FfiConverterTypeSyncParams.lower(params), $0)
             }
         )
     }
@@ -422,7 +434,7 @@ public class SyncManager: SyncManagerProtocol {
         return try! FfiConverterSequenceString.lift(
             try!
                 rustCall {
-                    syncmanager_a22a_SyncManager_get_available_engines(self.pointer, $0)
+                    uniffi_syncmanager_fn_method_syncmanager_get_available_engines(self.pointer, $0)
                 }
         )
     }
@@ -456,6 +468,14 @@ public struct FfiConverterTypeSyncManager: FfiConverter {
     public static func lower(_ value: SyncManager) -> UnsafeMutableRawPointer {
         return value.pointer
     }
+}
+
+public func FfiConverterTypeSyncManager_lift(_ pointer: UnsafeMutableRawPointer) throws -> SyncManager {
+    return try FfiConverterTypeSyncManager.lift(pointer)
+}
+
+public func FfiConverterTypeSyncManager_lower(_ value: SyncManager) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeSyncManager.lower(value)
 }
 
 public struct DeviceSettings {
@@ -877,6 +897,113 @@ public func FfiConverterTypeSyncEngineSelection_lower(_ value: SyncEngineSelecti
 
 extension SyncEngineSelection: Equatable, Hashable {}
 
+public enum SyncManagerError {
+    // Simple error enums only carry a message
+    case UnknownEngine(message: String)
+
+    // Simple error enums only carry a message
+    case UnsupportedFeature(message: String)
+
+    // Simple error enums only carry a message
+    case Sync15Error(message: String)
+
+    // Simple error enums only carry a message
+    case UrlParseError(message: String)
+
+    // Simple error enums only carry a message
+    case InterruptedError(message: String)
+
+    // Simple error enums only carry a message
+    case JsonError(message: String)
+
+    // Simple error enums only carry a message
+    case LoginsError(message: String)
+
+    // Simple error enums only carry a message
+    case PlacesError(message: String)
+
+    // Simple error enums only carry a message
+    case AnyhowError(message: String)
+
+    fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
+        return try FfiConverterTypeSyncManagerError.lift(error)
+    }
+}
+
+public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
+    typealias SwiftType = SyncManagerError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncManagerError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return try .UnknownEngine(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 2: return try .UnsupportedFeature(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 3: return try .Sync15Error(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return try .UrlParseError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 5: return try .InterruptedError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 6: return try .JsonError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 7: return try .LoginsError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 8: return try .PlacesError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 9: return try .AnyhowError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SyncManagerError, into buf: inout [UInt8]) {
+        switch value {
+        case let .UnknownEngine(message):
+            writeInt(&buf, Int32(1))
+        case let .UnsupportedFeature(message):
+            writeInt(&buf, Int32(2))
+        case let .Sync15Error(message):
+            writeInt(&buf, Int32(3))
+        case let .UrlParseError(message):
+            writeInt(&buf, Int32(4))
+        case let .InterruptedError(message):
+            writeInt(&buf, Int32(5))
+        case let .JsonError(message):
+            writeInt(&buf, Int32(6))
+        case let .LoginsError(message):
+            writeInt(&buf, Int32(7))
+        case let .PlacesError(message):
+            writeInt(&buf, Int32(8))
+        case let .AnyhowError(message):
+            writeInt(&buf, Int32(9))
+        }
+    }
+}
+
+extension SyncManagerError: Equatable, Hashable {}
+
+extension SyncManagerError: Error {}
+
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum SyncReason {
@@ -942,118 +1069,6 @@ public func FfiConverterTypeSyncReason_lower(_ value: SyncReason) -> RustBuffer 
 }
 
 extension SyncReason: Equatable, Hashable {}
-
-public enum SyncManagerError {
-    // Simple error enums only carry a message
-    case UnknownEngine(message: String)
-
-    // Simple error enums only carry a message
-    case UnsupportedFeature(message: String)
-
-    // Simple error enums only carry a message
-    case Sync15Error(message: String)
-
-    // Simple error enums only carry a message
-    case UrlParseError(message: String)
-
-    // Simple error enums only carry a message
-    case InterruptedError(message: String)
-
-    // Simple error enums only carry a message
-    case JsonError(message: String)
-
-    // Simple error enums only carry a message
-    case LoginsError(message: String)
-
-    // Simple error enums only carry a message
-    case PlacesError(message: String)
-
-    // Simple error enums only carry a message
-    case AnyhowError(message: String)
-}
-
-public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
-    typealias SwiftType = SyncManagerError
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SyncManagerError {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        case 1: return try .UnknownEngine(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 2: return try .UnsupportedFeature(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 3: return try .Sync15Error(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 4: return try .UrlParseError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 5: return try .InterruptedError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 6: return try .JsonError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 7: return try .LoginsError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 8: return try .PlacesError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 9: return try .AnyhowError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: SyncManagerError, into buf: inout [UInt8]) {
-        switch value {
-        case let .UnknownEngine(message):
-            writeInt(&buf, Int32(1))
-            FfiConverterString.write(message, into: &buf)
-        case let .UnsupportedFeature(message):
-            writeInt(&buf, Int32(2))
-            FfiConverterString.write(message, into: &buf)
-        case let .Sync15Error(message):
-            writeInt(&buf, Int32(3))
-            FfiConverterString.write(message, into: &buf)
-        case let .UrlParseError(message):
-            writeInt(&buf, Int32(4))
-            FfiConverterString.write(message, into: &buf)
-        case let .InterruptedError(message):
-            writeInt(&buf, Int32(5))
-            FfiConverterString.write(message, into: &buf)
-        case let .JsonError(message):
-            writeInt(&buf, Int32(6))
-            FfiConverterString.write(message, into: &buf)
-        case let .LoginsError(message):
-            writeInt(&buf, Int32(7))
-            FfiConverterString.write(message, into: &buf)
-        case let .PlacesError(message):
-            writeInt(&buf, Int32(8))
-            FfiConverterString.write(message, into: &buf)
-        case let .AnyhowError(message):
-            writeInt(&buf, Int32(9))
-            FfiConverterString.write(message, into: &buf)
-        }
-    }
-}
-
-extension SyncManagerError: Equatable, Hashable {}
-
-extension SyncManagerError: Error {}
 
 private struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
@@ -1186,14 +1201,45 @@ private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
     }
 }
 
-/**
- * Top level initializers and tear down methods.
- *
- * This is generated by uniffi.
- */
-public enum SyncmanagerLifecycle {
-    /**
-     * Initialize the FFI and Rust library. This should be only called once per application.
-     */
-    func initialize() {}
+private enum InitializationResult {
+    case ok
+    case contractVersionMismatch
+    case apiChecksumMismatch
+}
+
+// Use a global variables to perform the versioning checks. Swift ensures that
+// the code inside is only computed once.
+private var initializationResult: InitializationResult {
+    // Get the bindings contract version from our ComponentInterface
+    let bindings_contract_version = 22
+    // Get the scaffolding contract version by calling the into the dylib
+    let scaffolding_contract_version = ffi_syncmanager_uniffi_contract_version()
+    if bindings_contract_version != scaffolding_contract_version {
+        return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_syncmanager_checksum_method_syncmanager_disconnect() != 41067 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_syncmanager_checksum_method_syncmanager_sync() != 40502 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_syncmanager_checksum_method_syncmanager_get_available_engines() != 20164 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_syncmanager_checksum_constructor_syncmanager_new() != 14200 {
+        return InitializationResult.apiChecksumMismatch
+    }
+
+    return InitializationResult.ok
+}
+
+private func uniffiEnsureInitialized() {
+    switch initializationResult {
+    case .ok:
+        break
+    case .contractVersionMismatch:
+        fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
+    case .apiChecksumMismatch:
+        fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
 }

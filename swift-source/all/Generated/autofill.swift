@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_autofill_7499_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_autofill_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_autofill_7499_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_autofill_rustbuffer_free(self, $0) }
     }
 }
 
@@ -239,28 +239,42 @@ private extension RustCallStatus {
 }
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: {
-        $0.deallocate()
-        return UniffiInternalError.unexpectedRustCallError
-    })
+    try makeRustCall(callback, errorHandler: nil)
 }
 
-private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
-    where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+private func rustCallWithError<T>(
+    _ errorHandler: @escaping (RustBuffer) throws -> Error,
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
+) throws -> T {
+    try makeRustCall(callback, errorHandler: errorHandler)
 }
 
-private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
+private func makeRustCall<T>(
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws -> T {
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
+    try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
+    return returnedVal
+}
+
+private func uniffiCheckCallStatus(
+    callStatus: RustCallStatus,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws {
     switch callStatus.code {
     case CALL_SUCCESS:
-        return returnedVal
+        return
 
     case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        if let errorHandler = errorHandler {
+            throw try errorHandler(callStatus.errorBuf)
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.unexpectedRustCallError
+        }
 
     case CALL_PANIC:
         // When the rust code sees a panic, it tries to construct a RustBuffer
@@ -380,134 +394,132 @@ public class Store: StoreProtocol {
     }
 
     public convenience init(dbpath: String) throws {
-        try self.init(unsafeFromRawPointer:
-
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_new(
-                    FfiConverterString.lower(dbpath), $0
-                )
-            })
+        try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+            uniffi_autofill_fn_constructor_store_new(
+                FfiConverterString.lower(dbpath), $0
+            )
+        })
     }
 
     deinit {
-        try! rustCall { ffi_autofill_7499_Store_object_free(pointer, $0) }
+        try! rustCall { uniffi_autofill_fn_free_store(pointer, $0) }
     }
 
     public func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard {
         return try FfiConverterTypeCreditCard.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_add_credit_card(self.pointer,
-                                                    FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_add_credit_card(self.pointer,
+                                                                FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
             }
         )
     }
 
     public func getCreditCard(guid: String) throws -> CreditCard {
         return try FfiConverterTypeCreditCard.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_credit_card(self.pointer,
-                                                    FfiConverterString.lower(guid), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_get_credit_card(self.pointer,
+                                                                FfiConverterString.lower(guid), $0)
             }
         )
     }
 
     public func getAllCreditCards() throws -> [CreditCard] {
         return try FfiConverterSequenceTypeCreditCard.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_all_credit_cards(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_get_all_credit_cards(self.pointer, $0)
             }
         )
     }
 
     public func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws {
         try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_update_credit_card(self.pointer,
-                                                       FfiConverterString.lower(guid),
-                                                       FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_update_credit_card(self.pointer,
+                                                                   FfiConverterString.lower(guid),
+                                                                   FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
             }
     }
 
     public func deleteCreditCard(guid: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_delete_credit_card(self.pointer,
-                                                       FfiConverterString.lower(guid), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_delete_credit_card(self.pointer,
+                                                                   FfiConverterString.lower(guid), $0)
             }
         )
     }
 
     public func touchCreditCard(guid: String) throws {
         try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_touch_credit_card(self.pointer,
-                                                      FfiConverterString.lower(guid), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_touch_credit_card(self.pointer,
+                                                                  FfiConverterString.lower(guid), $0)
             }
     }
 
     public func addAddress(a: UpdatableAddressFields) throws -> Address {
         return try FfiConverterTypeAddress.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_add_address(self.pointer,
-                                                FfiConverterTypeUpdatableAddressFields.lower(a), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_add_address(self.pointer,
+                                                            FfiConverterTypeUpdatableAddressFields.lower(a), $0)
             }
         )
     }
 
     public func getAddress(guid: String) throws -> Address {
         return try FfiConverterTypeAddress.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_address(self.pointer,
-                                                FfiConverterString.lower(guid), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_get_address(self.pointer,
+                                                            FfiConverterString.lower(guid), $0)
             }
         )
     }
 
     public func getAllAddresses() throws -> [Address] {
         return try FfiConverterSequenceTypeAddress.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_get_all_addresses(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_get_all_addresses(self.pointer, $0)
             }
         )
     }
 
     public func updateAddress(guid: String, a: UpdatableAddressFields) throws {
         try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_update_address(self.pointer,
-                                                   FfiConverterString.lower(guid),
-                                                   FfiConverterTypeUpdatableAddressFields.lower(a), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_update_address(self.pointer,
+                                                               FfiConverterString.lower(guid),
+                                                               FfiConverterTypeUpdatableAddressFields.lower(a), $0)
             }
     }
 
     public func deleteAddress(guid: String) throws -> Bool {
         return try FfiConverterBool.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_delete_address(self.pointer,
-                                                   FfiConverterString.lower(guid), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_delete_address(self.pointer,
+                                                               FfiConverterString.lower(guid), $0)
             }
         )
     }
 
     public func touchAddress(guid: String) throws {
         try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_touch_address(self.pointer,
-                                                  FfiConverterString.lower(guid), $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_touch_address(self.pointer,
+                                                              FfiConverterString.lower(guid), $0)
             }
     }
 
     public func scrubEncryptedData() throws {
         try
-            rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-                autofill_7499_Store_scrub_encrypted_data(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_scrub_encrypted_data(self.pointer, $0)
             }
     }
 
     public func registerWithSyncManager() {
         try!
             rustCall {
-                autofill_7499_Store_register_with_sync_manager(self.pointer, $0)
+                uniffi_autofill_fn_method_store_register_with_sync_manager(self.pointer, $0)
             }
     }
 }
@@ -540,6 +552,14 @@ public struct FfiConverterTypeStore: FfiConverter {
     public static func lower(_ value: Store) -> UnsafeMutableRawPointer {
         return value.pointer
     }
+}
+
+public func FfiConverterTypeStore_lift(_ pointer: UnsafeMutableRawPointer) throws -> Store {
+    return try FfiConverterTypeStore.lift(pointer)
+}
+
+public func FfiConverterTypeStore_lower(_ value: Store) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeStore.lower(value)
 }
 
 public struct Address {
@@ -1056,6 +1076,10 @@ public enum AutofillApiError {
     case CryptoError(reason: String)
     case NoSuchRecord(guid: String)
     case UnexpectedAutofillApiError(reason: String)
+
+    fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
+        return try FfiConverterTypeAutofillApiError.lift(error)
+    }
 }
 
 public struct FfiConverterTypeAutofillApiError: FfiConverterRustBuffer {
@@ -1177,16 +1201,16 @@ private struct FfiConverterSequenceTypeCreditCard: FfiConverterRustBuffer {
 
 public func createAutofillKey() throws -> String {
     return try FfiConverterString.lift(
-        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-            autofill_7499_create_autofill_key($0)
+        rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+            uniffi_autofill_fn_func_create_autofill_key($0)
         }
     )
 }
 
 public func encryptString(key: String, cleartext: String) throws -> String {
     return try FfiConverterString.lift(
-        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-            autofill_7499_encrypt_string(
+        rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+            uniffi_autofill_fn_func_encrypt_string(
                 FfiConverterString.lower(key),
                 FfiConverterString.lower(cleartext), $0
             )
@@ -1196,8 +1220,8 @@ public func encryptString(key: String, cleartext: String) throws -> String {
 
 public func decryptString(key: String, ciphertext: String) throws -> String {
     return try FfiConverterString.lift(
-        rustCallWithError(FfiConverterTypeAutofillApiError.self) {
-            autofill_7499_decrypt_string(
+        rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+            uniffi_autofill_fn_func_decrypt_string(
                 FfiConverterString.lower(key),
                 FfiConverterString.lower(ciphertext), $0
             )
@@ -1205,14 +1229,87 @@ public func decryptString(key: String, ciphertext: String) throws -> String {
     )
 }
 
-/**
- * Top level initializers and tear down methods.
- *
- * This is generated by uniffi.
- */
-public enum AutofillLifecycle {
-    /**
-     * Initialize the FFI and Rust library. This should be only called once per application.
-     */
-    func initialize() {}
+private enum InitializationResult {
+    case ok
+    case contractVersionMismatch
+    case apiChecksumMismatch
+}
+
+// Use a global variables to perform the versioning checks. Swift ensures that
+// the code inside is only computed once.
+private var initializationResult: InitializationResult {
+    // Get the bindings contract version from our ComponentInterface
+    let bindings_contract_version = 22
+    // Get the scaffolding contract version by calling the into the dylib
+    let scaffolding_contract_version = ffi_autofill_uniffi_contract_version()
+    if bindings_contract_version != scaffolding_contract_version {
+        return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_autofill_checksum_func_create_autofill_key() != 13681 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_func_encrypt_string() != 12480 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_func_decrypt_string() != 30035 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_add_credit_card() != 45676 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_get_credit_card() != 34828 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_get_all_credit_cards() != 22645 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_update_credit_card() != 10782 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_delete_credit_card() != 22780 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_touch_credit_card() != 32219 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_add_address() != 2642 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_get_address() != 11899 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_get_all_addresses() != 52838 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_update_address() != 4555 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_delete_address() != 13021 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_touch_address() != 14746 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_scrub_encrypted_data() != 50223 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_method_store_register_with_sync_manager() != 45221 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_autofill_checksum_constructor_store_new() != 64898 {
+        return InitializationResult.apiChecksumMismatch
+    }
+
+    return InitializationResult.ok
+}
+
+private func uniffiEnsureInitialized() {
+    switch initializationResult {
+    case .ok:
+        break
+    case .contractVersionMismatch:
+        fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
+    case .apiChecksumMismatch:
+        fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
 }

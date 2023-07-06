@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_fxa_client_83f1_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_fxa_client_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_fxa_client_83f1_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_fxa_client_rustbuffer_free(self, $0) }
     }
 }
 
@@ -239,28 +239,42 @@ private extension RustCallStatus {
 }
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: {
-        $0.deallocate()
-        return UniffiInternalError.unexpectedRustCallError
-    })
+    try makeRustCall(callback, errorHandler: nil)
 }
 
-private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
-    where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+private func rustCallWithError<T>(
+    _ errorHandler: @escaping (RustBuffer) throws -> Error,
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
+) throws -> T {
+    try makeRustCall(callback, errorHandler: errorHandler)
 }
 
-private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
+private func makeRustCall<T>(
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws -> T {
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
+    try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
+    return returnedVal
+}
+
+private func uniffiCheckCallStatus(
+    callStatus: RustCallStatus,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws {
     switch callStatus.code {
     case CALL_SUCCESS:
-        return returnedVal
+        return
 
     case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        if let errorHandler = errorHandler {
+            throw try errorHandler(callStatus.errorBuf)
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.unexpectedRustCallError
+        }
 
     case CALL_PANIC:
         // When the rust code sees a panic, it tries to construct a RustBuffer
@@ -382,9 +396,6 @@ public protocol FirefoxAccountProtocol {
     func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws -> String
     func clearAccessTokenCache()
     func gatherTelemetry() throws -> String
-    func migrateFromSessionToken(sessionToken: String, kSync: String, kXcs: String, copySessionToken: Bool) throws -> FxAMigrationResult
-    func retryMigrateFromSessionToken() throws -> FxAMigrationResult
-    func isInMigrationState() -> MigrationState
 }
 
 public class FirefoxAccount: FirefoxAccountProtocol {
@@ -398,81 +409,77 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     }
 
     public convenience init(config: FxaConfig) {
-        self.init(unsafeFromRawPointer: try!
-
-            rustCall {
-                fxa_client_83f1_FirefoxAccount_new(
-                    FfiConverterTypeFxaConfig.lower(config), $0
-                )
-            })
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_fxa_client_fn_constructor_firefoxaccount_new(
+                FfiConverterTypeFxaConfig.lower(config), $0
+            )
+        })
     }
 
     deinit {
-        try! rustCall { ffi_fxa_client_83f1_FirefoxAccount_object_free(pointer, $0) }
+        try! rustCall { uniffi_fxa_client_fn_free_firefoxaccount(pointer, $0) }
     }
 
     public static func fromJson(data: String) throws -> FirefoxAccount {
-        return try FirefoxAccount(unsafeFromRawPointer:
-
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_from_json(
-                    FfiConverterString.lower(data), $0
-                )
-            })
+        return try FirefoxAccount(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeFxaError.lift) {
+            uniffi_fxa_client_fn_constructor_firefoxaccount_from_json(
+                FfiConverterString.lower(data), $0
+            )
+        })
     }
 
     public func toJson() throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_to_json(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_to_json(self.pointer, $0)
             }
         )
     }
 
     public func beginOauthFlow(scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_begin_oauth_flow(self.pointer,
-                                                                FfiConverterSequenceString.lower(scopes),
-                                                                FfiConverterString.lower(entrypoint),
-                                                                FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(self.pointer,
+                                                                            FfiConverterSequenceString.lower(scopes),
+                                                                            FfiConverterString.lower(entrypoint),
+                                                                            FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
             }
         )
     }
 
     public func getPairingAuthorityUrl() throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_pairing_authority_url(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(self.pointer, $0)
             }
         )
     }
 
     public func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_begin_pairing_flow(self.pointer,
-                                                                  FfiConverterString.lower(pairingUrl),
-                                                                  FfiConverterSequenceString.lower(scopes),
-                                                                  FfiConverterString.lower(entrypoint),
-                                                                  FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(self.pointer,
+                                                                              FfiConverterString.lower(pairingUrl),
+                                                                              FfiConverterSequenceString.lower(scopes),
+                                                                              FfiConverterString.lower(entrypoint),
+                                                                              FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
             }
         )
     }
 
     public func completeOauthFlow(code: String, state: String) throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_complete_oauth_flow(self.pointer,
-                                                                   FfiConverterString.lower(code),
-                                                                   FfiConverterString.lower(state), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(self.pointer,
+                                                                               FfiConverterString.lower(code),
+                                                                               FfiConverterString.lower(state), $0)
             }
     }
 
     public func checkAuthorizationStatus() throws -> AuthorizationInfo {
         return try FfiConverterTypeAuthorizationInfo.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_check_authorization_status(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_check_authorization_status(self.pointer, $0)
             }
         )
     }
@@ -480,177 +487,177 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func disconnect() {
         try!
             rustCall {
-                fxa_client_83f1_FirefoxAccount_disconnect(self.pointer, $0)
+                uniffi_fxa_client_fn_method_firefoxaccount_disconnect(self.pointer, $0)
             }
     }
 
     public func getProfile(ignoreCache: Bool) throws -> Profile {
         return try FfiConverterTypeProfile.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_profile(self.pointer,
-                                                           FfiConverterBool.lower(ignoreCache), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_profile(self.pointer,
+                                                                       FfiConverterBool.lower(ignoreCache), $0)
             }
         )
     }
 
     public func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_initialize_device(self.pointer,
-                                                                 FfiConverterString.lower(name),
-                                                                 FfiConverterTypeDeviceType_lower(deviceType),
-                                                                 FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(self.pointer,
+                                                                             FfiConverterString.lower(name),
+                                                                             FfiConverterTypeDeviceType_lower(deviceType),
+                                                                             FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
             }
     }
 
     public func getCurrentDeviceId() throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_current_device_id(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_current_device_id(self.pointer, $0)
             }
         )
     }
 
     public func getDevices(ignoreCache: Bool) throws -> [Device] {
         return try FfiConverterSequenceTypeDevice.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_devices(self.pointer,
-                                                           FfiConverterBool.lower(ignoreCache), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_devices(self.pointer,
+                                                                       FfiConverterBool.lower(ignoreCache), $0)
             }
         )
     }
 
     public func getAttachedClients() throws -> [AttachedClient] {
         return try FfiConverterSequenceTypeAttachedClient.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_attached_clients(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_attached_clients(self.pointer, $0)
             }
         )
     }
 
     public func setDeviceName(displayName: String) throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_set_device_name(self.pointer,
-                                                               FfiConverterString.lower(displayName), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(self.pointer,
+                                                                           FfiConverterString.lower(displayName), $0)
             }
     }
 
     public func clearDeviceName() throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_clear_device_name(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(self.pointer, $0)
             }
     }
 
     public func ensureCapabilities(supportedCapabilities: [DeviceCapability]) throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_ensure_capabilities(self.pointer,
-                                                                   FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(self.pointer,
+                                                                               FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
             }
     }
 
     public func setPushSubscription(subscription: DevicePushSubscription) throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_set_push_subscription(self.pointer,
-                                                                     FfiConverterTypeDevicePushSubscription.lower(subscription), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(self.pointer,
+                                                                                 FfiConverterTypeDevicePushSubscription.lower(subscription), $0)
             }
     }
 
     public func handlePushMessage(payload: String) throws -> AccountEvent {
         return try FfiConverterTypeAccountEvent.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_handle_push_message(self.pointer,
-                                                                   FfiConverterString.lower(payload), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_handle_push_message(self.pointer,
+                                                                               FfiConverterString.lower(payload), $0)
             }
         )
     }
 
     public func pollDeviceCommands() throws -> [IncomingDeviceCommand] {
         return try FfiConverterSequenceTypeIncomingDeviceCommand.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_poll_device_commands(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_poll_device_commands(self.pointer, $0)
             }
         )
     }
 
     public func sendSingleTab(targetDeviceId: String, title: String, url: String) throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_send_single_tab(self.pointer,
-                                                               FfiConverterString.lower(targetDeviceId),
-                                                               FfiConverterString.lower(title),
-                                                               FfiConverterString.lower(url), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_send_single_tab(self.pointer,
+                                                                           FfiConverterString.lower(targetDeviceId),
+                                                                           FfiConverterString.lower(title),
+                                                                           FfiConverterString.lower(url), $0)
             }
     }
 
     public func getTokenServerEndpointUrl() throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_token_server_endpoint_url(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_token_server_endpoint_url(self.pointer, $0)
             }
         )
     }
 
     public func getConnectionSuccessUrl() throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_connection_success_url(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_connection_success_url(self.pointer, $0)
             }
         )
     }
 
     public func getManageAccountUrl(entrypoint: String) throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_manage_account_url(self.pointer,
-                                                                      FfiConverterString.lower(entrypoint), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_manage_account_url(self.pointer,
+                                                                                  FfiConverterString.lower(entrypoint), $0)
             }
         )
     }
 
     public func getManageDevicesUrl(entrypoint: String) throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_manage_devices_url(self.pointer,
-                                                                      FfiConverterString.lower(entrypoint), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_manage_devices_url(self.pointer,
+                                                                                  FfiConverterString.lower(entrypoint), $0)
             }
         )
     }
 
     public func getAccessToken(scope: String, ttl: Int64?) throws -> AccessTokenInfo {
         return try FfiConverterTypeAccessTokenInfo.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_access_token(self.pointer,
-                                                                FfiConverterString.lower(scope),
-                                                                FfiConverterOptionInt64.lower(ttl), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_access_token(self.pointer,
+                                                                            FfiConverterString.lower(scope),
+                                                                            FfiConverterOptionInt64.lower(ttl), $0)
             }
         )
     }
 
     public func getSessionToken() throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_get_session_token(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_get_session_token(self.pointer, $0)
             }
         )
     }
 
     public func handleSessionTokenChange(sessionToken: String) throws {
         try
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_handle_session_token_change(self.pointer,
-                                                                           FfiConverterString.lower(sessionToken), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_handle_session_token_change(self.pointer,
+                                                                                       FfiConverterString.lower(sessionToken), $0)
             }
     }
 
     public func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_authorize_code_using_session_token(self.pointer,
-                                                                                  FfiConverterTypeAuthorizationParameters.lower(params), $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_authorize_code_using_session_token(self.pointer,
+                                                                                              FfiConverterTypeAuthorizationParameters.lower(params), $0)
             }
         )
     }
@@ -658,44 +665,15 @@ public class FirefoxAccount: FirefoxAccountProtocol {
     public func clearAccessTokenCache() {
         try!
             rustCall {
-                fxa_client_83f1_FirefoxAccount_clear_access_token_cache(self.pointer, $0)
+                uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(self.pointer, $0)
             }
     }
 
     public func gatherTelemetry() throws -> String {
         return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_gather_telemetry(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_gather_telemetry(self.pointer, $0)
             }
-        )
-    }
-
-    public func migrateFromSessionToken(sessionToken: String, kSync: String, kXcs: String, copySessionToken: Bool) throws -> FxAMigrationResult {
-        return try FfiConverterTypeFxAMigrationResult.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_migrate_from_session_token(self.pointer,
-                                                                          FfiConverterString.lower(sessionToken),
-                                                                          FfiConverterString.lower(kSync),
-                                                                          FfiConverterString.lower(kXcs),
-                                                                          FfiConverterBool.lower(copySessionToken), $0)
-            }
-        )
-    }
-
-    public func retryMigrateFromSessionToken() throws -> FxAMigrationResult {
-        return try FfiConverterTypeFxAMigrationResult.lift(
-            rustCallWithError(FfiConverterTypeFxaError.self) {
-                fxa_client_83f1_FirefoxAccount_retry_migrate_from_session_token(self.pointer, $0)
-            }
-        )
-    }
-
-    public func isInMigrationState() -> MigrationState {
-        return try! FfiConverterTypeMigrationState.lift(
-            try!
-                rustCall {
-                    fxa_client_83f1_FirefoxAccount_is_in_migration_state(self.pointer, $0)
-                }
         )
     }
 }
@@ -728,6 +706,14 @@ public struct FfiConverterTypeFirefoxAccount: FfiConverter {
     public static func lower(_ value: FirefoxAccount) -> UnsafeMutableRawPointer {
         return value.pointer
     }
+}
+
+public func FfiConverterTypeFirefoxAccount_lift(_ pointer: UnsafeMutableRawPointer) throws -> FirefoxAccount {
+    return try FfiConverterTypeFirefoxAccount.lift(pointer)
+}
+
+public func FfiConverterTypeFirefoxAccount_lower(_ value: FirefoxAccount) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeFirefoxAccount.lower(value)
 }
 
 public struct AccessTokenInfo {
@@ -1186,49 +1172,6 @@ public func FfiConverterTypeDevicePushSubscription_lift(_ buf: RustBuffer) throw
 
 public func FfiConverterTypeDevicePushSubscription_lower(_ value: DevicePushSubscription) -> RustBuffer {
     return FfiConverterTypeDevicePushSubscription.lower(value)
-}
-
-public struct FxAMigrationResult {
-    public var totalDuration: Int64
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(totalDuration: Int64) {
-        self.totalDuration = totalDuration
-    }
-}
-
-extension FxAMigrationResult: Equatable, Hashable {
-    public static func == (lhs: FxAMigrationResult, rhs: FxAMigrationResult) -> Bool {
-        if lhs.totalDuration != rhs.totalDuration {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(totalDuration)
-    }
-}
-
-public struct FfiConverterTypeFxAMigrationResult: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxAMigrationResult {
-        return try FxAMigrationResult(
-            totalDuration: FfiConverterInt64.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: FxAMigrationResult, into buf: inout [UInt8]) {
-        FfiConverterInt64.write(value.totalDuration, into: &buf)
-    }
-}
-
-public func FfiConverterTypeFxAMigrationResult_lift(_ buf: RustBuffer) throws -> FxAMigrationResult {
-    return try FfiConverterTypeFxAMigrationResult.lift(buf)
-}
-
-public func FfiConverterTypeFxAMigrationResult_lower(_ value: FxAMigrationResult) -> RustBuffer {
-    return FfiConverterTypeFxAMigrationResult.lower(value)
 }
 
 public struct FxaConfig {
@@ -1712,6 +1655,86 @@ public func FfiConverterTypeDeviceCapability_lower(_ value: DeviceCapability) ->
 
 extension DeviceCapability: Equatable, Hashable {}
 
+public enum FxaError {
+    // Simple error enums only carry a message
+    case Authentication(message: String)
+
+    // Simple error enums only carry a message
+    case Network(message: String)
+
+    // Simple error enums only carry a message
+    case NoExistingAuthFlow(message: String)
+
+    // Simple error enums only carry a message
+    case WrongAuthFlow(message: String)
+
+    // Simple error enums only carry a message
+    case Panic(message: String)
+
+    // Simple error enums only carry a message
+    case Other(message: String)
+
+    fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
+        return try FfiConverterTypeFxaError.lift(error)
+    }
+}
+
+public struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
+    typealias SwiftType = FxaError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return try .Authentication(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 2: return try .Network(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 3: return try .NoExistingAuthFlow(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return try .WrongAuthFlow(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 5: return try .Panic(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 6: return try .Other(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: FxaError, into buf: inout [UInt8]) {
+        switch value {
+        case let .Authentication(message):
+            writeInt(&buf, Int32(1))
+        case let .Network(message):
+            writeInt(&buf, Int32(2))
+        case let .NoExistingAuthFlow(message):
+            writeInt(&buf, Int32(3))
+        case let .WrongAuthFlow(message):
+            writeInt(&buf, Int32(4))
+        case let .Panic(message):
+            writeInt(&buf, Int32(5))
+        case let .Other(message):
+            writeInt(&buf, Int32(6))
+        }
+    }
+}
+
+extension FxaError: Equatable, Hashable {}
+
+extension FxaError: Error {}
+
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum FxaServer {
@@ -1821,136 +1844,6 @@ public func FfiConverterTypeIncomingDeviceCommand_lower(_ value: IncomingDeviceC
 }
 
 extension IncomingDeviceCommand: Equatable, Hashable {}
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-public enum MigrationState {
-    case none
-    case copySessionToken
-    case reuseSessionToken
-}
-
-public struct FfiConverterTypeMigrationState: FfiConverterRustBuffer {
-    typealias SwiftType = MigrationState
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MigrationState {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        case 1: return .none
-
-        case 2: return .copySessionToken
-
-        case 3: return .reuseSessionToken
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: MigrationState, into buf: inout [UInt8]) {
-        switch value {
-        case .none:
-            writeInt(&buf, Int32(1))
-
-        case .copySessionToken:
-            writeInt(&buf, Int32(2))
-
-        case .reuseSessionToken:
-            writeInt(&buf, Int32(3))
-        }
-    }
-}
-
-public func FfiConverterTypeMigrationState_lift(_ buf: RustBuffer) throws -> MigrationState {
-    return try FfiConverterTypeMigrationState.lift(buf)
-}
-
-public func FfiConverterTypeMigrationState_lower(_ value: MigrationState) -> RustBuffer {
-    return FfiConverterTypeMigrationState.lower(value)
-}
-
-extension MigrationState: Equatable, Hashable {}
-
-public enum FxaError {
-    // Simple error enums only carry a message
-    case Authentication(message: String)
-
-    // Simple error enums only carry a message
-    case Network(message: String)
-
-    // Simple error enums only carry a message
-    case NoExistingAuthFlow(message: String)
-
-    // Simple error enums only carry a message
-    case WrongAuthFlow(message: String)
-
-    // Simple error enums only carry a message
-    case Panic(message: String)
-
-    // Simple error enums only carry a message
-    case Other(message: String)
-}
-
-public struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
-    typealias SwiftType = FxaError
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaError {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        case 1: return try .Authentication(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 2: return try .Network(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 3: return try .NoExistingAuthFlow(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 4: return try .WrongAuthFlow(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 5: return try .Panic(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 6: return try .Other(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: FxaError, into buf: inout [UInt8]) {
-        switch value {
-        case let .Authentication(message):
-            writeInt(&buf, Int32(1))
-            FfiConverterString.write(message, into: &buf)
-        case let .Network(message):
-            writeInt(&buf, Int32(2))
-            FfiConverterString.write(message, into: &buf)
-        case let .NoExistingAuthFlow(message):
-            writeInt(&buf, Int32(3))
-            FfiConverterString.write(message, into: &buf)
-        case let .WrongAuthFlow(message):
-            writeInt(&buf, Int32(4))
-            FfiConverterString.write(message, into: &buf)
-        case let .Panic(message):
-            writeInt(&buf, Int32(5))
-            FfiConverterString.write(message, into: &buf)
-        case let .Other(message):
-            writeInt(&buf, Int32(6))
-            FfiConverterString.write(message, into: &buf)
-        }
-    }
-}
-
-extension FxaError: Equatable, Hashable {}
-
-extension FxaError: Error {}
 
 private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
@@ -2254,14 +2147,126 @@ private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
     }
 }
 
-/**
- * Top level initializers and tear down methods.
- *
- * This is generated by uniffi.
- */
-public enum FxaClientLifecycle {
-    /**
-     * Initialize the FFI and Rust library. This should be only called once per application.
-     */
-    func initialize() {}
+private enum InitializationResult {
+    case ok
+    case contractVersionMismatch
+    case apiChecksumMismatch
+}
+
+// Use a global variables to perform the versioning checks. Swift ensures that
+// the code inside is only computed once.
+private var initializationResult: InitializationResult {
+    // Get the bindings contract version from our ComponentInterface
+    let bindings_contract_version = 22
+    // Get the scaffolding contract version by calling the into the dylib
+    let scaffolding_contract_version = ffi_fxa_client_uniffi_contract_version()
+    if bindings_contract_version != scaffolding_contract_version {
+        return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_to_json() != 52613 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_oauth_flow() != 4486 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_pairing_authority_url() != 63297 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_pairing_flow() != 10680 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow() != 56647 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_check_authorization_status() != 62084 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_disconnect() != 57198 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_profile() != 29673 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_initialize_device() != 47627 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_current_device_id() != 37325 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_devices() != 4277 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_attached_clients() != 58364 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_set_device_name() != 20174 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name() != 53409 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_ensure_capabilities() != 41057 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription() != 55345 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_handle_push_message() != 39395 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_poll_device_commands() != 25351 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_send_single_tab() != 23175 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_token_server_endpoint_url() != 65037 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_connection_success_url() != 12480 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_account_url() != 12842 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_devices_url() != 42370 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_access_token() != 37354 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_session_token() != 23925 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_handle_session_token_change() != 26674 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_authorize_code_using_session_token() != 31598 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_clear_access_token_cache() != 37340 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_gather_telemetry() != 1196 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_constructor_firefoxaccount_new() != 38869 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_constructor_firefoxaccount_from_json() != 30762 {
+        return InitializationResult.apiChecksumMismatch
+    }
+
+    return InitializationResult.ok
+}
+
+private func uniffiEnsureInitialized() {
+    switch initializationResult {
+    case .ok:
+        break
+    case .contractVersionMismatch:
+        fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
+    case .apiChecksumMismatch:
+        fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
 }

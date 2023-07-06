@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // The following structs are used to implement the lowest level
@@ -28,7 +29,19 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef int32_t (*ForeignCallback)(uint64_t, int32_t, RustBuffer, RustBuffer *_Nonnull);
+typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
+
+// Task defined in Rust that Swift executes
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+
+// Callback to execute Rust tasks using a Swift Task
+//
+// Args:
+//   executor: ForeignExecutor lowered into a size_t value
+//   delay: Delay in MS
+//   task: UniFfiRustTaskCallback to call
+//   task_data: data to pass the task callback
+typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -46,39 +59,44 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_syncmanager_a22a_SyncManager_object_free(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void*_Nonnull syncmanager_a22a_SyncManager_new(
-      
-    RustCallStatus *_Nonnull out_status
-    );
-void syncmanager_a22a_SyncManager_disconnect(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer syncmanager_a22a_SyncManager_sync(
-      void*_Nonnull ptr,RustBuffer params,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer syncmanager_a22a_SyncManager_get_available_engines(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_syncmanager_a22a_rustbuffer_alloc(
-      int32_t size,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_syncmanager_a22a_rustbuffer_from_bytes(
-      ForeignBytes bytes,
-    RustCallStatus *_Nonnull out_status
-    );
-void ffi_syncmanager_a22a_rustbuffer_free(
-      RustBuffer buf,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_syncmanager_a22a_rustbuffer_reserve(
-      RustBuffer buf,int32_t additional,
-    RustCallStatus *_Nonnull out_status
-    );
+// Callbacks for UniFFI Futures
+typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+
+// Scaffolding functions
+void uniffi_syncmanager_fn_free_syncmanager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_syncmanager_fn_constructor_syncmanager_new(RustCallStatus *_Nonnull out_status
+    
+);
+void uniffi_syncmanager_fn_method_syncmanager_disconnect(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_syncmanager_fn_method_syncmanager_sync(void*_Nonnull ptr, RustBuffer params, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_syncmanager_fn_method_syncmanager_get_available_engines(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_syncmanager_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_syncmanager_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
+);
+void ffi_syncmanager_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_syncmanager_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_syncmanager_checksum_method_syncmanager_disconnect(void
+    
+);
+uint16_t uniffi_syncmanager_checksum_method_syncmanager_sync(void
+    
+);
+uint16_t uniffi_syncmanager_checksum_method_syncmanager_get_available_engines(void
+    
+);
+uint16_t uniffi_syncmanager_checksum_constructor_syncmanager_new(void
+    
+);
+uint32_t ffi_syncmanager_uniffi_contract_version(void
+    
+);
+

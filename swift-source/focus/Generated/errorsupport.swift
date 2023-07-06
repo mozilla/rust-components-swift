@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_errorsupport_684e_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_errorsupport_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_errorsupport_684e_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_errorsupport_rustbuffer_free(self, $0) }
     }
 }
 
@@ -239,28 +239,42 @@ private extension RustCallStatus {
 }
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: {
-        $0.deallocate()
-        return UniffiInternalError.unexpectedRustCallError
-    })
+    try makeRustCall(callback, errorHandler: nil)
 }
 
-private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
-    where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+private func rustCallWithError<T>(
+    _ errorHandler: @escaping (RustBuffer) throws -> Error,
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
+) throws -> T {
+    try makeRustCall(callback, errorHandler: errorHandler)
 }
 
-private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
+private func makeRustCall<T>(
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws -> T {
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
+    try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
+    return returnedVal
+}
+
+private func uniffiCheckCallStatus(
+    callStatus: RustCallStatus,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws {
     switch callStatus.code {
     case CALL_SUCCESS:
-        return returnedVal
+        return
 
     case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        if let errorHandler = errorHandler {
+            throw try errorHandler(callStatus.errorBuf)
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.unexpectedRustCallError
+        }
 
     case CALL_PANIC:
         // When the rust code sees a panic, it tries to construct a RustBuffer
@@ -391,6 +405,10 @@ private class UniFFICallbackHandleMap<T> {
 // Magic number for the Rust proxy to call using the same mechanism as every other method,
 // to free the callback once it's dropped by Rust.
 private let IDX_CALLBACK_FREE: Int32 = 0
+// Callback return codes
+private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
+private let UNIFFI_CALLBACK_ERROR: Int32 = 1
+private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
 
 // Declaration and FfiConverters for ApplicationErrorReporter Callback Interface
 
@@ -401,67 +419,67 @@ public protocol ApplicationErrorReporter: AnyObject {
 
 // The ForeignCallback that is passed to Rust.
 private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCallback =
-    { (handle: UniFFICallbackHandle, method: Int32, args: RustBuffer, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
-        func invokeReportError(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
-            defer { args.deallocate() }
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
 
-            var reader = createReader(data: Data(rustBuffer: args))
-            try swiftCallbackInterface.reportError(
-                typeName: FfiConverterString.read(from: &reader),
-                message: FfiConverterString.read(from: &reader)
-            )
-            return RustBuffer()
-            // TODO: catch errors and report them back to Rust.
-            // https://github.com/mozilla/uniffi-rs/issues/351
-        }
-        func invokeReportBreadcrumb(_ swiftCallbackInterface: ApplicationErrorReporter, _ args: RustBuffer) throws -> RustBuffer {
-            defer { args.deallocate() }
-
-            var reader = createReader(data: Data(rustBuffer: args))
-            try swiftCallbackInterface.reportBreadcrumb(
-                message: FfiConverterString.read(from: &reader),
-                module: FfiConverterString.read(from: &reader),
-                line: FfiConverterUInt32.read(from: &reader),
-                column: FfiConverterUInt32.read(from: &reader)
-            )
-            return RustBuffer()
-            // TODO: catch errors and report them back to Rust.
-            // https://github.com/mozilla/uniffi-rs/issues/351
+        func invokeReportError(_ swiftCallbackInterface: ApplicationErrorReporter, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.reportError(
+                    typeName: FfiConverterString.read(from: &reader),
+                    message: FfiConverterString.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            return try makeCall()
         }
 
-        let cb: ApplicationErrorReporter
-        do {
-            cb = try FfiConverterCallbackInterfaceApplicationErrorReporter.lift(handle)
-        } catch {
-            out_buf.pointee = FfiConverterString.lower("ApplicationErrorReporter: Invalid handle")
-            return -1
+        func invokeReportBreadcrumb(_ swiftCallbackInterface: ApplicationErrorReporter, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.reportBreadcrumb(
+                    message: FfiConverterString.read(from: &reader),
+                    module: FfiConverterString.read(from: &reader),
+                    line: FfiConverterUInt32.read(from: &reader),
+                    column: FfiConverterUInt32.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            return try makeCall()
         }
 
         switch method {
         case IDX_CALLBACK_FREE:
             FfiConverterCallbackInterfaceApplicationErrorReporter.drop(handle: handle)
-            // No return value.
-            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-            return 0
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
+            return UNIFFI_CALLBACK_SUCCESS
         case 1:
+            let cb: ApplicationErrorReporter
             do {
-                out_buf.pointee = try invokeReportError(cb, args)
-                // Value written to out buffer.
-                // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-                return 1
+                cb = try FfiConverterCallbackInterfaceApplicationErrorReporter.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("ApplicationErrorReporter: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeReportError(cb, argsData, argsLen, out_buf)
             } catch {
                 out_buf.pointee = FfiConverterString.lower(String(describing: error))
-                return -1
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
             }
         case 2:
+            let cb: ApplicationErrorReporter
             do {
-                out_buf.pointee = try invokeReportBreadcrumb(cb, args)
-                // Value written to out buffer.
-                // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-                return 1
+                cb = try FfiConverterCallbackInterfaceApplicationErrorReporter.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("ApplicationErrorReporter: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeReportBreadcrumb(cb, argsData, argsLen, out_buf)
             } catch {
                 out_buf.pointee = FfiConverterString.lower(String(describing: error))
-                return -1
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
             }
 
         // This should never happen, because an out of bounds method index won't
@@ -469,26 +487,22 @@ private let foreignCallbackCallbackInterfaceApplicationErrorReporter: ForeignCal
         // https://github.com/mozilla/uniffi-rs/issues/351
         default:
             // An unexpected error happened.
-            // See docs of ForeignCallback in `uniffi/src/ffi/foreigncallbacks.rs`
-            return -1
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
+            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
         }
     }
 
 // FfiConverter protocol for callback interfaces
 private enum FfiConverterCallbackInterfaceApplicationErrorReporter {
-    // Initialize our callback method with the scaffolding code
-    private static var callbackInitialized = false
-    private static func initCallback() {
+    private static let initCallbackOnce: () = {
+        // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            ffi_errorsupport_684e_ApplicationErrorReporter_init_callback(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
+            uniffi_errorsupport_fn_init_callback_applicationerrorreporter(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
         }
-    }
+    }()
 
     private static func ensureCallbackinitialized() {
-        if !callbackInitialized {
-            initCallback()
-            callbackInitialized = true
-        }
+        _ = initCallbackOnce
     }
 
     static func drop(handle: UniFFICallbackHandle) {
@@ -529,31 +543,52 @@ extension FfiConverterCallbackInterfaceApplicationErrorReporter: FfiConverter {
 }
 
 public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter) {
-    try!
-
-        rustCall {
-            errorsupport_684e_set_application_error_reporter(
-                FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
-            )
-        }
+    try! rustCall {
+        uniffi_errorsupport_fn_func_set_application_error_reporter(
+            FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
+        )
+    }
 }
 
 public func unsetApplicationErrorReporter() {
-    try!
-
-        rustCall {
-            errorsupport_684e_unset_application_error_reporter($0)
-        }
+    try! rustCall {
+        uniffi_errorsupport_fn_func_unset_application_error_reporter($0)
+    }
 }
 
-/**
- * Top level initializers and tear down methods.
- *
- * This is generated by uniffi.
- */
-public enum ErrorsupportLifecycle {
-    /**
-     * Initialize the FFI and Rust library. This should be only called once per application.
-     */
-    func initialize() {}
+private enum InitializationResult {
+    case ok
+    case contractVersionMismatch
+    case apiChecksumMismatch
+}
+
+// Use a global variables to perform the versioning checks. Swift ensures that
+// the code inside is only computed once.
+private var initializationResult: InitializationResult {
+    // Get the bindings contract version from our ComponentInterface
+    let bindings_contract_version = 22
+    // Get the scaffolding contract version by calling the into the dylib
+    let scaffolding_contract_version = ffi_errorsupport_uniffi_contract_version()
+    if bindings_contract_version != scaffolding_contract_version {
+        return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_errorsupport_checksum_func_set_application_error_reporter() != 17388 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_errorsupport_checksum_func_unset_application_error_reporter() != 51943 {
+        return InitializationResult.apiChecksumMismatch
+    }
+
+    return InitializationResult.ok
+}
+
+private func uniffiEnsureInitialized() {
+    switch initializationResult {
+    case .ok:
+        break
+    case .contractVersionMismatch:
+        fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
+    case .apiChecksumMismatch:
+        fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
 }

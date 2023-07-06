@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // The following structs are used to implement the lowest level
@@ -28,7 +29,19 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef int32_t (*ForeignCallback)(uint64_t, int32_t, RustBuffer, RustBuffer *_Nonnull);
+typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
+
+// Task defined in Rust that Swift executes
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+
+// Callback to execute Rust tasks using a Swift Task
+//
+// Args:
+//   executor: ForeignExecutor lowered into a size_t value
+//   delay: Delay in MS
+//   task: UniFfiRustTaskCallback to call
+//   task_data: data to pass the task callback
+typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -46,107 +59,127 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_tabs_97b9_TabsStore_object_free(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void*_Nonnull tabs_97b9_TabsStore_new(
-      RustBuffer path,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer tabs_97b9_TabsStore_get_all(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsStore_set_local_tabs(
-      void*_Nonnull ptr,RustBuffer remote_tabs,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsStore_register_with_sync_manager(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsStore_reset(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer tabs_97b9_TabsStore_sync(
-      void*_Nonnull ptr,RustBuffer key_id,RustBuffer access_token,RustBuffer sync_key,RustBuffer tokenserver_url,RustBuffer local_id,
-    RustCallStatus *_Nonnull out_status
-    );
-void*_Nonnull tabs_97b9_TabsStore_bridged_engine(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void ffi_tabs_97b9_TabsBridgedEngine_object_free(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-int64_t tabs_97b9_TabsBridgedEngine_last_sync(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_set_last_sync(
-      void*_Nonnull ptr,int64_t last_sync,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer tabs_97b9_TabsBridgedEngine_sync_id(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer tabs_97b9_TabsBridgedEngine_reset_sync_id(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer tabs_97b9_TabsBridgedEngine_ensure_current_sync_id(
-      void*_Nonnull ptr,RustBuffer new_sync_id,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_prepare_for_sync(
-      void*_Nonnull ptr,RustBuffer client_data,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_sync_started(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_store_incoming(
-      void*_Nonnull ptr,RustBuffer incoming_envelopes_as_json,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer tabs_97b9_TabsBridgedEngine_apply(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_set_uploaded(
-      void*_Nonnull ptr,int64_t new_timestamp,RustBuffer uploaded_ids,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_sync_finished(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_reset(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void tabs_97b9_TabsBridgedEngine_wipe(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_tabs_97b9_rustbuffer_alloc(
-      int32_t size,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_tabs_97b9_rustbuffer_from_bytes(
-      ForeignBytes bytes,
-    RustCallStatus *_Nonnull out_status
-    );
-void ffi_tabs_97b9_rustbuffer_free(
-      RustBuffer buf,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_tabs_97b9_rustbuffer_reserve(
-      RustBuffer buf,int32_t additional,
-    RustCallStatus *_Nonnull out_status
-    );
+// Callbacks for UniFFI Futures
+typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackInt64)(const void * _Nonnull, int64_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+
+// Scaffolding functions
+void uniffi_tabs_fn_free_tabsstore(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_tabs_fn_constructor_tabsstore_new(RustBuffer path, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsstore_get_all(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsstore_set_local_tabs(void*_Nonnull ptr, RustBuffer remote_tabs, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsstore_register_with_sync_manager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsstore_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsstore_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustBuffer local_id, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_free_tabsbridgedengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+int64_t uniffi_tabs_fn_method_tabsbridgedengine_last_sync(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_set_last_sync(void*_Nonnull ptr, int64_t last_sync, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_sync_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_reset_sync_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_ensure_current_sync_id(void*_Nonnull ptr, RustBuffer new_sync_id, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_prepare_for_sync(void*_Nonnull ptr, RustBuffer client_data, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_sync_started(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_store_incoming(void*_Nonnull ptr, RustBuffer incoming_envelopes_as_json, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_apply(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_set_uploaded(void*_Nonnull ptr, int64_t new_timestamp, RustBuffer uploaded_ids, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_sync_finished(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_wipe(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_tabs_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_tabs_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_tabs_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_get_all(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_set_local_tabs(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_register_with_sync_manager(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_reset(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_sync(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_bridged_engine(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_last_sync(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_set_last_sync(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_id(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_reset_sync_id(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_ensure_current_sync_id(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_prepare_for_sync(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_started(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_store_incoming(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_apply(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_set_uploaded(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_finished(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_reset(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_wipe(void
+    
+);
+uint16_t uniffi_tabs_checksum_constructor_tabsstore_new(void
+    
+);
+uint32_t ffi_tabs_uniffi_contract_version(void
+    
+);
+

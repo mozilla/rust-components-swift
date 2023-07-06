@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_remote_settings_9450_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_remote_settings_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_remote_settings_9450_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_remote_settings_rustbuffer_free(self, $0) }
     }
 }
 
@@ -239,28 +239,42 @@ private extension RustCallStatus {
 }
 
 private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
-    try makeRustCall(callback, errorHandler: {
-        $0.deallocate()
-        return UniffiInternalError.unexpectedRustCallError
-    })
+    try makeRustCall(callback, errorHandler: nil)
 }
 
-private func rustCallWithError<T, F: FfiConverter>
-(_ errorFfiConverter: F.Type, _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T
-    where F.SwiftType: Error, F.FfiType == RustBuffer
-{
-    try makeRustCall(callback, errorHandler: { try errorFfiConverter.lift($0) })
+private func rustCallWithError<T>(
+    _ errorHandler: @escaping (RustBuffer) throws -> Error,
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
+) throws -> T {
+    try makeRustCall(callback, errorHandler: errorHandler)
 }
 
-private func makeRustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T, errorHandler: (RustBuffer) throws -> Error) throws -> T {
+private func makeRustCall<T>(
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws -> T {
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus()
     let returnedVal = callback(&callStatus)
+    try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
+    return returnedVal
+}
+
+private func uniffiCheckCallStatus(
+    callStatus: RustCallStatus,
+    errorHandler: ((RustBuffer) throws -> Error)?
+) throws {
     switch callStatus.code {
     case CALL_SUCCESS:
-        return returnedVal
+        return
 
     case CALL_ERROR:
-        throw try errorHandler(callStatus.errorBuf)
+        if let errorHandler = errorHandler {
+            throw try errorHandler(callStatus.errorBuf)
+        } else {
+            callStatus.errorBuf.deallocate()
+            throw UniffiInternalError.unexpectedRustCallError
+        }
 
     case CALL_PANIC:
         // When the rust code sees a panic, it tries to construct a RustBuffer
@@ -348,42 +362,40 @@ public class RemoteSettings: RemoteSettingsProtocol {
     }
 
     public convenience init(remoteSettingsConfig: RemoteSettingsConfig) throws {
-        try self.init(unsafeFromRawPointer:
-
-            rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_9450_RemoteSettings_new(
-                    FfiConverterTypeRemoteSettingsConfig.lower(remoteSettingsConfig), $0
-                )
-            })
+        try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+            uniffi_remote_settings_fn_constructor_remotesettings_new(
+                FfiConverterTypeRemoteSettingsConfig.lower(remoteSettingsConfig), $0
+            )
+        })
     }
 
     deinit {
-        try! rustCall { ffi_remote_settings_9450_RemoteSettings_object_free(pointer, $0) }
+        try! rustCall { uniffi_remote_settings_fn_free_remotesettings(pointer, $0) }
     }
 
     public func getRecords() throws -> RemoteSettingsResponse {
         return try FfiConverterTypeRemoteSettingsResponse.lift(
-            rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_9450_RemoteSettings_get_records(self.pointer, $0)
+            rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+                uniffi_remote_settings_fn_method_remotesettings_get_records(self.pointer, $0)
             }
         )
     }
 
     public func getRecordsSince(timestamp: UInt64) throws -> RemoteSettingsResponse {
         return try FfiConverterTypeRemoteSettingsResponse.lift(
-            rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_9450_RemoteSettings_get_records_since(self.pointer,
-                                                                      FfiConverterUInt64.lower(timestamp), $0)
+            rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+                uniffi_remote_settings_fn_method_remotesettings_get_records_since(self.pointer,
+                                                                                  FfiConverterUInt64.lower(timestamp), $0)
             }
         )
     }
 
     public func downloadAttachmentToPath(attachmentId: String, path: String) throws {
         try
-            rustCallWithError(FfiConverterTypeRemoteSettingsError.self) {
-                remote_settings_9450_RemoteSettings_download_attachment_to_path(self.pointer,
-                                                                                FfiConverterString.lower(attachmentId),
-                                                                                FfiConverterString.lower(path), $0)
+            rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+                uniffi_remote_settings_fn_method_remotesettings_download_attachment_to_path(self.pointer,
+                                                                                            FfiConverterString.lower(attachmentId),
+                                                                                            FfiConverterString.lower(path), $0)
             }
     }
 }
@@ -416,6 +428,14 @@ public struct FfiConverterTypeRemoteSettings: FfiConverter {
     public static func lower(_ value: RemoteSettings) -> UnsafeMutableRawPointer {
         return value.pointer
     }
+}
+
+public func FfiConverterTypeRemoteSettings_lift(_ pointer: UnsafeMutableRawPointer) throws -> RemoteSettings {
+    return try FfiConverterTypeRemoteSettings.lift(pointer)
+}
+
+public func FfiConverterTypeRemoteSettings_lower(_ value: RemoteSettings) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeRemoteSettings.lower(value)
 }
 
 public struct Attachment {
@@ -694,6 +714,10 @@ public enum RemoteSettingsError {
 
     // Simple error enums only carry a message
     case AttachmentsUnsupportedError(message: String)
+
+    fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
+        return try FfiConverterTypeRemoteSettingsError.lift(error)
+    }
 }
 
 public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
@@ -742,28 +766,20 @@ public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
         switch value {
         case let .JsonError(message):
             writeInt(&buf, Int32(1))
-            FfiConverterString.write(message, into: &buf)
         case let .FileError(message):
             writeInt(&buf, Int32(2))
-            FfiConverterString.write(message, into: &buf)
         case let .ParseIntError(message):
             writeInt(&buf, Int32(3))
-            FfiConverterString.write(message, into: &buf)
         case let .RequestError(message):
             writeInt(&buf, Int32(4))
-            FfiConverterString.write(message, into: &buf)
         case let .UrlParsingError(message):
             writeInt(&buf, Int32(5))
-            FfiConverterString.write(message, into: &buf)
         case let .BackoffError(message):
             writeInt(&buf, Int32(6))
-            FfiConverterString.write(message, into: &buf)
         case let .ResponseError(message):
             writeInt(&buf, Int32(7))
-            FfiConverterString.write(message, into: &buf)
         case let .AttachmentsUnsupportedError(message):
             writeInt(&buf, Int32(8))
-            FfiConverterString.write(message, into: &buf)
         }
     }
 }
@@ -859,14 +875,45 @@ public struct FfiConverterTypeRsJsonObject: FfiConverter {
     }
 }
 
-/**
- * Top level initializers and tear down methods.
- *
- * This is generated by uniffi.
- */
-public enum RemoteSettingsLifecycle {
-    /**
-     * Initialize the FFI and Rust library. This should be only called once per application.
-     */
-    func initialize() {}
+private enum InitializationResult {
+    case ok
+    case contractVersionMismatch
+    case apiChecksumMismatch
+}
+
+// Use a global variables to perform the versioning checks. Swift ensures that
+// the code inside is only computed once.
+private var initializationResult: InitializationResult {
+    // Get the bindings contract version from our ComponentInterface
+    let bindings_contract_version = 22
+    // Get the scaffolding contract version by calling the into the dylib
+    let scaffolding_contract_version = ffi_remote_settings_uniffi_contract_version()
+    if bindings_contract_version != scaffolding_contract_version {
+        return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_remote_settings_checksum_method_remotesettings_get_records() != 15844 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_remote_settings_checksum_method_remotesettings_get_records_since() != 44273 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_remote_settings_checksum_method_remotesettings_download_attachment_to_path() != 21493 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_remote_settings_checksum_constructor_remotesettings_new() != 53609 {
+        return InitializationResult.apiChecksumMismatch
+    }
+
+    return InitializationResult.ok
+}
+
+private func uniffiEnsureInitialized() {
+    switch initializationResult {
+    case .ok:
+        break
+    case .contractVersionMismatch:
+        fatalError("UniFFI contract version mismatch: try cleaning and rebuilding your project")
+    case .apiChecksumMismatch:
+        fatalError("UniFFI API checksum mismatch: try cleaning and rebuilding your project")
+    }
 }

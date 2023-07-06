@@ -4,6 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // The following structs are used to implement the lowest level
@@ -28,7 +29,19 @@ typedef struct RustBuffer
     uint8_t *_Nullable data;
 } RustBuffer;
 
-typedef int32_t (*ForeignCallback)(uint64_t, int32_t, RustBuffer, RustBuffer *_Nonnull);
+typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
+
+// Task defined in Rust that Swift executes
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+
+// Callback to execute Rust tasks using a Swift Task
+//
+// Args:
+//   executor: ForeignExecutor lowered into a size_t value
+//   delay: Delay in MS
+//   task: UniFfiRustTaskCallback to call
+//   task_data: data to pass the task callback
+typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -46,55 +59,64 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-void ffi_push_3e7f_PushManager_object_free(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void*_Nonnull push_3e7f_PushManager_new(
-      RustBuffer config,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer push_3e7f_PushManager_subscribe(
-      void*_Nonnull ptr,RustBuffer scope,RustBuffer app_server_sey,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer push_3e7f_PushManager_get_subscription(
-      void*_Nonnull ptr,RustBuffer scope,
-    RustCallStatus *_Nonnull out_status
-    );
-int8_t push_3e7f_PushManager_unsubscribe(
-      void*_Nonnull ptr,RustBuffer scope,
-    RustCallStatus *_Nonnull out_status
-    );
-void push_3e7f_PushManager_unsubscribe_all(
-      void*_Nonnull ptr,
-    RustCallStatus *_Nonnull out_status
-    );
-void push_3e7f_PushManager_update(
-      void*_Nonnull ptr,RustBuffer registration_token,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer push_3e7f_PushManager_verify_connection(
-      void*_Nonnull ptr,int8_t force_verify,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer push_3e7f_PushManager_decrypt(
-      void*_Nonnull ptr,RustBuffer payload,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_push_3e7f_rustbuffer_alloc(
-      int32_t size,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_push_3e7f_rustbuffer_from_bytes(
-      ForeignBytes bytes,
-    RustCallStatus *_Nonnull out_status
-    );
-void ffi_push_3e7f_rustbuffer_free(
-      RustBuffer buf,
-    RustCallStatus *_Nonnull out_status
-    );
-RustBuffer ffi_push_3e7f_rustbuffer_reserve(
-      RustBuffer buf,int32_t additional,
-    RustCallStatus *_Nonnull out_status
-    );
+// Callbacks for UniFFI Futures
+typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackInt8)(const void * _Nonnull, int8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
+typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+
+// Scaffolding functions
+void uniffi_push_fn_free_pushmanager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_push_fn_constructor_pushmanager_new(RustBuffer config, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_push_fn_method_pushmanager_subscribe(void*_Nonnull ptr, RustBuffer scope, RustBuffer app_server_sey, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_push_fn_method_pushmanager_get_subscription(void*_Nonnull ptr, RustBuffer scope, RustCallStatus *_Nonnull out_status
+);
+int8_t uniffi_push_fn_method_pushmanager_unsubscribe(void*_Nonnull ptr, RustBuffer scope, RustCallStatus *_Nonnull out_status
+);
+void uniffi_push_fn_method_pushmanager_unsubscribe_all(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_push_fn_method_pushmanager_update(void*_Nonnull ptr, RustBuffer registration_token, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_push_fn_method_pushmanager_verify_connection(void*_Nonnull ptr, int8_t force_verify, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_push_fn_method_pushmanager_decrypt(void*_Nonnull ptr, RustBuffer payload, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_push_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_push_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
+);
+void ffi_push_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
+);
+RustBuffer ffi_push_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_push_checksum_method_pushmanager_subscribe(void
+    
+);
+uint16_t uniffi_push_checksum_method_pushmanager_get_subscription(void
+    
+);
+uint16_t uniffi_push_checksum_method_pushmanager_unsubscribe(void
+    
+);
+uint16_t uniffi_push_checksum_method_pushmanager_unsubscribe_all(void
+    
+);
+uint16_t uniffi_push_checksum_method_pushmanager_update(void
+    
+);
+uint16_t uniffi_push_checksum_method_pushmanager_verify_connection(void
+    
+);
+uint16_t uniffi_push_checksum_method_pushmanager_decrypt(void
+    
+);
+uint16_t uniffi_push_checksum_constructor_pushmanager_new(void
+    
+);
+uint32_t ffi_push_uniffi_contract_version(void
+    
+);
+
