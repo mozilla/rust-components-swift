@@ -142,15 +142,16 @@ unzip -o "$THIS_DIR/MozillaRustComponents.xcframework.zip" && rm "$THIS_DIR/Mozi
 unzip -o "$THIS_DIR/FocusRustComponents.xcframework.zip" && rm "$THIS_DIR/FocusRustComponents.xcframework.zip"
 
 
-# ## We also add the xcframework and swiftsource to git, and remind the user that it **needs** to be committed
-# ## for it to be used
-# msg "Staging the xcframework and package.swift changes to git"
-# git add $FRAMEWORK_PATH
-# git add $PACKAGE_FILE
+## We also add the xcframework and swiftsource to git, and remind the user that it **needs** to be committed
+## for it to be used
+msg "Staging the xcframework and package.swift changes to git"
+git add $FRAMEWORK_PATH
+git add $FOCUS_FRAMEWORK_PATH
+git add $PACKAGE_FILE
 
 
-# msg "Swift source code also generated, staging it now"
-# git add $SWIFT_SOURCE
+msg "Swift source code also generated, staging it now"
+git add $SWIFT_SOURCE
 
 msg "Done setting up rust-components-swift to use $APP_SERVICES_DIR"
 msg "IMPORTANT: Reminder that changes to this repository
