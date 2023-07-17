@@ -4,7 +4,6 @@ from pathlib import Path
 from urllib.request import urlopen
 import argparse
 import fileinput
-import gzip
 import hashlib
 import json
 import subprocess
@@ -65,7 +64,7 @@ class VersionInfo:
         self.is_nightly = app_services_version == "nightly"
         if self.is_nightly:
             with urlopen(NIGHTLY_JSON_URL) as stream:
-                data = json.loads(gzip.decompress(stream.read()))
+                data = json.loads(stream.read())
                 app_services_version = data['version']
         components = app_services_version.split(".")
         if len(components) != 2:
