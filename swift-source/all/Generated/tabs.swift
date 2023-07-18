@@ -520,8 +520,6 @@ public protocol TabsStoreProtocol {
     func getAll() -> [ClientRemoteTabs]
     func setLocalTabs(remoteTabs: [RemoteTabRecord])
     func registerWithSyncManager()
-    func reset() throws
-    func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localId: String) throws -> String
     func bridgedEngine() -> TabsBridgedEngine
 }
 
@@ -569,26 +567,6 @@ public class TabsStore: TabsStoreProtocol {
             rustCall {
                 uniffi_tabs_fn_method_tabsstore_register_with_sync_manager(self.pointer, $0)
             }
-    }
-
-    public func reset() throws {
-        try
-            rustCallWithError(FfiConverterTypeTabsApiError.lift) {
-                uniffi_tabs_fn_method_tabsstore_reset(self.pointer, $0)
-            }
-    }
-
-    public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localId: String) throws -> String {
-        return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeTabsApiError.lift) {
-                uniffi_tabs_fn_method_tabsstore_sync(self.pointer,
-                                                     FfiConverterString.lower(keyId),
-                                                     FfiConverterString.lower(accessToken),
-                                                     FfiConverterString.lower(syncKey),
-                                                     FfiConverterString.lower(tokenserverUrl),
-                                                     FfiConverterString.lower(localId), $0)
-            }
-        )
     }
 
     public func bridgedEngine() -> TabsBridgedEngine {
@@ -987,12 +965,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsstore_register_with_sync_manager() != 21590 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_tabs_checksum_method_tabsstore_reset() != 39644 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_tabs_checksum_method_tabsstore_sync() != 26627 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsstore_bridged_engine() != 20794 {

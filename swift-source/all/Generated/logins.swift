@@ -380,7 +380,6 @@ public protocol LoginStoreProtocol {
     func findLoginToUpdate(look: LoginEntry, encryptionKey: String) throws -> Login?
     func get(id: String) throws -> EncryptedLogin?
     func registerWithSyncManager()
-    func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localEncryptionKey: String) throws -> String
 }
 
 public class LoginStore: LoginStoreProtocol {
@@ -515,19 +514,6 @@ public class LoginStore: LoginStoreProtocol {
             rustCall {
                 uniffi_logins_fn_method_loginstore_register_with_sync_manager(self.pointer, $0)
             }
-    }
-
-    public func sync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: String, localEncryptionKey: String) throws -> String {
-        return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
-                uniffi_logins_fn_method_loginstore_sync(self.pointer,
-                                                        FfiConverterString.lower(keyId),
-                                                        FfiConverterString.lower(accessToken),
-                                                        FfiConverterString.lower(syncKey),
-                                                        FfiConverterString.lower(tokenserverUrl),
-                                                        FfiConverterString.lower(localEncryptionKey), $0)
-            }
-        )
     }
 }
 
@@ -1260,9 +1246,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_logins_checksum_method_loginstore_register_with_sync_manager() != 60984 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_logins_checksum_method_loginstore_sync() != 38391 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_logins_checksum_constructor_loginstore_new() != 54731 {

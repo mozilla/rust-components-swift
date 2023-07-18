@@ -96,8 +96,6 @@ RustBuffer uniffi_logins_fn_method_loginstore_get(void*_Nonnull ptr, RustBuffer 
 );
 void uniffi_logins_fn_method_loginstore_register_with_sync_manager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_logins_fn_method_loginstore_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustBuffer local_encryption_key, RustCallStatus *_Nonnull out_status
-);
 RustBuffer uniffi_logins_fn_func_create_key(RustCallStatus *_Nonnull out_status
     
 );
@@ -184,9 +182,6 @@ uint16_t uniffi_logins_checksum_method_loginstore_get(void
     
 );
 uint16_t uniffi_logins_checksum_method_loginstore_register_with_sync_manager(void
-    
-);
-uint16_t uniffi_logins_checksum_method_loginstore_sync(void
     
 );
 uint16_t uniffi_logins_checksum_constructor_loginstore_new(void

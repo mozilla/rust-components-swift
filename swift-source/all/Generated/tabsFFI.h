@@ -77,10 +77,6 @@ void uniffi_tabs_fn_method_tabsstore_set_local_tabs(void*_Nonnull ptr, RustBuffe
 );
 void uniffi_tabs_fn_method_tabsstore_register_with_sync_manager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_tabs_fn_method_tabsstore_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_tabs_fn_method_tabsstore_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustBuffer local_id, RustCallStatus *_Nonnull out_status
-);
 void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_tabs_fn_free_tabsbridgedengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -126,12 +122,6 @@ uint16_t uniffi_tabs_checksum_method_tabsstore_set_local_tabs(void
     
 );
 uint16_t uniffi_tabs_checksum_method_tabsstore_register_with_sync_manager(void
-    
-);
-uint16_t uniffi_tabs_checksum_method_tabsstore_reset(void
-    
-);
-uint16_t uniffi_tabs_checksum_method_tabsstore_sync(void
     
 );
 uint16_t uniffi_tabs_checksum_method_tabsstore_bridged_engine(void
