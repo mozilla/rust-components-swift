@@ -10,7 +10,7 @@ let focusChecksum = "8e28e7ba4bf7ceca4672af662680486127ed190e242ef8d43982233ea7c
 let focusUrl = "https://archive.mozilla.org/pub/app-services/releases/117.0/FocusRustComponents.xcframework.zip"
 let package = Package(
     name: "MozillaRustComponentsSwift",
-    platforms: [.iOS(.v11)],
+    platforms: [.iOS(.v14)],
     products: [
         .library(name: "MozillaAppServices", targets: ["MozillaAppServices"]),
         .library(name: "FocusAppServices", targets: ["FocusAppServices"]),
