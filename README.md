@@ -6,6 +6,18 @@ a format understood by the Swift package manager, and depends on a pre-compiled
 binary release of the underlying Rust code published from [mozilla/application-services](
 https://github.com/mozilla/application-service).
 
+**This repository is mostly updated by automation, all the logic is copied from [mozilla/application-services](
+https://github.com/mozilla/application-service)**
+
+## Overview
+
+* The `application-services` repo publishes two binary artifacts `MozillaRustComponents.xcframework.zip` and `FocusRustComponents.xcframework.zip` containing
+  the Rust code and FFI definitions for all components, compiled together into a single library.
+* The `Package.swift` file refrences the xcframeworks as Swift binary targets.
+* The `Package.swift` file defines a library per target (one for all the components used by `firefox-ios` and one for `focus-ios`)
+    * Each library references its Swift source code directly as files in the repo. All components used by a target are copied into the same directory. For example, all the `firefox-ios` files are in the `swift-source/all` directory.
+    * Each library depends on wrapper which wraps the binary to provide the pre-compiled Rust code. For example, [`FocusRustComponentWrapper`](./FocusRustComponentsWrapper/) wraps the Focus xcframework.
+
 For more information, please consult:
 
 * [application-services ADR-0003](https://github.com/mozilla/application-services/blob/main/docs/adr/0003-swift-packaging.md),
@@ -15,43 +27,29 @@ For more information, please consult:
 * The [`ios-rust` crate](https://github.com/mozilla/application-services/tree/main/megazords/ios-rust) which is currently
   responsible for publishing the pre-built `MozillaRustComponents.xcframework.zip` and `FocusRustComponents.xcframework.zip` bundles on which this repository depends.
 
-## Overview
 
-Here's a diagram of how this repository relates to the application-services repository
-and its release artifacts:
+## Releases
+### Nightly
 
-<!--
-  N.B. you can edit this image in Google Docs and changes will be reflected automatically:
+Nightly releases are automated and run every night as a cron job that pushes directly to the main branch. Nightly releases are tagged with three components (i.e `X.0.Y`) where the first component is the current Firefox release (i.e `117`, etc) and the last component is a timestamp.
 
-    https://docs.google.com/drawings/d/1tX05I-e6hNBQxch7PescDH7k4G7ddAJwXDPoIqp1RYk/edit
--->
-<img src="https://docs.google.com/drawings/d/e/2PACX-1vRnyxy7VjdD3bYTso8V3AL5FpIQ4_S54dOCDI6fxfZEbG3_CVBwZZP1uLYbUVE9M54GSXUkNgewzOQm/pub?w=720&h=540" width="720" height="540" alt="A box diagram describing how the rust-components-swift repo, applicaiton-services repo, and MozillaRustComponents XCFramework interact">
+Note that we need three components because that's a Swift Package manager requirement.
 
-Key points:
+### Cutting a Release
 
-* The `application-services` repo publishes two binary artifacts `MozillaRustComponents.xcframework.zip` and `FocusRustComponents.xcframework.zip` containing
-  the Rust code and FFI definitions for all components, compiled together into a single library.
-* The `Package.swift` file refrences the xcframeworks as Swift binary targets.
-* The `Package.swift` file defines a library per target (one for all the components used by `firefox-ios` and one for `focus-ios`)
-    * Each library references its Swift source code directly as files in the repo. All components used by a target are copied into the same directory. For example, all the `firefox-ios` files are in the `swift-source/all` directory.
-    * Each library depends on wrapper which wraps the binary to provide the pre-compiled Rust code. For example, [`FocusRustComponentWrapper`](./FocusRustComponentsWrapper/) wraps the Focus xcframework.
+To cut a release of `rust-components-swift`, you will need to do the following:
+- Run `./automation/update-from-application-services.py <X.Y>`, where `X.Y` is the version of application services.
+- Open a pull request with the resulting changes
+- Once landed on the main branch, cut a release using the GitHub UI and tag it
+  - **IMPORTANT**: The release tag must be in the form `X.0.Y`, where `X.Y` is the version of application services
 
-## Cutting a new release
-
-Whenever a new release of the underlying components is availble, we need to tag a new release
-in this repo to make them available to Swift components. To do so:
-
-* Edit `Package.swift` to update the URL and checksum of `MozillaRustComponents.xcframework.zip`.
-* Run `./make_tag.sh --as-version {APP_SERVICES_VERSION} X.Y.Z` to create the new tag.
-* Run `git push origin X.Y.Z` to publish it to GitHub.
+## Testing and Local development
+To enable local development of `rust-component-swift` read the instructions [documented in application services](https://mozilla.github.io/application-services/book/howtos/locally-published-components-in-firefox-ios.html)
 
 ## Adding a new component
 
 Check out the instructions in the [docs in `application-services` for adding a new component and publishing it for iOS](https://github.com/mozilla/application-services/blob/main/docs/howtos/adding-a-new-component.md#distribute-your-component-with-rust-components-swift). The docs are also published for convenience in <https://mozilla.github.io/application-services/book/index.html>.
 
-
-## Testing
-For testing instructions, you can checkout the [docs in the `application-services`](https://github.com/mozilla/application-services/tree/main/docs/howtos) which are published for convenience in <https://mozilla.github.io/application-services/book/index.html>
 
 ## Filing issues with rust-components-swift
 Please open a ticket in https://github.com/mozilla/application-services/issues for any rust-component-swift related issues.

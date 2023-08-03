@@ -46,7 +46,9 @@ THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PACKAGE_FILE="$THIS_DIR/Package.swift"
 SWIFT_SOURCE="$THIS_DIR/swift-source"
 FRAMEWORK_PATH="./MozillaRustComponents.xcframework"
+FOCUS_FRAMEWORK_PATH="./FocusRustComponents.xcframework"
 FRAMEWORK_PATH_ESCAPED=$( echo $FRAMEWORK_PATH |  sed 's/\//\\\//g' )
+FOCUS_FRAMEWORK_PATH_ESCAPED=$( echo $FOCUS_FRAMEWORK_PATH |  sed 's/\//\\\//g' )
 APP_SERVICES_REMOTE="https://github.com/mozilla/application-services"
 
 DISABLE="false"
@@ -87,6 +89,8 @@ if [ "true" = $DISABLE ]; then
   # state they were in before any of the changes happened.
   perl -0777 -pi -e "s/            path: \"$FRAMEWORK_PATH_ESCAPED\"/            url: url,
             checksum: checksum/igs" $PACKAGE_FILE
+  perl -0777 -pi -e "s/            path: \"$FOCUS_FRAMEWORK_PATH_ESCAPED\"/            url: focusUrl,
+            checksum: focusChecksum/igs" $PACKAGE_FILE
 
   msg "Done reseting $PACKAGE_FILE"
   git add $PACKAGE_FILE
@@ -96,6 +100,12 @@ if [ "true" = $DISABLE ]; then
     msg "Detected local framework, deleting it.."
     rm -rf $FRAMEWORK_PATH
     git add $FRAMEWORK_PATH
+    msg "Deleted and staged the deletion of the local framework"
+  fi
+  if [ -d $FOCUS_FRAMEWORK_PATH ]; then
+    msg "Detected local framework, deleting it.."
+    rm -rf $FOCUS_FRAMEWORK_PATH
+    git add $FOCUS_FRAMEWORK_PATH
     msg "Deleted and staged the deletion of the local framework"
   fi
   msg "IMPORTANT: reminder that changes to this repository are not visable to consumers until
@@ -110,31 +120,36 @@ if [ -z $APP_SERVICES_DIR ]; then
     exit 1
 fi
 
-## First we build the xcframework in the application services repository
-msg "Building the xcframework in $APP_SERVICES_DIR"
-msg "This might take a few minutes"
-pushd $APP_SERVICES_DIR/megazords/ios-rust/
-./build-xcframework.sh
-popd
-
-## Once built, we want to move the frameowork to this repository, then unzip it
-rsync -a --delete $APP_SERVICES_DIR/megazords/ios-rust/MozillaRustComponents.xcframework/ $THIS_DIR/MozillaRustComponents.xcframework/
-
 ## We replace the url and checksum in the Package.swift with a refernce to the local
 ## framework path
 perl -0777 -pi -e "s/            url: url,
             checksum: checksum/            path: \"$FRAMEWORK_PATH_ESCAPED\"/igs" $PACKAGE_FILE
 
-## We also add the xcframework to git, and remind the user that it **needs** to be committed
+## We replace the url and checksum in the Package.swift with a refernce to the local
+## framework path
+perl -0777 -pi -e "s/            url: focusUrl,
+            checksum: focusChecksum/            path: \"$FOCUS_FRAMEWORK_PATH_ESCAPED\"/igs" $PACKAGE_FILE
+
+rm -rf "$SWIFT_SOURCE"
+
+## First we build the xcframework in the application services repository
+msg "Building the xcframework in $APP_SERVICES_DIR"
+msg "This might take a few minutes"
+pushd $APP_SERVICES_DIR
+./taskcluster/scripts/build-and-test-swift.py "$SWIFT_SOURCE" "$THIS_DIR" "$THIS_DIR/build/glean-dir" --force_build
+popd
+unzip -o "$THIS_DIR/MozillaRustComponents.xcframework.zip" && rm "$THIS_DIR/MozillaRustComponents.xcframework.zip"
+unzip -o "$THIS_DIR/FocusRustComponents.xcframework.zip" && rm "$THIS_DIR/FocusRustComponents.xcframework.zip"
+
+
+## We also add the xcframework and swiftsource to git, and remind the user that it **needs** to be committed
 ## for it to be used
 msg "Staging the xcframework and package.swift changes to git"
 git add $FRAMEWORK_PATH
+git add $FOCUS_FRAMEWORK_PATH
 git add $PACKAGE_FILE
 
 
-## We should also get the swift-source code copied and staged as well
-msg "Generating swift source code..."
-./generate.sh $APP_SERVICES_DIR
 msg "Swift source code also generated, staging it now"
 git add $SWIFT_SOURCE
 
