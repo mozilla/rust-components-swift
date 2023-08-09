@@ -307,6 +307,27 @@ private struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 }
 
+private struct FfiConverterBool: FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
+
+    public static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    public static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
 private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -575,14 +596,16 @@ public func FfiConverterTypeRemoteSettingsConfig_lower(_ value: RemoteSettingsCo
 public struct RemoteSettingsRecord {
     public var id: String
     public var lastModified: UInt64
+    public var deleted: Bool
     public var attachment: Attachment?
     public var fields: RsJsonObject
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: String, lastModified: UInt64, attachment: Attachment?, fields: RsJsonObject) {
+    public init(id: String, lastModified: UInt64, deleted: Bool, attachment: Attachment?, fields: RsJsonObject) {
         self.id = id
         self.lastModified = lastModified
+        self.deleted = deleted
         self.attachment = attachment
         self.fields = fields
     }
@@ -594,6 +617,9 @@ extension RemoteSettingsRecord: Equatable, Hashable {
             return false
         }
         if lhs.lastModified != rhs.lastModified {
+            return false
+        }
+        if lhs.deleted != rhs.deleted {
             return false
         }
         if lhs.attachment != rhs.attachment {
@@ -608,6 +634,7 @@ extension RemoteSettingsRecord: Equatable, Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(id)
         hasher.combine(lastModified)
+        hasher.combine(deleted)
         hasher.combine(attachment)
         hasher.combine(fields)
     }
@@ -618,6 +645,7 @@ public struct FfiConverterTypeRemoteSettingsRecord: FfiConverterRustBuffer {
         return try RemoteSettingsRecord(
             id: FfiConverterString.read(from: &buf),
             lastModified: FfiConverterUInt64.read(from: &buf),
+            deleted: FfiConverterBool.read(from: &buf),
             attachment: FfiConverterOptionTypeAttachment.read(from: &buf),
             fields: FfiConverterTypeRsJsonObject.read(from: &buf)
         )
@@ -626,6 +654,7 @@ public struct FfiConverterTypeRemoteSettingsRecord: FfiConverterRustBuffer {
     public static func write(_ value: RemoteSettingsRecord, into buf: inout [UInt8]) {
         FfiConverterString.write(value.id, into: &buf)
         FfiConverterUInt64.write(value.lastModified, into: &buf)
+        FfiConverterBool.write(value.deleted, into: &buf)
         FfiConverterOptionTypeAttachment.write(value.attachment, into: &buf)
         FfiConverterTypeRsJsonObject.write(value.fields, into: &buf)
     }
@@ -698,9 +727,6 @@ public enum RemoteSettingsError {
     case FileError(message: String)
 
     // Simple error enums only carry a message
-    case ParseIntError(message: String)
-
-    // Simple error enums only carry a message
     case RequestError(message: String)
 
     // Simple error enums only carry a message
@@ -734,27 +760,23 @@ public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 3: return try .ParseIntError(
+        case 3: return try .RequestError(
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 4: return try .RequestError(
+        case 4: return try .UrlParsingError(
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 5: return try .UrlParsingError(
+        case 5: return try .BackoffError(
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 6: return try .BackoffError(
+        case 6: return try .ResponseError(
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 7: return try .ResponseError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 8: return try .AttachmentsUnsupportedError(
+        case 7: return try .AttachmentsUnsupportedError(
                 message: FfiConverterString.read(from: &buf)
             )
 
@@ -768,18 +790,16 @@ public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(1))
         case let .FileError(message):
             writeInt(&buf, Int32(2))
-        case let .ParseIntError(message):
-            writeInt(&buf, Int32(3))
         case let .RequestError(message):
-            writeInt(&buf, Int32(4))
+            writeInt(&buf, Int32(3))
         case let .UrlParsingError(message):
-            writeInt(&buf, Int32(5))
+            writeInt(&buf, Int32(4))
         case let .BackoffError(message):
-            writeInt(&buf, Int32(6))
+            writeInt(&buf, Int32(5))
         case let .ResponseError(message):
-            writeInt(&buf, Int32(7))
+            writeInt(&buf, Int32(6))
         case let .AttachmentsUnsupportedError(message):
-            writeInt(&buf, Int32(8))
+            writeInt(&buf, Int32(7))
         }
     }
 }
