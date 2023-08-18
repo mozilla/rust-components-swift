@@ -1080,13 +1080,15 @@ public func FfiConverterTypeAvailableExperiment_lower(_ value: AvailableExperime
 public struct AvailableRandomizationUnits {
     public var clientId: String?
     public var userId: String?
+    public var nimbusId: String?
     public var dummy: Int8
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(clientId: String?, userId: String?, dummy: Int8) {
+    public init(clientId: String?, userId: String?, nimbusId: String?, dummy: Int8) {
         self.clientId = clientId
         self.userId = userId
+        self.nimbusId = nimbusId
         self.dummy = dummy
     }
 }
@@ -1099,6 +1101,9 @@ extension AvailableRandomizationUnits: Equatable, Hashable {
         if lhs.userId != rhs.userId {
             return false
         }
+        if lhs.nimbusId != rhs.nimbusId {
+            return false
+        }
         if lhs.dummy != rhs.dummy {
             return false
         }
@@ -1108,6 +1113,7 @@ extension AvailableRandomizationUnits: Equatable, Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(clientId)
         hasher.combine(userId)
+        hasher.combine(nimbusId)
         hasher.combine(dummy)
     }
 }
@@ -1117,6 +1123,7 @@ public struct FfiConverterTypeAvailableRandomizationUnits: FfiConverterRustBuffe
         return try AvailableRandomizationUnits(
             clientId: FfiConverterOptionString.read(from: &buf),
             userId: FfiConverterOptionString.read(from: &buf),
+            nimbusId: FfiConverterOptionString.read(from: &buf),
             dummy: FfiConverterInt8.read(from: &buf)
         )
     }
@@ -1124,6 +1131,7 @@ public struct FfiConverterTypeAvailableRandomizationUnits: FfiConverterRustBuffe
     public static func write(_ value: AvailableRandomizationUnits, into buf: inout [UInt8]) {
         FfiConverterOptionString.write(value.clientId, into: &buf)
         FfiConverterOptionString.write(value.userId, into: &buf)
+        FfiConverterOptionString.write(value.nimbusId, into: &buf)
         FfiConverterInt8.write(value.dummy, into: &buf)
     }
 }
