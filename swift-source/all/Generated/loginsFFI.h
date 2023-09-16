@@ -111,8 +111,6 @@ RustBuffer uniffi_logins_fn_func_create_canary(RustBuffer text, RustBuffer encry
 );
 int8_t uniffi_logins_fn_func_check_canary(RustBuffer canary, RustBuffer text, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
 );
-void uniffi_logins_fn_func_migrate_logins(RustBuffer path, RustBuffer new_encryption_key, RustBuffer sqlcipher_path, RustBuffer sqlcipher_key, RustBuffer salt, RustCallStatus *_Nonnull out_status
-);
 RustBuffer ffi_logins_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_logins_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
@@ -140,9 +138,6 @@ uint16_t uniffi_logins_checksum_func_create_canary(void
     
 );
 uint16_t uniffi_logins_checksum_func_check_canary(void
-    
-);
-uint16_t uniffi_logins_checksum_func_migrate_logins(void
     
 );
 uint16_t uniffi_logins_checksum_method_loginstore_add(void

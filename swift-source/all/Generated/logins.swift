@@ -1157,18 +1157,6 @@ public func checkCanary(canary: String, text: String, encryptionKey: String) thr
     )
 }
 
-public func migrateLogins(path: String, newEncryptionKey: String, sqlcipherPath: String, sqlcipherKey: String, salt: String?) throws {
-    try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
-        uniffi_logins_fn_func_migrate_logins(
-            FfiConverterString.lower(path),
-            FfiConverterString.lower(newEncryptionKey),
-            FfiConverterString.lower(sqlcipherPath),
-            FfiConverterString.lower(sqlcipherKey),
-            FfiConverterOptionString.lower(salt), $0
-        )
-    }
-}
-
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -1204,9 +1192,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_logins_checksum_func_check_canary() != 61133 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_logins_checksum_func_migrate_logins() != 52636 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_logins_checksum_method_loginstore_add() != 58204 {
