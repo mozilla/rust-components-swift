@@ -61,6 +61,7 @@ typedef struct RustCallStatus {
 
 // Callbacks for UniFFI Futures
 typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackInt8)(const void * _Nonnull, int8_t, RustCallStatus);
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
 
@@ -77,6 +78,8 @@ void uniffi_suggest_fn_method_suggeststore_ingest(void*_Nonnull ptr, RustBuffer 
 );
 void uniffi_suggest_fn_method_suggeststore_clear(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+int8_t uniffi_suggest_fn_func_raw_suggestion_url_matches(RustBuffer raw_url, RustBuffer url, RustCallStatus *_Nonnull out_status
+);
 RustBuffer ffi_suggest_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_suggest_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
@@ -84,6 +87,9 @@ RustBuffer ffi_suggest_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus 
 void ffi_suggest_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_suggest_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_suggest_checksum_func_raw_suggestion_url_matches(void
+    
 );
 uint16_t uniffi_suggest_checksum_method_suggeststore_query(void
     
