@@ -332,6 +332,19 @@ fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     }
 }
 
+fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
+    typealias FfiType = Double
+    typealias SwiftType = Double
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Double {
+        return try lift(readDouble(&buf))
+    }
+
+    public static func write(_ value: Double, into buf: inout [UInt8]) {
+        writeDouble(&buf, lower(value))
+    }
+}
+
 fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
@@ -669,6 +682,7 @@ public enum Suggestion {
     
     case `amp`(`title`: String, `url`: String, `rawUrl`: String, `icon`: [UInt8]?, `fullKeyword`: String, `blockId`: Int64, `advertiser`: String, `iabCategory`: String, `impressionUrl`: String, `clickUrl`: String, `rawClickUrl`: String)
     case `wikipedia`(`title`: String, `url`: String, `icon`: [UInt8]?, `fullKeyword`: String)
+    case `amo`(`title`: String, `url`: String, `iconUrl`: String, `description`: String, `rating`: String?, `numberOfRatings`: Int64, `guid`: String, `score`: Double)
 }
 
 public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
@@ -697,6 +711,17 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             `url`: try FfiConverterString.read(from: &buf), 
             `icon`: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
             `fullKeyword`: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .`amo`(
+            `title`: try FfiConverterString.read(from: &buf), 
+            `url`: try FfiConverterString.read(from: &buf), 
+            `iconUrl`: try FfiConverterString.read(from: &buf), 
+            `description`: try FfiConverterString.read(from: &buf), 
+            `rating`: try FfiConverterOptionString.read(from: &buf), 
+            `numberOfRatings`: try FfiConverterInt64.read(from: &buf), 
+            `guid`: try FfiConverterString.read(from: &buf), 
+            `score`: try FfiConverterDouble.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -729,6 +754,18 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterOptionSequenceUInt8.write(`icon`, into: &buf)
             FfiConverterString.write(`fullKeyword`, into: &buf)
             
+        
+        case let .`amo`(`title`,`url`,`iconUrl`,`description`,`rating`,`numberOfRatings`,`guid`,`score`):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(`title`, into: &buf)
+            FfiConverterString.write(`url`, into: &buf)
+            FfiConverterString.write(`iconUrl`, into: &buf)
+            FfiConverterString.write(`description`, into: &buf)
+            FfiConverterOptionString.write(`rating`, into: &buf)
+            FfiConverterInt64.write(`numberOfRatings`, into: &buf)
+            FfiConverterString.write(`guid`, into: &buf)
+            FfiConverterDouble.write(`score`, into: &buf)
+            
         }
     }
 }
@@ -753,6 +790,7 @@ public enum SuggestionProvider {
     
     case `amp`
     case `wikipedia`
+    case `amo`
 }
 
 public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
@@ -765,6 +803,8 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         case 1: return .`amp`
         
         case 2: return .`wikipedia`
+        
+        case 3: return .`amo`
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -780,6 +820,10 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case .`wikipedia`:
             writeInt(&buf, Int32(2))
+        
+        
+        case .`amo`:
+            writeInt(&buf, Int32(3))
         
         }
     }
@@ -815,6 +859,27 @@ fileprivate struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterUInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
+    typealias SwiftType = String?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterString.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
