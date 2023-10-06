@@ -681,6 +681,7 @@ extension SuggestApiError: Error { }
 public enum Suggestion {
     
     case `amp`(`title`: String, `url`: String, `rawUrl`: String, `icon`: [UInt8]?, `fullKeyword`: String, `blockId`: Int64, `advertiser`: String, `iabCategory`: String, `impressionUrl`: String, `clickUrl`: String, `rawClickUrl`: String)
+    case `pocket`(`title`: String, `url`: String, `score`: Double, `isTopPick`: Bool)
     case `wikipedia`(`title`: String, `url`: String, `icon`: [UInt8]?, `fullKeyword`: String)
     case `amo`(`title`: String, `url`: String, `iconUrl`: String, `description`: String, `rating`: String?, `numberOfRatings`: Int64, `guid`: String, `score`: Double)
 }
@@ -706,14 +707,21 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             `rawClickUrl`: try FfiConverterString.read(from: &buf)
         )
         
-        case 2: return .`wikipedia`(
+        case 2: return .`pocket`(
+            `title`: try FfiConverterString.read(from: &buf), 
+            `url`: try FfiConverterString.read(from: &buf), 
+            `score`: try FfiConverterDouble.read(from: &buf), 
+            `isTopPick`: try FfiConverterBool.read(from: &buf)
+        )
+        
+        case 3: return .`wikipedia`(
             `title`: try FfiConverterString.read(from: &buf), 
             `url`: try FfiConverterString.read(from: &buf), 
             `icon`: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
             `fullKeyword`: try FfiConverterString.read(from: &buf)
         )
         
-        case 3: return .`amo`(
+        case 4: return .`amo`(
             `title`: try FfiConverterString.read(from: &buf), 
             `url`: try FfiConverterString.read(from: &buf), 
             `iconUrl`: try FfiConverterString.read(from: &buf), 
@@ -747,8 +755,16 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(`rawClickUrl`, into: &buf)
             
         
-        case let .`wikipedia`(`title`,`url`,`icon`,`fullKeyword`):
+        case let .`pocket`(`title`,`url`,`score`,`isTopPick`):
             writeInt(&buf, Int32(2))
+            FfiConverterString.write(`title`, into: &buf)
+            FfiConverterString.write(`url`, into: &buf)
+            FfiConverterDouble.write(`score`, into: &buf)
+            FfiConverterBool.write(`isTopPick`, into: &buf)
+            
+        
+        case let .`wikipedia`(`title`,`url`,`icon`,`fullKeyword`):
+            writeInt(&buf, Int32(3))
             FfiConverterString.write(`title`, into: &buf)
             FfiConverterString.write(`url`, into: &buf)
             FfiConverterOptionSequenceUInt8.write(`icon`, into: &buf)
@@ -756,7 +772,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             
         
         case let .`amo`(`title`,`url`,`iconUrl`,`description`,`rating`,`numberOfRatings`,`guid`,`score`):
-            writeInt(&buf, Int32(3))
+            writeInt(&buf, Int32(4))
             FfiConverterString.write(`title`, into: &buf)
             FfiConverterString.write(`url`, into: &buf)
             FfiConverterString.write(`iconUrl`, into: &buf)
@@ -789,6 +805,7 @@ extension Suggestion: Equatable, Hashable {}
 public enum SuggestionProvider {
     
     case `amp`
+    case `pocket`
     case `wikipedia`
     case `amo`
 }
@@ -802,9 +819,11 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case 1: return .`amp`
         
-        case 2: return .`wikipedia`
+        case 2: return .`pocket`
         
-        case 3: return .`amo`
+        case 3: return .`wikipedia`
+        
+        case 4: return .`amo`
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -818,12 +837,16 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
             writeInt(&buf, Int32(1))
         
         
-        case .`wikipedia`:
+        case .`pocket`:
             writeInt(&buf, Int32(2))
         
         
-        case .`amo`:
+        case .`wikipedia`:
             writeInt(&buf, Int32(3))
+        
+        
+        case .`amo`:
+            writeInt(&buf, Int32(4))
         
         }
     }
