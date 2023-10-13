@@ -62,6 +62,7 @@ typedef struct RustCallStatus {
 // Callbacks for UniFFI Futures
 typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
 typedef void (*UniFfiFutureCallbackInt8)(const void * _Nonnull, int8_t, RustCallStatus);
+typedef void (*UniFfiFutureCallbackUInt32)(const void * _Nonnull, uint32_t, RustCallStatus);
 typedef void (*UniFfiFutureCallbackInt64)(const void * _Nonnull, int64_t, RustCallStatus);
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
 typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
@@ -168,6 +169,8 @@ RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_url_for_keywor
 void uniffi_places_fn_method_placesconnection_bookmarks_update(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_insert(void*_Nonnull ptr, RustBuffer bookmark, RustCallStatus *_Nonnull out_status
+);
+uint32_t uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(void*_Nonnull ptr, RustBuffer folder_guids, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_places_fn_method_placesconnection_places_history_import_from_ios(void*_Nonnull ptr, RustBuffer db_path, int64_t last_sync_timestamp, RustCallStatus *_Nonnull out_status
 );
@@ -323,6 +326,9 @@ uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_update(void
     
 );
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_insert(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_count_bookmarks_in_trees(void
     
 );
 uint16_t uniffi_places_checksum_method_placesconnection_places_history_import_from_ios(void

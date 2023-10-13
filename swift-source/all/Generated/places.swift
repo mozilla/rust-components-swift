@@ -575,6 +575,7 @@ public protocol PlacesConnectionProtocol {
     func bookmarksGetUrlForKeyword(keyword: String) throws -> Url?
     func bookmarksUpdate(data: BookmarkUpdateInfo) throws
     func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid
+    func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32
     func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult
 }
 
@@ -946,6 +947,15 @@ public class PlacesConnection: PlacesConnectionProtocol {
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
                 uniffi_places_fn_method_placesconnection_bookmarks_insert(self.pointer,
                                                                           FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
+            }
+        )
+    }
+
+    public func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32 {
+        return try FfiConverterUInt32.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(self.pointer,
+                                                                                            FfiConverterSequenceTypeGuid.lower(folderGuids), $0)
             }
         )
     }
@@ -3862,6 +3872,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_places_checksum_method_placesconnection_bookmarks_insert() != 65038 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_places_checksum_method_placesconnection_bookmarks_count_bookmarks_in_trees() != 48320 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_places_checksum_method_placesconnection_places_history_import_from_ios() != 56168 {

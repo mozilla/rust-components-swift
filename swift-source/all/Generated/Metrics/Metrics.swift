@@ -25,7 +25,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 10, day: 12, hour: 5, minute: 19, second: 32))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 10, day: 13, hour: 5, minute: 31, second: 17))
     }
 
     enum NimbusEvents {
@@ -93,6 +93,40 @@ extension GleanMetrics {
                 }
                 if let experimentType = self.experimentType {
                     record["experiment_type"] = String(experimentType)
+                }
+
+                return record
+            }
+        }
+
+        struct EnrollmentStatusExtra: EventExtras {
+            var branch: String?
+            var conflictSlug: String?
+            var errorString: String?
+            var reason: String?
+            var slug: String?
+            var status: String?
+
+            func toExtraRecord() -> [String: String] {
+                var record = [String: String]()
+
+                if let branch = self.branch {
+                    record["branch"] = String(branch)
+                }
+                if let conflictSlug = self.conflictSlug {
+                    record["conflict_slug"] = String(conflictSlug)
+                }
+                if let errorString = self.errorString {
+                    record["error_string"] = String(errorString)
+                }
+                if let reason = self.reason {
+                    record["reason"] = String(reason)
+                }
+                if let slug = self.slug {
+                    record["slug"] = String(slug)
+                }
+                if let status = self.status {
+                    record["status"] = String(status)
                 }
 
                 return record
@@ -229,6 +263,19 @@ extension GleanMetrics {
                 disabled: false
             )
             , ["branch", "enrollment_id", "experiment", "experiment_type"]
+        )
+
+        /// Recorded for each enrollment status each time the SDK completes application of
+        /// pending experiments.
+        static let enrollmentStatus = EventMetricType<EnrollmentStatusExtra>( // generated from nimbus_events.enrollment_status
+            CommonMetricData(
+                category: "nimbus_events",
+                name: "enrollment_status",
+                sendInPings: ["events"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , ["branch", "conflict_slug", "error_string", "reason", "slug", "status"]
         )
 
         /// Recorded when a user actually observes an experimental treatment, or would have

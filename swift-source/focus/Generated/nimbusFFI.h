@@ -70,7 +70,7 @@ typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer
 // Scaffolding functions
 void uniffi_nimbus_fn_free_nimbusclient(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, RustBuffer available_randomization_units, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, RustBuffer available_randomization_units, uint64_t metrics_handler, RustCallStatus *_Nonnull out_status
 );
 void uniffi_nimbus_fn_method_nimbusclient_initialize(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -131,6 +131,8 @@ void uniffi_nimbus_fn_free_nimbusstringhelper(void*_Nonnull ptr, RustCallStatus 
 RustBuffer uniffi_nimbus_fn_method_nimbusstringhelper_string_format(void*_Nonnull ptr, RustBuffer template, RustBuffer uuid, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_nimbus_fn_method_nimbusstringhelper_get_uuid(void*_Nonnull ptr, RustBuffer template, RustCallStatus *_Nonnull out_status
+);
+void uniffi_nimbus_fn_init_callback_metricshandler(ForeignCallback _Nonnull callback_stub, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_nimbus_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );

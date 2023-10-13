@@ -430,14 +430,15 @@ public class NimbusClient: NimbusClientProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(appCtx: AppContext, coenrollingFeatureIds: [String] = [], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, availableRandomizationUnits: AvailableRandomizationUnits) throws {
+    public convenience init(appCtx: AppContext, coenrollingFeatureIds: [String] = [], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, availableRandomizationUnits: AvailableRandomizationUnits, metricsHandler: MetricsHandler) throws {
         try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_constructor_nimbusclient_new(
                 FfiConverterTypeAppContext.lower(appCtx),
                 FfiConverterSequenceString.lower(coenrollingFeatureIds),
                 FfiConverterString.lower(dbpath),
                 FfiConverterOptionTypeRemoteSettingsConfig.lower(remoteSettingsConfig),
-                FfiConverterTypeAvailableRandomizationUnits.lower(availableRandomizationUnits), $0
+                FfiConverterTypeAvailableRandomizationUnits.lower(availableRandomizationUnits),
+                FfiConverterCallbackInterfaceMetricsHandler.lower(metricsHandler), $0
             )
         })
     }
@@ -1361,6 +1362,89 @@ public func FfiConverterTypeEnrollmentChangeEvent_lower(_ value: EnrollmentChang
     return FfiConverterTypeEnrollmentChangeEvent.lower(value)
 }
 
+public struct EnrollmentStatusExtraDef {
+    public var branch: String?
+    public var conflictSlug: String?
+    public var errorString: String?
+    public var reason: String?
+    public var slug: String?
+    public var status: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(branch: String?, conflictSlug: String?, errorString: String?, reason: String?, slug: String?, status: String?) {
+        self.branch = branch
+        self.conflictSlug = conflictSlug
+        self.errorString = errorString
+        self.reason = reason
+        self.slug = slug
+        self.status = status
+    }
+}
+
+extension EnrollmentStatusExtraDef: Equatable, Hashable {
+    public static func == (lhs: EnrollmentStatusExtraDef, rhs: EnrollmentStatusExtraDef) -> Bool {
+        if lhs.branch != rhs.branch {
+            return false
+        }
+        if lhs.conflictSlug != rhs.conflictSlug {
+            return false
+        }
+        if lhs.errorString != rhs.errorString {
+            return false
+        }
+        if lhs.reason != rhs.reason {
+            return false
+        }
+        if lhs.slug != rhs.slug {
+            return false
+        }
+        if lhs.status != rhs.status {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(branch)
+        hasher.combine(conflictSlug)
+        hasher.combine(errorString)
+        hasher.combine(reason)
+        hasher.combine(slug)
+        hasher.combine(status)
+    }
+}
+
+public struct FfiConverterTypeEnrollmentStatusExtraDef: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EnrollmentStatusExtraDef {
+        return try EnrollmentStatusExtraDef(
+            branch: FfiConverterOptionString.read(from: &buf),
+            conflictSlug: FfiConverterOptionString.read(from: &buf),
+            errorString: FfiConverterOptionString.read(from: &buf),
+            reason: FfiConverterOptionString.read(from: &buf),
+            slug: FfiConverterOptionString.read(from: &buf),
+            status: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: EnrollmentStatusExtraDef, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.branch, into: &buf)
+        FfiConverterOptionString.write(value.conflictSlug, into: &buf)
+        FfiConverterOptionString.write(value.errorString, into: &buf)
+        FfiConverterOptionString.write(value.reason, into: &buf)
+        FfiConverterOptionString.write(value.slug, into: &buf)
+        FfiConverterOptionString.write(value.status, into: &buf)
+    }
+}
+
+public func FfiConverterTypeEnrollmentStatusExtraDef_lift(_ buf: RustBuffer) throws -> EnrollmentStatusExtraDef {
+    return try FfiConverterTypeEnrollmentStatusExtraDef.lift(buf)
+}
+
+public func FfiConverterTypeEnrollmentStatusExtraDef_lower(_ value: EnrollmentStatusExtraDef) -> RustBuffer {
+    return FfiConverterTypeEnrollmentStatusExtraDef.lower(value)
+}
+
 public struct ExperimentBranch {
     public var slug: String
     public var ratio: Int32
@@ -1545,6 +1629,9 @@ public enum NimbusError {
     // Simple error enums only carry a message
     case ClientError(message: String)
 
+    // Simple error enums only carry a message
+    case UniFfiCallbackError(message: String)
+
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeNimbusError.lift(error)
     }
@@ -1652,6 +1739,10 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
                 message: FfiConverterString.read(from: &buf)
             )
 
+        case 25: return try .UniFfiCallbackError(
+                message: FfiConverterString.read(from: &buf)
+            )
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
@@ -1706,6 +1797,8 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(23))
         case let .ClientError(message):
             writeInt(&buf, Int32(24))
+        case let .UniFfiCallbackError(message):
+            writeInt(&buf, Int32(25))
         }
     }
 }
@@ -1713,6 +1806,173 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
 extension NimbusError: Equatable, Hashable {}
 
 extension NimbusError: Error {}
+
+private extension NSLock {
+    func withLock<T>(f: () throws -> T) rethrows -> T {
+        lock()
+        defer { self.unlock() }
+        return try f()
+    }
+}
+
+private typealias UniFFICallbackHandle = UInt64
+private class UniFFICallbackHandleMap<T> {
+    private var leftMap: [UniFFICallbackHandle: T] = [:]
+    private var counter: [UniFFICallbackHandle: UInt64] = [:]
+    private var rightMap: [ObjectIdentifier: UniFFICallbackHandle] = [:]
+
+    private let lock = NSLock()
+    private var currentHandle: UniFFICallbackHandle = 0
+    private let stride: UniFFICallbackHandle = 1
+
+    func insert(obj: T) -> UniFFICallbackHandle {
+        lock.withLock {
+            let id = ObjectIdentifier(obj as AnyObject)
+            let handle = rightMap[id] ?? {
+                currentHandle += stride
+                let handle = currentHandle
+                leftMap[handle] = obj
+                rightMap[id] = handle
+                return handle
+            }()
+            counter[handle] = (counter[handle] ?? 0) + 1
+            return handle
+        }
+    }
+
+    func get(handle: UniFFICallbackHandle) -> T? {
+        lock.withLock {
+            leftMap[handle]
+        }
+    }
+
+    func delete(handle: UniFFICallbackHandle) {
+        remove(handle: handle)
+    }
+
+    @discardableResult
+    func remove(handle: UniFFICallbackHandle) -> T? {
+        lock.withLock {
+            defer { counter[handle] = (counter[handle] ?? 1) - 1 }
+            guard counter[handle] == 1 else { return leftMap[handle] }
+            let obj = leftMap.removeValue(forKey: handle)
+            if let obj = obj {
+                rightMap.removeValue(forKey: ObjectIdentifier(obj as AnyObject))
+            }
+            return obj
+        }
+    }
+}
+
+// Magic number for the Rust proxy to call using the same mechanism as every other method,
+// to free the callback once it's dropped by Rust.
+private let IDX_CALLBACK_FREE: Int32 = 0
+// Callback return codes
+private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
+private let UNIFFI_CALLBACK_ERROR: Int32 = 1
+private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
+// Declaration and FfiConverters for MetricsHandler Callback Interface
+
+public protocol MetricsHandler: AnyObject {
+    func recordEnrollmentStatuses(enrollmentStatusExtras: [EnrollmentStatusExtraDef])
+}
+
+// The ForeignCallback that is passed to Rust.
+private let foreignCallbackCallbackInterfaceMetricsHandler: ForeignCallback =
+    { (handle: UniFFICallbackHandle, method: Int32, argsData: UnsafePointer<UInt8>, argsLen: Int32, out_buf: UnsafeMutablePointer<RustBuffer>) -> Int32 in
+
+        func invokeRecordEnrollmentStatuses(_ swiftCallbackInterface: MetricsHandler, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.recordEnrollmentStatuses(
+                    enrollmentStatusExtras: FfiConverterSequenceTypeEnrollmentStatusExtraDef.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            return try makeCall()
+        }
+
+        switch method {
+        case IDX_CALLBACK_FREE:
+            FfiConverterCallbackInterfaceMetricsHandler.drop(handle: handle)
+            // Sucessful return
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
+            return UNIFFI_CALLBACK_SUCCESS
+        case 1:
+            let cb: MetricsHandler
+            do {
+                cb = try FfiConverterCallbackInterfaceMetricsHandler.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("MetricsHandler: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeRecordEnrollmentStatuses(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+
+        // This should never happen, because an out of bounds method index won't
+        // ever be used. Once we can catch errors, we should return an InternalError.
+        // https://github.com/mozilla/uniffi-rs/issues/351
+        default:
+            // An unexpected error happened.
+            // See docs of ForeignCallback in `uniffi_core/src/ffi/foreigncallbacks.rs`
+            return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+        }
+    }
+
+// FfiConverter protocol for callback interfaces
+private enum FfiConverterCallbackInterfaceMetricsHandler {
+    private static let initCallbackOnce: () = {
+        // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
+        try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
+            uniffi_nimbus_fn_init_callback_metricshandler(foreignCallbackCallbackInterfaceMetricsHandler, err)
+        }
+    }()
+
+    private static func ensureCallbackinitialized() {
+        _ = initCallbackOnce
+    }
+
+    static func drop(handle: UniFFICallbackHandle) {
+        handleMap.remove(handle: handle)
+    }
+
+    private static var handleMap = UniFFICallbackHandleMap<MetricsHandler>()
+}
+
+extension FfiConverterCallbackInterfaceMetricsHandler: FfiConverter {
+    typealias SwiftType = MetricsHandler
+    // We can use Handle as the FfiType because it's a typealias to UInt64
+    typealias FfiType = UniFFICallbackHandle
+
+    public static func lift(_ handle: UniFFICallbackHandle) throws -> SwiftType {
+        ensureCallbackinitialized()
+        guard let callback = handleMap.get(handle: handle) else {
+            throw UniffiInternalError.unexpectedStaleHandle
+        }
+        return callback
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        ensureCallbackinitialized()
+        let handle: UniFFICallbackHandle = try readInt(&buf)
+        return try lift(handle)
+    }
+
+    public static func lower(_ v: SwiftType) -> UniFFICallbackHandle {
+        ensureCallbackinitialized()
+        return handleMap.insert(obj: v)
+    }
+
+    public static func write(_ v: SwiftType, into buf: inout [UInt8]) {
+        ensureCallbackinitialized()
+        writeInt(&buf, lower(v))
+    }
+}
 
 private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
@@ -1907,6 +2167,28 @@ private struct FfiConverterSequenceTypeEnrollmentChangeEvent: FfiConverterRustBu
     }
 }
 
+private struct FfiConverterSequenceTypeEnrollmentStatusExtraDef: FfiConverterRustBuffer {
+    typealias SwiftType = [EnrollmentStatusExtraDef]
+
+    public static func write(_ value: [EnrollmentStatusExtraDef], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeEnrollmentStatusExtraDef.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [EnrollmentStatusExtraDef] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [EnrollmentStatusExtraDef]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeEnrollmentStatusExtraDef.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeExperimentBranch: FfiConverterRustBuffer {
     typealias SwiftType = [ExperimentBranch]
 
@@ -2052,7 +2334,7 @@ private var initializationResult: InitializationResult {
     if uniffi_nimbus_checksum_method_nimbusstringhelper_get_uuid() != 33231 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 64610 {
+    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 52112 {
         return InitializationResult.apiChecksumMismatch
     }
 
