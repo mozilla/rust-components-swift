@@ -566,15 +566,13 @@ public func FfiConverterTypeSuggestIngestionConstraints_lower(_ value: SuggestIn
 
 public struct SuggestionQuery {
     public var `keyword`: String
-    public var `includeSponsored`: Bool
-    public var `includeNonSponsored`: Bool
+    public var `providers`: [SuggestionProvider]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`keyword`: String, `includeSponsored`: Bool, `includeNonSponsored`: Bool) {
+    public init(`keyword`: String, `providers`: [SuggestionProvider]) {
         self.`keyword` = `keyword`
-        self.`includeSponsored` = `includeSponsored`
-        self.`includeNonSponsored` = `includeNonSponsored`
+        self.`providers` = `providers`
     }
 }
 
@@ -584,10 +582,7 @@ extension SuggestionQuery: Equatable, Hashable {
         if lhs.`keyword` != rhs.`keyword` {
             return false
         }
-        if lhs.`includeSponsored` != rhs.`includeSponsored` {
-            return false
-        }
-        if lhs.`includeNonSponsored` != rhs.`includeNonSponsored` {
+        if lhs.`providers` != rhs.`providers` {
             return false
         }
         return true
@@ -595,8 +590,7 @@ extension SuggestionQuery: Equatable, Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(`keyword`)
-        hasher.combine(`includeSponsored`)
-        hasher.combine(`includeNonSponsored`)
+        hasher.combine(`providers`)
     }
 }
 
@@ -605,15 +599,13 @@ public struct FfiConverterTypeSuggestionQuery: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestionQuery {
         return try SuggestionQuery(
             `keyword`: FfiConverterString.read(from: &buf), 
-            `includeSponsored`: FfiConverterBool.read(from: &buf), 
-            `includeNonSponsored`: FfiConverterBool.read(from: &buf)
+            `providers`: FfiConverterSequenceTypeSuggestionProvider.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestionQuery, into buf: inout [UInt8]) {
         FfiConverterString.write(value.`keyword`, into: &buf)
-        FfiConverterBool.write(value.`includeSponsored`, into: &buf)
-        FfiConverterBool.write(value.`includeNonSponsored`, into: &buf)
+        FfiConverterSequenceTypeSuggestionProvider.write(value.`providers`, into: &buf)
     }
 }
 
@@ -989,6 +981,28 @@ fileprivate struct FfiConverterSequenceTypeSuggestion: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeSuggestion.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceTypeSuggestionProvider: FfiConverterRustBuffer {
+    typealias SwiftType = [SuggestionProvider]
+
+    public static func write(_ value: [SuggestionProvider], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeSuggestionProvider.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [SuggestionProvider] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [SuggestionProvider]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeSuggestionProvider.read(from: &buf))
         }
         return seq
     }
