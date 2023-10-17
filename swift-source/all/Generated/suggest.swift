@@ -306,6 +306,19 @@ fileprivate struct FfiConverterUInt8: FfiConverterPrimitive {
     }
 }
 
+fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
+    typealias FfiType = Int32
+    typealias SwiftType = Int32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Int32, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
 fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
@@ -567,12 +580,14 @@ public func FfiConverterTypeSuggestIngestionConstraints_lower(_ value: SuggestIn
 public struct SuggestionQuery {
     public var `keyword`: String
     public var `providers`: [SuggestionProvider]
+    public var `limit`: Int32?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`keyword`: String, `providers`: [SuggestionProvider]) {
+    public init(`keyword`: String, `providers`: [SuggestionProvider], `limit`: Int32? = nil) {
         self.`keyword` = `keyword`
         self.`providers` = `providers`
+        self.`limit` = `limit`
     }
 }
 
@@ -585,12 +600,16 @@ extension SuggestionQuery: Equatable, Hashable {
         if lhs.`providers` != rhs.`providers` {
             return false
         }
+        if lhs.`limit` != rhs.`limit` {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(`keyword`)
         hasher.combine(`providers`)
+        hasher.combine(`limit`)
     }
 }
 
@@ -599,13 +618,15 @@ public struct FfiConverterTypeSuggestionQuery: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestionQuery {
         return try SuggestionQuery(
             `keyword`: FfiConverterString.read(from: &buf), 
-            `providers`: FfiConverterSequenceTypeSuggestionProvider.read(from: &buf)
+            `providers`: FfiConverterSequenceTypeSuggestionProvider.read(from: &buf), 
+            `limit`: FfiConverterOptionInt32.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestionQuery, into buf: inout [UInt8]) {
         FfiConverterString.write(value.`keyword`, into: &buf)
         FfiConverterSequenceTypeSuggestionProvider.write(value.`providers`, into: &buf)
+        FfiConverterOptionInt32.write(value.`limit`, into: &buf)
     }
 }
 
@@ -857,6 +878,27 @@ public func FfiConverterTypeSuggestionProvider_lower(_ value: SuggestionProvider
 extension SuggestionProvider: Equatable, Hashable {}
 
 
+
+fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
+    typealias SwiftType = Int32?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
 
 fileprivate struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
     typealias SwiftType = UInt64?

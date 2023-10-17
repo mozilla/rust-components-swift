@@ -1843,14 +1843,14 @@ public struct HistoryVisitInfo {
     public var url: Url
     public var title: String?
     public var timestamp: PlacesTimestamp
-    public var visitType: VisitTransition
+    public var visitType: VisitType
     public var isHidden: Bool
     public var previewImageUrl: Url?
     public var isRemote: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(url: Url, title: String?, timestamp: PlacesTimestamp, visitType: VisitTransition, isHidden: Bool, previewImageUrl: Url?, isRemote: Bool) {
+    public init(url: Url, title: String?, timestamp: PlacesTimestamp, visitType: VisitType, isHidden: Bool, previewImageUrl: Url?, isRemote: Bool) {
         self.url = url
         self.title = title
         self.timestamp = timestamp
@@ -1904,7 +1904,7 @@ public struct FfiConverterTypeHistoryVisitInfo: FfiConverterRustBuffer {
             url: FfiConverterTypeUrl.read(from: &buf),
             title: FfiConverterOptionString.read(from: &buf),
             timestamp: FfiConverterTypePlacesTimestamp.read(from: &buf),
-            visitType: FfiConverterTypeVisitTransition.read(from: &buf),
+            visitType: FfiConverterTypeVisitType.read(from: &buf),
             isHidden: FfiConverterBool.read(from: &buf),
             previewImageUrl: FfiConverterOptionTypeUrl.read(from: &buf),
             isRemote: FfiConverterBool.read(from: &buf)
@@ -1915,7 +1915,7 @@ public struct FfiConverterTypeHistoryVisitInfo: FfiConverterRustBuffer {
         FfiConverterTypeUrl.write(value.url, into: &buf)
         FfiConverterOptionString.write(value.title, into: &buf)
         FfiConverterTypePlacesTimestamp.write(value.timestamp, into: &buf)
-        FfiConverterTypeVisitTransition.write(value.visitType, into: &buf)
+        FfiConverterTypeVisitType.write(value.visitType, into: &buf)
         FfiConverterBool.write(value.isHidden, into: &buf)
         FfiConverterOptionTypeUrl.write(value.previewImageUrl, into: &buf)
         FfiConverterBool.write(value.isRemote, into: &buf)
@@ -2426,7 +2426,7 @@ public func FfiConverterTypeTopFrecentSiteInfo_lower(_ value: TopFrecentSiteInfo
 public struct VisitObservation {
     public var url: Url
     public var title: String?
-    public var visitType: VisitTransition?
+    public var visitType: VisitType?
     public var isError: Bool?
     public var isRedirectSource: Bool?
     public var isPermanentRedirectSource: Bool?
@@ -2437,7 +2437,7 @@ public struct VisitObservation {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(url: Url, title: String? = nil, visitType: VisitTransition?, isError: Bool? = nil, isRedirectSource: Bool? = nil, isPermanentRedirectSource: Bool? = nil, at: PlacesTimestamp? = nil, referrer: Url? = nil, isRemote: Bool? = nil, previewImageUrl: Url? = nil) {
+    public init(url: Url, title: String? = nil, visitType: VisitType?, isError: Bool? = nil, isRedirectSource: Bool? = nil, isPermanentRedirectSource: Bool? = nil, at: PlacesTimestamp? = nil, referrer: Url? = nil, isRemote: Bool? = nil, previewImageUrl: Url? = nil) {
         self.url = url
         self.title = title
         self.visitType = visitType
@@ -2505,7 +2505,7 @@ public struct FfiConverterTypeVisitObservation: FfiConverterRustBuffer {
         return try VisitObservation(
             url: FfiConverterTypeUrl.read(from: &buf),
             title: FfiConverterOptionString.read(from: &buf),
-            visitType: FfiConverterOptionTypeVisitTransition.read(from: &buf),
+            visitType: FfiConverterOptionTypeVisitType.read(from: &buf),
             isError: FfiConverterOptionBool.read(from: &buf),
             isRedirectSource: FfiConverterOptionBool.read(from: &buf),
             isPermanentRedirectSource: FfiConverterOptionBool.read(from: &buf),
@@ -2519,7 +2519,7 @@ public struct FfiConverterTypeVisitObservation: FfiConverterRustBuffer {
     public static func write(_ value: VisitObservation, into buf: inout [UInt8]) {
         FfiConverterTypeUrl.write(value.url, into: &buf)
         FfiConverterOptionString.write(value.title, into: &buf)
-        FfiConverterOptionTypeVisitTransition.write(value.visitType, into: &buf)
+        FfiConverterOptionTypeVisitType.write(value.visitType, into: &buf)
         FfiConverterOptionBool.write(value.isError, into: &buf)
         FfiConverterOptionBool.write(value.isRedirectSource, into: &buf)
         FfiConverterOptionBool.write(value.isPermanentRedirectSource, into: &buf)
@@ -2972,7 +2972,7 @@ extension PlacesApiError: Error {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-public enum VisitTransition {
+public enum VisitType {
     case link
     case typed
     case bookmark
@@ -2982,12 +2982,13 @@ public enum VisitTransition {
     case download
     case framedLink
     case reload
+    case updatePlace
 }
 
-public struct FfiConverterTypeVisitTransition: FfiConverterRustBuffer {
-    typealias SwiftType = VisitTransition
+public struct FfiConverterTypeVisitType: FfiConverterRustBuffer {
+    typealias SwiftType = VisitType
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> VisitTransition {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> VisitType {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         case 1: return .link
@@ -3008,11 +3009,13 @@ public struct FfiConverterTypeVisitTransition: FfiConverterRustBuffer {
 
         case 9: return .reload
 
+        case 10: return .updatePlace
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
-    public static func write(_ value: VisitTransition, into buf: inout [UInt8]) {
+    public static func write(_ value: VisitType, into buf: inout [UInt8]) {
         switch value {
         case .link:
             writeInt(&buf, Int32(1))
@@ -3040,19 +3043,22 @@ public struct FfiConverterTypeVisitTransition: FfiConverterRustBuffer {
 
         case .reload:
             writeInt(&buf, Int32(9))
+
+        case .updatePlace:
+            writeInt(&buf, Int32(10))
         }
     }
 }
 
-public func FfiConverterTypeVisitTransition_lift(_ buf: RustBuffer) throws -> VisitTransition {
-    return try FfiConverterTypeVisitTransition.lift(buf)
+public func FfiConverterTypeVisitType_lift(_ buf: RustBuffer) throws -> VisitType {
+    return try FfiConverterTypeVisitType.lift(buf)
 }
 
-public func FfiConverterTypeVisitTransition_lower(_ value: VisitTransition) -> RustBuffer {
-    return FfiConverterTypeVisitTransition.lower(value)
+public func FfiConverterTypeVisitType_lower(_ value: VisitType) -> RustBuffer {
+    return FfiConverterTypeVisitType.lower(value)
 }
 
-extension VisitTransition: Equatable, Hashable {}
+extension VisitType: Equatable, Hashable {}
 
 private struct FfiConverterOptionUInt32: FfiConverterRustBuffer {
     typealias SwiftType = UInt32?
@@ -3201,8 +3207,8 @@ private struct FfiConverterOptionTypeDocumentType: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionTypeVisitTransition: FfiConverterRustBuffer {
-    typealias SwiftType = VisitTransition?
+private struct FfiConverterOptionTypeVisitType: FfiConverterRustBuffer {
+    typealias SwiftType = VisitType?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
         guard let value = value else {
@@ -3210,13 +3216,13 @@ private struct FfiConverterOptionTypeVisitTransition: FfiConverterRustBuffer {
             return
         }
         writeInt(&buf, Int8(1))
-        FfiConverterTypeVisitTransition.write(value, into: &buf)
+        FfiConverterTypeVisitType.write(value, into: &buf)
     }
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
-        case 1: return try FfiConverterTypeVisitTransition.read(from: &buf)
+        case 1: return try FfiConverterTypeVisitType.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
