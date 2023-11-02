@@ -67,14 +67,18 @@ class VersionInfo:
                 data = json.loads(stream.read())
                 app_services_version = data['version']
         components = app_services_version.split(".")
-        if len(components) != 2:
+        # check if the app services version is using the 2 or 3 component semver
+        if len(components) == 2:
+            # app_services_version is the 2-component version we normally use for application services
+            self.app_services_version = app_services_version
+            # swift_version is the 3-component version we use for Swift so that it's semver-compatible
+            self.swift_version = f"{components[0]}.0.{components[1]}"
+        # if it's 3-component, use as-is
+        elif len(components) == 3:
+            self.app_services_version = app_services_version
+            self.swift_version = app_services_version
+        else:
             raise ValueError(f"Invalid app_services_version: {app_services_version}")
-
-
-        # app_services_version is the 2-component version we normally use for application services
-        self.app_services_version = app_services_version
-        # swift_version is the 3-component version we use for Swift so that it's semver-compatible
-        self.swift_version = f"{components[0]}.0.{components[1]}"
 
 def rev_exists(branch):
     result = subprocess.run(
