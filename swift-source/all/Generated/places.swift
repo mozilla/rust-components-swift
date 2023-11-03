@@ -2309,15 +2309,13 @@ public struct SearchResult {
     public var url: Url
     public var title: String
     public var frecency: Int64
-    public var reasons: [MatchReason]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(url: Url, title: String, frecency: Int64, reasons: [MatchReason]) {
+    public init(url: Url, title: String, frecency: Int64) {
         self.url = url
         self.title = title
         self.frecency = frecency
-        self.reasons = reasons
     }
 }
 
@@ -2332,9 +2330,6 @@ extension SearchResult: Equatable, Hashable {
         if lhs.frecency != rhs.frecency {
             return false
         }
-        if lhs.reasons != rhs.reasons {
-            return false
-        }
         return true
     }
 
@@ -2342,7 +2337,6 @@ extension SearchResult: Equatable, Hashable {
         hasher.combine(url)
         hasher.combine(title)
         hasher.combine(frecency)
-        hasher.combine(reasons)
     }
 }
 
@@ -2351,8 +2345,7 @@ public struct FfiConverterTypeSearchResult: FfiConverterRustBuffer {
         return try SearchResult(
             url: FfiConverterTypeUrl.read(from: &buf),
             title: FfiConverterString.read(from: &buf),
-            frecency: FfiConverterInt64.read(from: &buf),
-            reasons: FfiConverterSequenceTypeMatchReason.read(from: &buf)
+            frecency: FfiConverterInt64.read(from: &buf)
         )
     }
 
@@ -2360,7 +2353,6 @@ public struct FfiConverterTypeSearchResult: FfiConverterRustBuffer {
         FfiConverterTypeUrl.write(value.url, into: &buf)
         FfiConverterString.write(value.title, into: &buf)
         FfiConverterInt64.write(value.frecency, into: &buf)
-        FfiConverterSequenceTypeMatchReason.write(value.reasons, into: &buf)
     }
 }
 
@@ -2828,72 +2820,6 @@ public func FfiConverterTypeInsertableBookmarkItem_lower(_ value: InsertableBook
 }
 
 extension InsertableBookmarkItem: Equatable, Hashable {}
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-public enum MatchReason {
-    case keyword
-    case origin
-    case urlMatch
-    case previousUse
-    case bookmark
-    case tags
-}
-
-public struct FfiConverterTypeMatchReason: FfiConverterRustBuffer {
-    typealias SwiftType = MatchReason
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MatchReason {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        case 1: return .keyword
-
-        case 2: return .origin
-
-        case 3: return .urlMatch
-
-        case 4: return .previousUse
-
-        case 5: return .bookmark
-
-        case 6: return .tags
-
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: MatchReason, into buf: inout [UInt8]) {
-        switch value {
-        case .keyword:
-            writeInt(&buf, Int32(1))
-
-        case .origin:
-            writeInt(&buf, Int32(2))
-
-        case .urlMatch:
-            writeInt(&buf, Int32(3))
-
-        case .previousUse:
-            writeInt(&buf, Int32(4))
-
-        case .bookmark:
-            writeInt(&buf, Int32(5))
-
-        case .tags:
-            writeInt(&buf, Int32(6))
-        }
-    }
-}
-
-public func FfiConverterTypeMatchReason_lift(_ buf: RustBuffer) throws -> MatchReason {
-    return try FfiConverterTypeMatchReason.lift(buf)
-}
-
-public func FfiConverterTypeMatchReason_lower(_ value: MatchReason) -> RustBuffer {
-    return FfiConverterTypeMatchReason.lower(value)
-}
-
-extension MatchReason: Equatable, Hashable {}
 
 public enum PlacesApiError {
     case UnexpectedPlacesException(reason: String)
@@ -3547,28 +3473,6 @@ private struct FfiConverterSequenceTypeInsertableBookmarkItem: FfiConverterRustB
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterTypeInsertableBookmarkItem.read(from: &buf))
-        }
-        return seq
-    }
-}
-
-private struct FfiConverterSequenceTypeMatchReason: FfiConverterRustBuffer {
-    typealias SwiftType = [MatchReason]
-
-    public static func write(_ value: [MatchReason], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeMatchReason.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [MatchReason] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [MatchReason]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeMatchReason.read(from: &buf))
         }
         return seq
     }

@@ -85,9 +85,13 @@ RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_check_authorization_status
 );
 void uniffi_fxa_client_fn_method_firefoxaccount_disconnect(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void uniffi_fxa_client_fn_method_firefoxaccount_on_auth_issues(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_auth_state(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_profile(void*_Nonnull ptr, int8_t ignore_cache, RustCallStatus *_Nonnull out_status
 );
-void uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(void*_Nonnull ptr, RustBuffer name, RustBuffer device_type, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(void*_Nonnull ptr, RustBuffer name, RustBuffer device_type, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_current_device_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -95,13 +99,13 @@ RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_devices(void*_Nonnull 
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_attached_clients(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(void*_Nonnull ptr, RustBuffer display_name, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(void*_Nonnull ptr, RustBuffer display_name, RustCallStatus *_Nonnull out_status
 );
 void uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(void*_Nonnull ptr, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(void*_Nonnull ptr, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
 );
-void uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(void*_Nonnull ptr, RustBuffer subscription, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(void*_Nonnull ptr, RustBuffer subscription, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_handle_push_message(void*_Nonnull ptr, RustBuffer payload, RustCallStatus *_Nonnull out_status
 );
@@ -128,6 +132,10 @@ RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_authorize_code_using_sessi
 void uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_gather_telemetry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_firefoxaccount_simulate_temporary_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_fxa_client_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );
@@ -156,6 +164,12 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_check_authorization_st
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_disconnect(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_on_auth_issues(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_auth_state(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_profile(void
@@ -222,6 +236,12 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_clear_access_token_cac
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_gather_telemetry(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_temporary_auth_token_issue(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_permanent_auth_token_issue(void
     
 );
 uint16_t uniffi_fxa_client_checksum_constructor_firefoxaccount_new(void
