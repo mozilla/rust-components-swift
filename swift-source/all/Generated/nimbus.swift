@@ -1151,17 +1151,15 @@ public struct EnrolledExperiment {
     public var userFacingName: String
     public var userFacingDescription: String
     public var branchSlug: String
-    public var enrollmentId: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(featureIds: [String], slug: String, userFacingName: String, userFacingDescription: String, branchSlug: String, enrollmentId: String) {
+    public init(featureIds: [String], slug: String, userFacingName: String, userFacingDescription: String, branchSlug: String) {
         self.featureIds = featureIds
         self.slug = slug
         self.userFacingName = userFacingName
         self.userFacingDescription = userFacingDescription
         self.branchSlug = branchSlug
-        self.enrollmentId = enrollmentId
     }
 }
 
@@ -1182,9 +1180,6 @@ extension EnrolledExperiment: Equatable, Hashable {
         if lhs.branchSlug != rhs.branchSlug {
             return false
         }
-        if lhs.enrollmentId != rhs.enrollmentId {
-            return false
-        }
         return true
     }
 
@@ -1194,7 +1189,6 @@ extension EnrolledExperiment: Equatable, Hashable {
         hasher.combine(userFacingName)
         hasher.combine(userFacingDescription)
         hasher.combine(branchSlug)
-        hasher.combine(enrollmentId)
     }
 }
 
@@ -1205,8 +1199,7 @@ public struct FfiConverterTypeEnrolledExperiment: FfiConverterRustBuffer {
             slug: FfiConverterString.read(from: &buf),
             userFacingName: FfiConverterString.read(from: &buf),
             userFacingDescription: FfiConverterString.read(from: &buf),
-            branchSlug: FfiConverterString.read(from: &buf),
-            enrollmentId: FfiConverterString.read(from: &buf)
+            branchSlug: FfiConverterString.read(from: &buf)
         )
     }
 
@@ -1216,7 +1209,6 @@ public struct FfiConverterTypeEnrolledExperiment: FfiConverterRustBuffer {
         FfiConverterString.write(value.userFacingName, into: &buf)
         FfiConverterString.write(value.userFacingDescription, into: &buf)
         FfiConverterString.write(value.branchSlug, into: &buf)
-        FfiConverterString.write(value.enrollmentId, into: &buf)
     }
 }
 
@@ -1290,16 +1282,14 @@ public func FfiConverterTypeEnrolledFeature_lower(_ value: EnrolledFeature) -> R
 public struct EnrollmentChangeEvent {
     public var experimentSlug: String
     public var branchSlug: String
-    public var enrollmentId: String
     public var reason: String?
     public var change: EnrollmentChangeEventType
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(experimentSlug: String, branchSlug: String, enrollmentId: String, reason: String?, change: EnrollmentChangeEventType) {
+    public init(experimentSlug: String, branchSlug: String, reason: String?, change: EnrollmentChangeEventType) {
         self.experimentSlug = experimentSlug
         self.branchSlug = branchSlug
-        self.enrollmentId = enrollmentId
         self.reason = reason
         self.change = change
     }
@@ -1311,9 +1301,6 @@ extension EnrollmentChangeEvent: Equatable, Hashable {
             return false
         }
         if lhs.branchSlug != rhs.branchSlug {
-            return false
-        }
-        if lhs.enrollmentId != rhs.enrollmentId {
             return false
         }
         if lhs.reason != rhs.reason {
@@ -1328,7 +1315,6 @@ extension EnrollmentChangeEvent: Equatable, Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(experimentSlug)
         hasher.combine(branchSlug)
-        hasher.combine(enrollmentId)
         hasher.combine(reason)
         hasher.combine(change)
     }
@@ -1339,7 +1325,6 @@ public struct FfiConverterTypeEnrollmentChangeEvent: FfiConverterRustBuffer {
         return try EnrollmentChangeEvent(
             experimentSlug: FfiConverterString.read(from: &buf),
             branchSlug: FfiConverterString.read(from: &buf),
-            enrollmentId: FfiConverterString.read(from: &buf),
             reason: FfiConverterOptionString.read(from: &buf),
             change: FfiConverterTypeEnrollmentChangeEventType.read(from: &buf)
         )
@@ -1348,7 +1333,6 @@ public struct FfiConverterTypeEnrollmentChangeEvent: FfiConverterRustBuffer {
     public static func write(_ value: EnrollmentChangeEvent, into buf: inout [UInt8]) {
         FfiConverterString.write(value.experimentSlug, into: &buf)
         FfiConverterString.write(value.branchSlug, into: &buf)
-        FfiConverterString.write(value.enrollmentId, into: &buf)
         FfiConverterOptionString.write(value.reason, into: &buf)
         FfiConverterTypeEnrollmentChangeEventType.write(value.change, into: &buf)
     }

@@ -25,13 +25,12 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 11, day: 3, hour: 5, minute: 24, second: 49))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 11, day: 4, hour: 5, minute: 18, second: 18))
     }
 
     enum NimbusEvents {
         struct DisqualificationExtra: EventExtras {
             var branch: String?
-            var enrollmentId: String?
             var experiment: String?
 
             func toExtraRecord() -> [String: String] {
@@ -39,9 +38,6 @@ extension GleanMetrics {
 
                 if let branch = self.branch {
                     record["branch"] = String(branch)
-                }
-                if let enrollmentId = self.enrollmentId {
-                    record["enrollment_id"] = String(enrollmentId)
                 }
                 if let experiment = self.experiment {
                     record["experiment"] = String(experiment)
@@ -75,7 +71,6 @@ extension GleanMetrics {
 
         struct EnrollmentExtra: EventExtras {
             var branch: String?
-            var enrollmentId: String?
             var experiment: String?
             var experimentType: String?
 
@@ -84,9 +79,6 @@ extension GleanMetrics {
 
                 if let branch = self.branch {
                     record["branch"] = String(branch)
-                }
-                if let enrollmentId = self.enrollmentId {
-                    record["enrollment_id"] = String(enrollmentId)
                 }
                 if let experiment = self.experiment {
                     record["experiment"] = String(experiment)
@@ -201,7 +193,6 @@ extension GleanMetrics {
 
         struct UnenrollmentExtra: EventExtras {
             var branch: String?
-            var enrollmentId: String?
             var experiment: String?
             var reason: String?
 
@@ -210,9 +201,6 @@ extension GleanMetrics {
 
                 if let branch = self.branch {
                     record["branch"] = String(branch)
-                }
-                if let enrollmentId = self.enrollmentId {
-                    record["enrollment_id"] = String(enrollmentId)
                 }
                 if let experiment = self.experiment {
                     record["experiment"] = String(experiment)
@@ -236,7 +224,7 @@ extension GleanMetrics {
                 lifetime: .ping,
                 disabled: false
             )
-            , ["branch", "enrollment_id", "experiment"]
+            , ["branch", "experiment"]
         )
 
         /// Recorded when an enrollment fails, including the reason for the failure.
@@ -262,7 +250,7 @@ extension GleanMetrics {
                 lifetime: .ping,
                 disabled: false
             )
-            , ["branch", "enrollment_id", "experiment", "experiment_type"]
+            , ["branch", "experiment", "experiment_type"]
         )
 
         /// Recorded for each enrollment status each time the SDK completes application of
@@ -328,7 +316,7 @@ extension GleanMetrics {
                 lifetime: .ping,
                 disabled: false
             )
-            , ["branch", "enrollment_id", "experiment", "reason"]
+            , ["branch", "experiment", "reason"]
         )
 
     }
