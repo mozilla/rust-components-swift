@@ -558,9 +558,7 @@ public protocol PlacesConnectionProtocol {
     func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws
     func deleteVisit(url: String, timestamp: PlacesTimestamp) throws
     func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo]
-    func wipeLocalHistory() throws
     func deleteEverythingHistory() throws
-    func pruneDestructively() throws
     func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics
     func runMaintenanceVacuum() throws
     func runMaintenanceOptimize() throws
@@ -811,24 +809,10 @@ public class PlacesConnection: PlacesConnectionProtocol {
         )
     }
 
-    public func wipeLocalHistory() throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_wipe_local_history(self.pointer, $0)
-            }
-    }
-
     public func deleteEverythingHistory() throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
                 uniffi_places_fn_method_placesconnection_delete_everything_history(self.pointer, $0)
-            }
-    }
-
-    public func pruneDestructively() throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_prune_destructively(self.pointer, $0)
             }
     }
 
@@ -3733,13 +3717,7 @@ private var initializationResult: InitializationResult {
     if uniffi_places_checksum_method_placesconnection_get_top_frecent_site_infos() != 9199 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_wipe_local_history() != 37987 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_places_checksum_method_placesconnection_delete_everything_history() != 64039 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_places_checksum_method_placesconnection_prune_destructively() != 43617 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_places_checksum_method_placesconnection_run_maintenance_prune() != 19326 {

@@ -136,11 +136,7 @@ void uniffi_places_fn_method_placesconnection_delete_visit(void*_Nonnull ptr, Ru
 );
 RustBuffer uniffi_places_fn_method_placesconnection_get_top_frecent_site_infos(void*_Nonnull ptr, int32_t num_items, RustBuffer threshold_option, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_wipe_local_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
 void uniffi_places_fn_method_placesconnection_delete_everything_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesconnection_prune_destructively(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_places_fn_method_placesconnection_run_maintenance_prune(void*_Nonnull ptr, uint32_t db_size_limit, RustCallStatus *_Nonnull out_status
 );
@@ -277,13 +273,7 @@ uint16_t uniffi_places_checksum_method_placesconnection_delete_visit(void
 uint16_t uniffi_places_checksum_method_placesconnection_get_top_frecent_site_infos(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_wipe_local_history(void
-    
-);
 uint16_t uniffi_places_checksum_method_placesconnection_delete_everything_history(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_prune_destructively(void
     
 );
 uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_prune(void
