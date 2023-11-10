@@ -430,7 +430,7 @@ public class NimbusClient: NimbusClientProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(appCtx: AppContext, coenrollingFeatureIds: [String] = [], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, availableRandomizationUnits: AvailableRandomizationUnits, metricsHandler: MetricsHandler) throws {
+    public convenience init(appCtx: AppContext, coenrollingFeatureIds: [String], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, availableRandomizationUnits: AvailableRandomizationUnits, metricsHandler: MetricsHandler) throws {
         try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_constructor_nimbusclient_new(
                 FfiConverterTypeAppContext.lower(appCtx),
@@ -2318,7 +2318,7 @@ private var initializationResult: InitializationResult {
     if uniffi_nimbus_checksum_method_nimbusstringhelper_get_uuid() != 33231 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 52112 {
+    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 31321 {
         return InitializationResult.apiChecksumMismatch
     }
 
