@@ -138,7 +138,7 @@ RustBuffer uniffi_places_fn_method_placesconnection_get_top_frecent_site_infos(v
 );
 void uniffi_places_fn_method_placesconnection_delete_everything_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_places_fn_method_placesconnection_run_maintenance_prune(void*_Nonnull ptr, uint32_t db_size_limit, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_places_fn_method_placesconnection_run_maintenance_prune(void*_Nonnull ptr, uint32_t db_size_limit, uint32_t prune_limit, RustCallStatus *_Nonnull out_status
 );
 void uniffi_places_fn_method_placesconnection_run_maintenance_vacuum(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );

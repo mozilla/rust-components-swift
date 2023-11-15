@@ -559,7 +559,7 @@ public protocol PlacesConnectionProtocol {
     func deleteVisit(url: String, timestamp: PlacesTimestamp) throws
     func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo]
     func deleteEverythingHistory() throws
-    func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics
+    func runMaintenancePrune(dbSizeLimit: UInt32, pruneLimit: UInt32) throws -> RunMaintenanceMetrics
     func runMaintenanceVacuum() throws
     func runMaintenanceOptimize() throws
     func runMaintenanceCheckpoint() throws
@@ -816,11 +816,12 @@ public class PlacesConnection: PlacesConnectionProtocol {
             }
     }
 
-    public func runMaintenancePrune(dbSizeLimit: UInt32) throws -> RunMaintenanceMetrics {
+    public func runMaintenancePrune(dbSizeLimit: UInt32, pruneLimit: UInt32) throws -> RunMaintenanceMetrics {
         return try FfiConverterTypeRunMaintenanceMetrics.lift(
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
                 uniffi_places_fn_method_placesconnection_run_maintenance_prune(self.pointer,
-                                                                               FfiConverterUInt32.lower(dbSizeLimit), $0)
+                                                                               FfiConverterUInt32.lower(dbSizeLimit),
+                                                                               FfiConverterUInt32.lower(pruneLimit), $0)
             }
         )
     }
@@ -3720,7 +3721,7 @@ private var initializationResult: InitializationResult {
     if uniffi_places_checksum_method_placesconnection_delete_everything_history() != 64039 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_run_maintenance_prune() != 19326 {
+    if uniffi_places_checksum_method_placesconnection_run_maintenance_prune() != 51047 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_places_checksum_method_placesconnection_run_maintenance_vacuum() != 5715 {
