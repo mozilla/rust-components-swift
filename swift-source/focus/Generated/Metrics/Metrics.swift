@@ -25,10 +25,32 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 11, day: 15, hour: 5, minute: 22, second: 9))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2023, month: 11, day: 17, hour: 5, minute: 21, second: 17))
     }
 
     enum NimbusEvents {
+        struct ActivationExtra: EventExtras {
+            var branch: String?
+            var experiment: String?
+            var featureId: String?
+
+            func toExtraRecord() -> [String: String] {
+                var record = [String: String]()
+
+                if let branch = self.branch {
+                    record["branch"] = String(branch)
+                }
+                if let experiment = self.experiment {
+                    record["experiment"] = String(experiment)
+                }
+                if let featureId = self.featureId {
+                    record["feature_id"] = String(featureId)
+                }
+
+                return record
+            }
+        }
+
         struct DisqualificationExtra: EventExtras {
             var branch: String?
             var experiment: String?
@@ -212,6 +234,19 @@ extension GleanMetrics {
                 return record
             }
         }
+
+        /// Recorded when a feature is configured with an experimental configuration for
+        /// the first time in this session.
+        static let activation = EventMetricType<ActivationExtra>( // generated from nimbus_events.activation
+            CommonMetricData(
+                category: "nimbus_events",
+                name: "activation",
+                sendInPings: ["events"],
+                lifetime: .ping,
+                disabled: true
+            )
+            , ["branch", "experiment", "feature_id"]
+        )
 
         /// Recorded when a user becomes ineligible to continue receiving the treatment for
         /// an enrolled experiment, for reasons such as the user opting out of the

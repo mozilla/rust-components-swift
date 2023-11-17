@@ -1790,6 +1790,9 @@ public enum FxaError {
     case WrongAuthFlow(message: String)
 
     // Simple error enums only carry a message
+    case OriginMismatch(message: String)
+
+    // Simple error enums only carry a message
     case SyncScopedKeyMissingInServerResponse(message: String)
 
     // Simple error enums only carry a message
@@ -1825,15 +1828,19 @@ public struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 5: return try .SyncScopedKeyMissingInServerResponse(
+        case 5: return try .OriginMismatch(
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 6: return try .Panic(
+        case 6: return try .SyncScopedKeyMissingInServerResponse(
                 message: FfiConverterString.read(from: &buf)
             )
 
-        case 7: return try .Other(
+        case 7: return try .Panic(
+                message: FfiConverterString.read(from: &buf)
+            )
+
+        case 8: return try .Other(
                 message: FfiConverterString.read(from: &buf)
             )
 
@@ -1851,12 +1858,14 @@ public struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(3))
         case let .WrongAuthFlow(message):
             writeInt(&buf, Int32(4))
-        case let .SyncScopedKeyMissingInServerResponse(message):
+        case let .OriginMismatch(message):
             writeInt(&buf, Int32(5))
-        case let .Panic(message):
+        case let .SyncScopedKeyMissingInServerResponse(message):
             writeInt(&buf, Int32(6))
-        case let .Other(message):
+        case let .Panic(message):
             writeInt(&buf, Int32(7))
+        case let .Other(message):
+            writeInt(&buf, Int32(8))
         }
     }
 }

@@ -82,7 +82,9 @@ RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_experiment_branches(void*_No
 );
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_active_experiments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_enrollment_by_feature(void*_Nonnull ptr, RustBuffer feature_id, RustCallStatus *_Nonnull out_status
+void uniffi_nimbus_fn_method_nimbusclient_record_feature_exposure(void*_Nonnull ptr, RustBuffer feature_id, RustBuffer slug, RustCallStatus *_Nonnull out_status
+);
+void uniffi_nimbus_fn_method_nimbusclient_record_malformed_feature_config(void*_Nonnull ptr, RustBuffer feature_id, RustBuffer part_id, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_available_experiments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
@@ -157,7 +159,10 @@ uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_experiment_branches(void
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_active_experiments(void
     
 );
-uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_enrollment_by_feature(void
+uint16_t uniffi_nimbus_checksum_method_nimbusclient_record_feature_exposure(void
+    
+);
+uint16_t uniffi_nimbus_checksum_method_nimbusclient_record_malformed_feature_config(void
     
 );
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_available_experiments(void

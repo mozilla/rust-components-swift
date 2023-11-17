@@ -33,6 +33,34 @@ class GleanMetricsHandler: MetricsHandler {
                 ))
         }
     }
+
+    func recordFeatureActivation(event: FeatureExposureExtraDef) {
+        GleanMetrics.NimbusEvents.activation
+            .record(GleanMetrics.NimbusEvents.ActivationExtra(
+                branch: event.branch,
+                experiment: event.slug,
+                featureId: event.featureId
+            ))
+    }
+
+    func recordFeatureExposure(event: FeatureExposureExtraDef) {
+        GleanMetrics.NimbusEvents.exposure
+            .record(GleanMetrics.NimbusEvents.ExposureExtra(
+                branch: event.branch,
+                experiment: event.slug,
+                featureId: event.featureId
+            ))
+    }
+
+    func recordMalformedFeatureConfig(event: MalformedFeatureConfigExtraDef) {
+        GleanMetrics.NimbusEvents.malformedFeature
+            .record(GleanMetrics.NimbusEvents.MalformedFeatureExtra(
+                branch: event.branch,
+                experiment: event.slug,
+                featureId: event.featureId,
+                partId: event.part
+            ))
+    }
 }
 
 public extension Nimbus {

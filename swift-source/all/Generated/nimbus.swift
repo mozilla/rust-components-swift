@@ -398,7 +398,8 @@ public protocol NimbusClientProtocol {
     func getFeatureConfigVariables(featureId: String) throws -> String?
     func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch]
     func getActiveExperiments() throws -> [EnrolledExperiment]
-    func getEnrollmentByFeature(featureId: String) throws -> EnrolledFeature?
+    func recordFeatureExposure(featureId: String, slug: String?)
+    func recordMalformedFeatureConfig(featureId: String, partId: String)
     func getAvailableExperiments() throws -> [AvailableExperiment]
     func getGlobalUserParticipation() throws -> Bool
     func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent]
@@ -489,13 +490,22 @@ public class NimbusClient: NimbusClientProtocol {
         )
     }
 
-    public func getEnrollmentByFeature(featureId: String) throws -> EnrolledFeature? {
-        return try FfiConverterOptionTypeEnrolledFeature.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_get_enrollment_by_feature(self.pointer,
-                                                                               FfiConverterString.lower(featureId), $0)
+    public func recordFeatureExposure(featureId: String, slug: String?) {
+        try!
+            rustCall {
+                uniffi_nimbus_fn_method_nimbusclient_record_feature_exposure(self.pointer,
+                                                                             FfiConverterString.lower(featureId),
+                                                                             FfiConverterOptionString.lower(slug), $0)
             }
-        )
+    }
+
+    public func recordMalformedFeatureConfig(featureId: String, partId: String) {
+        try!
+            rustCall {
+                uniffi_nimbus_fn_method_nimbusclient_record_malformed_feature_config(self.pointer,
+                                                                                     FfiConverterString.lower(featureId),
+                                                                                     FfiConverterString.lower(partId), $0)
+            }
     }
 
     public func getAvailableExperiments() throws -> [AvailableExperiment] {
@@ -1220,65 +1230,6 @@ public func FfiConverterTypeEnrolledExperiment_lower(_ value: EnrolledExperiment
     return FfiConverterTypeEnrolledExperiment.lower(value)
 }
 
-public struct EnrolledFeature {
-    public var slug: String
-    public var branch: String?
-    public var featureId: String
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(slug: String, branch: String?, featureId: String) {
-        self.slug = slug
-        self.branch = branch
-        self.featureId = featureId
-    }
-}
-
-extension EnrolledFeature: Equatable, Hashable {
-    public static func == (lhs: EnrolledFeature, rhs: EnrolledFeature) -> Bool {
-        if lhs.slug != rhs.slug {
-            return false
-        }
-        if lhs.branch != rhs.branch {
-            return false
-        }
-        if lhs.featureId != rhs.featureId {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(slug)
-        hasher.combine(branch)
-        hasher.combine(featureId)
-    }
-}
-
-public struct FfiConverterTypeEnrolledFeature: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> EnrolledFeature {
-        return try EnrolledFeature(
-            slug: FfiConverterString.read(from: &buf),
-            branch: FfiConverterOptionString.read(from: &buf),
-            featureId: FfiConverterString.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: EnrolledFeature, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.slug, into: &buf)
-        FfiConverterOptionString.write(value.branch, into: &buf)
-        FfiConverterString.write(value.featureId, into: &buf)
-    }
-}
-
-public func FfiConverterTypeEnrolledFeature_lift(_ buf: RustBuffer) throws -> EnrolledFeature {
-    return try FfiConverterTypeEnrolledFeature.lift(buf)
-}
-
-public func FfiConverterTypeEnrolledFeature_lower(_ value: EnrolledFeature) -> RustBuffer {
-    return FfiConverterTypeEnrolledFeature.lower(value)
-}
-
 public struct EnrollmentChangeEvent {
     public var experimentSlug: String
     public var branchSlug: String
@@ -1478,6 +1429,132 @@ public func FfiConverterTypeExperimentBranch_lift(_ buf: RustBuffer) throws -> E
 
 public func FfiConverterTypeExperimentBranch_lower(_ value: ExperimentBranch) -> RustBuffer {
     return FfiConverterTypeExperimentBranch.lower(value)
+}
+
+public struct FeatureExposureExtraDef {
+    public var branch: String?
+    public var slug: String
+    public var featureId: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(branch: String?, slug: String, featureId: String) {
+        self.branch = branch
+        self.slug = slug
+        self.featureId = featureId
+    }
+}
+
+extension FeatureExposureExtraDef: Equatable, Hashable {
+    public static func == (lhs: FeatureExposureExtraDef, rhs: FeatureExposureExtraDef) -> Bool {
+        if lhs.branch != rhs.branch {
+            return false
+        }
+        if lhs.slug != rhs.slug {
+            return false
+        }
+        if lhs.featureId != rhs.featureId {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(branch)
+        hasher.combine(slug)
+        hasher.combine(featureId)
+    }
+}
+
+public struct FfiConverterTypeFeatureExposureExtraDef: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FeatureExposureExtraDef {
+        return try FeatureExposureExtraDef(
+            branch: FfiConverterOptionString.read(from: &buf),
+            slug: FfiConverterString.read(from: &buf),
+            featureId: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FeatureExposureExtraDef, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.branch, into: &buf)
+        FfiConverterString.write(value.slug, into: &buf)
+        FfiConverterString.write(value.featureId, into: &buf)
+    }
+}
+
+public func FfiConverterTypeFeatureExposureExtraDef_lift(_ buf: RustBuffer) throws -> FeatureExposureExtraDef {
+    return try FfiConverterTypeFeatureExposureExtraDef.lift(buf)
+}
+
+public func FfiConverterTypeFeatureExposureExtraDef_lower(_ value: FeatureExposureExtraDef) -> RustBuffer {
+    return FfiConverterTypeFeatureExposureExtraDef.lower(value)
+}
+
+public struct MalformedFeatureConfigExtraDef {
+    public var branch: String?
+    public var slug: String?
+    public var featureId: String
+    public var part: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(branch: String?, slug: String?, featureId: String, part: String) {
+        self.branch = branch
+        self.slug = slug
+        self.featureId = featureId
+        self.part = part
+    }
+}
+
+extension MalformedFeatureConfigExtraDef: Equatable, Hashable {
+    public static func == (lhs: MalformedFeatureConfigExtraDef, rhs: MalformedFeatureConfigExtraDef) -> Bool {
+        if lhs.branch != rhs.branch {
+            return false
+        }
+        if lhs.slug != rhs.slug {
+            return false
+        }
+        if lhs.featureId != rhs.featureId {
+            return false
+        }
+        if lhs.part != rhs.part {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(branch)
+        hasher.combine(slug)
+        hasher.combine(featureId)
+        hasher.combine(part)
+    }
+}
+
+public struct FfiConverterTypeMalformedFeatureConfigExtraDef: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MalformedFeatureConfigExtraDef {
+        return try MalformedFeatureConfigExtraDef(
+            branch: FfiConverterOptionString.read(from: &buf),
+            slug: FfiConverterOptionString.read(from: &buf),
+            featureId: FfiConverterString.read(from: &buf),
+            part: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: MalformedFeatureConfigExtraDef, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.branch, into: &buf)
+        FfiConverterOptionString.write(value.slug, into: &buf)
+        FfiConverterString.write(value.featureId, into: &buf)
+        FfiConverterString.write(value.part, into: &buf)
+    }
+}
+
+public func FfiConverterTypeMalformedFeatureConfigExtraDef_lift(_ buf: RustBuffer) throws -> MalformedFeatureConfigExtraDef {
+    return try FfiConverterTypeMalformedFeatureConfigExtraDef.lift(buf)
+}
+
+public func FfiConverterTypeMalformedFeatureConfigExtraDef_lower(_ value: MalformedFeatureConfigExtraDef) -> RustBuffer {
+    return FfiConverterTypeMalformedFeatureConfigExtraDef.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -1860,6 +1937,9 @@ private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
 
 public protocol MetricsHandler: AnyObject {
     func recordEnrollmentStatuses(enrollmentStatusExtras: [EnrollmentStatusExtraDef])
+    func recordFeatureActivation(event: FeatureExposureExtraDef)
+    func recordFeatureExposure(event: FeatureExposureExtraDef)
+    func recordMalformedFeatureConfig(event: MalformedFeatureConfigExtraDef)
 }
 
 // The ForeignCallback that is passed to Rust.
@@ -1871,6 +1951,39 @@ private let foreignCallbackCallbackInterfaceMetricsHandler: ForeignCallback =
             func makeCall() throws -> Int32 {
                 try swiftCallbackInterface.recordEnrollmentStatuses(
                     enrollmentStatusExtras: FfiConverterSequenceTypeEnrollmentStatusExtraDef.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            return try makeCall()
+        }
+
+        func invokeRecordFeatureActivation(_ swiftCallbackInterface: MetricsHandler, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.recordFeatureActivation(
+                    event: FfiConverterTypeFeatureExposureExtraDef.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            return try makeCall()
+        }
+
+        func invokeRecordFeatureExposure(_ swiftCallbackInterface: MetricsHandler, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.recordFeatureExposure(
+                    event: FfiConverterTypeFeatureExposureExtraDef.read(from: &reader)
+                )
+                return UNIFFI_CALLBACK_SUCCESS
+            }
+            return try makeCall()
+        }
+
+        func invokeRecordMalformedFeatureConfig(_ swiftCallbackInterface: MetricsHandler, _ argsData: UnsafePointer<UInt8>, _ argsLen: Int32, _: UnsafeMutablePointer<RustBuffer>) throws -> Int32 {
+            var reader = createReader(data: Data(bytes: argsData, count: Int(argsLen)))
+            func makeCall() throws -> Int32 {
+                try swiftCallbackInterface.recordMalformedFeatureConfig(
+                    event: FfiConverterTypeMalformedFeatureConfigExtraDef.read(from: &reader)
                 )
                 return UNIFFI_CALLBACK_SUCCESS
             }
@@ -1893,6 +2006,48 @@ private let foreignCallbackCallbackInterfaceMetricsHandler: ForeignCallback =
             }
             do {
                 return try invokeRecordEnrollmentStatuses(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+        case 2:
+            let cb: MetricsHandler
+            do {
+                cb = try FfiConverterCallbackInterfaceMetricsHandler.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("MetricsHandler: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeRecordFeatureActivation(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+        case 3:
+            let cb: MetricsHandler
+            do {
+                cb = try FfiConverterCallbackInterfaceMetricsHandler.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("MetricsHandler: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeRecordFeatureExposure(cb, argsData, argsLen, out_buf)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower(String(describing: error))
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+        case 4:
+            let cb: MetricsHandler
+            do {
+                cb = try FfiConverterCallbackInterfaceMetricsHandler.lift(handle)
+            } catch {
+                out_buf.pointee = FfiConverterString.lower("MetricsHandler: Invalid handle")
+                return UNIFFI_CALLBACK_UNEXPECTED_ERROR
+            }
+            do {
+                return try invokeRecordMalformedFeatureConfig(cb, argsData, argsLen, out_buf)
             } catch {
                 out_buf.pointee = FfiConverterString.lower(String(describing: error))
                 return UNIFFI_CALLBACK_UNEXPECTED_ERROR
@@ -1995,27 +2150,6 @@ private struct FfiConverterOptionString: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterString.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-private struct FfiConverterOptionTypeEnrolledFeature: FfiConverterRustBuffer {
-    typealias SwiftType = EnrolledFeature?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeEnrolledFeature.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeEnrolledFeature.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -2249,7 +2383,10 @@ private var initializationResult: InitializationResult {
     if uniffi_nimbus_checksum_method_nimbusclient_get_active_experiments() != 19354 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_get_enrollment_by_feature() != 21095 {
+    if uniffi_nimbus_checksum_method_nimbusclient_record_feature_exposure() != 17554 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_nimbus_checksum_method_nimbusclient_record_malformed_feature_config() != 13376 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_nimbus_checksum_method_nimbusclient_get_available_experiments() != 49085 {
