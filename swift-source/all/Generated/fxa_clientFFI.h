@@ -73,11 +73,11 @@ void*_Nonnull uniffi_fxa_client_fn_constructor_firefoxaccount_from_json(RustBuff
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_to_json(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(void*_Nonnull ptr, RustBuffer scopes, RustBuffer entrypoint, RustBuffer metrics, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(void*_Nonnull ptr, RustBuffer scopes, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(void*_Nonnull ptr, RustBuffer pairing_url, RustBuffer scopes, RustBuffer entrypoint, RustBuffer metrics, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(void*_Nonnull ptr, RustBuffer pairing_url, RustBuffer scopes, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
 );
 void uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(void*_Nonnull ptr, RustBuffer code, RustBuffer state, RustCallStatus *_Nonnull out_status
 );

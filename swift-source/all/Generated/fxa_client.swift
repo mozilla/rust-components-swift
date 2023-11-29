@@ -368,9 +368,9 @@ private struct FfiConverterString: FfiConverter {
 
 public protocol FirefoxAccountProtocol {
     func toJson() throws -> String
-    func beginOauthFlow(scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String
+    func beginOauthFlow(scopes: [String], entrypoint: String) throws -> String
     func getPairingAuthorityUrl() throws -> String
-    func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String
+    func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String) throws -> String
     func completeOauthFlow(code: String, state: String) throws
     func checkAuthorizationStatus() throws -> AuthorizationInfo
     func disconnect()
@@ -440,13 +440,12 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         )
     }
 
-    public func beginOauthFlow(scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String {
+    public func beginOauthFlow(scopes: [String], entrypoint: String) throws -> String {
         return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeFxaError.lift) {
                 uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(self.pointer,
                                                                             FfiConverterSequenceString.lower(scopes),
-                                                                            FfiConverterString.lower(entrypoint),
-                                                                            FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
+                                                                            FfiConverterString.lower(entrypoint), $0)
             }
         )
     }
@@ -459,14 +458,13 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         )
     }
 
-    public func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String, metrics: MetricsParams?) throws -> String {
+    public func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String) throws -> String {
         return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeFxaError.lift) {
                 uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(self.pointer,
                                                                               FfiConverterString.lower(pairingUrl),
                                                                               FfiConverterSequenceString.lower(scopes),
-                                                                              FfiConverterString.lower(entrypoint),
-                                                                              FfiConverterOptionTypeMetricsParams.lower(metrics), $0)
+                                                                              FfiConverterString.lower(entrypoint), $0)
             }
         )
     }
@@ -1362,49 +1360,6 @@ public func FfiConverterTypeLocalDevice_lower(_ value: LocalDevice) -> RustBuffe
     return FfiConverterTypeLocalDevice.lower(value)
 }
 
-public struct MetricsParams {
-    public var parameters: [String: String]
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(parameters: [String: String]) {
-        self.parameters = parameters
-    }
-}
-
-extension MetricsParams: Equatable, Hashable {
-    public static func == (lhs: MetricsParams, rhs: MetricsParams) -> Bool {
-        if lhs.parameters != rhs.parameters {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(parameters)
-    }
-}
-
-public struct FfiConverterTypeMetricsParams: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MetricsParams {
-        return try MetricsParams(
-            parameters: FfiConverterDictionaryStringString.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: MetricsParams, into buf: inout [UInt8]) {
-        FfiConverterDictionaryStringString.write(value.parameters, into: &buf)
-    }
-}
-
-public func FfiConverterTypeMetricsParams_lift(_ buf: RustBuffer) throws -> MetricsParams {
-    return try FfiConverterTypeMetricsParams.lift(buf)
-}
-
-public func FfiConverterTypeMetricsParams_lower(_ value: MetricsParams) -> RustBuffer {
-    return FfiConverterTypeMetricsParams.lower(value)
-}
-
 public struct Profile {
     public var uid: String
     public var email: String
@@ -2116,27 +2071,6 @@ private struct FfiConverterOptionTypeDevicePushSubscription: FfiConverterRustBuf
     }
 }
 
-private struct FfiConverterOptionTypeMetricsParams: FfiConverterRustBuffer {
-    typealias SwiftType = MetricsParams?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeMetricsParams.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeMetricsParams.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
 private struct FfiConverterOptionTypeScopedKey: FfiConverterRustBuffer {
     typealias SwiftType = ScopedKey?
 
@@ -2311,29 +2245,6 @@ private struct FfiConverterSequenceTypeIncomingDeviceCommand: FfiConverterRustBu
     }
 }
 
-private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
-    public static func write(_ value: [String: String], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for (key, value) in value {
-            FfiConverterString.write(key, into: &buf)
-            FfiConverterString.write(value, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: String] {
-        let len: Int32 = try readInt(&buf)
-        var dict = [String: String]()
-        dict.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            let key = try FfiConverterString.read(from: &buf)
-            let value = try FfiConverterString.read(from: &buf)
-            dict[key] = value
-        }
-        return dict
-    }
-}
-
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -2353,13 +2264,13 @@ private var initializationResult: InitializationResult {
     if uniffi_fxa_client_checksum_method_firefoxaccount_to_json() != 52613 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_oauth_flow() != 4486 {
+    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_oauth_flow() != 6930 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_get_pairing_authority_url() != 63297 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_pairing_flow() != 10680 {
+    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_pairing_flow() != 37847 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow() != 56647 {
