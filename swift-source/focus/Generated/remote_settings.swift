@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -367,9 +371,9 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol RemoteSettingsProtocol {
+    func downloadAttachmentToPath(attachmentId: String, path: String) throws
     func getRecords() throws -> RemoteSettingsResponse
     func getRecordsSince(timestamp: UInt64) throws -> RemoteSettingsResponse
-    func downloadAttachmentToPath(attachmentId: String, path: String) throws
 }
 
 public class RemoteSettings: RemoteSettingsProtocol {
@@ -394,6 +398,15 @@ public class RemoteSettings: RemoteSettingsProtocol {
         try! rustCall { uniffi_remote_settings_fn_free_remotesettings(pointer, $0) }
     }
 
+    public func downloadAttachmentToPath(attachmentId: String, path: String) throws {
+        try
+            rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+                uniffi_remote_settings_fn_method_remotesettings_download_attachment_to_path(self.pointer,
+                                                                                            FfiConverterString.lower(attachmentId),
+                                                                                            FfiConverterString.lower(path), $0)
+            }
+    }
+
     public func getRecords() throws -> RemoteSettingsResponse {
         return try FfiConverterTypeRemoteSettingsResponse.lift(
             rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
@@ -409,15 +422,6 @@ public class RemoteSettings: RemoteSettingsProtocol {
                                                                                   FfiConverterUInt64.lower(timestamp), $0)
             }
         )
-    }
-
-    public func downloadAttachmentToPath(attachmentId: String, path: String) throws {
-        try
-            rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
-                uniffi_remote_settings_fn_method_remotesettings_download_attachment_to_path(self.pointer,
-                                                                                            FfiConverterString.lower(attachmentId),
-                                                                                            FfiConverterString.lower(path), $0)
-            }
     }
 }
 
@@ -786,19 +790,19 @@ public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
 
     public static func write(_ value: RemoteSettingsError, into buf: inout [UInt8]) {
         switch value {
-        case let .JsonError(message):
+        case .JsonError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(1))
-        case let .FileError(message):
+        case .FileError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(2))
-        case let .RequestError(message):
+        case .RequestError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(3))
-        case let .UrlParsingError(message):
+        case .UrlParsingError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(4))
-        case let .BackoffError(message):
+        case .BackoffError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(5))
-        case let .ResponseError(message):
+        case .ResponseError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(6))
-        case let .AttachmentsUnsupportedError(message):
+        case .AttachmentsUnsupportedError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(7))
         }
     }
@@ -895,6 +899,14 @@ public struct FfiConverterTypeRsJsonObject: FfiConverter {
     }
 }
 
+public func FfiConverterTypeRsJsonObject_lift(_ value: RustBuffer) throws -> RsJsonObject {
+    return try FfiConverterTypeRsJsonObject.lift(value)
+}
+
+public func FfiConverterTypeRsJsonObject_lower(_ value: RsJsonObject) -> RustBuffer {
+    return FfiConverterTypeRsJsonObject.lower(value)
+}
+
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -905,22 +917,22 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_remote_settings_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_remote_settings_checksum_method_remotesettings_get_records() != 15844 {
+    if uniffi_remote_settings_checksum_method_remotesettings_download_attachment_to_path() != 64144 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_remote_settings_checksum_method_remotesettings_get_records_since() != 44273 {
+    if uniffi_remote_settings_checksum_method_remotesettings_get_records() != 1129 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_remote_settings_checksum_method_remotesettings_download_attachment_to_path() != 21493 {
+    if uniffi_remote_settings_checksum_method_remotesettings_get_records_since() != 14574 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_remote_settings_checksum_constructor_remotesettings_new() != 53609 {
+    if uniffi_remote_settings_checksum_constructor_remotesettings_new() != 53234 {
         return InitializationResult.apiChecksumMismatch
     }
 

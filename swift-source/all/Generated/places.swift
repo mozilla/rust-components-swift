@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -419,12 +423,12 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol PlacesApiProtocol {
+    func bookmarksReset() throws
+    func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String
+    func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String
     func newConnection(connType: ConnectionType) throws -> PlacesConnection
     func registerWithSyncManager()
     func resetHistory() throws
-    func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String
-    func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String
-    func bookmarksReset() throws
 }
 
 public class PlacesApi: PlacesApiProtocol {
@@ -439,6 +443,37 @@ public class PlacesApi: PlacesApiProtocol {
 
     deinit {
         try! rustCall { uniffi_places_fn_free_placesapi(pointer, $0) }
+    }
+
+    public func bookmarksReset() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesapi_bookmarks_reset(self.pointer, $0)
+            }
+    }
+
+    public func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
+        return try FfiConverterString.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesapi_bookmarks_sync(self.pointer,
+                                                                 FfiConverterString.lower(keyId),
+                                                                 FfiConverterString.lower(accessToken),
+                                                                 FfiConverterString.lower(syncKey),
+                                                                 FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+            }
+        )
+    }
+
+    public func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
+        return try FfiConverterString.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesapi_history_sync(self.pointer,
+                                                               FfiConverterString.lower(keyId),
+                                                               FfiConverterString.lower(accessToken),
+                                                               FfiConverterString.lower(syncKey),
+                                                               FfiConverterTypeUrl.lower(tokenserverUrl), $0)
+            }
+        )
     }
 
     public func newConnection(connType: ConnectionType) throws -> PlacesConnection {
@@ -461,37 +496,6 @@ public class PlacesApi: PlacesApiProtocol {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
                 uniffi_places_fn_method_placesapi_reset_history(self.pointer, $0)
-            }
-    }
-
-    public func historySync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
-        return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesapi_history_sync(self.pointer,
-                                                               FfiConverterString.lower(keyId),
-                                                               FfiConverterString.lower(accessToken),
-                                                               FfiConverterString.lower(syncKey),
-                                                               FfiConverterTypeUrl.lower(tokenserverUrl), $0)
-            }
-        )
-    }
-
-    public func bookmarksSync(keyId: String, accessToken: String, syncKey: String, tokenserverUrl: Url) throws -> String {
-        return try FfiConverterString.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesapi_bookmarks_sync(self.pointer,
-                                                                 FfiConverterString.lower(keyId),
-                                                                 FfiConverterString.lower(accessToken),
-                                                                 FfiConverterString.lower(syncKey),
-                                                                 FfiConverterTypeUrl.lower(tokenserverUrl), $0)
-            }
-        )
-    }
-
-    public func bookmarksReset() throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesapi_bookmarks_reset(self.pointer, $0)
             }
     }
 }
@@ -535,46 +539,46 @@ public func FfiConverterTypePlacesApi_lower(_ value: PlacesApi) -> UnsafeMutable
 }
 
 public protocol PlacesConnectionProtocol {
-    func newInterruptHandle() -> SqlInterruptHandle
-    func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata?
+    func acceptResult(searchString: String, url: String) throws
+    func applyObservation(visit: VisitObservation) throws
+    func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32
+    func bookmarksDelete(id: Guid) throws -> Bool
+    func bookmarksDeleteEverything() throws
+    func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem]
+    func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem?
+    func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem]
+    func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem?
+    func bookmarksGetUrlForKeyword(keyword: String) throws -> Url?
+    func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid
+    func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem]
+    func bookmarksUpdate(data: BookmarkUpdateInfo) throws
+    func deleteEverythingHistory() throws
+    func deleteVisit(url: String, timestamp: PlacesTimestamp) throws
+    func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws
+    func deleteVisitsFor(url: String) throws
+    func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight]
     func getHistoryMetadataBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws -> [HistoryMetadata]
     func getHistoryMetadataSince(since: PlacesTimestamp) throws -> [HistoryMetadata]
-    func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult]
-    func acceptResult(searchString: String, url: String) throws
-    func matchUrl(query: String) throws -> Url?
-    func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata]
-    func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight]
-    func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws
-    func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws
-    func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws
-    func applyObservation(visit: VisitObservation) throws
-    func getVisitedUrlsInRange(start: PlacesTimestamp, end: PlacesTimestamp, includeRemote: Bool) throws -> [Url]
-    func getVisitInfos(startDate: PlacesTimestamp, endDate: PlacesTimestamp, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo]
+    func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata?
+    func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo]
     func getVisitCount(excludeTypes: VisitTransitionSet) throws -> Int64
+    func getVisitInfos(startDate: PlacesTimestamp, endDate: PlacesTimestamp, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo]
     func getVisitPage(offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> [HistoryVisitInfo]
     func getVisitPageWithBound(bound: Int64, offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws -> HistoryVisitInfosWithBound
     func getVisited(urls: [String]) throws -> [Bool]
-    func deleteVisitsFor(url: String) throws
-    func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws
-    func deleteVisit(url: String, timestamp: PlacesTimestamp) throws
-    func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo]
-    func deleteEverythingHistory() throws
+    func getVisitedUrlsInRange(start: PlacesTimestamp, end: PlacesTimestamp, includeRemote: Bool) throws -> [Url]
+    func matchUrl(query: String) throws -> Url?
+    func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws
+    func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws
+    func newInterruptHandle() -> SqlInterruptHandle
+    func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws
+    func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult
+    func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult]
+    func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata]
+    func runMaintenanceCheckpoint() throws
+    func runMaintenanceOptimize() throws
     func runMaintenancePrune(dbSizeLimit: UInt32, pruneLimit: UInt32) throws -> RunMaintenanceMetrics
     func runMaintenanceVacuum() throws
-    func runMaintenanceOptimize() throws
-    func runMaintenanceCheckpoint() throws
-    func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem?
-    func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem?
-    func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem]
-    func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem]
-    func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem]
-    func bookmarksDelete(id: Guid) throws -> Bool
-    func bookmarksDeleteEverything() throws
-    func bookmarksGetUrlForKeyword(keyword: String) throws -> Url?
-    func bookmarksUpdate(data: BookmarkUpdateInfo) throws
-    func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid
-    func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32
-    func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult
 }
 
 public class PlacesConnection: PlacesConnectionProtocol {
@@ -591,20 +595,160 @@ public class PlacesConnection: PlacesConnectionProtocol {
         try! rustCall { uniffi_places_fn_free_placesconnection(pointer, $0) }
     }
 
-    public func newInterruptHandle() -> SqlInterruptHandle {
-        return try! FfiConverterTypeSqlInterruptHandle.lift(
-            try!
-                rustCall {
-                    uniffi_places_fn_method_placesconnection_new_interrupt_handle(self.pointer, $0)
-                }
+    public func acceptResult(searchString: String, url: String) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_accept_result(self.pointer,
+                                                                       FfiConverterString.lower(searchString),
+                                                                       FfiConverterString.lower(url), $0)
+            }
+    }
+
+    public func applyObservation(visit: VisitObservation) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_apply_observation(self.pointer,
+                                                                           FfiConverterTypeVisitObservation.lower(visit), $0)
+            }
+    }
+
+    public func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32 {
+        return try FfiConverterUInt32.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(self.pointer,
+                                                                                            FfiConverterSequenceTypeGuid.lower(folderGuids), $0)
+            }
         )
     }
 
-    public func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata? {
-        return try FfiConverterOptionTypeHistoryMetadata.lift(
+    public func bookmarksDelete(id: Guid) throws -> Bool {
+        return try FfiConverterBool.lift(
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_get_latest_history_metadata_for_url(self.pointer,
-                                                                                             FfiConverterTypeUrl.lower(url), $0)
+                uniffi_places_fn_method_placesconnection_bookmarks_delete(self.pointer,
+                                                                          FfiConverterTypeGuid.lower(id), $0)
+            }
+        )
+    }
+
+    public func bookmarksDeleteEverything() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_delete_everything(self.pointer, $0)
+            }
+    }
+
+    public func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem] {
+        return try FfiConverterSequenceTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_get_all_with_url(self.pointer,
+                                                                                    FfiConverterString.lower(url), $0)
+            }
+        )
+    }
+
+    public func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem? {
+        return try FfiConverterOptionTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_get_by_guid(self.pointer,
+                                                                               FfiConverterTypeGuid.lower(guid),
+                                                                               FfiConverterBool.lower(getDirectChildren), $0)
+            }
+        )
+    }
+
+    public func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem] {
+        return try FfiConverterSequenceTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_get_recent(self.pointer,
+                                                                              FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem? {
+        return try FfiConverterOptionTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_get_tree(self.pointer,
+                                                                            FfiConverterTypeGuid.lower(itemGuid), $0)
+            }
+        )
+    }
+
+    public func bookmarksGetUrlForKeyword(keyword: String) throws -> Url? {
+        return try FfiConverterOptionTypeUrl.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_get_url_for_keyword(self.pointer,
+                                                                                       FfiConverterString.lower(keyword), $0)
+            }
+        )
+    }
+
+    public func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid {
+        return try FfiConverterTypeGuid.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_insert(self.pointer,
+                                                                          FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
+            }
+        )
+    }
+
+    public func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem] {
+        return try FfiConverterSequenceTypeBookmarkItem.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_search(self.pointer,
+                                                                          FfiConverterString.lower(query),
+                                                                          FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func bookmarksUpdate(data: BookmarkUpdateInfo) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_bookmarks_update(self.pointer,
+                                                                          FfiConverterTypeBookmarkUpdateInfo.lower(data), $0)
+            }
+    }
+
+    public func deleteEverythingHistory() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_delete_everything_history(self.pointer, $0)
+            }
+    }
+
+    public func deleteVisit(url: String, timestamp: PlacesTimestamp) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_delete_visit(self.pointer,
+                                                                      FfiConverterString.lower(url),
+                                                                      FfiConverterTypePlacesTimestamp.lower(timestamp), $0)
+            }
+    }
+
+    public func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_delete_visits_between(self.pointer,
+                                                                               FfiConverterTypePlacesTimestamp.lower(start),
+                                                                               FfiConverterTypePlacesTimestamp.lower(end), $0)
+            }
+    }
+
+    public func deleteVisitsFor(url: String) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_delete_visits_for(self.pointer,
+                                                                           FfiConverterString.lower(url), $0)
+            }
+    }
+
+    public func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight] {
+        return try FfiConverterSequenceTypeHistoryHighlight.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_get_history_highlights(self.pointer,
+                                                                                FfiConverterTypeHistoryHighlightWeights.lower(weights),
+                                                                                FfiConverterInt32.lower(limit), $0)
             }
         )
     }
@@ -628,95 +772,30 @@ public class PlacesConnection: PlacesConnectionProtocol {
         )
     }
 
-    public func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult] {
-        return try FfiConverterSequenceTypeSearchResult.lift(
+    public func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata? {
+        return try FfiConverterOptionTypeHistoryMetadata.lift(
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_query_autocomplete(self.pointer,
-                                                                            FfiConverterString.lower(search),
-                                                                            FfiConverterInt32.lower(limit), $0)
+                uniffi_places_fn_method_placesconnection_get_latest_history_metadata_for_url(self.pointer,
+                                                                                             FfiConverterTypeUrl.lower(url), $0)
             }
         )
     }
 
-    public func acceptResult(searchString: String, url: String) throws {
-        try
+    public func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo] {
+        return try FfiConverterSequenceTypeTopFrecentSiteInfo.lift(
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_accept_result(self.pointer,
-                                                                       FfiConverterString.lower(searchString),
-                                                                       FfiConverterString.lower(url), $0)
-            }
-    }
-
-    public func matchUrl(query: String) throws -> Url? {
-        return try FfiConverterOptionTypeUrl.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_match_url(self.pointer,
-                                                                   FfiConverterString.lower(query), $0)
+                uniffi_places_fn_method_placesconnection_get_top_frecent_site_infos(self.pointer,
+                                                                                    FfiConverterInt32.lower(numItems),
+                                                                                    FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
             }
         )
     }
 
-    public func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata] {
-        return try FfiConverterSequenceTypeHistoryMetadata.lift(
+    public func getVisitCount(excludeTypes: VisitTransitionSet) throws -> Int64 {
+        return try FfiConverterInt64.lift(
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_query_history_metadata(self.pointer,
-                                                                                FfiConverterString.lower(query),
-                                                                                FfiConverterInt32.lower(limit), $0)
-            }
-        )
-    }
-
-    public func getHistoryHighlights(weights: HistoryHighlightWeights, limit: Int32) throws -> [HistoryHighlight] {
-        return try FfiConverterSequenceTypeHistoryHighlight.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_get_history_highlights(self.pointer,
-                                                                                FfiConverterTypeHistoryHighlightWeights.lower(weights),
-                                                                                FfiConverterInt32.lower(limit), $0)
-            }
-        )
-    }
-
-    public func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_note_history_metadata_observation(self.pointer,
-                                                                                           FfiConverterTypeHistoryMetadataObservation.lower(data), $0)
-            }
-    }
-
-    public func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_metadata_delete(self.pointer,
-                                                                         FfiConverterTypeUrl.lower(url),
-                                                                         FfiConverterOptionTypeUrl.lower(referrerUrl),
-                                                                         FfiConverterOptionString.lower(searchTerm), $0)
-            }
-    }
-
-    public func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_metadata_delete_older_than(self.pointer,
-                                                                                    FfiConverterTypePlacesTimestamp.lower(olderThan), $0)
-            }
-    }
-
-    public func applyObservation(visit: VisitObservation) throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_apply_observation(self.pointer,
-                                                                           FfiConverterTypeVisitObservation.lower(visit), $0)
-            }
-    }
-
-    public func getVisitedUrlsInRange(start: PlacesTimestamp, end: PlacesTimestamp, includeRemote: Bool) throws -> [Url] {
-        return try FfiConverterSequenceTypeUrl.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_get_visited_urls_in_range(self.pointer,
-                                                                                   FfiConverterTypePlacesTimestamp.lower(start),
-                                                                                   FfiConverterTypePlacesTimestamp.lower(end),
-                                                                                   FfiConverterBool.lower(includeRemote), $0)
+                uniffi_places_fn_method_placesconnection_get_visit_count(self.pointer,
+                                                                         FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
             }
         )
     }
@@ -727,15 +806,6 @@ public class PlacesConnection: PlacesConnectionProtocol {
                 uniffi_places_fn_method_placesconnection_get_visit_infos(self.pointer,
                                                                          FfiConverterTypePlacesTimestamp.lower(startDate),
                                                                          FfiConverterTypePlacesTimestamp.lower(endDate),
-                                                                         FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
-            }
-        )
-    }
-
-    public func getVisitCount(excludeTypes: VisitTransitionSet) throws -> Int64 {
-        return try FfiConverterInt64.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_get_visit_count(self.pointer,
                                                                          FfiConverterTypeVisitTransitionSet.lower(excludeTypes), $0)
             }
         )
@@ -773,46 +843,102 @@ public class PlacesConnection: PlacesConnectionProtocol {
         )
     }
 
-    public func deleteVisitsFor(url: String) throws {
-        try
+    public func getVisitedUrlsInRange(start: PlacesTimestamp, end: PlacesTimestamp, includeRemote: Bool) throws -> [Url] {
+        return try FfiConverterSequenceTypeUrl.lift(
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_delete_visits_for(self.pointer,
-                                                                           FfiConverterString.lower(url), $0)
-            }
-    }
-
-    public func deleteVisitsBetween(start: PlacesTimestamp, end: PlacesTimestamp) throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_delete_visits_between(self.pointer,
-                                                                               FfiConverterTypePlacesTimestamp.lower(start),
-                                                                               FfiConverterTypePlacesTimestamp.lower(end), $0)
-            }
-    }
-
-    public func deleteVisit(url: String, timestamp: PlacesTimestamp) throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_delete_visit(self.pointer,
-                                                                      FfiConverterString.lower(url),
-                                                                      FfiConverterTypePlacesTimestamp.lower(timestamp), $0)
-            }
-    }
-
-    public func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThresholdOption) throws -> [TopFrecentSiteInfo] {
-        return try FfiConverterSequenceTypeTopFrecentSiteInfo.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_get_top_frecent_site_infos(self.pointer,
-                                                                                    FfiConverterInt32.lower(numItems),
-                                                                                    FfiConverterTypeFrecencyThresholdOption.lower(thresholdOption), $0)
+                uniffi_places_fn_method_placesconnection_get_visited_urls_in_range(self.pointer,
+                                                                                   FfiConverterTypePlacesTimestamp.lower(start),
+                                                                                   FfiConverterTypePlacesTimestamp.lower(end),
+                                                                                   FfiConverterBool.lower(includeRemote), $0)
             }
         )
     }
 
-    public func deleteEverythingHistory() throws {
+    public func matchUrl(query: String) throws -> Url? {
+        return try FfiConverterOptionTypeUrl.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_match_url(self.pointer,
+                                                                   FfiConverterString.lower(query), $0)
+            }
+        )
+    }
+
+    public func metadataDelete(url: Url, referrerUrl: Url?, searchTerm: String?) throws {
         try
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_delete_everything_history(self.pointer, $0)
+                uniffi_places_fn_method_placesconnection_metadata_delete(self.pointer,
+                                                                         FfiConverterTypeUrl.lower(url),
+                                                                         FfiConverterOptionTypeUrl.lower(referrerUrl),
+                                                                         FfiConverterOptionString.lower(searchTerm), $0)
+            }
+    }
+
+    public func metadataDeleteOlderThan(olderThan: PlacesTimestamp) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_metadata_delete_older_than(self.pointer,
+                                                                                    FfiConverterTypePlacesTimestamp.lower(olderThan), $0)
+            }
+    }
+
+    public func newInterruptHandle() -> SqlInterruptHandle {
+        return try! FfiConverterTypeSqlInterruptHandle.lift(
+            try!
+                rustCall {
+                    uniffi_places_fn_method_placesconnection_new_interrupt_handle(self.pointer, $0)
+                }
+        )
+    }
+
+    public func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_note_history_metadata_observation(self.pointer,
+                                                                                           FfiConverterTypeHistoryMetadataObservation.lower(data), $0)
+            }
+    }
+
+    public func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult {
+        return try FfiConverterTypeHistoryMigrationResult.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_places_history_import_from_ios(self.pointer,
+                                                                                        FfiConverterString.lower(dbPath),
+                                                                                        FfiConverterInt64.lower(lastSyncTimestamp), $0)
+            }
+        )
+    }
+
+    public func queryAutocomplete(search: String, limit: Int32) throws -> [SearchResult] {
+        return try FfiConverterSequenceTypeSearchResult.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_query_autocomplete(self.pointer,
+                                                                            FfiConverterString.lower(search),
+                                                                            FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func queryHistoryMetadata(query: String, limit: Int32) throws -> [HistoryMetadata] {
+        return try FfiConverterSequenceTypeHistoryMetadata.lift(
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_query_history_metadata(self.pointer,
+                                                                                FfiConverterString.lower(query),
+                                                                                FfiConverterInt32.lower(limit), $0)
+            }
+        )
+    }
+
+    public func runMaintenanceCheckpoint() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_run_maintenance_checkpoint(self.pointer, $0)
+            }
+    }
+
+    public func runMaintenanceOptimize() throws {
+        try
+            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+                uniffi_places_fn_method_placesconnection_run_maintenance_optimize(self.pointer, $0)
             }
     }
 
@@ -831,128 +957,6 @@ public class PlacesConnection: PlacesConnectionProtocol {
             rustCallWithError(FfiConverterTypePlacesApiError.lift) {
                 uniffi_places_fn_method_placesconnection_run_maintenance_vacuum(self.pointer, $0)
             }
-    }
-
-    public func runMaintenanceOptimize() throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_run_maintenance_optimize(self.pointer, $0)
-            }
-    }
-
-    public func runMaintenanceCheckpoint() throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_run_maintenance_checkpoint(self.pointer, $0)
-            }
-    }
-
-    public func bookmarksGetTree(itemGuid: Guid) throws -> BookmarkItem? {
-        return try FfiConverterOptionTypeBookmarkItem.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_get_tree(self.pointer,
-                                                                            FfiConverterTypeGuid.lower(itemGuid), $0)
-            }
-        )
-    }
-
-    public func bookmarksGetByGuid(guid: Guid, getDirectChildren: Bool) throws -> BookmarkItem? {
-        return try FfiConverterOptionTypeBookmarkItem.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_get_by_guid(self.pointer,
-                                                                               FfiConverterTypeGuid.lower(guid),
-                                                                               FfiConverterBool.lower(getDirectChildren), $0)
-            }
-        )
-    }
-
-    public func bookmarksGetAllWithUrl(url: String) throws -> [BookmarkItem] {
-        return try FfiConverterSequenceTypeBookmarkItem.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_get_all_with_url(self.pointer,
-                                                                                    FfiConverterString.lower(url), $0)
-            }
-        )
-    }
-
-    public func bookmarksSearch(query: String, limit: Int32) throws -> [BookmarkItem] {
-        return try FfiConverterSequenceTypeBookmarkItem.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_search(self.pointer,
-                                                                          FfiConverterString.lower(query),
-                                                                          FfiConverterInt32.lower(limit), $0)
-            }
-        )
-    }
-
-    public func bookmarksGetRecent(limit: Int32) throws -> [BookmarkItem] {
-        return try FfiConverterSequenceTypeBookmarkItem.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_get_recent(self.pointer,
-                                                                              FfiConverterInt32.lower(limit), $0)
-            }
-        )
-    }
-
-    public func bookmarksDelete(id: Guid) throws -> Bool {
-        return try FfiConverterBool.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_delete(self.pointer,
-                                                                          FfiConverterTypeGuid.lower(id), $0)
-            }
-        )
-    }
-
-    public func bookmarksDeleteEverything() throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_delete_everything(self.pointer, $0)
-            }
-    }
-
-    public func bookmarksGetUrlForKeyword(keyword: String) throws -> Url? {
-        return try FfiConverterOptionTypeUrl.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_get_url_for_keyword(self.pointer,
-                                                                                       FfiConverterString.lower(keyword), $0)
-            }
-        )
-    }
-
-    public func bookmarksUpdate(data: BookmarkUpdateInfo) throws {
-        try
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_update(self.pointer,
-                                                                          FfiConverterTypeBookmarkUpdateInfo.lower(data), $0)
-            }
-    }
-
-    public func bookmarksInsert(bookmark: InsertableBookmarkItem) throws -> Guid {
-        return try FfiConverterTypeGuid.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_insert(self.pointer,
-                                                                          FfiConverterTypeInsertableBookmarkItem.lower(bookmark), $0)
-            }
-        )
-    }
-
-    public func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32 {
-        return try FfiConverterUInt32.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(self.pointer,
-                                                                                            FfiConverterSequenceTypeGuid.lower(folderGuids), $0)
-            }
-        )
-    }
-
-    public func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws -> HistoryMigrationResult {
-        return try FfiConverterTypeHistoryMigrationResult.lift(
-            rustCallWithError(FfiConverterTypePlacesApiError.lift) {
-                uniffi_places_fn_method_placesconnection_places_history_import_from_ios(self.pointer,
-                                                                                        FfiConverterString.lower(dbPath),
-                                                                                        FfiConverterInt64.lower(lastSyncTimestamp), $0)
-            }
-        )
     }
 }
 
@@ -3530,6 +3534,14 @@ public struct FfiConverterTypeGuid: FfiConverter {
     }
 }
 
+public func FfiConverterTypeGuid_lift(_ value: RustBuffer) throws -> Guid {
+    return try FfiConverterTypeGuid.lift(value)
+}
+
+public func FfiConverterTypeGuid_lower(_ value: Guid) -> RustBuffer {
+    return FfiConverterTypeGuid.lower(value)
+}
+
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -3551,6 +3563,14 @@ public struct FfiConverterTypePlacesTimestamp: FfiConverter {
     public static func lower(_ value: PlacesTimestamp) -> Int64 {
         return FfiConverterInt64.lower(value)
     }
+}
+
+public func FfiConverterTypePlacesTimestamp_lift(_ value: Int64) throws -> PlacesTimestamp {
+    return try FfiConverterTypePlacesTimestamp.lift(value)
+}
+
+public func FfiConverterTypePlacesTimestamp_lower(_ value: PlacesTimestamp) -> Int64 {
+    return FfiConverterTypePlacesTimestamp.lower(value)
 }
 
 /**
@@ -3576,6 +3596,14 @@ public struct FfiConverterTypeUrl: FfiConverter {
     }
 }
 
+public func FfiConverterTypeUrl_lift(_ value: RustBuffer) throws -> Url {
+    return try FfiConverterTypeUrl.lift(value)
+}
+
+public func FfiConverterTypeUrl_lower(_ value: Url) -> RustBuffer {
+    return FfiConverterTypeUrl.lower(value)
+}
+
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -3599,6 +3627,14 @@ public struct FfiConverterTypeVisitTransitionSet: FfiConverter {
     }
 }
 
+public func FfiConverterTypeVisitTransitionSet_lift(_ value: Int32) throws -> VisitTransitionSet {
+    return try FfiConverterTypeVisitTransitionSet.lift(value)
+}
+
+public func FfiConverterTypeVisitTransitionSet_lower(_ value: VisitTransitionSet) -> Int32 {
+    return FfiConverterTypeVisitTransitionSet.lower(value)
+}
+
 public func placesApiNew(dbPath: String) throws -> PlacesApi {
     return try FfiConverterTypePlacesApi.lift(
         rustCallWithError(FfiConverterTypePlacesApiError.lift) {
@@ -3619,154 +3655,154 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_places_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_places_checksum_func_places_api_new() != 44113 {
+    if uniffi_places_checksum_func_places_api_new() != 26640 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_sqlinterrupthandle_interrupt() != 51832 {
+    if uniffi_places_checksum_method_placesapi_bookmarks_reset() != 8892 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesapi_new_connection() != 10212 {
+    if uniffi_places_checksum_method_placesapi_bookmarks_sync() != 20124 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesapi_register_with_sync_manager() != 3532 {
+    if uniffi_places_checksum_method_placesapi_history_sync() != 31493 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesapi_reset_history() != 52895 {
+    if uniffi_places_checksum_method_placesapi_new_connection() != 900 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesapi_history_sync() != 58026 {
+    if uniffi_places_checksum_method_placesapi_register_with_sync_manager() != 51829 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesapi_bookmarks_sync() != 45285 {
+    if uniffi_places_checksum_method_placesapi_reset_history() != 57245 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesapi_bookmarks_reset() != 30339 {
+    if uniffi_places_checksum_method_placesconnection_accept_result() != 54310 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_new_interrupt_handle() != 64029 {
+    if uniffi_places_checksum_method_placesconnection_apply_observation() != 25333 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_latest_history_metadata_for_url() != 11584 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_count_bookmarks_in_trees() != 2161 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_history_metadata_between() != 7618 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_delete() != 33367 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_history_metadata_since() != 38544 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_delete_everything() != 33070 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_query_autocomplete() != 34012 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_get_all_with_url() != 21084 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_accept_result() != 12752 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_get_by_guid() != 18168 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_match_url() != 47952 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_get_recent() != 33956 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_query_history_metadata() != 23472 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_get_tree() != 53728 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_history_highlights() != 33139 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_get_url_for_keyword() != 52650 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_note_history_metadata_observation() != 38135 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_insert() != 60522 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_metadata_delete() != 30557 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_search() != 17009 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_metadata_delete_older_than() != 59075 {
+    if uniffi_places_checksum_method_placesconnection_bookmarks_update() != 42407 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_apply_observation() != 14177 {
+    if uniffi_places_checksum_method_placesconnection_delete_everything_history() != 14281 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_visited_urls_in_range() != 64496 {
+    if uniffi_places_checksum_method_placesconnection_delete_visit() != 24432 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_visit_infos() != 15229 {
+    if uniffi_places_checksum_method_placesconnection_delete_visits_between() != 35296 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_visit_count() != 51292 {
+    if uniffi_places_checksum_method_placesconnection_delete_visits_for() != 32673 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_visit_page() != 18849 {
+    if uniffi_places_checksum_method_placesconnection_get_history_highlights() != 62603 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_visit_page_with_bound() != 6864 {
+    if uniffi_places_checksum_method_placesconnection_get_history_metadata_between() != 18574 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_visited() != 15249 {
+    if uniffi_places_checksum_method_placesconnection_get_history_metadata_since() != 50997 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_delete_visits_for() != 56870 {
+    if uniffi_places_checksum_method_placesconnection_get_latest_history_metadata_for_url() != 6904 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_delete_visits_between() != 56293 {
+    if uniffi_places_checksum_method_placesconnection_get_top_frecent_site_infos() != 4124 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_delete_visit() != 21303 {
+    if uniffi_places_checksum_method_placesconnection_get_visit_count() != 29004 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_get_top_frecent_site_infos() != 9199 {
+    if uniffi_places_checksum_method_placesconnection_get_visit_infos() != 47960 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_delete_everything_history() != 64039 {
+    if uniffi_places_checksum_method_placesconnection_get_visit_page() != 11999 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_run_maintenance_prune() != 51047 {
+    if uniffi_places_checksum_method_placesconnection_get_visit_page_with_bound() != 49416 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_run_maintenance_vacuum() != 5715 {
+    if uniffi_places_checksum_method_placesconnection_get_visited() != 4542 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_run_maintenance_optimize() != 9561 {
+    if uniffi_places_checksum_method_placesconnection_get_visited_urls_in_range() != 13641 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_run_maintenance_checkpoint() != 5819 {
+    if uniffi_places_checksum_method_placesconnection_match_url() != 2371 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_get_tree() != 31031 {
+    if uniffi_places_checksum_method_placesconnection_metadata_delete() != 29569 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_get_by_guid() != 43010 {
+    if uniffi_places_checksum_method_placesconnection_metadata_delete_older_than() != 6334 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_get_all_with_url() != 38720 {
+    if uniffi_places_checksum_method_placesconnection_new_interrupt_handle() != 5418 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_search() != 7680 {
+    if uniffi_places_checksum_method_placesconnection_note_history_metadata_observation() != 32538 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_get_recent() != 533 {
+    if uniffi_places_checksum_method_placesconnection_places_history_import_from_ios() != 20029 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_delete() != 19798 {
+    if uniffi_places_checksum_method_placesconnection_query_autocomplete() != 41474 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_delete_everything() != 24294 {
+    if uniffi_places_checksum_method_placesconnection_query_history_metadata() != 11027 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_get_url_for_keyword() != 2072 {
+    if uniffi_places_checksum_method_placesconnection_run_maintenance_checkpoint() != 11548 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_update() != 35432 {
+    if uniffi_places_checksum_method_placesconnection_run_maintenance_optimize() != 15413 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_insert() != 65038 {
+    if uniffi_places_checksum_method_placesconnection_run_maintenance_prune() != 26453 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_bookmarks_count_bookmarks_in_trees() != 48320 {
+    if uniffi_places_checksum_method_placesconnection_run_maintenance_vacuum() != 46732 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_places_checksum_method_placesconnection_places_history_import_from_ios() != 56168 {
+    if uniffi_places_checksum_method_sqlinterrupthandle_interrupt() != 10423 {
         return InitializationResult.apiChecksumMismatch
     }
 

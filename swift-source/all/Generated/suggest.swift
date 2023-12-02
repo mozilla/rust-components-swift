@@ -223,6 +223,7 @@ fileprivate enum UniffiInternalError: LocalizedError {
 fileprivate let CALL_SUCCESS: Int8 = 0
 fileprivate let CALL_ERROR: Int8 = 1
 fileprivate let CALL_PANIC: Int8 = 2
+fileprivate let CALL_CANCELLED: Int8 = 3
 
 fileprivate extension RustCallStatus {
     init() {
@@ -284,6 +285,9 @@ private func uniffiCheckCallStatus(
                 callStatus.errorBuf.deallocate()
                 throw UniffiInternalError.rustPanic("Rust panic")
             }
+
+        case CALL_CANCELLED:
+                throw CancellationError()
 
         default:
             throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -419,10 +423,10 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 public protocol SuggestStoreProtocol {
-    func `query`(`query`: SuggestionQuery)  throws -> [Suggestion]
-    func `interrupt`()  
-    func `ingest`(`constraints`: SuggestIngestionConstraints)  throws
-    func `clear`()  throws
+    func clear()  throws
+    func ingest(constraints: SuggestIngestionConstraints)  throws
+    func interrupt()  
+    func query(query: SuggestionQuery)  throws -> [Suggestion]
     
 }
 
@@ -435,11 +439,11 @@ public class SuggestStore: SuggestStoreProtocol {
     required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
-    public convenience init(`path`: String, `settingsConfig`: RemoteSettingsConfig? = nil) throws {
+    public convenience init(path: String, settingsConfig: RemoteSettingsConfig? = nil) throws {
         self.init(unsafeFromRawPointer: try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_constructor_suggeststore_new(
-        FfiConverterString.lower(`path`),
-        FfiConverterOptionTypeRemoteSettingsConfig.lower(`settingsConfig`),$0)
+        FfiConverterString.lower(path),
+        FfiConverterOptionTypeRemoteSettingsConfig.lower(settingsConfig),$0)
 })
     }
 
@@ -452,18 +456,24 @@ public class SuggestStore: SuggestStoreProtocol {
     
     
 
-    public func `query`(`query`: SuggestionQuery) throws -> [Suggestion] {
-        return try  FfiConverterSequenceTypeSuggestion.lift(
-            try 
+    public func clear() throws {
+        try 
     rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
-    uniffi_suggest_fn_method_suggeststore_query(self.pointer, 
-        FfiConverterTypeSuggestionQuery.lower(`query`),$0
+    uniffi_suggest_fn_method_suggeststore_clear(self.pointer, $0
     )
 }
-        )
     }
 
-    public func `interrupt`()  {
+    public func ingest(constraints: SuggestIngestionConstraints) throws {
+        try 
+    rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststore_ingest(self.pointer, 
+        FfiConverterTypeSuggestIngestionConstraints.lower(constraints),$0
+    )
+}
+    }
+
+    public func interrupt()  {
         try! 
     rustCall() {
     
@@ -472,21 +482,15 @@ public class SuggestStore: SuggestStoreProtocol {
 }
     }
 
-    public func `ingest`(`constraints`: SuggestIngestionConstraints) throws {
-        try 
+    public func query(query: SuggestionQuery) throws -> [Suggestion] {
+        return try  FfiConverterSequenceTypeSuggestion.lift(
+            try 
     rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
-    uniffi_suggest_fn_method_suggeststore_ingest(self.pointer, 
-        FfiConverterTypeSuggestIngestionConstraints.lower(`constraints`),$0
+    uniffi_suggest_fn_method_suggeststore_query(self.pointer, 
+        FfiConverterTypeSuggestionQuery.lower(query),$0
     )
 }
-    }
-
-    public func `clear`() throws {
-        try 
-    rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
-    uniffi_suggest_fn_method_suggeststore_clear(self.pointer, $0
-    )
-}
+        )
     }
 }
 
@@ -531,26 +535,26 @@ public func FfiConverterTypeSuggestStore_lower(_ value: SuggestStore) -> UnsafeM
 
 
 public struct SuggestIngestionConstraints {
-    public var `maxSuggestions`: UInt64?
+    public var maxSuggestions: UInt64?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`maxSuggestions`: UInt64? = nil) {
-        self.`maxSuggestions` = `maxSuggestions`
+    public init(maxSuggestions: UInt64? = nil) {
+        self.maxSuggestions = maxSuggestions
     }
 }
 
 
 extension SuggestIngestionConstraints: Equatable, Hashable {
     public static func ==(lhs: SuggestIngestionConstraints, rhs: SuggestIngestionConstraints) -> Bool {
-        if lhs.`maxSuggestions` != rhs.`maxSuggestions` {
+        if lhs.maxSuggestions != rhs.maxSuggestions {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`maxSuggestions`)
+        hasher.combine(maxSuggestions)
     }
 }
 
@@ -558,12 +562,12 @@ extension SuggestIngestionConstraints: Equatable, Hashable {
 public struct FfiConverterTypeSuggestIngestionConstraints: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestIngestionConstraints {
         return try SuggestIngestionConstraints(
-            `maxSuggestions`: FfiConverterOptionUInt64.read(from: &buf)
+            maxSuggestions: FfiConverterOptionUInt64.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestIngestionConstraints, into buf: inout [UInt8]) {
-        FfiConverterOptionUInt64.write(value.`maxSuggestions`, into: &buf)
+        FfiConverterOptionUInt64.write(value.maxSuggestions, into: &buf)
     }
 }
 
@@ -578,38 +582,38 @@ public func FfiConverterTypeSuggestIngestionConstraints_lower(_ value: SuggestIn
 
 
 public struct SuggestionQuery {
-    public var `keyword`: String
-    public var `providers`: [SuggestionProvider]
-    public var `limit`: Int32?
+    public var keyword: String
+    public var providers: [SuggestionProvider]
+    public var limit: Int32?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(`keyword`: String, `providers`: [SuggestionProvider], `limit`: Int32? = nil) {
-        self.`keyword` = `keyword`
-        self.`providers` = `providers`
-        self.`limit` = `limit`
+    public init(keyword: String, providers: [SuggestionProvider], limit: Int32? = nil) {
+        self.keyword = keyword
+        self.providers = providers
+        self.limit = limit
     }
 }
 
 
 extension SuggestionQuery: Equatable, Hashable {
     public static func ==(lhs: SuggestionQuery, rhs: SuggestionQuery) -> Bool {
-        if lhs.`keyword` != rhs.`keyword` {
+        if lhs.keyword != rhs.keyword {
             return false
         }
-        if lhs.`providers` != rhs.`providers` {
+        if lhs.providers != rhs.providers {
             return false
         }
-        if lhs.`limit` != rhs.`limit` {
+        if lhs.limit != rhs.limit {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(`keyword`)
-        hasher.combine(`providers`)
-        hasher.combine(`limit`)
+        hasher.combine(keyword)
+        hasher.combine(providers)
+        hasher.combine(limit)
     }
 }
 
@@ -617,16 +621,16 @@ extension SuggestionQuery: Equatable, Hashable {
 public struct FfiConverterTypeSuggestionQuery: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestionQuery {
         return try SuggestionQuery(
-            `keyword`: FfiConverterString.read(from: &buf), 
-            `providers`: FfiConverterSequenceTypeSuggestionProvider.read(from: &buf), 
-            `limit`: FfiConverterOptionInt32.read(from: &buf)
+            keyword: FfiConverterString.read(from: &buf), 
+            providers: FfiConverterSequenceTypeSuggestionProvider.read(from: &buf), 
+            limit: FfiConverterOptionInt32.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestionQuery, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.`keyword`, into: &buf)
-        FfiConverterSequenceTypeSuggestionProvider.write(value.`providers`, into: &buf)
-        FfiConverterOptionInt32.write(value.`limit`, into: &buf)
+        FfiConverterString.write(value.keyword, into: &buf)
+        FfiConverterSequenceTypeSuggestionProvider.write(value.providers, into: &buf)
+        FfiConverterOptionInt32.write(value.limit, into: &buf)
     }
 }
 
@@ -643,7 +647,7 @@ public enum SuggestApiError {
 
     
     
-    case Other(`reason`: String)
+    case Other(reason: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
         return try FfiConverterTypeSuggestApiError.lift(error)
@@ -662,7 +666,7 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
 
         
         case 1: return .Other(
-            `reason`: try FfiConverterString.read(from: &buf)
+            reason: try FfiConverterString.read(from: &buf)
             )
 
          default: throw UniffiInternalError.unexpectedEnumCase
@@ -676,9 +680,9 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
 
         
         
-        case let .Other(`reason`):
+        case let .Other(reason):
             writeInt(&buf, Int32(1))
-            FfiConverterString.write(`reason`, into: &buf)
+            FfiConverterString.write(reason, into: &buf)
             
         }
     }
@@ -693,10 +697,10 @@ extension SuggestApiError: Error { }
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum Suggestion {
     
-    case `amp`(`title`: String, `url`: String, `rawUrl`: String, `icon`: [UInt8]?, `fullKeyword`: String, `blockId`: Int64, `advertiser`: String, `iabCategory`: String, `impressionUrl`: String, `clickUrl`: String, `rawClickUrl`: String)
-    case `pocket`(`title`: String, `url`: String, `score`: Double, `isTopPick`: Bool)
-    case `wikipedia`(`title`: String, `url`: String, `icon`: [UInt8]?, `fullKeyword`: String)
-    case `amo`(`title`: String, `url`: String, `iconUrl`: String, `description`: String, `rating`: String?, `numberOfRatings`: Int64, `guid`: String, `score`: Double)
+    case amp(title: String, url: String, rawUrl: String, icon: [UInt8]?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String)
+    case pocket(title: String, url: String, score: Double, isTopPick: Bool)
+    case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
+    case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
 }
 
 public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
@@ -706,43 +710,43 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .`amp`(
-            `title`: try FfiConverterString.read(from: &buf), 
-            `url`: try FfiConverterString.read(from: &buf), 
-            `rawUrl`: try FfiConverterString.read(from: &buf), 
-            `icon`: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
-            `fullKeyword`: try FfiConverterString.read(from: &buf), 
-            `blockId`: try FfiConverterInt64.read(from: &buf), 
-            `advertiser`: try FfiConverterString.read(from: &buf), 
-            `iabCategory`: try FfiConverterString.read(from: &buf), 
-            `impressionUrl`: try FfiConverterString.read(from: &buf), 
-            `clickUrl`: try FfiConverterString.read(from: &buf), 
-            `rawClickUrl`: try FfiConverterString.read(from: &buf)
+        case 1: return .amp(
+            title: try FfiConverterString.read(from: &buf), 
+            url: try FfiConverterString.read(from: &buf), 
+            rawUrl: try FfiConverterString.read(from: &buf), 
+            icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
+            fullKeyword: try FfiConverterString.read(from: &buf), 
+            blockId: try FfiConverterInt64.read(from: &buf), 
+            advertiser: try FfiConverterString.read(from: &buf), 
+            iabCategory: try FfiConverterString.read(from: &buf), 
+            impressionUrl: try FfiConverterString.read(from: &buf), 
+            clickUrl: try FfiConverterString.read(from: &buf), 
+            rawClickUrl: try FfiConverterString.read(from: &buf)
         )
         
-        case 2: return .`pocket`(
-            `title`: try FfiConverterString.read(from: &buf), 
-            `url`: try FfiConverterString.read(from: &buf), 
-            `score`: try FfiConverterDouble.read(from: &buf), 
-            `isTopPick`: try FfiConverterBool.read(from: &buf)
+        case 2: return .pocket(
+            title: try FfiConverterString.read(from: &buf), 
+            url: try FfiConverterString.read(from: &buf), 
+            score: try FfiConverterDouble.read(from: &buf), 
+            isTopPick: try FfiConverterBool.read(from: &buf)
         )
         
-        case 3: return .`wikipedia`(
-            `title`: try FfiConverterString.read(from: &buf), 
-            `url`: try FfiConverterString.read(from: &buf), 
-            `icon`: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
-            `fullKeyword`: try FfiConverterString.read(from: &buf)
+        case 3: return .wikipedia(
+            title: try FfiConverterString.read(from: &buf), 
+            url: try FfiConverterString.read(from: &buf), 
+            icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
+            fullKeyword: try FfiConverterString.read(from: &buf)
         )
         
-        case 4: return .`amo`(
-            `title`: try FfiConverterString.read(from: &buf), 
-            `url`: try FfiConverterString.read(from: &buf), 
-            `iconUrl`: try FfiConverterString.read(from: &buf), 
-            `description`: try FfiConverterString.read(from: &buf), 
-            `rating`: try FfiConverterOptionString.read(from: &buf), 
-            `numberOfRatings`: try FfiConverterInt64.read(from: &buf), 
-            `guid`: try FfiConverterString.read(from: &buf), 
-            `score`: try FfiConverterDouble.read(from: &buf)
+        case 4: return .amo(
+            title: try FfiConverterString.read(from: &buf), 
+            url: try FfiConverterString.read(from: &buf), 
+            iconUrl: try FfiConverterString.read(from: &buf), 
+            description: try FfiConverterString.read(from: &buf), 
+            rating: try FfiConverterOptionString.read(from: &buf), 
+            numberOfRatings: try FfiConverterInt64.read(from: &buf), 
+            guid: try FfiConverterString.read(from: &buf), 
+            score: try FfiConverterDouble.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -753,47 +757,47 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         switch value {
         
         
-        case let .`amp`(`title`,`url`,`rawUrl`,`icon`,`fullKeyword`,`blockId`,`advertiser`,`iabCategory`,`impressionUrl`,`clickUrl`,`rawClickUrl`):
+        case let .amp(title,url,rawUrl,icon,fullKeyword,blockId,advertiser,iabCategory,impressionUrl,clickUrl,rawClickUrl):
             writeInt(&buf, Int32(1))
-            FfiConverterString.write(`title`, into: &buf)
-            FfiConverterString.write(`url`, into: &buf)
-            FfiConverterString.write(`rawUrl`, into: &buf)
-            FfiConverterOptionSequenceUInt8.write(`icon`, into: &buf)
-            FfiConverterString.write(`fullKeyword`, into: &buf)
-            FfiConverterInt64.write(`blockId`, into: &buf)
-            FfiConverterString.write(`advertiser`, into: &buf)
-            FfiConverterString.write(`iabCategory`, into: &buf)
-            FfiConverterString.write(`impressionUrl`, into: &buf)
-            FfiConverterString.write(`clickUrl`, into: &buf)
-            FfiConverterString.write(`rawClickUrl`, into: &buf)
+            FfiConverterString.write(title, into: &buf)
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterString.write(rawUrl, into: &buf)
+            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterString.write(fullKeyword, into: &buf)
+            FfiConverterInt64.write(blockId, into: &buf)
+            FfiConverterString.write(advertiser, into: &buf)
+            FfiConverterString.write(iabCategory, into: &buf)
+            FfiConverterString.write(impressionUrl, into: &buf)
+            FfiConverterString.write(clickUrl, into: &buf)
+            FfiConverterString.write(rawClickUrl, into: &buf)
             
         
-        case let .`pocket`(`title`,`url`,`score`,`isTopPick`):
+        case let .pocket(title,url,score,isTopPick):
             writeInt(&buf, Int32(2))
-            FfiConverterString.write(`title`, into: &buf)
-            FfiConverterString.write(`url`, into: &buf)
-            FfiConverterDouble.write(`score`, into: &buf)
-            FfiConverterBool.write(`isTopPick`, into: &buf)
+            FfiConverterString.write(title, into: &buf)
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterDouble.write(score, into: &buf)
+            FfiConverterBool.write(isTopPick, into: &buf)
             
         
-        case let .`wikipedia`(`title`,`url`,`icon`,`fullKeyword`):
+        case let .wikipedia(title,url,icon,fullKeyword):
             writeInt(&buf, Int32(3))
-            FfiConverterString.write(`title`, into: &buf)
-            FfiConverterString.write(`url`, into: &buf)
-            FfiConverterOptionSequenceUInt8.write(`icon`, into: &buf)
-            FfiConverterString.write(`fullKeyword`, into: &buf)
+            FfiConverterString.write(title, into: &buf)
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterString.write(fullKeyword, into: &buf)
             
         
-        case let .`amo`(`title`,`url`,`iconUrl`,`description`,`rating`,`numberOfRatings`,`guid`,`score`):
+        case let .amo(title,url,iconUrl,description,rating,numberOfRatings,guid,score):
             writeInt(&buf, Int32(4))
-            FfiConverterString.write(`title`, into: &buf)
-            FfiConverterString.write(`url`, into: &buf)
-            FfiConverterString.write(`iconUrl`, into: &buf)
-            FfiConverterString.write(`description`, into: &buf)
-            FfiConverterOptionString.write(`rating`, into: &buf)
-            FfiConverterInt64.write(`numberOfRatings`, into: &buf)
-            FfiConverterString.write(`guid`, into: &buf)
-            FfiConverterDouble.write(`score`, into: &buf)
+            FfiConverterString.write(title, into: &buf)
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterString.write(iconUrl, into: &buf)
+            FfiConverterString.write(description, into: &buf)
+            FfiConverterOptionString.write(rating, into: &buf)
+            FfiConverterInt64.write(numberOfRatings, into: &buf)
+            FfiConverterString.write(guid, into: &buf)
+            FfiConverterDouble.write(score, into: &buf)
             
         }
     }
@@ -817,10 +821,10 @@ extension Suggestion: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum SuggestionProvider {
     
-    case `amp`
-    case `pocket`
-    case `wikipedia`
-    case `amo`
+    case amp
+    case pocket
+    case wikipedia
+    case amo
 }
 
 public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
@@ -830,13 +834,13 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .`amp`
+        case 1: return .amp
         
-        case 2: return .`pocket`
+        case 2: return .pocket
         
-        case 3: return .`wikipedia`
+        case 3: return .wikipedia
         
-        case 4: return .`amo`
+        case 4: return .amo
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -846,19 +850,19 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         switch value {
         
         
-        case .`amp`:
+        case .amp:
             writeInt(&buf, Int32(1))
         
         
-        case .`pocket`:
+        case .pocket:
             writeInt(&buf, Int32(2))
         
         
-        case .`wikipedia`:
+        case .wikipedia:
             writeInt(&buf, Int32(3))
         
         
-        case .`amo`:
+        case .amo:
             writeInt(&buf, Int32(4))
         
         }
@@ -1052,12 +1056,12 @@ fileprivate struct FfiConverterSequenceTypeSuggestionProvider: FfiConverterRustB
 
 
 
-public func `rawSuggestionUrlMatches`(`rawUrl`: String, `url`: String)  -> Bool {
+public func rawSuggestionUrlMatches(rawUrl: String, url: String)  -> Bool {
     return try!  FfiConverterBool.lift(
         try! rustCall() {
     uniffi_suggest_fn_func_raw_suggestion_url_matches(
-        FfiConverterString.lower(`rawUrl`),
-        FfiConverterString.lower(`url`),$0)
+        FfiConverterString.lower(rawUrl),
+        FfiConverterString.lower(url),$0)
 }
     )
 }
@@ -1071,28 +1075,28 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_suggest_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_suggest_checksum_func_raw_suggestion_url_matches() != 44114) {
+    if (uniffi_suggest_checksum_func_raw_suggestion_url_matches() != 43507) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_query() != 27030) {
+    if (uniffi_suggest_checksum_method_suggeststore_clear() != 23581) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 60992) {
+    if (uniffi_suggest_checksum_method_suggeststore_ingest() != 53781) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_ingest() != 27338) {
+    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 11751) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_clear() != 42658) {
+    if (uniffi_suggest_checksum_method_suggeststore_query() != 22367) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 2220) {
+    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 38439) {
         return InitializationResult.apiChecksumMismatch
     }
 

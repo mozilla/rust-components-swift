@@ -32,7 +32,7 @@ typedef struct RustBuffer
 typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
 
 // Task defined in Rust that Swift executes
-typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable, int8_t);
 
 // Callback to execute Rust tasks using a Swift Task
 //
@@ -41,7 +41,7 @@ typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
 //   delay: Delay in MS
 //   task: UniFfiRustTaskCallback to call
 //   task_data: data to pass the task callback
-typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
+typedef int8_t (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -59,53 +59,49 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-// Callbacks for UniFFI Futures
-typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackInt64)(const void * _Nonnull, int64_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
-typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+// Continuation callback for UniFFI Futures
+typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
 
 // Scaffolding functions
+void uniffi_tabs_fn_free_tabsbridgedengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_apply(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_ensure_current_sync_id(void*_Nonnull ptr, RustBuffer new_sync_id, RustCallStatus *_Nonnull out_status
+);
+int64_t uniffi_tabs_fn_method_tabsbridgedengine_last_sync(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_prepare_for_sync(void*_Nonnull ptr, RustBuffer client_data, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_reset_sync_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_set_last_sync(void*_Nonnull ptr, int64_t last_sync, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_set_uploaded(void*_Nonnull ptr, int64_t new_timestamp, RustBuffer uploaded_ids, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_store_incoming(void*_Nonnull ptr, RustBuffer incoming_envelopes_as_json, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_sync_finished(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_sync_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_sync_started(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_tabs_fn_method_tabsbridgedengine_wipe(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_tabs_fn_free_tabsstore(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_tabs_fn_constructor_tabsstore_new(RustBuffer path, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_tabs_fn_method_tabsstore_get_all(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_tabs_fn_method_tabsstore_set_local_tabs(void*_Nonnull ptr, RustBuffer remote_tabs, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_tabs_fn_method_tabsstore_get_all(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_tabs_fn_method_tabsstore_register_with_sync_manager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_free_tabsbridgedengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-int64_t uniffi_tabs_fn_method_tabsbridgedengine_last_sync(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_set_last_sync(void*_Nonnull ptr, int64_t last_sync, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_sync_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_reset_sync_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_ensure_current_sync_id(void*_Nonnull ptr, RustBuffer new_sync_id, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_prepare_for_sync(void*_Nonnull ptr, RustBuffer client_data, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_sync_started(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_store_incoming(void*_Nonnull ptr, RustBuffer incoming_envelopes_as_json, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_tabs_fn_method_tabsbridgedengine_apply(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_set_uploaded(void*_Nonnull ptr, int64_t new_timestamp, RustBuffer uploaded_ids, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_sync_finished(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_tabs_fn_method_tabsbridgedengine_wipe(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_tabs_fn_method_tabsstore_set_local_tabs(void*_Nonnull ptr, RustBuffer remote_tabs, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_tabs_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );
@@ -115,55 +111,161 @@ void ffi_tabs_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_statu
 );
 RustBuffer ffi_tabs_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
 );
-uint16_t uniffi_tabs_checksum_method_tabsstore_get_all(void
-    
+void ffi_tabs_rust_future_continuation_callback_set(UniFfiRustFutureContinuation _Nonnull callback
 );
-uint16_t uniffi_tabs_checksum_method_tabsstore_set_local_tabs(void
-    
+void ffi_tabs_rust_future_poll_u8(void* _Nonnull handle, void* _Nonnull uniffi_callback
 );
-uint16_t uniffi_tabs_checksum_method_tabsstore_register_with_sync_manager(void
-    
+void ffi_tabs_rust_future_cancel_u8(void* _Nonnull handle
 );
-uint16_t uniffi_tabs_checksum_method_tabsstore_bridged_engine(void
-    
+void ffi_tabs_rust_future_free_u8(void* _Nonnull handle
 );
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_last_sync(void
-    
+uint8_t ffi_tabs_rust_future_complete_u8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
 );
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_set_last_sync(void
-    
+void ffi_tabs_rust_future_poll_i8(void* _Nonnull handle, void* _Nonnull uniffi_callback
 );
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_id(void
-    
+void ffi_tabs_rust_future_cancel_i8(void* _Nonnull handle
 );
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_reset_sync_id(void
+void ffi_tabs_rust_future_free_i8(void* _Nonnull handle
+);
+int8_t ffi_tabs_rust_future_complete_i8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_u16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_u16(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_u16(void* _Nonnull handle
+);
+uint16_t ffi_tabs_rust_future_complete_u16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_i16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_i16(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_i16(void* _Nonnull handle
+);
+int16_t ffi_tabs_rust_future_complete_i16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_u32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_u32(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_u32(void* _Nonnull handle
+);
+uint32_t ffi_tabs_rust_future_complete_u32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_i32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_i32(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_i32(void* _Nonnull handle
+);
+int32_t ffi_tabs_rust_future_complete_i32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_u64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_u64(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_u64(void* _Nonnull handle
+);
+uint64_t ffi_tabs_rust_future_complete_u64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_i64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_i64(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_i64(void* _Nonnull handle
+);
+int64_t ffi_tabs_rust_future_complete_i64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_f32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_f32(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_f32(void* _Nonnull handle
+);
+float ffi_tabs_rust_future_complete_f32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_f64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_f64(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_f64(void* _Nonnull handle
+);
+double ffi_tabs_rust_future_complete_f64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_pointer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_pointer(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_pointer(void* _Nonnull handle
+);
+void*_Nonnull ffi_tabs_rust_future_complete_pointer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_rust_buffer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_rust_buffer(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_rust_buffer(void* _Nonnull handle
+);
+RustBuffer ffi_tabs_rust_future_complete_rust_buffer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_tabs_rust_future_poll_void(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_tabs_rust_future_cancel_void(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_free_void(void* _Nonnull handle
+);
+void ffi_tabs_rust_future_complete_void(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_apply(void
     
 );
 uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_ensure_current_sync_id(void
     
 );
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_last_sync(void
+    
+);
 uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_prepare_for_sync(void
-    
-);
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_started(void
-    
-);
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_store_incoming(void
-    
-);
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_apply(void
-    
-);
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_set_uploaded(void
-    
-);
-uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_finished(void
     
 );
 uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_reset(void
     
 );
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_reset_sync_id(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_set_last_sync(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_set_uploaded(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_store_incoming(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_finished(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_id(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_started(void
+    
+);
 uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_wipe(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_bridged_engine(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_get_all(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_register_with_sync_manager(void
+    
+);
+uint16_t uniffi_tabs_checksum_method_tabsstore_set_local_tabs(void
     
 );
 uint16_t uniffi_tabs_checksum_constructor_tabsstore_new(void

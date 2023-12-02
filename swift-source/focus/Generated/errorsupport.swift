@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_errorsupport_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_error_support_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_errorsupport_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_error_support_rustbuffer_free(self, $0) }
     }
 }
 
@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -497,7 +501,7 @@ private enum FfiConverterCallbackInterfaceApplicationErrorReporter {
     private static let initCallbackOnce: () = {
         // Swift ensures this initializer code will once run once, even when accessed by multiple threads.
         try! rustCall { (err: UnsafeMutablePointer<RustCallStatus>) in
-            uniffi_errorsupport_fn_init_callback_applicationerrorreporter(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
+            uniffi_error_support_fn_init_callback_applicationerrorreporter(foreignCallbackCallbackInterfaceApplicationErrorReporter, err)
         }
     }()
 
@@ -544,7 +548,7 @@ extension FfiConverterCallbackInterfaceApplicationErrorReporter: FfiConverter {
 
 public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter) {
     try! rustCall {
-        uniffi_errorsupport_fn_func_set_application_error_reporter(
+        uniffi_error_support_fn_func_set_application_error_reporter(
             FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
         )
     }
@@ -552,7 +556,7 @@ public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter)
 
 public func unsetApplicationErrorReporter() {
     try! rustCall {
-        uniffi_errorsupport_fn_func_unset_application_error_reporter($0)
+        uniffi_error_support_fn_func_unset_application_error_reporter($0)
     }
 }
 
@@ -566,16 +570,22 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
-    let scaffolding_contract_version = ffi_errorsupport_uniffi_contract_version()
+    let scaffolding_contract_version = ffi_error_support_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_errorsupport_checksum_func_set_application_error_reporter() != 17388 {
+    if uniffi_error_support_checksum_func_set_application_error_reporter() != 52918 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_errorsupport_checksum_func_unset_application_error_reporter() != 51943 {
+    if uniffi_error_support_checksum_func_unset_application_error_reporter() != 11689 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_error_support_checksum_method_applicationerrorreporter_report_error() != 40350 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_error_support_checksum_method_applicationerrorreporter_report_breadcrumb() != 34686 {
         return InitializationResult.apiChecksumMismatch
     }
 

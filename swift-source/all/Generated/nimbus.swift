@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -393,32 +397,32 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol NimbusClientProtocol {
-    func initialize() throws
-    func getExperimentBranch(id: String) throws -> String?
-    func getFeatureConfigVariables(featureId: String) throws -> String?
-    func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch]
-    func getActiveExperiments() throws -> [EnrolledExperiment]
-    func recordFeatureExposure(featureId: String, slug: String?)
-    func recordMalformedFeatureConfig(featureId: String, partId: String)
-    func getAvailableExperiments() throws -> [AvailableExperiment]
-    func getGlobalUserParticipation() throws -> Bool
-    func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent]
-    func fetchExperiments() throws
-    func setFetchEnabled(flag: Bool) throws
-    func isFetchEnabled() throws -> Bool
+    func advanceEventTime(bySeconds: Int64) throws
     func applyPendingExperiments() throws -> [EnrollmentChangeEvent]
-    func setExperimentsLocally(experimentsJson: String) throws
-    func resetEnrollments() throws
+    func clearEvents() throws
+    func createStringHelper(additionalContext: JsonObject?) throws -> NimbusStringHelper
+    func createTargetingHelper(additionalContext: JsonObject?) throws -> NimbusTargetingHelper
+    func dumpStateToLog() throws
+    func fetchExperiments() throws
+    func getActiveExperiments() throws -> [EnrolledExperiment]
+    func getAvailableExperiments() throws -> [AvailableExperiment]
+    func getExperimentBranch(id: String) throws -> String?
+    func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch]
+    func getFeatureConfigVariables(featureId: String) throws -> String?
+    func getGlobalUserParticipation() throws -> Bool
+    func initialize() throws
+    func isFetchEnabled() throws -> Bool
     func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent]
     func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent]
-    func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent]
-    func createTargetingHelper(additionalContext: JsonObject?) throws -> NimbusTargetingHelper
-    func createStringHelper(additionalContext: JsonObject?) throws -> NimbusStringHelper
     func recordEvent(eventId: String, count: Int64) throws
+    func recordFeatureExposure(featureId: String, slug: String?)
+    func recordMalformedFeatureConfig(featureId: String, partId: String)
     func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64) throws
-    func advanceEventTime(bySeconds: Int64) throws
-    func clearEvents() throws
-    func dumpStateToLog() throws
+    func resetEnrollments() throws
+    func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent]
+    func setExperimentsLocally(experimentsJson: String) throws
+    func setFetchEnabled(flag: Bool) throws
+    func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent]
 }
 
 public class NimbusClient: NimbusClientProtocol {
@@ -448,11 +452,75 @@ public class NimbusClient: NimbusClientProtocol {
         try! rustCall { uniffi_nimbus_fn_free_nimbusclient(pointer, $0) }
     }
 
-    public func initialize() throws {
+    public func advanceEventTime(bySeconds: Int64) throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_initialize(self.pointer, $0)
+                uniffi_nimbus_fn_method_nimbusclient_advance_event_time(self.pointer,
+                                                                        FfiConverterInt64.lower(bySeconds), $0)
             }
+    }
+
+    public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_apply_pending_experiments(self.pointer, $0)
+            }
+        )
+    }
+
+    public func clearEvents() throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_clear_events(self.pointer, $0)
+            }
+    }
+
+    public func createStringHelper(additionalContext: JsonObject? = nil) throws -> NimbusStringHelper {
+        return try FfiConverterTypeNimbusStringHelper.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_create_string_helper(self.pointer,
+                                                                          FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
+            }
+        )
+    }
+
+    public func createTargetingHelper(additionalContext: JsonObject? = nil) throws -> NimbusTargetingHelper {
+        return try FfiConverterTypeNimbusTargetingHelper.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_create_targeting_helper(self.pointer,
+                                                                             FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
+            }
+        )
+    }
+
+    public func dumpStateToLog() throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_dump_state_to_log(self.pointer, $0)
+            }
+    }
+
+    public func fetchExperiments() throws {
+        try
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_fetch_experiments(self.pointer, $0)
+            }
+    }
+
+    public func getActiveExperiments() throws -> [EnrolledExperiment] {
+        return try FfiConverterSequenceTypeEnrolledExperiment.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_get_active_experiments(self.pointer, $0)
+            }
+        )
+    }
+
+    public func getAvailableExperiments() throws -> [AvailableExperiment] {
+        return try FfiConverterSequenceTypeAvailableExperiment.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_get_available_experiments(self.pointer, $0)
+            }
+        )
     }
 
     public func getExperimentBranch(id: String) throws -> String? {
@@ -460,15 +528,6 @@ public class NimbusClient: NimbusClientProtocol {
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
                 uniffi_nimbus_fn_method_nimbusclient_get_experiment_branch(self.pointer,
                                                                            FfiConverterString.lower(id), $0)
-            }
-        )
-    }
-
-    public func getFeatureConfigVariables(featureId: String) throws -> String? {
-        return try FfiConverterOptionString.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_get_feature_config_variables(self.pointer,
-                                                                                  FfiConverterString.lower(featureId), $0)
             }
         )
     }
@@ -482,36 +541,11 @@ public class NimbusClient: NimbusClientProtocol {
         )
     }
 
-    public func getActiveExperiments() throws -> [EnrolledExperiment] {
-        return try FfiConverterSequenceTypeEnrolledExperiment.lift(
+    public func getFeatureConfigVariables(featureId: String) throws -> String? {
+        return try FfiConverterOptionString.lift(
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_get_active_experiments(self.pointer, $0)
-            }
-        )
-    }
-
-    public func recordFeatureExposure(featureId: String, slug: String?) {
-        try!
-            rustCall {
-                uniffi_nimbus_fn_method_nimbusclient_record_feature_exposure(self.pointer,
-                                                                             FfiConverterString.lower(featureId),
-                                                                             FfiConverterOptionString.lower(slug), $0)
-            }
-    }
-
-    public func recordMalformedFeatureConfig(featureId: String, partId: String) {
-        try!
-            rustCall {
-                uniffi_nimbus_fn_method_nimbusclient_record_malformed_feature_config(self.pointer,
-                                                                                     FfiConverterString.lower(featureId),
-                                                                                     FfiConverterString.lower(partId), $0)
-            }
-    }
-
-    public func getAvailableExperiments() throws -> [AvailableExperiment] {
-        return try FfiConverterSequenceTypeAvailableExperiment.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_get_available_experiments(self.pointer, $0)
+                uniffi_nimbus_fn_method_nimbusclient_get_feature_config_variables(self.pointer,
+                                                                                  FfiConverterString.lower(featureId), $0)
             }
         )
     }
@@ -524,27 +558,10 @@ public class NimbusClient: NimbusClientProtocol {
         )
     }
 
-    public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_set_global_user_participation(self.pointer,
-                                                                                   FfiConverterBool.lower(optIn), $0)
-            }
-        )
-    }
-
-    public func fetchExperiments() throws {
+    public func initialize() throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_fetch_experiments(self.pointer, $0)
-            }
-    }
-
-    public func setFetchEnabled(flag: Bool) throws {
-        try
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_set_fetch_enabled(self.pointer,
-                                                                       FfiConverterBool.lower(flag), $0)
+                uniffi_nimbus_fn_method_nimbusclient_initialize(self.pointer, $0)
             }
     }
 
@@ -554,29 +571,6 @@ public class NimbusClient: NimbusClientProtocol {
                 uniffi_nimbus_fn_method_nimbusclient_is_fetch_enabled(self.pointer, $0)
             }
         )
-    }
-
-    public func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_apply_pending_experiments(self.pointer, $0)
-            }
-        )
-    }
-
-    public func setExperimentsLocally(experimentsJson: String) throws {
-        try
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_set_experiments_locally(self.pointer,
-                                                                             FfiConverterString.lower(experimentsJson), $0)
-            }
-    }
-
-    public func resetEnrollments() throws {
-        try
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_reset_enrollments(self.pointer, $0)
-            }
     }
 
     public func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
@@ -598,39 +592,30 @@ public class NimbusClient: NimbusClientProtocol {
         )
     }
 
-    public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
-        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(self.pointer,
-                                                                                 FfiConverterTypeAvailableRandomizationUnits.lower(newRandomizationUnits), $0)
-            }
-        )
-    }
-
-    public func createTargetingHelper(additionalContext: JsonObject? = nil) throws -> NimbusTargetingHelper {
-        return try FfiConverterTypeNimbusTargetingHelper.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_create_targeting_helper(self.pointer,
-                                                                             FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
-            }
-        )
-    }
-
-    public func createStringHelper(additionalContext: JsonObject? = nil) throws -> NimbusStringHelper {
-        return try FfiConverterTypeNimbusStringHelper.lift(
-            rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_create_string_helper(self.pointer,
-                                                                          FfiConverterOptionTypeJsonObject.lower(additionalContext), $0)
-            }
-        )
-    }
-
     public func recordEvent(eventId: String, count: Int64 = Int64(1)) throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
                 uniffi_nimbus_fn_method_nimbusclient_record_event(self.pointer,
                                                                   FfiConverterString.lower(eventId),
                                                                   FfiConverterInt64.lower(count), $0)
+            }
+    }
+
+    public func recordFeatureExposure(featureId: String, slug: String?) {
+        try!
+            rustCall {
+                uniffi_nimbus_fn_method_nimbusclient_record_feature_exposure(self.pointer,
+                                                                             FfiConverterString.lower(featureId),
+                                                                             FfiConverterOptionString.lower(slug), $0)
+            }
+    }
+
+    public func recordMalformedFeatureConfig(featureId: String, partId: String) {
+        try!
+            rustCall {
+                uniffi_nimbus_fn_method_nimbusclient_record_malformed_feature_config(self.pointer,
+                                                                                     FfiConverterString.lower(featureId),
+                                                                                     FfiConverterString.lower(partId), $0)
             }
     }
 
@@ -644,26 +629,45 @@ public class NimbusClient: NimbusClientProtocol {
             }
     }
 
-    public func advanceEventTime(bySeconds: Int64) throws {
+    public func resetEnrollments() throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_advance_event_time(self.pointer,
-                                                                        FfiConverterInt64.lower(bySeconds), $0)
+                uniffi_nimbus_fn_method_nimbusclient_reset_enrollments(self.pointer, $0)
             }
     }
 
-    public func clearEvents() throws {
+    public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(self.pointer,
+                                                                                 FfiConverterTypeAvailableRandomizationUnits.lower(newRandomizationUnits), $0)
+            }
+        )
+    }
+
+    public func setExperimentsLocally(experimentsJson: String) throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_clear_events(self.pointer, $0)
+                uniffi_nimbus_fn_method_nimbusclient_set_experiments_locally(self.pointer,
+                                                                             FfiConverterString.lower(experimentsJson), $0)
             }
     }
 
-    public func dumpStateToLog() throws {
+    public func setFetchEnabled(flag: Bool) throws {
         try
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_dump_state_to_log(self.pointer, $0)
+                uniffi_nimbus_fn_method_nimbusclient_set_fetch_enabled(self.pointer,
+                                                                       FfiConverterBool.lower(flag), $0)
             }
+    }
+
+    public func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent] {
+        return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
+            rustCallWithError(FfiConverterTypeNimbusError.lift) {
+                uniffi_nimbus_fn_method_nimbusclient_set_global_user_participation(self.pointer,
+                                                                                   FfiConverterBool.lower(optIn), $0)
+            }
+        )
     }
 }
 
@@ -706,8 +710,8 @@ public func FfiConverterTypeNimbusClient_lower(_ value: NimbusClient) -> UnsafeM
 }
 
 public protocol NimbusStringHelperProtocol {
-    func stringFormat(template: String, uuid: String?) -> String
     func getUuid(template: String) -> String?
+    func stringFormat(template: String, uuid: String?) -> String
 }
 
 public class NimbusStringHelper: NimbusStringHelperProtocol {
@@ -724,6 +728,16 @@ public class NimbusStringHelper: NimbusStringHelperProtocol {
         try! rustCall { uniffi_nimbus_fn_free_nimbusstringhelper(pointer, $0) }
     }
 
+    public func getUuid(template: String) -> String? {
+        return try! FfiConverterOptionString.lift(
+            try!
+                rustCall {
+                    uniffi_nimbus_fn_method_nimbusstringhelper_get_uuid(self.pointer,
+                                                                        FfiConverterString.lower(template), $0)
+                }
+        )
+    }
+
     public func stringFormat(template: String, uuid: String? = nil) -> String {
         return try! FfiConverterString.lift(
             try!
@@ -731,16 +745,6 @@ public class NimbusStringHelper: NimbusStringHelperProtocol {
                     uniffi_nimbus_fn_method_nimbusstringhelper_string_format(self.pointer,
                                                                              FfiConverterString.lower(template),
                                                                              FfiConverterOptionString.lower(uuid), $0)
-                }
-        )
-    }
-
-    public func getUuid(template: String) -> String? {
-        return try! FfiConverterOptionString.lift(
-            try!
-                rustCall {
-                    uniffi_nimbus_fn_method_nimbusstringhelper_get_uuid(self.pointer,
-                                                                        FfiConverterString.lower(template), $0)
                 }
         )
     }
@@ -1810,55 +1814,55 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
 
     public static func write(_ value: NimbusError, into buf: inout [UInt8]) {
         switch value {
-        case let .InvalidPersistedData(message):
+        case .InvalidPersistedData(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(1))
-        case let .RkvError(message):
+        case .RkvError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(2))
-        case let .IoError(message):
+        case .IoError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(3))
-        case let .JsonError(message):
+        case .JsonError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(4))
-        case let .EvaluationError(message):
+        case .EvaluationError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(5))
-        case let .InvalidExpression(message):
+        case .InvalidExpression(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(6))
-        case let .InvalidFraction(message):
+        case .InvalidFraction(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(7))
-        case let .TryFromSliceError(message):
+        case .TryFromSliceError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(8))
-        case let .EmptyRatiosError(message):
+        case .EmptyRatiosError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(9))
-        case let .OutOfBoundsError(message):
+        case .OutOfBoundsError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(10))
-        case let .UrlParsingError(message):
+        case .UrlParsingError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(11))
-        case let .UuidError(message):
+        case .UuidError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(12))
-        case let .InvalidExperimentFormat(message):
+        case .InvalidExperimentFormat(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(13))
-        case let .InvalidPath(message):
+        case .InvalidPath(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(14))
-        case let .InternalError(message):
+        case .InternalError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(15))
-        case let .NoSuchExperiment(message):
+        case .NoSuchExperiment(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(16))
-        case let .NoSuchBranch(message):
+        case .NoSuchBranch(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(17))
-        case let .DatabaseNotReady(message):
+        case .DatabaseNotReady(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(18))
-        case let .VersionParsingError(message):
+        case .VersionParsingError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(19))
-        case let .BehaviorError(message):
+        case .BehaviorError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(20))
-        case let .TryFromIntError(message):
+        case .TryFromIntError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(21))
-        case let .ParseIntError(message):
+        case .ParseIntError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(22))
-        case let .TransformParameterError(message):
+        case .TransformParameterError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(23))
-        case let .ClientError(message):
+        case .ClientError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(24))
-        case let .UniFfiCallbackError(message):
+        case .UniFfiCallbackError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(25))
         }
     }
@@ -2352,6 +2356,14 @@ public struct FfiConverterTypeJsonObject: FfiConverter {
     }
 }
 
+public func FfiConverterTypeJsonObject_lift(_ value: RustBuffer) throws -> JsonObject {
+    return try FfiConverterTypeJsonObject.lift(value)
+}
+
+public func FfiConverterTypeJsonObject_lower(_ value: JsonObject) -> RustBuffer {
+    return FfiConverterTypeJsonObject.lower(value)
+}
+
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -2362,100 +2374,112 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_nimbus_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_initialize() != 51904 {
+    if uniffi_nimbus_checksum_method_nimbusclient_advance_event_time() != 53534 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_get_experiment_branch() != 10603 {
+    if uniffi_nimbus_checksum_method_nimbusclient_apply_pending_experiments() != 57770 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_get_feature_config_variables() != 41988 {
+    if uniffi_nimbus_checksum_method_nimbusclient_clear_events() != 1045 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_get_experiment_branches() != 31390 {
+    if uniffi_nimbus_checksum_method_nimbusclient_create_string_helper() != 51354 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_get_active_experiments() != 19354 {
+    if uniffi_nimbus_checksum_method_nimbusclient_create_targeting_helper() != 38112 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_record_feature_exposure() != 17554 {
+    if uniffi_nimbus_checksum_method_nimbusclient_dump_state_to_log() != 56312 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_record_malformed_feature_config() != 13376 {
+    if uniffi_nimbus_checksum_method_nimbusclient_fetch_experiments() != 33304 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_get_available_experiments() != 49085 {
+    if uniffi_nimbus_checksum_method_nimbusclient_get_active_experiments() != 27989 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_get_global_user_participation() != 10141 {
+    if uniffi_nimbus_checksum_method_nimbusclient_get_available_experiments() != 26164 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_set_global_user_participation() != 55652 {
+    if uniffi_nimbus_checksum_method_nimbusclient_get_experiment_branch() != 5373 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_fetch_experiments() != 47237 {
+    if uniffi_nimbus_checksum_method_nimbusclient_get_experiment_branches() != 56992 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_set_fetch_enabled() != 19645 {
+    if uniffi_nimbus_checksum_method_nimbusclient_get_feature_config_variables() != 20343 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_is_fetch_enabled() != 19071 {
+    if uniffi_nimbus_checksum_method_nimbusclient_get_global_user_participation() != 59618 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_apply_pending_experiments() != 2188 {
+    if uniffi_nimbus_checksum_method_nimbusclient_initialize() != 5458 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_set_experiments_locally() != 17473 {
+    if uniffi_nimbus_checksum_method_nimbusclient_is_fetch_enabled() != 63332 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_reset_enrollments() != 3557 {
+    if uniffi_nimbus_checksum_method_nimbusclient_opt_in_with_branch() != 34603 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_opt_in_with_branch() != 31494 {
+    if uniffi_nimbus_checksum_method_nimbusclient_opt_out() != 58990 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_opt_out() != 58630 {
+    if uniffi_nimbus_checksum_method_nimbusclient_record_event() != 38667 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_reset_telemetry_identifiers() != 12776 {
+    if uniffi_nimbus_checksum_method_nimbusclient_record_feature_exposure() != 40823 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_create_targeting_helper() != 29336 {
+    if uniffi_nimbus_checksum_method_nimbusclient_record_malformed_feature_config() != 52482 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_create_string_helper() != 11159 {
+    if uniffi_nimbus_checksum_method_nimbusclient_record_past_event() != 17071 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_record_event() != 14297 {
+    if uniffi_nimbus_checksum_method_nimbusclient_reset_enrollments() != 60419 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_record_past_event() != 14954 {
+    if uniffi_nimbus_checksum_method_nimbusclient_reset_telemetry_identifiers() != 40749 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_advance_event_time() != 27182 {
+    if uniffi_nimbus_checksum_method_nimbusclient_set_experiments_locally() != 9392 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_clear_events() != 5624 {
+    if uniffi_nimbus_checksum_method_nimbusclient_set_fetch_enabled() != 30351 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_dump_state_to_log() != 26463 {
+    if uniffi_nimbus_checksum_method_nimbusclient_set_global_user_participation() != 6233 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl() != 8942 {
+    if uniffi_nimbus_checksum_method_nimbusstringhelper_get_uuid() != 36871 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusstringhelper_string_format() != 58607 {
+    if uniffi_nimbus_checksum_method_nimbusstringhelper_string_format() != 10066 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusstringhelper_get_uuid() != 33231 {
+    if uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl() != 1742 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 31321 {
+    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 23579 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_nimbus_checksum_method_metricshandler_record_enrollment_statuses() != 17597 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_nimbus_checksum_method_metricshandler_record_feature_activation() != 59679 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_nimbus_checksum_method_metricshandler_record_feature_exposure() != 24073 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_nimbus_checksum_method_metricshandler_record_malformed_feature_config() != 12034 {
         return InitializationResult.apiChecksumMismatch
     }
 

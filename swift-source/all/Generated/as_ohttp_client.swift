@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -359,8 +363,8 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol OhttpSessionProtocol {
-    func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws -> [UInt8]
     func decapsulate(encoded: [UInt8]) throws -> OhttpResponse
+    func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws -> [UInt8]
 }
 
 public class OhttpSession: OhttpSessionProtocol {
@@ -385,6 +389,15 @@ public class OhttpSession: OhttpSessionProtocol {
         try! rustCall { uniffi_as_ohttp_client_fn_free_ohttpsession(pointer, $0) }
     }
 
+    public func decapsulate(encoded: [UInt8]) throws -> OhttpResponse {
+        return try FfiConverterTypeOhttpResponse.lift(
+            rustCallWithError(FfiConverterTypeOhttpError.lift) {
+                uniffi_as_ohttp_client_fn_method_ohttpsession_decapsulate(self.pointer,
+                                                                          FfiConverterSequenceUInt8.lower(encoded), $0)
+            }
+        )
+    }
+
     public func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws -> [UInt8] {
         return try FfiConverterSequenceUInt8.lift(
             rustCallWithError(FfiConverterTypeOhttpError.lift) {
@@ -395,15 +408,6 @@ public class OhttpSession: OhttpSessionProtocol {
                                                                           FfiConverterString.lower(endpoint),
                                                                           FfiConverterDictionaryStringString.lower(headers),
                                                                           FfiConverterSequenceUInt8.lower(payload), $0)
-            }
-        )
-    }
-
-    public func decapsulate(encoded: [UInt8]) throws -> OhttpResponse {
-        return try FfiConverterTypeOhttpResponse.lift(
-            rustCallWithError(FfiConverterTypeOhttpError.lift) {
-                uniffi_as_ohttp_client_fn_method_ohttpsession_decapsulate(self.pointer,
-                                                                          FfiConverterSequenceUInt8.lower(encoded), $0)
             }
         )
     }
@@ -755,21 +759,21 @@ public struct FfiConverterTypeOhttpError: FfiConverterRustBuffer {
 
     public static func write(_ value: OhttpError, into buf: inout [UInt8]) {
         switch value {
-        case let .KeyFetchFailed(message):
+        case .KeyFetchFailed(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(1))
-        case let .MalformedKeyConfig(message):
+        case .MalformedKeyConfig(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(2))
-        case let .UnsupportedKeyConfig(message):
+        case .UnsupportedKeyConfig(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(3))
-        case let .InvalidSession(message):
+        case .InvalidSession(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(4))
-        case let .RelayFailed(message):
+        case .RelayFailed(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(5))
-        case let .CannotEncodeMessage(message):
+        case .CannotEncodeMessage(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(6))
-        case let .MalformedMessage(message):
+        case .MalformedMessage(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(7))
-        case let .DuplicateHeaders(message):
+        case .DuplicateHeaders(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(8))
         }
     }
@@ -834,31 +838,31 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_as_ohttp_client_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttpsession_encapsulate() != 13167 {
+    if uniffi_as_ohttp_client_checksum_method_ohttpsession_decapsulate() != 37380 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttpsession_decapsulate() != 13509 {
+    if uniffi_as_ohttp_client_checksum_method_ohttpsession_encapsulate() != 55777 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_get_config() != 36899 {
+    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_get_config() != 53454 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_receive() != 36846 {
+    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_receive() != 28467 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_respond() != 64449 {
+    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_respond() != 4346 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_constructor_ohttpsession_new() != 61712 {
+    if uniffi_as_ohttp_client_checksum_constructor_ohttpsession_new() != 60874 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_constructor_ohttptestserver_new() != 22259 {
+    if uniffi_as_ohttp_client_checksum_constructor_ohttptestserver_new() != 62089 {
         return InitializationResult.apiChecksumMismatch
     }
 

@@ -32,7 +32,7 @@ typedef struct RustBuffer
 typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
 
 // Task defined in Rust that Swift executes
-typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable, int8_t);
 
 // Callback to execute Rust tasks using a Swift Task
 //
@@ -41,7 +41,7 @@ typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
 //   delay: Delay in MS
 //   task: UniFfiRustTaskCallback to call
 //   task_data: data to pass the task callback
-typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
+typedef int8_t (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -59,24 +59,21 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-// Callbacks for UniFFI Futures
-typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackInt8)(const void * _Nonnull, int8_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
-typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+// Continuation callback for UniFFI Futures
+typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
 
 // Scaffolding functions
 void uniffi_suggest_fn_free_suggeststore(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_suggest_fn_constructor_suggeststore_new(RustBuffer path, RustBuffer settings_config, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_suggest_fn_method_suggeststore_query(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
-);
-void uniffi_suggest_fn_method_suggeststore_interrupt(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_suggest_fn_method_suggeststore_clear(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_suggest_fn_method_suggeststore_ingest(void*_Nonnull ptr, RustBuffer constraints, RustCallStatus *_Nonnull out_status
 );
-void uniffi_suggest_fn_method_suggeststore_clear(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_suggest_fn_method_suggeststore_interrupt(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_suggest_fn_method_suggeststore_query(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
 );
 int8_t uniffi_suggest_fn_func_raw_suggestion_url_matches(RustBuffer raw_url, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
@@ -88,19 +85,125 @@ void ffi_suggest_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_st
 );
 RustBuffer ffi_suggest_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
 );
+void ffi_suggest_rust_future_continuation_callback_set(UniFfiRustFutureContinuation _Nonnull callback
+);
+void ffi_suggest_rust_future_poll_u8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_u8(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_u8(void* _Nonnull handle
+);
+uint8_t ffi_suggest_rust_future_complete_u8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_i8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_i8(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_i8(void* _Nonnull handle
+);
+int8_t ffi_suggest_rust_future_complete_i8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_u16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_u16(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_u16(void* _Nonnull handle
+);
+uint16_t ffi_suggest_rust_future_complete_u16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_i16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_i16(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_i16(void* _Nonnull handle
+);
+int16_t ffi_suggest_rust_future_complete_i16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_u32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_u32(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_u32(void* _Nonnull handle
+);
+uint32_t ffi_suggest_rust_future_complete_u32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_i32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_i32(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_i32(void* _Nonnull handle
+);
+int32_t ffi_suggest_rust_future_complete_i32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_u64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_u64(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_u64(void* _Nonnull handle
+);
+uint64_t ffi_suggest_rust_future_complete_u64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_i64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_i64(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_i64(void* _Nonnull handle
+);
+int64_t ffi_suggest_rust_future_complete_i64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_f32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_f32(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_f32(void* _Nonnull handle
+);
+float ffi_suggest_rust_future_complete_f32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_f64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_f64(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_f64(void* _Nonnull handle
+);
+double ffi_suggest_rust_future_complete_f64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_pointer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_pointer(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_pointer(void* _Nonnull handle
+);
+void*_Nonnull ffi_suggest_rust_future_complete_pointer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_rust_buffer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_rust_buffer(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_rust_buffer(void* _Nonnull handle
+);
+RustBuffer ffi_suggest_rust_future_complete_rust_buffer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_suggest_rust_future_poll_void(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_suggest_rust_future_cancel_void(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_free_void(void* _Nonnull handle
+);
+void ffi_suggest_rust_future_complete_void(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
 uint16_t uniffi_suggest_checksum_func_raw_suggestion_url_matches(void
     
 );
-uint16_t uniffi_suggest_checksum_method_suggeststore_query(void
-    
-);
-uint16_t uniffi_suggest_checksum_method_suggeststore_interrupt(void
+uint16_t uniffi_suggest_checksum_method_suggeststore_clear(void
     
 );
 uint16_t uniffi_suggest_checksum_method_suggeststore_ingest(void
     
 );
-uint16_t uniffi_suggest_checksum_method_suggeststore_clear(void
+uint16_t uniffi_suggest_checksum_method_suggeststore_interrupt(void
+    
+);
+uint16_t uniffi_suggest_checksum_method_suggeststore_query(void
     
 );
 uint16_t uniffi_suggest_checksum_constructor_suggeststore_new(void

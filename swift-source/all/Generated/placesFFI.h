@@ -32,7 +32,7 @@ typedef struct RustBuffer
 typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
 
 // Task defined in Rust that Swift executes
-typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable, int8_t);
 
 // Callback to execute Rust tasks using a Swift Task
 //
@@ -41,7 +41,7 @@ typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
 //   delay: Delay in MS
 //   task: UniFfiRustTaskCallback to call
 //   task_data: data to pass the task callback
-typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
+typedef int8_t (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -59,22 +59,17 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-// Callbacks for UniFFI Futures
-typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackInt8)(const void * _Nonnull, int8_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUInt32)(const void * _Nonnull, uint32_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackInt64)(const void * _Nonnull, int64_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
-typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+// Continuation callback for UniFFI Futures
+typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
 
 // Scaffolding functions
-void uniffi_places_fn_free_sqlinterrupthandle(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_sqlinterrupthandle_interrupt(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
 void uniffi_places_fn_free_placesapi(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesapi_bookmarks_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesapi_bookmarks_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesapi_history_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_places_fn_method_placesapi_new_connection(void*_Nonnull ptr, RustBuffer conn_type, RustCallStatus *_Nonnull out_status
 );
@@ -82,45 +77,55 @@ void uniffi_places_fn_method_placesapi_register_with_sync_manager(void*_Nonnull 
 );
 void uniffi_places_fn_method_placesapi_reset_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_places_fn_method_placesapi_history_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesapi_bookmarks_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesapi_bookmarks_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
 void uniffi_places_fn_free_placesconnection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_places_fn_method_placesconnection_new_interrupt_handle(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_places_fn_method_placesconnection_accept_result(void*_Nonnull ptr, RustBuffer search_string, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_places_fn_method_placesconnection_get_latest_history_metadata_for_url(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
+void uniffi_places_fn_method_placesconnection_apply_observation(void*_Nonnull ptr, RustBuffer visit, RustCallStatus *_Nonnull out_status
+);
+uint32_t uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(void*_Nonnull ptr, RustBuffer folder_guids, RustCallStatus *_Nonnull out_status
+);
+int8_t uniffi_places_fn_method_placesconnection_bookmarks_delete(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_bookmarks_delete_everything(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_all_with_url(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_by_guid(void*_Nonnull ptr, RustBuffer guid, int8_t get_direct_children, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_recent(void*_Nonnull ptr, int32_t limit, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_tree(void*_Nonnull ptr, RustBuffer item_guid, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_url_for_keyword(void*_Nonnull ptr, RustBuffer keyword, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_insert(void*_Nonnull ptr, RustBuffer bookmark, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_search(void*_Nonnull ptr, RustBuffer query, int32_t limit, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_bookmarks_update(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_delete_everything_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_delete_visit(void*_Nonnull ptr, RustBuffer url, int64_t timestamp, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_delete_visits_between(void*_Nonnull ptr, int64_t start, int64_t end, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_delete_visits_for(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_get_history_highlights(void*_Nonnull ptr, RustBuffer weights, int32_t limit, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_places_fn_method_placesconnection_get_history_metadata_between(void*_Nonnull ptr, int64_t start, int64_t end, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_places_fn_method_placesconnection_get_history_metadata_since(void*_Nonnull ptr, int64_t since, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_places_fn_method_placesconnection_query_autocomplete(void*_Nonnull ptr, RustBuffer search, int32_t limit, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_places_fn_method_placesconnection_get_latest_history_metadata_for_url(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_accept_result(void*_Nonnull ptr, RustBuffer search_string, RustBuffer url, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_match_url(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_query_history_metadata(void*_Nonnull ptr, RustBuffer query, int32_t limit, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_get_history_highlights(void*_Nonnull ptr, RustBuffer weights, int32_t limit, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesconnection_note_history_metadata_observation(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesconnection_metadata_delete(void*_Nonnull ptr, RustBuffer url, RustBuffer referrer_url, RustBuffer search_term, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesconnection_metadata_delete_older_than(void*_Nonnull ptr, int64_t older_than, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesconnection_apply_observation(void*_Nonnull ptr, RustBuffer visit, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_get_visited_urls_in_range(void*_Nonnull ptr, int64_t start, int64_t end, int8_t include_remote, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_get_visit_infos(void*_Nonnull ptr, int64_t start_date, int64_t end_date, int32_t exclude_types, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_places_fn_method_placesconnection_get_top_frecent_site_infos(void*_Nonnull ptr, int32_t num_items, RustBuffer threshold_option, RustCallStatus *_Nonnull out_status
 );
 int64_t uniffi_places_fn_method_placesconnection_get_visit_count(void*_Nonnull ptr, int32_t exclude_types, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_get_visit_infos(void*_Nonnull ptr, int64_t start_date, int64_t end_date, int32_t exclude_types, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_places_fn_method_placesconnection_get_visit_page(void*_Nonnull ptr, int64_t offset, int64_t count, int32_t exclude_types, RustCallStatus *_Nonnull out_status
 );
@@ -128,47 +133,35 @@ RustBuffer uniffi_places_fn_method_placesconnection_get_visit_page_with_bound(vo
 );
 RustBuffer uniffi_places_fn_method_placesconnection_get_visited(void*_Nonnull ptr, RustBuffer urls, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_delete_visits_for(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_places_fn_method_placesconnection_get_visited_urls_in_range(void*_Nonnull ptr, int64_t start, int64_t end, int8_t include_remote, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_delete_visits_between(void*_Nonnull ptr, int64_t start, int64_t end, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_places_fn_method_placesconnection_match_url(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_delete_visit(void*_Nonnull ptr, RustBuffer url, int64_t timestamp, RustCallStatus *_Nonnull out_status
+void uniffi_places_fn_method_placesconnection_metadata_delete(void*_Nonnull ptr, RustBuffer url, RustBuffer referrer_url, RustBuffer search_term, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_places_fn_method_placesconnection_get_top_frecent_site_infos(void*_Nonnull ptr, int32_t num_items, RustBuffer threshold_option, RustCallStatus *_Nonnull out_status
+void uniffi_places_fn_method_placesconnection_metadata_delete_older_than(void*_Nonnull ptr, int64_t older_than, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_delete_everything_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_places_fn_method_placesconnection_new_interrupt_handle(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_note_history_metadata_observation(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_places_history_import_from_ios(void*_Nonnull ptr, RustBuffer db_path, int64_t last_sync_timestamp, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_query_autocomplete(void*_Nonnull ptr, RustBuffer search, int32_t limit, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_places_fn_method_placesconnection_query_history_metadata(void*_Nonnull ptr, RustBuffer query, int32_t limit, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_run_maintenance_checkpoint(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_places_fn_method_placesconnection_run_maintenance_optimize(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_places_fn_method_placesconnection_run_maintenance_prune(void*_Nonnull ptr, uint32_t db_size_limit, uint32_t prune_limit, RustCallStatus *_Nonnull out_status
 );
 void uniffi_places_fn_method_placesconnection_run_maintenance_vacuum(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_run_maintenance_optimize(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_places_fn_free_sqlinterrupthandle(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_run_maintenance_checkpoint(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_tree(void*_Nonnull ptr, RustBuffer item_guid, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_by_guid(void*_Nonnull ptr, RustBuffer guid, int8_t get_direct_children, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_all_with_url(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_search(void*_Nonnull ptr, RustBuffer query, int32_t limit, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_recent(void*_Nonnull ptr, int32_t limit, RustCallStatus *_Nonnull out_status
-);
-int8_t uniffi_places_fn_method_placesconnection_bookmarks_delete(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesconnection_bookmarks_delete_everything(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_url_for_keyword(void*_Nonnull ptr, RustBuffer keyword, RustCallStatus *_Nonnull out_status
-);
-void uniffi_places_fn_method_placesconnection_bookmarks_update(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_insert(void*_Nonnull ptr, RustBuffer bookmark, RustCallStatus *_Nonnull out_status
-);
-uint32_t uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(void*_Nonnull ptr, RustBuffer folder_guids, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_places_fn_method_placesconnection_places_history_import_from_ios(void*_Nonnull ptr, RustBuffer db_path, int64_t last_sync_timestamp, RustCallStatus *_Nonnull out_status
+void uniffi_places_fn_method_sqlinterrupthandle_interrupt(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void*_Nonnull uniffi_places_fn_func_places_api_new(RustBuffer db_path, RustCallStatus *_Nonnull out_status
 );
@@ -180,10 +173,122 @@ void ffi_places_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_sta
 );
 RustBuffer ffi_places_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
 );
+void ffi_places_rust_future_continuation_callback_set(UniFfiRustFutureContinuation _Nonnull callback
+);
+void ffi_places_rust_future_poll_u8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_u8(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_u8(void* _Nonnull handle
+);
+uint8_t ffi_places_rust_future_complete_u8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_i8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_i8(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_i8(void* _Nonnull handle
+);
+int8_t ffi_places_rust_future_complete_i8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_u16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_u16(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_u16(void* _Nonnull handle
+);
+uint16_t ffi_places_rust_future_complete_u16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_i16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_i16(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_i16(void* _Nonnull handle
+);
+int16_t ffi_places_rust_future_complete_i16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_u32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_u32(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_u32(void* _Nonnull handle
+);
+uint32_t ffi_places_rust_future_complete_u32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_i32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_i32(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_i32(void* _Nonnull handle
+);
+int32_t ffi_places_rust_future_complete_i32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_u64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_u64(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_u64(void* _Nonnull handle
+);
+uint64_t ffi_places_rust_future_complete_u64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_i64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_i64(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_i64(void* _Nonnull handle
+);
+int64_t ffi_places_rust_future_complete_i64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_f32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_f32(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_f32(void* _Nonnull handle
+);
+float ffi_places_rust_future_complete_f32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_f64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_f64(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_f64(void* _Nonnull handle
+);
+double ffi_places_rust_future_complete_f64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_pointer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_pointer(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_pointer(void* _Nonnull handle
+);
+void*_Nonnull ffi_places_rust_future_complete_pointer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_rust_buffer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_rust_buffer(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_rust_buffer(void* _Nonnull handle
+);
+RustBuffer ffi_places_rust_future_complete_rust_buffer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_places_rust_future_poll_void(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_places_rust_future_cancel_void(void* _Nonnull handle
+);
+void ffi_places_rust_future_free_void(void* _Nonnull handle
+);
+void ffi_places_rust_future_complete_void(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
 uint16_t uniffi_places_checksum_func_places_api_new(void
     
 );
-uint16_t uniffi_places_checksum_method_sqlinterrupthandle_interrupt(void
+uint16_t uniffi_places_checksum_method_placesapi_bookmarks_reset(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesapi_bookmarks_sync(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesapi_history_sync(void
     
 );
 uint16_t uniffi_places_checksum_method_placesapi_new_connection(void
@@ -195,19 +300,58 @@ uint16_t uniffi_places_checksum_method_placesapi_register_with_sync_manager(void
 uint16_t uniffi_places_checksum_method_placesapi_reset_history(void
     
 );
-uint16_t uniffi_places_checksum_method_placesapi_history_sync(void
+uint16_t uniffi_places_checksum_method_placesconnection_accept_result(void
     
 );
-uint16_t uniffi_places_checksum_method_placesapi_bookmarks_sync(void
+uint16_t uniffi_places_checksum_method_placesconnection_apply_observation(void
     
 );
-uint16_t uniffi_places_checksum_method_placesapi_bookmarks_reset(void
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_count_bookmarks_in_trees(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_new_interrupt_handle(void
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_delete(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_get_latest_history_metadata_for_url(void
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_delete_everything(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_all_with_url(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_by_guid(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_recent(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_tree(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_url_for_keyword(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_insert(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_search(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_update(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_delete_everything_history(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_delete_visit(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_delete_visits_between(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_delete_visits_for(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_get_history_highlights(void
     
 );
 uint16_t uniffi_places_checksum_method_placesconnection_get_history_metadata_between(void
@@ -216,40 +360,16 @@ uint16_t uniffi_places_checksum_method_placesconnection_get_history_metadata_bet
 uint16_t uniffi_places_checksum_method_placesconnection_get_history_metadata_since(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_query_autocomplete(void
+uint16_t uniffi_places_checksum_method_placesconnection_get_latest_history_metadata_for_url(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_accept_result(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_match_url(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_query_history_metadata(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_get_history_highlights(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_note_history_metadata_observation(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_metadata_delete(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_metadata_delete_older_than(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_apply_observation(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_get_visited_urls_in_range(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_get_visit_infos(void
+uint16_t uniffi_places_checksum_method_placesconnection_get_top_frecent_site_infos(void
     
 );
 uint16_t uniffi_places_checksum_method_placesconnection_get_visit_count(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_get_visit_infos(void
     
 );
 uint16_t uniffi_places_checksum_method_placesconnection_get_visit_page(void
@@ -261,19 +381,37 @@ uint16_t uniffi_places_checksum_method_placesconnection_get_visit_page_with_boun
 uint16_t uniffi_places_checksum_method_placesconnection_get_visited(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_delete_visits_for(void
+uint16_t uniffi_places_checksum_method_placesconnection_get_visited_urls_in_range(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_delete_visits_between(void
+uint16_t uniffi_places_checksum_method_placesconnection_match_url(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_delete_visit(void
+uint16_t uniffi_places_checksum_method_placesconnection_metadata_delete(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_get_top_frecent_site_infos(void
+uint16_t uniffi_places_checksum_method_placesconnection_metadata_delete_older_than(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_delete_everything_history(void
+uint16_t uniffi_places_checksum_method_placesconnection_new_interrupt_handle(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_note_history_metadata_observation(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_places_history_import_from_ios(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_query_autocomplete(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_query_history_metadata(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_checkpoint(void
+    
+);
+uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_optimize(void
     
 );
 uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_prune(void
@@ -282,46 +420,7 @@ uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_prune(vo
 uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_vacuum(void
     
 );
-uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_optimize(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_checkpoint(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_tree(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_by_guid(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_all_with_url(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_search(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_recent(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_delete(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_delete_everything(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_url_for_keyword(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_update(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_insert(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_count_bookmarks_in_trees(void
-    
-);
-uint16_t uniffi_places_checksum_method_placesconnection_places_history_import_from_ios(void
+uint16_t uniffi_places_checksum_method_sqlinterrupthandle_interrupt(void
     
 );
 uint32_t ffi_places_uniffi_contract_version(void

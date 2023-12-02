@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -665,16 +669,19 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_rust_log_forwarder_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_rust_log_forwarder_checksum_func_set_logger() != 19369 {
+    if uniffi_rust_log_forwarder_checksum_func_set_logger() != 25523 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_rust_log_forwarder_checksum_func_set_max_level() != 5491 {
+    if uniffi_rust_log_forwarder_checksum_func_set_max_level() != 17562 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_rust_log_forwarder_checksum_method_appserviceslogger_log() != 10072 {
         return InitializationResult.apiChecksumMismatch
     }
 

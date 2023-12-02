@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -367,20 +371,20 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol StoreProtocol {
-    func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard
-    func getCreditCard(guid: String) throws -> CreditCard
-    func getAllCreditCards() throws -> [CreditCard]
-    func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws
-    func deleteCreditCard(guid: String) throws -> Bool
-    func touchCreditCard(guid: String) throws
     func addAddress(a: UpdatableAddressFields) throws -> Address
+    func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard
+    func deleteAddress(guid: String) throws -> Bool
+    func deleteCreditCard(guid: String) throws -> Bool
     func getAddress(guid: String) throws -> Address
     func getAllAddresses() throws -> [Address]
-    func updateAddress(guid: String, a: UpdatableAddressFields) throws
-    func deleteAddress(guid: String) throws -> Bool
-    func touchAddress(guid: String) throws
-    func scrubEncryptedData() throws
+    func getAllCreditCards() throws -> [CreditCard]
+    func getCreditCard(guid: String) throws -> CreditCard
     func registerWithSyncManager()
+    func scrubEncryptedData() throws
+    func touchAddress(guid: String) throws
+    func touchCreditCard(guid: String) throws
+    func updateAddress(guid: String, a: UpdatableAddressFields) throws
+    func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws
 }
 
 public class Store: StoreProtocol {
@@ -405,6 +409,15 @@ public class Store: StoreProtocol {
         try! rustCall { uniffi_autofill_fn_free_store(pointer, $0) }
     }
 
+    public func addAddress(a: UpdatableAddressFields) throws -> Address {
+        return try FfiConverterTypeAddress.lift(
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_add_address(self.pointer,
+                                                            FfiConverterTypeUpdatableAddressFields.lower(a), $0)
+            }
+        )
+    }
+
     public func addCreditCard(cc: UpdatableCreditCardFields) throws -> CreditCard {
         return try FfiConverterTypeCreditCard.lift(
             rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
@@ -414,30 +427,13 @@ public class Store: StoreProtocol {
         )
     }
 
-    public func getCreditCard(guid: String) throws -> CreditCard {
-        return try FfiConverterTypeCreditCard.lift(
+    public func deleteAddress(guid: String) throws -> Bool {
+        return try FfiConverterBool.lift(
             rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_get_credit_card(self.pointer,
-                                                                FfiConverterString.lower(guid), $0)
+                uniffi_autofill_fn_method_store_delete_address(self.pointer,
+                                                               FfiConverterString.lower(guid), $0)
             }
         )
-    }
-
-    public func getAllCreditCards() throws -> [CreditCard] {
-        return try FfiConverterSequenceTypeCreditCard.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_get_all_credit_cards(self.pointer, $0)
-            }
-        )
-    }
-
-    public func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws {
-        try
-            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_update_credit_card(self.pointer,
-                                                                   FfiConverterString.lower(guid),
-                                                                   FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
-            }
     }
 
     public func deleteCreditCard(guid: String) throws -> Bool {
@@ -445,23 +441,6 @@ public class Store: StoreProtocol {
             rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
                 uniffi_autofill_fn_method_store_delete_credit_card(self.pointer,
                                                                    FfiConverterString.lower(guid), $0)
-            }
-        )
-    }
-
-    public func touchCreditCard(guid: String) throws {
-        try
-            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_touch_credit_card(self.pointer,
-                                                                  FfiConverterString.lower(guid), $0)
-            }
-    }
-
-    public func addAddress(a: UpdatableAddressFields) throws -> Address {
-        return try FfiConverterTypeAddress.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_add_address(self.pointer,
-                                                            FfiConverterTypeUpdatableAddressFields.lower(a), $0)
             }
         )
     }
@@ -483,29 +462,27 @@ public class Store: StoreProtocol {
         )
     }
 
-    public func updateAddress(guid: String, a: UpdatableAddressFields) throws {
-        try
+    public func getAllCreditCards() throws -> [CreditCard] {
+        return try FfiConverterSequenceTypeCreditCard.lift(
             rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_update_address(self.pointer,
-                                                               FfiConverterString.lower(guid),
-                                                               FfiConverterTypeUpdatableAddressFields.lower(a), $0)
-            }
-    }
-
-    public func deleteAddress(guid: String) throws -> Bool {
-        return try FfiConverterBool.lift(
-            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_delete_address(self.pointer,
-                                                               FfiConverterString.lower(guid), $0)
+                uniffi_autofill_fn_method_store_get_all_credit_cards(self.pointer, $0)
             }
         )
     }
 
-    public func touchAddress(guid: String) throws {
-        try
+    public func getCreditCard(guid: String) throws -> CreditCard {
+        return try FfiConverterTypeCreditCard.lift(
             rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-                uniffi_autofill_fn_method_store_touch_address(self.pointer,
-                                                              FfiConverterString.lower(guid), $0)
+                uniffi_autofill_fn_method_store_get_credit_card(self.pointer,
+                                                                FfiConverterString.lower(guid), $0)
+            }
+        )
+    }
+
+    public func registerWithSyncManager() {
+        try!
+            rustCall {
+                uniffi_autofill_fn_method_store_register_with_sync_manager(self.pointer, $0)
             }
     }
 
@@ -516,10 +493,37 @@ public class Store: StoreProtocol {
             }
     }
 
-    public func registerWithSyncManager() {
-        try!
-            rustCall {
-                uniffi_autofill_fn_method_store_register_with_sync_manager(self.pointer, $0)
+    public func touchAddress(guid: String) throws {
+        try
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_touch_address(self.pointer,
+                                                              FfiConverterString.lower(guid), $0)
+            }
+    }
+
+    public func touchCreditCard(guid: String) throws {
+        try
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_touch_credit_card(self.pointer,
+                                                                  FfiConverterString.lower(guid), $0)
+            }
+    }
+
+    public func updateAddress(guid: String, a: UpdatableAddressFields) throws {
+        try
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_update_address(self.pointer,
+                                                               FfiConverterString.lower(guid),
+                                                               FfiConverterTypeUpdatableAddressFields.lower(a), $0)
+            }
+    }
+
+    public func updateCreditCard(guid: String, cc: UpdatableCreditCardFields) throws {
+        try
+            rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+                uniffi_autofill_fn_method_store_update_credit_card(self.pointer,
+                                                                   FfiConverterString.lower(guid),
+                                                                   FfiConverterTypeUpdatableCreditCardFields.lower(cc), $0)
             }
     }
 }
@@ -1207,23 +1211,23 @@ public func createAutofillKey() throws -> String {
     )
 }
 
-public func encryptString(key: String, cleartext: String) throws -> String {
-    return try FfiConverterString.lift(
-        rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
-            uniffi_autofill_fn_func_encrypt_string(
-                FfiConverterString.lower(key),
-                FfiConverterString.lower(cleartext), $0
-            )
-        }
-    )
-}
-
 public func decryptString(key: String, ciphertext: String) throws -> String {
     return try FfiConverterString.lift(
         rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
             uniffi_autofill_fn_func_decrypt_string(
                 FfiConverterString.lower(key),
                 FfiConverterString.lower(ciphertext), $0
+            )
+        }
+    )
+}
+
+public func encryptString(key: String, cleartext: String) throws -> String {
+    return try FfiConverterString.lift(
+        rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
+            uniffi_autofill_fn_func_encrypt_string(
+                FfiConverterString.lower(key),
+                FfiConverterString.lower(cleartext), $0
             )
         }
     )
@@ -1239,64 +1243,64 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_autofill_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_autofill_checksum_func_create_autofill_key() != 13681 {
+    if uniffi_autofill_checksum_func_create_autofill_key() != 21025 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_func_encrypt_string() != 12480 {
+    if uniffi_autofill_checksum_func_decrypt_string() != 43653 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_func_decrypt_string() != 30035 {
+    if uniffi_autofill_checksum_func_encrypt_string() != 58934 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_add_credit_card() != 45676 {
+    if uniffi_autofill_checksum_method_store_add_address() != 10877 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_get_credit_card() != 34828 {
+    if uniffi_autofill_checksum_method_store_add_credit_card() != 61370 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_get_all_credit_cards() != 22645 {
+    if uniffi_autofill_checksum_method_store_delete_address() != 25934 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_update_credit_card() != 10782 {
+    if uniffi_autofill_checksum_method_store_delete_credit_card() != 41157 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_delete_credit_card() != 22780 {
+    if uniffi_autofill_checksum_method_store_get_address() != 36552 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_touch_credit_card() != 32219 {
+    if uniffi_autofill_checksum_method_store_get_all_addresses() != 54001 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_add_address() != 2642 {
+    if uniffi_autofill_checksum_method_store_get_all_credit_cards() != 53630 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_get_address() != 11899 {
+    if uniffi_autofill_checksum_method_store_get_credit_card() != 56316 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_get_all_addresses() != 52838 {
+    if uniffi_autofill_checksum_method_store_register_with_sync_manager() != 24273 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_update_address() != 4555 {
+    if uniffi_autofill_checksum_method_store_scrub_encrypted_data() != 21216 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_delete_address() != 13021 {
+    if uniffi_autofill_checksum_method_store_touch_address() != 64110 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_touch_address() != 14746 {
+    if uniffi_autofill_checksum_method_store_touch_credit_card() != 57698 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_scrub_encrypted_data() != 50223 {
+    if uniffi_autofill_checksum_method_store_update_address() != 10410 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_method_store_register_with_sync_manager() != 45221 {
+    if uniffi_autofill_checksum_method_store_update_credit_card() != 30805 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_autofill_checksum_constructor_store_new() != 64898 {
+    if uniffi_autofill_checksum_constructor_store_new() != 29655 {
         return InitializationResult.apiChecksumMismatch
     }
 

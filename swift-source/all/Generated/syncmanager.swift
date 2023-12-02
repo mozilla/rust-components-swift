@@ -19,13 +19,13 @@ private extension RustBuffer {
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
-        try! rustCall { ffi_syncmanager_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
+        try! rustCall { ffi_sync_manager_rustbuffer_from_bytes(ForeignBytes(bufferPointer: ptr), $0) }
     }
 
     // Frees the buffer in place.
     // The buffer must not be used after this is called.
     func deallocate() {
-        try! rustCall { ffi_syncmanager_rustbuffer_free(self, $0) }
+        try! rustCall { ffi_sync_manager_rustbuffer_free(self, $0) }
     }
 }
 
@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -390,8 +394,8 @@ private struct FfiConverterTimestamp: FfiConverterRustBuffer {
 
 public protocol SyncManagerProtocol {
     func disconnect()
-    func sync(params: SyncParams) throws -> SyncResult
     func getAvailableEngines() -> [String]
+    func sync(params: SyncParams) throws -> SyncResult
 }
 
 public class SyncManager: SyncManagerProtocol {
@@ -406,36 +410,36 @@ public class SyncManager: SyncManagerProtocol {
 
     public convenience init() {
         self.init(unsafeFromRawPointer: try! rustCall {
-            uniffi_syncmanager_fn_constructor_syncmanager_new($0)
+            uniffi_sync_manager_fn_constructor_syncmanager_new($0)
         })
     }
 
     deinit {
-        try! rustCall { uniffi_syncmanager_fn_free_syncmanager(pointer, $0) }
+        try! rustCall { uniffi_sync_manager_fn_free_syncmanager(pointer, $0) }
     }
 
     public func disconnect() {
         try!
             rustCall {
-                uniffi_syncmanager_fn_method_syncmanager_disconnect(self.pointer, $0)
+                uniffi_sync_manager_fn_method_syncmanager_disconnect(self.pointer, $0)
             }
-    }
-
-    public func sync(params: SyncParams) throws -> SyncResult {
-        return try FfiConverterTypeSyncResult.lift(
-            rustCallWithError(FfiConverterTypeSyncManagerError.lift) {
-                uniffi_syncmanager_fn_method_syncmanager_sync(self.pointer,
-                                                              FfiConverterTypeSyncParams.lower(params), $0)
-            }
-        )
     }
 
     public func getAvailableEngines() -> [String] {
         return try! FfiConverterSequenceString.lift(
             try!
                 rustCall {
-                    uniffi_syncmanager_fn_method_syncmanager_get_available_engines(self.pointer, $0)
+                    uniffi_sync_manager_fn_method_syncmanager_get_available_engines(self.pointer, $0)
                 }
+        )
+    }
+
+    public func sync(params: SyncParams) throws -> SyncResult {
+        return try FfiConverterTypeSyncResult.lift(
+            rustCallWithError(FfiConverterTypeSyncManagerError.lift) {
+                uniffi_sync_manager_fn_method_syncmanager_sync(self.pointer,
+                                                               FfiConverterTypeSyncParams.lower(params), $0)
+            }
         )
     }
 }
@@ -978,23 +982,23 @@ public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
 
     public static func write(_ value: SyncManagerError, into buf: inout [UInt8]) {
         switch value {
-        case let .UnknownEngine(message):
+        case .UnknownEngine(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(1))
-        case let .UnsupportedFeature(message):
+        case .UnsupportedFeature(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(2))
-        case let .Sync15Error(message):
+        case .Sync15Error(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(3))
-        case let .UrlParseError(message):
+        case .UrlParseError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(4))
-        case let .InterruptedError(message):
+        case .InterruptedError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(5))
-        case let .JsonError(message):
+        case .JsonError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(6))
-        case let .LoginsError(message):
+        case .LoginsError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(7))
-        case let .PlacesError(message):
+        case .PlacesError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(8))
-        case let .AnyhowError(message):
+        case .AnyhowError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(9))
         }
     }
@@ -1211,22 +1215,22 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
-    let scaffolding_contract_version = ffi_syncmanager_uniffi_contract_version()
+    let scaffolding_contract_version = ffi_sync_manager_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_syncmanager_checksum_method_syncmanager_disconnect() != 41067 {
+    if uniffi_sync_manager_checksum_method_syncmanager_disconnect() != 52190 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_syncmanager_checksum_method_syncmanager_sync() != 40502 {
+    if uniffi_sync_manager_checksum_method_syncmanager_get_available_engines() != 13189 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_syncmanager_checksum_method_syncmanager_get_available_engines() != 20164 {
+    if uniffi_sync_manager_checksum_method_syncmanager_sync() != 12692 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_syncmanager_checksum_constructor_syncmanager_new() != 14200 {
+    if uniffi_sync_manager_checksum_constructor_syncmanager_new() != 20074 {
         return InitializationResult.apiChecksumMismatch
     }
 

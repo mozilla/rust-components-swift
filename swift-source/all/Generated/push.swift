@@ -224,6 +224,7 @@ private enum UniffiInternalError: LocalizedError {
 private let CALL_SUCCESS: Int8 = 0
 private let CALL_ERROR: Int8 = 1
 private let CALL_PANIC: Int8 = 2
+private let CALL_CANCELLED: Int8 = 3
 
 private extension RustCallStatus {
     init() {
@@ -286,6 +287,9 @@ private func uniffiCheckCallStatus(
             callStatus.errorBuf.deallocate()
             throw UniffiInternalError.rustPanic("Rust panic")
         }
+
+    case CALL_CANCELLED:
+        throw CancellationError()
 
     default:
         throw UniffiInternalError.unexpectedRustCallStatusCode
@@ -380,13 +384,13 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol PushManagerProtocol {
-    func subscribe(scope: String, appServerSey: String?) throws -> SubscriptionResponse
+    func decrypt(payload: [String: String]) throws -> DecryptResponse
     func getSubscription(scope: String) throws -> SubscriptionResponse?
+    func subscribe(scope: String, appServerSey: String?) throws -> SubscriptionResponse
     func unsubscribe(scope: String) throws -> Bool
     func unsubscribeAll() throws
     func update(registrationToken: String) throws
     func verifyConnection(forceVerify: Bool) throws -> [PushSubscriptionChanged]
-    func decrypt(payload: [String: String]) throws -> DecryptResponse
 }
 
 public class PushManager: PushManagerProtocol {
@@ -411,12 +415,11 @@ public class PushManager: PushManagerProtocol {
         try! rustCall { uniffi_push_fn_free_pushmanager(pointer, $0) }
     }
 
-    public func subscribe(scope: String, appServerSey: String? = nil) throws -> SubscriptionResponse {
-        return try FfiConverterTypeSubscriptionResponse.lift(
+    public func decrypt(payload: [String: String]) throws -> DecryptResponse {
+        return try FfiConverterTypeDecryptResponse.lift(
             rustCallWithError(FfiConverterTypePushApiError.lift) {
-                uniffi_push_fn_method_pushmanager_subscribe(self.pointer,
-                                                            FfiConverterString.lower(scope),
-                                                            FfiConverterOptionString.lower(appServerSey), $0)
+                uniffi_push_fn_method_pushmanager_decrypt(self.pointer,
+                                                          FfiConverterDictionaryStringString.lower(payload), $0)
             }
         )
     }
@@ -426,6 +429,16 @@ public class PushManager: PushManagerProtocol {
             rustCallWithError(FfiConverterTypePushApiError.lift) {
                 uniffi_push_fn_method_pushmanager_get_subscription(self.pointer,
                                                                    FfiConverterString.lower(scope), $0)
+            }
+        )
+    }
+
+    public func subscribe(scope: String, appServerSey: String? = nil) throws -> SubscriptionResponse {
+        return try FfiConverterTypeSubscriptionResponse.lift(
+            rustCallWithError(FfiConverterTypePushApiError.lift) {
+                uniffi_push_fn_method_pushmanager_subscribe(self.pointer,
+                                                            FfiConverterString.lower(scope),
+                                                            FfiConverterOptionString.lower(appServerSey), $0)
             }
         )
     }
@@ -459,15 +472,6 @@ public class PushManager: PushManagerProtocol {
             rustCallWithError(FfiConverterTypePushApiError.lift) {
                 uniffi_push_fn_method_pushmanager_verify_connection(self.pointer,
                                                                     FfiConverterBool.lower(forceVerify), $0)
-            }
-        )
-    }
-
-    public func decrypt(payload: [String: String]) throws -> DecryptResponse {
-        return try FfiConverterTypeDecryptResponse.lift(
-            rustCallWithError(FfiConverterTypePushApiError.lift) {
-                uniffi_push_fn_method_pushmanager_decrypt(self.pointer,
-                                                          FfiConverterDictionaryStringString.lower(payload), $0)
             }
         )
     }
@@ -936,11 +940,11 @@ public struct FfiConverterTypePushApiError: FfiConverterRustBuffer {
 
     public static func write(_ value: PushApiError, into buf: inout [UInt8]) {
         switch value {
-        case let .UaidNotRecognizedError(message):
+        case .UaidNotRecognizedError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(1))
-        case let .RecordNotFoundError(message):
+        case .RecordNotFoundError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(2))
-        case let .InternalError(message):
+        case .InternalError(_ /* message is ignored*/ ):
             writeInt(&buf, Int32(3))
         }
     }
@@ -1132,34 +1136,34 @@ private enum InitializationResult {
 // the code inside is only computed once.
 private var initializationResult: InitializationResult {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 22
+    let bindings_contract_version = 24
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_push_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_push_checksum_method_pushmanager_subscribe() != 14735 {
+    if uniffi_push_checksum_method_pushmanager_decrypt() != 45153 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_push_checksum_method_pushmanager_get_subscription() != 56522 {
+    if uniffi_push_checksum_method_pushmanager_get_subscription() != 7838 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_push_checksum_method_pushmanager_unsubscribe() != 51690 {
+    if uniffi_push_checksum_method_pushmanager_subscribe() != 6269 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_push_checksum_method_pushmanager_unsubscribe_all() != 3459 {
+    if uniffi_push_checksum_method_pushmanager_unsubscribe() != 42652 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_push_checksum_method_pushmanager_update() != 1735 {
+    if uniffi_push_checksum_method_pushmanager_unsubscribe_all() != 53562 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_push_checksum_method_pushmanager_verify_connection() != 42522 {
+    if uniffi_push_checksum_method_pushmanager_update() != 44682 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_push_checksum_method_pushmanager_decrypt() != 7991 {
+    if uniffi_push_checksum_method_pushmanager_verify_connection() != 56151 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_push_checksum_constructor_pushmanager_new() != 55042 {
+    if uniffi_push_checksum_constructor_pushmanager_new() != 34714 {
         return InitializationResult.apiChecksumMismatch
     }
 

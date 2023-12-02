@@ -32,7 +32,7 @@ typedef struct RustBuffer
 typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
 
 // Task defined in Rust that Swift executes
-typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
+typedef void (*UniFfiRustTaskCallback)(const void * _Nullable, int8_t);
 
 // Callback to execute Rust tasks using a Swift Task
 //
@@ -41,7 +41,7 @@ typedef void (*UniFfiRustTaskCallback)(const void * _Nullable);
 //   delay: Delay in MS
 //   task: UniFfiRustTaskCallback to call
 //   task_data: data to pass the task callback
-typedef void (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
+typedef int8_t (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -59,83 +59,81 @@ typedef struct RustCallStatus {
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
 
-// Callbacks for UniFFI Futures
-typedef void (*UniFfiFutureCallbackUInt8)(const void * _Nonnull, uint8_t, RustCallStatus);
-typedef void (*UniFfiFutureCallbackUnsafeMutableRawPointer)(const void * _Nonnull, void*_Nonnull, RustCallStatus);
-typedef void (*UniFfiFutureCallbackRustBuffer)(const void * _Nonnull, RustBuffer, RustCallStatus);
+// Continuation callback for UniFFI Futures
+typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
 
 // Scaffolding functions
 void uniffi_fxa_client_fn_free_firefoxaccount(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_fxa_client_fn_constructor_firefoxaccount_new(RustBuffer config, RustCallStatus *_Nonnull out_status
-);
 void*_Nonnull uniffi_fxa_client_fn_constructor_firefoxaccount_from_json(RustBuffer data, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_to_json(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_fxa_client_fn_constructor_firefoxaccount_new(RustBuffer config, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_authorize_code_using_session_token(void*_Nonnull ptr, RustBuffer params, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(void*_Nonnull ptr, RustBuffer scopes, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(void*_Nonnull ptr, RustBuffer pairing_url, RustBuffer scopes, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
-);
-void uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(void*_Nonnull ptr, RustBuffer code, RustBuffer state, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_check_authorization_status(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+void uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(void*_Nonnull ptr, RustBuffer code, RustBuffer state, RustCallStatus *_Nonnull out_status
+);
 void uniffi_fxa_client_fn_method_firefoxaccount_disconnect(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_fxa_client_fn_method_firefoxaccount_on_auth_issues(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(void*_Nonnull ptr, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_gather_telemetry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_access_token(void*_Nonnull ptr, RustBuffer scope, RustBuffer ttl, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_attached_clients(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_auth_state(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_profile(void*_Nonnull ptr, int8_t ignore_cache, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(void*_Nonnull ptr, RustBuffer name, RustBuffer device_type, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_connection_success_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_current_device_id(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_devices(void*_Nonnull ptr, int8_t ignore_cache, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_attached_clients(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_manage_account_url(void*_Nonnull ptr, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(void*_Nonnull ptr, RustBuffer display_name, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_manage_devices_url(void*_Nonnull ptr, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
 );
-void uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(void*_Nonnull ptr, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_profile(void*_Nonnull ptr, int8_t ignore_cache, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(void*_Nonnull ptr, RustBuffer subscription, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_session_token(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_token_server_endpoint_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_handle_push_message(void*_Nonnull ptr, RustBuffer payload, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_firefoxaccount_handle_session_token_change(void*_Nonnull ptr, RustBuffer session_token, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(void*_Nonnull ptr, RustBuffer name, RustBuffer device_type, RustBuffer supported_capabilities, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_firefoxaccount_on_auth_issues(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_poll_device_commands(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_fxa_client_fn_method_firefoxaccount_send_single_tab(void*_Nonnull ptr, RustBuffer target_device_id, RustBuffer title, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_token_server_endpoint_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(void*_Nonnull ptr, RustBuffer display_name, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_connection_success_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(void*_Nonnull ptr, RustBuffer subscription, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_manage_account_url(void*_Nonnull ptr, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_manage_devices_url(void*_Nonnull ptr, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_access_token(void*_Nonnull ptr, RustBuffer scope, RustBuffer ttl, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_session_token(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-void uniffi_fxa_client_fn_method_firefoxaccount_handle_session_token_change(void*_Nonnull ptr, RustBuffer session_token, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_authorize_code_using_session_token(void*_Nonnull ptr, RustBuffer params, RustCallStatus *_Nonnull out_status
-);
-void uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_gather_telemetry(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_fxa_client_fn_method_firefoxaccount_simulate_temporary_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_to_json(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_fxa_client_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );
@@ -145,37 +143,152 @@ void ffi_fxa_client_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out
 );
 RustBuffer ffi_fxa_client_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_to_json(void
+void ffi_fxa_client_rust_future_continuation_callback_set(UniFfiRustFutureContinuation _Nonnull callback
+);
+void ffi_fxa_client_rust_future_poll_u8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_u8(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_u8(void* _Nonnull handle
+);
+uint8_t ffi_fxa_client_rust_future_complete_u8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_i8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_i8(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_i8(void* _Nonnull handle
+);
+int8_t ffi_fxa_client_rust_future_complete_i8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_u16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_u16(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_u16(void* _Nonnull handle
+);
+uint16_t ffi_fxa_client_rust_future_complete_u16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_i16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_i16(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_i16(void* _Nonnull handle
+);
+int16_t ffi_fxa_client_rust_future_complete_i16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_u32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_u32(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_u32(void* _Nonnull handle
+);
+uint32_t ffi_fxa_client_rust_future_complete_u32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_i32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_i32(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_i32(void* _Nonnull handle
+);
+int32_t ffi_fxa_client_rust_future_complete_i32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_u64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_u64(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_u64(void* _Nonnull handle
+);
+uint64_t ffi_fxa_client_rust_future_complete_u64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_i64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_i64(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_i64(void* _Nonnull handle
+);
+int64_t ffi_fxa_client_rust_future_complete_i64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_f32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_f32(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_f32(void* _Nonnull handle
+);
+float ffi_fxa_client_rust_future_complete_f32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_f64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_f64(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_f64(void* _Nonnull handle
+);
+double ffi_fxa_client_rust_future_complete_f64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_pointer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_pointer(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_pointer(void* _Nonnull handle
+);
+void*_Nonnull ffi_fxa_client_rust_future_complete_pointer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_rust_buffer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_rust_buffer(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_rust_buffer(void* _Nonnull handle
+);
+RustBuffer ffi_fxa_client_rust_future_complete_rust_buffer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+void ffi_fxa_client_rust_future_poll_void(void* _Nonnull handle, void* _Nonnull uniffi_callback
+);
+void ffi_fxa_client_rust_future_cancel_void(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_free_void(void* _Nonnull handle
+);
+void ffi_fxa_client_rust_future_complete_void(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_authorize_code_using_session_token(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_begin_oauth_flow(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_pairing_authority_url(void
-    
-);
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_begin_pairing_flow(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_check_authorization_status(void
     
 );
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_clear_access_token_cache(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow(void
+    
+);
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_disconnect(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_on_auth_issues(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_ensure_capabilities(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_gather_telemetry(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_access_token(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_attached_clients(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_auth_state(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_profile(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_initialize_device(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_connection_success_url(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_current_device_id(void
@@ -184,22 +297,34 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_current_device_id(
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_devices(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_attached_clients(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_account_url(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_set_device_name(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_devices_url(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_pairing_authority_url(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_ensure_capabilities(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_profile(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_session_token(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_token_server_endpoint_url(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_handle_push_message(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_handle_session_token_change(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_initialize_device(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_on_auth_issues(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_poll_device_commands(void
@@ -208,46 +333,25 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_poll_device_commands(v
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_send_single_tab(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_token_server_endpoint_url(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_set_device_name(void
     
 );
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_connection_success_url(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_account_url(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_devices_url(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_access_token(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_session_token(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_handle_session_token_change(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_authorize_code_using_session_token(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_clear_access_token_cache(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_gather_telemetry(void
-    
-);
-uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_temporary_auth_token_issue(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_permanent_auth_token_issue(void
     
 );
-uint16_t uniffi_fxa_client_checksum_constructor_firefoxaccount_new(void
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_temporary_auth_token_issue(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_to_json(void
     
 );
 uint16_t uniffi_fxa_client_checksum_constructor_firefoxaccount_from_json(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_constructor_firefoxaccount_new(void
     
 );
 uint32_t ffi_fxa_client_uniffi_contract_version(void
