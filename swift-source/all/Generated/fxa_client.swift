@@ -392,12 +392,14 @@ public protocol FirefoxAccountProtocol {
     func getPairingAuthorityUrl() throws -> String
     func getProfile(ignoreCache: Bool) throws -> Profile
     func getSessionToken() throws -> String
+    func getState() -> FxaState
     func getTokenServerEndpointUrl() throws -> String
     func handlePushMessage(payload: String) throws -> AccountEvent
     func handleSessionTokenChange(sessionToken: String) throws
     func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws -> LocalDevice
     func onAuthIssues()
     func pollDeviceCommands() throws -> [IncomingDeviceCommand]
+    func processEvent(event: FxaEvent) throws -> FxaState
     func sendSingleTab(targetDeviceId: String, title: String, url: String) throws
     func setDeviceName(displayName: String) throws -> LocalDevice
     func setPushSubscription(subscription: DevicePushSubscription) throws -> LocalDevice
@@ -616,6 +618,15 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         )
     }
 
+    public func getState() -> FxaState {
+        return try! FfiConverterTypeFxaState.lift(
+            try!
+                rustCall {
+                    uniffi_fxa_client_fn_method_firefoxaccount_get_state(self.pointer, $0)
+                }
+        )
+    }
+
     public func getTokenServerEndpointUrl() throws -> String {
         return try FfiConverterString.lift(
             rustCallWithError(FfiConverterTypeFxaError.lift) {
@@ -663,6 +674,15 @@ public class FirefoxAccount: FirefoxAccountProtocol {
         return try FfiConverterSequenceTypeIncomingDeviceCommand.lift(
             rustCallWithError(FfiConverterTypeFxaError.lift) {
                 uniffi_fxa_client_fn_method_firefoxaccount_poll_device_commands(self.pointer, $0)
+            }
+        )
+    }
+
+    public func processEvent(event: FxaEvent) throws -> FxaState {
+        return try FfiConverterTypeFxaState.lift(
+            rustCallWithError(FfiConverterTypeFxaError.lift) {
+                uniffi_fxa_client_fn_method_firefoxaccount_process_event(self.pointer,
+                                                                         FfiConverterTypeFxaEvent.lower(event), $0)
             }
         )
     }
@@ -754,6 +774,104 @@ public func FfiConverterTypeFirefoxAccount_lift(_ pointer: UnsafeMutableRawPoint
 
 public func FfiConverterTypeFirefoxAccount_lower(_ value: FirefoxAccount) -> UnsafeMutableRawPointer {
     return FfiConverterTypeFirefoxAccount.lower(value)
+}
+
+public protocol FxaStateMachineCheckerProtocol {
+    func checkInternalState(state: FxaStateCheckerState)
+    func checkPublicState(state: FxaState)
+    func handleInternalEvent(event: FxaStateCheckerEvent)
+    func handlePublicEvent(event: FxaEvent)
+}
+
+public class FxaStateMachineChecker: FxaStateMachineCheckerProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    public convenience init() {
+        self.init(unsafeFromRawPointer: try! rustCall {
+            uniffi_fxa_client_fn_constructor_fxastatemachinechecker_new($0)
+        })
+    }
+
+    deinit {
+        try! rustCall { uniffi_fxa_client_fn_free_fxastatemachinechecker(pointer, $0) }
+    }
+
+    public func checkInternalState(state: FxaStateCheckerState) {
+        try!
+            rustCall {
+                uniffi_fxa_client_fn_method_fxastatemachinechecker_check_internal_state(self.pointer,
+                                                                                        FfiConverterTypeFxaStateCheckerState.lower(state), $0)
+            }
+    }
+
+    public func checkPublicState(state: FxaState) {
+        try!
+            rustCall {
+                uniffi_fxa_client_fn_method_fxastatemachinechecker_check_public_state(self.pointer,
+                                                                                      FfiConverterTypeFxaState.lower(state), $0)
+            }
+    }
+
+    public func handleInternalEvent(event: FxaStateCheckerEvent) {
+        try!
+            rustCall {
+                uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_internal_event(self.pointer,
+                                                                                         FfiConverterTypeFxaStateCheckerEvent.lower(event), $0)
+            }
+    }
+
+    public func handlePublicEvent(event: FxaEvent) {
+        try!
+            rustCall {
+                uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_public_event(self.pointer,
+                                                                                       FfiConverterTypeFxaEvent.lower(event), $0)
+            }
+    }
+}
+
+public struct FfiConverterTypeFxaStateMachineChecker: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = FxaStateMachineChecker
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaStateMachineChecker {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: FxaStateMachineChecker, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> FxaStateMachineChecker {
+        return FxaStateMachineChecker(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: FxaStateMachineChecker) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+public func FfiConverterTypeFxaStateMachineChecker_lift(_ pointer: UnsafeMutableRawPointer) throws -> FxaStateMachineChecker {
+    return try FfiConverterTypeFxaStateMachineChecker.lift(pointer)
+}
+
+public func FfiConverterTypeFxaStateMachineChecker_lower(_ value: FxaStateMachineChecker) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeFxaStateMachineChecker.lower(value)
 }
 
 public struct AccessTokenInfo {
@@ -1894,6 +2012,98 @@ extension FxaError: Error {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum FxaEvent {
+    case initialize(deviceConfig: DeviceConfig)
+    case beginOAuthFlow(scopes: [String], entrypoint: String)
+    case beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String)
+    case completeOAuthFlow(code: String, state: String)
+    case cancelOAuthFlow
+    case checkAuthorizationStatus
+    case disconnect
+}
+
+public struct FfiConverterTypeFxaEvent: FfiConverterRustBuffer {
+    typealias SwiftType = FxaEvent
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaEvent {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return try .initialize(
+                deviceConfig: FfiConverterTypeDeviceConfig.read(from: &buf)
+            )
+
+        case 2: return try .beginOAuthFlow(
+                scopes: FfiConverterSequenceString.read(from: &buf),
+                entrypoint: FfiConverterString.read(from: &buf)
+            )
+
+        case 3: return try .beginPairingFlow(
+                pairingUrl: FfiConverterString.read(from: &buf),
+                scopes: FfiConverterSequenceString.read(from: &buf),
+                entrypoint: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return try .completeOAuthFlow(
+                code: FfiConverterString.read(from: &buf),
+                state: FfiConverterString.read(from: &buf)
+            )
+
+        case 5: return .cancelOAuthFlow
+
+        case 6: return .checkAuthorizationStatus
+
+        case 7: return .disconnect
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: FxaEvent, into buf: inout [UInt8]) {
+        switch value {
+        case let .initialize(deviceConfig):
+            writeInt(&buf, Int32(1))
+            FfiConverterTypeDeviceConfig.write(deviceConfig, into: &buf)
+
+        case let .beginOAuthFlow(scopes, entrypoint):
+            writeInt(&buf, Int32(2))
+            FfiConverterSequenceString.write(scopes, into: &buf)
+            FfiConverterString.write(entrypoint, into: &buf)
+
+        case let .beginPairingFlow(pairingUrl, scopes, entrypoint):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(pairingUrl, into: &buf)
+            FfiConverterSequenceString.write(scopes, into: &buf)
+            FfiConverterString.write(entrypoint, into: &buf)
+
+        case let .completeOAuthFlow(code, state):
+            writeInt(&buf, Int32(4))
+            FfiConverterString.write(code, into: &buf)
+            FfiConverterString.write(state, into: &buf)
+
+        case .cancelOAuthFlow:
+            writeInt(&buf, Int32(5))
+
+        case .checkAuthorizationStatus:
+            writeInt(&buf, Int32(6))
+
+        case .disconnect:
+            writeInt(&buf, Int32(7))
+        }
+    }
+}
+
+public func FfiConverterTypeFxaEvent_lift(_ buf: RustBuffer) throws -> FxaEvent {
+    return try FfiConverterTypeFxaEvent.lift(buf)
+}
+
+public func FfiConverterTypeFxaEvent_lower(_ value: FxaEvent) -> RustBuffer {
+    return FfiConverterTypeFxaEvent.lower(value)
+}
+
+extension FxaEvent: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum FxaRustAuthState {
     case disconnected
     case connected
@@ -2008,6 +2218,281 @@ public func FfiConverterTypeFxaServer_lower(_ value: FxaServer) -> RustBuffer {
 }
 
 extension FxaServer: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum FxaState {
+    case uninitialized
+    case disconnected
+    case authenticating(oauthUrl: String)
+    case connected
+    case authIssues
+}
+
+public struct FfiConverterTypeFxaState: FfiConverterRustBuffer {
+    typealias SwiftType = FxaState
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaState {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .uninitialized
+
+        case 2: return .disconnected
+
+        case 3: return try .authenticating(
+                oauthUrl: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return .connected
+
+        case 5: return .authIssues
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: FxaState, into buf: inout [UInt8]) {
+        switch value {
+        case .uninitialized:
+            writeInt(&buf, Int32(1))
+
+        case .disconnected:
+            writeInt(&buf, Int32(2))
+
+        case let .authenticating(oauthUrl):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(oauthUrl, into: &buf)
+
+        case .connected:
+            writeInt(&buf, Int32(4))
+
+        case .authIssues:
+            writeInt(&buf, Int32(5))
+        }
+    }
+}
+
+public func FfiConverterTypeFxaState_lift(_ buf: RustBuffer) throws -> FxaState {
+    return try FfiConverterTypeFxaState.lift(buf)
+}
+
+public func FfiConverterTypeFxaState_lower(_ value: FxaState) -> RustBuffer {
+    return FfiConverterTypeFxaState.lower(value)
+}
+
+extension FxaState: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum FxaStateCheckerEvent {
+    case getAuthStateSuccess(authState: FxaRustAuthState)
+    case beginOAuthFlowSuccess(oauthUrl: String)
+    case beginPairingFlowSuccess(oauthUrl: String)
+    case completeOAuthFlowSuccess
+    case initializeDeviceSuccess
+    case ensureDeviceCapabilitiesSuccess
+    case checkAuthorizationStatusSuccess(active: Bool)
+    case disconnectSuccess
+    case callError
+    case ensureCapabilitiesAuthError
+}
+
+public struct FfiConverterTypeFxaStateCheckerEvent: FfiConverterRustBuffer {
+    typealias SwiftType = FxaStateCheckerEvent
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaStateCheckerEvent {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return try .getAuthStateSuccess(
+                authState: FfiConverterTypeFxaRustAuthState.read(from: &buf)
+            )
+
+        case 2: return try .beginOAuthFlowSuccess(
+                oauthUrl: FfiConverterString.read(from: &buf)
+            )
+
+        case 3: return try .beginPairingFlowSuccess(
+                oauthUrl: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return .completeOAuthFlowSuccess
+
+        case 5: return .initializeDeviceSuccess
+
+        case 6: return .ensureDeviceCapabilitiesSuccess
+
+        case 7: return try .checkAuthorizationStatusSuccess(
+                active: FfiConverterBool.read(from: &buf)
+            )
+
+        case 8: return .disconnectSuccess
+
+        case 9: return .callError
+
+        case 10: return .ensureCapabilitiesAuthError
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: FxaStateCheckerEvent, into buf: inout [UInt8]) {
+        switch value {
+        case let .getAuthStateSuccess(authState):
+            writeInt(&buf, Int32(1))
+            FfiConverterTypeFxaRustAuthState.write(authState, into: &buf)
+
+        case let .beginOAuthFlowSuccess(oauthUrl):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(oauthUrl, into: &buf)
+
+        case let .beginPairingFlowSuccess(oauthUrl):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(oauthUrl, into: &buf)
+
+        case .completeOAuthFlowSuccess:
+            writeInt(&buf, Int32(4))
+
+        case .initializeDeviceSuccess:
+            writeInt(&buf, Int32(5))
+
+        case .ensureDeviceCapabilitiesSuccess:
+            writeInt(&buf, Int32(6))
+
+        case let .checkAuthorizationStatusSuccess(active):
+            writeInt(&buf, Int32(7))
+            FfiConverterBool.write(active, into: &buf)
+
+        case .disconnectSuccess:
+            writeInt(&buf, Int32(8))
+
+        case .callError:
+            writeInt(&buf, Int32(9))
+
+        case .ensureCapabilitiesAuthError:
+            writeInt(&buf, Int32(10))
+        }
+    }
+}
+
+public func FfiConverterTypeFxaStateCheckerEvent_lift(_ buf: RustBuffer) throws -> FxaStateCheckerEvent {
+    return try FfiConverterTypeFxaStateCheckerEvent.lift(buf)
+}
+
+public func FfiConverterTypeFxaStateCheckerEvent_lower(_ value: FxaStateCheckerEvent) -> RustBuffer {
+    return FfiConverterTypeFxaStateCheckerEvent.lower(value)
+}
+
+extension FxaStateCheckerEvent: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum FxaStateCheckerState {
+    case getAuthState
+    case beginOAuthFlow(scopes: [String], entrypoint: String)
+    case beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String)
+    case completeOAuthFlow(code: String, state: String)
+    case initializeDevice
+    case ensureDeviceCapabilities
+    case checkAuthorizationStatus
+    case disconnect
+    case complete(newState: FxaState)
+    case cancel
+}
+
+public struct FfiConverterTypeFxaStateCheckerState: FfiConverterRustBuffer {
+    typealias SwiftType = FxaStateCheckerState
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaStateCheckerState {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .getAuthState
+
+        case 2: return try .beginOAuthFlow(
+                scopes: FfiConverterSequenceString.read(from: &buf),
+                entrypoint: FfiConverterString.read(from: &buf)
+            )
+
+        case 3: return try .beginPairingFlow(
+                pairingUrl: FfiConverterString.read(from: &buf),
+                scopes: FfiConverterSequenceString.read(from: &buf),
+                entrypoint: FfiConverterString.read(from: &buf)
+            )
+
+        case 4: return try .completeOAuthFlow(
+                code: FfiConverterString.read(from: &buf),
+                state: FfiConverterString.read(from: &buf)
+            )
+
+        case 5: return .initializeDevice
+
+        case 6: return .ensureDeviceCapabilities
+
+        case 7: return .checkAuthorizationStatus
+
+        case 8: return .disconnect
+
+        case 9: return try .complete(
+                newState: FfiConverterTypeFxaState.read(from: &buf)
+            )
+
+        case 10: return .cancel
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: FxaStateCheckerState, into buf: inout [UInt8]) {
+        switch value {
+        case .getAuthState:
+            writeInt(&buf, Int32(1))
+
+        case let .beginOAuthFlow(scopes, entrypoint):
+            writeInt(&buf, Int32(2))
+            FfiConverterSequenceString.write(scopes, into: &buf)
+            FfiConverterString.write(entrypoint, into: &buf)
+
+        case let .beginPairingFlow(pairingUrl, scopes, entrypoint):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(pairingUrl, into: &buf)
+            FfiConverterSequenceString.write(scopes, into: &buf)
+            FfiConverterString.write(entrypoint, into: &buf)
+
+        case let .completeOAuthFlow(code, state):
+            writeInt(&buf, Int32(4))
+            FfiConverterString.write(code, into: &buf)
+            FfiConverterString.write(state, into: &buf)
+
+        case .initializeDevice:
+            writeInt(&buf, Int32(5))
+
+        case .ensureDeviceCapabilities:
+            writeInt(&buf, Int32(6))
+
+        case .checkAuthorizationStatus:
+            writeInt(&buf, Int32(7))
+
+        case .disconnect:
+            writeInt(&buf, Int32(8))
+
+        case let .complete(newState):
+            writeInt(&buf, Int32(9))
+            FfiConverterTypeFxaState.write(newState, into: &buf)
+
+        case .cancel:
+            writeInt(&buf, Int32(10))
+        }
+    }
+}
+
+public func FfiConverterTypeFxaStateCheckerState_lift(_ buf: RustBuffer) throws -> FxaStateCheckerState {
+    return try FfiConverterTypeFxaStateCheckerState.lift(buf)
+}
+
+public func FfiConverterTypeFxaStateCheckerState_lower(_ value: FxaStateCheckerState) -> RustBuffer {
+    return FfiConverterTypeFxaStateCheckerState.lower(value)
+}
+
+extension FxaStateCheckerState: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -2387,6 +2872,9 @@ private var initializationResult: InitializationResult {
     if uniffi_fxa_client_checksum_method_firefoxaccount_get_session_token() != 7049 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_get_state() != 54458 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_fxa_client_checksum_method_firefoxaccount_get_token_server_endpoint_url() != 6685 {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2403,6 +2891,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_poll_device_commands() != 11580 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_process_event() != 40475 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_send_single_tab() != 57016 {
@@ -2423,10 +2914,25 @@ private var initializationResult: InitializationResult {
     if uniffi_fxa_client_checksum_method_firefoxaccount_to_json() != 26070 {
         return InitializationResult.apiChecksumMismatch
     }
+    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_internal_state() != 3796 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_public_state() != 27970 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_internal_event() != 19183 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_public_event() != 27457 {
+        return InitializationResult.apiChecksumMismatch
+    }
     if uniffi_fxa_client_checksum_constructor_firefoxaccount_from_json() != 32440 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_constructor_firefoxaccount_new() != 27451 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_constructor_fxastatemachinechecker_new() != 51074 {
         return InitializationResult.apiChecksumMismatch
     }
 

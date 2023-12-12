@@ -111,6 +111,8 @@ RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_profile(void*_Nonnull 
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_session_token(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_state(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_get_token_server_endpoint_url(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_handle_push_message(void*_Nonnull ptr, RustBuffer payload, RustCallStatus *_Nonnull out_status
@@ -123,6 +125,8 @@ void uniffi_fxa_client_fn_method_firefoxaccount_on_auth_issues(void*_Nonnull ptr
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_poll_device_commands(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_process_event(void*_Nonnull ptr, RustBuffer event, RustCallStatus *_Nonnull out_status
+);
 void uniffi_fxa_client_fn_method_firefoxaccount_send_single_tab(void*_Nonnull ptr, RustBuffer target_device_id, RustBuffer title, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(void*_Nonnull ptr, RustBuffer display_name, RustCallStatus *_Nonnull out_status
@@ -134,6 +138,19 @@ void uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_is
 void uniffi_fxa_client_fn_method_firefoxaccount_simulate_temporary_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_to_json(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_free_fxastatemachinechecker(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+void*_Nonnull uniffi_fxa_client_fn_constructor_fxastatemachinechecker_new(RustCallStatus *_Nonnull out_status
+    
+);
+void uniffi_fxa_client_fn_method_fxastatemachinechecker_check_internal_state(void*_Nonnull ptr, RustBuffer state, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_fxastatemachinechecker_check_public_state(void*_Nonnull ptr, RustBuffer state, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_internal_event(void*_Nonnull ptr, RustBuffer event, RustCallStatus *_Nonnull out_status
+);
+void uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_public_event(void*_Nonnull ptr, RustBuffer event, RustCallStatus *_Nonnull out_status
 );
 RustBuffer ffi_fxa_client_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
 );
@@ -312,6 +329,9 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_profile(void
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_session_token(void
     
 );
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_state(void
+    
+);
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_get_token_server_endpoint_url(void
     
 );
@@ -328,6 +348,9 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_on_auth_issues(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_poll_device_commands(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_process_event(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_send_single_tab(void
@@ -348,10 +371,25 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_temporary_aut
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_to_json(void
     
 );
+uint16_t uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_internal_state(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_public_state(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_internal_event(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_public_event(void
+    
+);
 uint16_t uniffi_fxa_client_checksum_constructor_firefoxaccount_from_json(void
     
 );
 uint16_t uniffi_fxa_client_checksum_constructor_firefoxaccount_new(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_constructor_fxastatemachinechecker_new(void
     
 );
 uint32_t ffi_fxa_client_uniffi_contract_version(void
