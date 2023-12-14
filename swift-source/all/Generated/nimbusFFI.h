@@ -65,7 +65,7 @@ typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
 // Scaffolding functions
 void uniffi_nimbus_fn_free_nimbusclient(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, RustBuffer available_randomization_units, uint64_t metrics_handler, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, uint64_t metrics_handler, RustCallStatus *_Nonnull out_status
 );
 void uniffi_nimbus_fn_method_nimbusclient_advance_event_time(void*_Nonnull ptr, int64_t by_seconds, RustCallStatus *_Nonnull out_status
 );
@@ -111,7 +111,7 @@ void uniffi_nimbus_fn_method_nimbusclient_record_past_event(void*_Nonnull ptr, R
 );
 void uniffi_nimbus_fn_method_nimbusclient_reset_enrollments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-RustBuffer uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(void*_Nonnull ptr, RustBuffer new_randomization_units, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_nimbus_fn_method_nimbusclient_set_experiments_locally(void*_Nonnull ptr, RustBuffer experiments_json, RustCallStatus *_Nonnull out_status
 );

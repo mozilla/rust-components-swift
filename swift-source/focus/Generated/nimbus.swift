@@ -298,19 +298,6 @@ private func uniffiCheckCallStatus(
 
 // Public interface members begin here.
 
-private struct FfiConverterInt8: FfiConverterPrimitive {
-    typealias FfiType = Int8
-    typealias SwiftType = Int8
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Int8 {
-        return try lift(readInt(&buf))
-    }
-
-    public static func write(_ value: Int8, into buf: inout [UInt8]) {
-        writeInt(&buf, lower(value))
-    }
-}
-
 private struct FfiConverterInt32: FfiConverterPrimitive {
     typealias FfiType = Int32
     typealias SwiftType = Int32
@@ -419,7 +406,7 @@ public protocol NimbusClientProtocol {
     func recordMalformedFeatureConfig(featureId: String, partId: String)
     func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64) throws
     func resetEnrollments() throws
-    func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent]
+    func resetTelemetryIdentifiers() throws -> [EnrollmentChangeEvent]
     func setExperimentsLocally(experimentsJson: String) throws
     func setFetchEnabled(flag: Bool) throws
     func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent]
@@ -435,14 +422,13 @@ public class NimbusClient: NimbusClientProtocol {
         self.pointer = pointer
     }
 
-    public convenience init(appCtx: AppContext, coenrollingFeatureIds: [String], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, availableRandomizationUnits: AvailableRandomizationUnits, metricsHandler: MetricsHandler) throws {
+    public convenience init(appCtx: AppContext, coenrollingFeatureIds: [String], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, metricsHandler: MetricsHandler) throws {
         try self.init(unsafeFromRawPointer: rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_constructor_nimbusclient_new(
                 FfiConverterTypeAppContext.lower(appCtx),
                 FfiConverterSequenceString.lower(coenrollingFeatureIds),
                 FfiConverterString.lower(dbpath),
                 FfiConverterOptionTypeRemoteSettingsConfig.lower(remoteSettingsConfig),
-                FfiConverterTypeAvailableRandomizationUnits.lower(availableRandomizationUnits),
                 FfiConverterCallbackInterfaceMetricsHandler.lower(metricsHandler), $0
             )
         })
@@ -636,11 +622,10 @@ public class NimbusClient: NimbusClientProtocol {
             }
     }
 
-    public func resetTelemetryIdentifiers(newRandomizationUnits: AvailableRandomizationUnits) throws -> [EnrollmentChangeEvent] {
+    public func resetTelemetryIdentifiers() throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(
             rustCallWithError(FfiConverterTypeNimbusError.lift) {
-                uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(self.pointer,
-                                                                                 FfiConverterTypeAvailableRandomizationUnits.lower(newRandomizationUnits), $0)
+                uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(self.pointer, $0)
             }
         )
     }
@@ -1090,73 +1075,6 @@ public func FfiConverterTypeAvailableExperiment_lift(_ buf: RustBuffer) throws -
 
 public func FfiConverterTypeAvailableExperiment_lower(_ value: AvailableExperiment) -> RustBuffer {
     return FfiConverterTypeAvailableExperiment.lower(value)
-}
-
-public struct AvailableRandomizationUnits {
-    public var clientId: String?
-    public var userId: String?
-    public var nimbusId: String?
-    public var dummy: Int8
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(clientId: String?, userId: String?, nimbusId: String?, dummy: Int8) {
-        self.clientId = clientId
-        self.userId = userId
-        self.nimbusId = nimbusId
-        self.dummy = dummy
-    }
-}
-
-extension AvailableRandomizationUnits: Equatable, Hashable {
-    public static func == (lhs: AvailableRandomizationUnits, rhs: AvailableRandomizationUnits) -> Bool {
-        if lhs.clientId != rhs.clientId {
-            return false
-        }
-        if lhs.userId != rhs.userId {
-            return false
-        }
-        if lhs.nimbusId != rhs.nimbusId {
-            return false
-        }
-        if lhs.dummy != rhs.dummy {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(clientId)
-        hasher.combine(userId)
-        hasher.combine(nimbusId)
-        hasher.combine(dummy)
-    }
-}
-
-public struct FfiConverterTypeAvailableRandomizationUnits: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AvailableRandomizationUnits {
-        return try AvailableRandomizationUnits(
-            clientId: FfiConverterOptionString.read(from: &buf),
-            userId: FfiConverterOptionString.read(from: &buf),
-            nimbusId: FfiConverterOptionString.read(from: &buf),
-            dummy: FfiConverterInt8.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: AvailableRandomizationUnits, into buf: inout [UInt8]) {
-        FfiConverterOptionString.write(value.clientId, into: &buf)
-        FfiConverterOptionString.write(value.userId, into: &buf)
-        FfiConverterOptionString.write(value.nimbusId, into: &buf)
-        FfiConverterInt8.write(value.dummy, into: &buf)
-    }
-}
-
-public func FfiConverterTypeAvailableRandomizationUnits_lift(_ buf: RustBuffer) throws -> AvailableRandomizationUnits {
-    return try FfiConverterTypeAvailableRandomizationUnits.lift(buf)
-}
-
-public func FfiConverterTypeAvailableRandomizationUnits_lower(_ value: AvailableRandomizationUnits) -> RustBuffer {
-    return FfiConverterTypeAvailableRandomizationUnits.lower(value)
 }
 
 public struct EnrolledExperiment {
@@ -2446,7 +2364,7 @@ private var initializationResult: InitializationResult {
     if uniffi_nimbus_checksum_method_nimbusclient_reset_enrollments() != 60419 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_method_nimbusclient_reset_telemetry_identifiers() != 40749 {
+    if uniffi_nimbus_checksum_method_nimbusclient_reset_telemetry_identifiers() != 39466 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_nimbus_checksum_method_nimbusclient_set_experiments_locally() != 9392 {
@@ -2467,7 +2385,7 @@ private var initializationResult: InitializationResult {
     if uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl() != 1742 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 23579 {
+    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 44070 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_nimbus_checksum_method_metricshandler_record_enrollment_statuses() != 17597 {
