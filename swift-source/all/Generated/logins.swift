@@ -382,7 +382,6 @@ public protocol LoginStoreProtocol {
     func reset() throws
     func touch(id: String) throws
     func update(id: String, login: LoginEntry, encryptionKey: String) throws -> EncryptedLogin
-    func wipe() throws
     func wipeLocal() throws
 }
 
@@ -504,13 +503,6 @@ public class LoginStore: LoginStoreProtocol {
                                                           FfiConverterString.lower(encryptionKey), $0)
             }
         )
-    }
-
-    public func wipe() throws {
-        try
-            rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
-                uniffi_logins_fn_method_loginstore_wipe(self.pointer, $0)
-            }
     }
 
     public func wipeLocal() throws {
@@ -1229,9 +1221,6 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_logins_checksum_method_loginstore_update() != 1940 {
-        return InitializationResult.apiChecksumMismatch
-    }
-    if uniffi_logins_checksum_method_loginstore_wipe() != 49731 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_logins_checksum_method_loginstore_wipe_local() != 48413 {

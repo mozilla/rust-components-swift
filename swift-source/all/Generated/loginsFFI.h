@@ -89,8 +89,6 @@ void uniffi_logins_fn_method_loginstore_touch(void*_Nonnull ptr, RustBuffer id, 
 );
 RustBuffer uniffi_logins_fn_method_loginstore_update(void*_Nonnull ptr, RustBuffer id, RustBuffer login, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
 );
-void uniffi_logins_fn_method_loginstore_wipe(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
 void uniffi_logins_fn_method_loginstore_wipe_local(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 int8_t uniffi_logins_fn_func_check_canary(RustBuffer canary, RustBuffer text, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
@@ -274,9 +272,6 @@ uint16_t uniffi_logins_checksum_method_loginstore_touch(void
     
 );
 uint16_t uniffi_logins_checksum_method_loginstore_update(void
-    
-);
-uint16_t uniffi_logins_checksum_method_loginstore_wipe(void
     
 );
 uint16_t uniffi_logins_checksum_method_loginstore_wipe_local(void
