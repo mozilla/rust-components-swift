@@ -403,6 +403,7 @@ public protocol FirefoxAccountProtocol {
     func sendSingleTab(targetDeviceId: String, title: String, url: String) throws
     func setDeviceName(displayName: String) throws -> LocalDevice
     func setPushSubscription(subscription: DevicePushSubscription) throws -> LocalDevice
+    func simulateNetworkError()
     func simulatePermanentAuthTokenIssue()
     func simulateTemporaryAuthTokenIssue()
     func toJson() throws -> String
@@ -713,6 +714,13 @@ public class FirefoxAccount: FirefoxAccountProtocol {
                                                                                  FfiConverterTypeDevicePushSubscription.lower(subscription), $0)
             }
         )
+    }
+
+    public func simulateNetworkError() {
+        try!
+            rustCall {
+                uniffi_fxa_client_fn_method_firefoxaccount_simulate_network_error(self.pointer, $0)
+            }
     }
 
     public func simulatePermanentAuthTokenIssue() {
@@ -2020,6 +2028,7 @@ public enum FxaEvent {
     case cancelOAuthFlow
     case checkAuthorizationStatus
     case disconnect
+    case callGetProfile
 }
 
 public struct FfiConverterTypeFxaEvent: FfiConverterRustBuffer {
@@ -2053,6 +2062,8 @@ public struct FfiConverterTypeFxaEvent: FfiConverterRustBuffer {
         case 6: return .checkAuthorizationStatus
 
         case 7: return .disconnect
+
+        case 8: return .callGetProfile
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2088,6 +2099,9 @@ public struct FfiConverterTypeFxaEvent: FfiConverterRustBuffer {
 
         case .disconnect:
             writeInt(&buf, Int32(7))
+
+        case .callGetProfile:
+            writeInt(&buf, Int32(8))
         }
     }
 }
@@ -2293,6 +2307,7 @@ public enum FxaStateCheckerEvent {
     case ensureDeviceCapabilitiesSuccess
     case checkAuthorizationStatusSuccess(active: Bool)
     case disconnectSuccess
+    case getProfileSuccess
     case callError
     case ensureCapabilitiesAuthError
 }
@@ -2327,9 +2342,11 @@ public struct FfiConverterTypeFxaStateCheckerEvent: FfiConverterRustBuffer {
 
         case 8: return .disconnectSuccess
 
-        case 9: return .callError
+        case 9: return .getProfileSuccess
 
-        case 10: return .ensureCapabilitiesAuthError
+        case 10: return .callError
+
+        case 11: return .ensureCapabilitiesAuthError
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2365,11 +2382,14 @@ public struct FfiConverterTypeFxaStateCheckerEvent: FfiConverterRustBuffer {
         case .disconnectSuccess:
             writeInt(&buf, Int32(8))
 
-        case .callError:
+        case .getProfileSuccess:
             writeInt(&buf, Int32(9))
 
-        case .ensureCapabilitiesAuthError:
+        case .callError:
             writeInt(&buf, Int32(10))
+
+        case .ensureCapabilitiesAuthError:
+            writeInt(&buf, Int32(11))
         }
     }
 }
@@ -2395,6 +2415,7 @@ public enum FxaStateCheckerState {
     case ensureDeviceCapabilities
     case checkAuthorizationStatus
     case disconnect
+    case getProfile
     case complete(newState: FxaState)
     case cancel
 }
@@ -2431,11 +2452,13 @@ public struct FfiConverterTypeFxaStateCheckerState: FfiConverterRustBuffer {
 
         case 8: return .disconnect
 
-        case 9: return try .complete(
+        case 9: return .getProfile
+
+        case 10: return try .complete(
                 newState: FfiConverterTypeFxaState.read(from: &buf)
             )
 
-        case 10: return .cancel
+        case 11: return .cancel
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2474,12 +2497,15 @@ public struct FfiConverterTypeFxaStateCheckerState: FfiConverterRustBuffer {
         case .disconnect:
             writeInt(&buf, Int32(8))
 
-        case let .complete(newState):
+        case .getProfile:
             writeInt(&buf, Int32(9))
+
+        case let .complete(newState):
+            writeInt(&buf, Int32(10))
             FfiConverterTypeFxaState.write(newState, into: &buf)
 
         case .cancel:
-            writeInt(&buf, Int32(10))
+            writeInt(&buf, Int32(11))
         }
     }
 }
@@ -2903,6 +2929,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription() != 47048 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_simulate_network_error() != 61828 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_simulate_permanent_auth_token_issue() != 25986 {

@@ -133,6 +133,8 @@ RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(void*_Nonn
 );
 RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(void*_Nonnull ptr, RustBuffer subscription, RustCallStatus *_Nonnull out_status
 );
+void uniffi_fxa_client_fn_method_firefoxaccount_simulate_network_error(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
 void uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 void uniffi_fxa_client_fn_method_firefoxaccount_simulate_temporary_auth_token_issue(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -360,6 +362,9 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_set_device_name(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription(void
+    
+);
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_network_error(void
     
 );
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_simulate_permanent_auth_token_issue(void
