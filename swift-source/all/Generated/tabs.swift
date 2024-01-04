@@ -311,6 +311,27 @@ private struct FfiConverterInt64: FfiConverterPrimitive {
     }
 }
 
+private struct FfiConverterBool: FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
+
+    public static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    public static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
 private struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -701,14 +722,16 @@ public struct RemoteTabRecord {
     public var urlHistory: [String]
     public var icon: String?
     public var lastUsed: Int64
+    public var inactive: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(title: String, urlHistory: [String], icon: String?, lastUsed: Int64) {
+    public init(title: String, urlHistory: [String], icon: String?, lastUsed: Int64, inactive: Bool = false) {
         self.title = title
         self.urlHistory = urlHistory
         self.icon = icon
         self.lastUsed = lastUsed
+        self.inactive = inactive
     }
 }
 
@@ -726,6 +749,9 @@ extension RemoteTabRecord: Equatable, Hashable {
         if lhs.lastUsed != rhs.lastUsed {
             return false
         }
+        if lhs.inactive != rhs.inactive {
+            return false
+        }
         return true
     }
 
@@ -734,6 +760,7 @@ extension RemoteTabRecord: Equatable, Hashable {
         hasher.combine(urlHistory)
         hasher.combine(icon)
         hasher.combine(lastUsed)
+        hasher.combine(inactive)
     }
 }
 
@@ -743,7 +770,8 @@ public struct FfiConverterTypeRemoteTabRecord: FfiConverterRustBuffer {
             title: FfiConverterString.read(from: &buf),
             urlHistory: FfiConverterSequenceString.read(from: &buf),
             icon: FfiConverterOptionString.read(from: &buf),
-            lastUsed: FfiConverterInt64.read(from: &buf)
+            lastUsed: FfiConverterInt64.read(from: &buf),
+            inactive: FfiConverterBool.read(from: &buf)
         )
     }
 
@@ -752,6 +780,7 @@ public struct FfiConverterTypeRemoteTabRecord: FfiConverterRustBuffer {
         FfiConverterSequenceString.write(value.urlHistory, into: &buf)
         FfiConverterOptionString.write(value.icon, into: &buf)
         FfiConverterInt64.write(value.lastUsed, into: &buf)
+        FfiConverterBool.write(value.inactive, into: &buf)
     }
 }
 
