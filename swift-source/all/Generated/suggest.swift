@@ -701,6 +701,7 @@ public enum Suggestion {
     case pocket(title: String, url: String, score: Double, isTopPick: Bool)
     case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
+    case yelp(url: String, title: String)
 }
 
 public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
@@ -747,6 +748,11 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             numberOfRatings: try FfiConverterInt64.read(from: &buf), 
             guid: try FfiConverterString.read(from: &buf), 
             score: try FfiConverterDouble.read(from: &buf)
+        )
+        
+        case 5: return .yelp(
+            url: try FfiConverterString.read(from: &buf), 
+            title: try FfiConverterString.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -799,6 +805,12 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(guid, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             
+        
+        case let .yelp(url,title):
+            writeInt(&buf, Int32(5))
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterString.write(title, into: &buf)
+            
         }
     }
 }
@@ -825,6 +837,7 @@ public enum SuggestionProvider {
     case pocket
     case wikipedia
     case amo
+    case yelp
 }
 
 public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
@@ -841,6 +854,8 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         case 3: return .wikipedia
         
         case 4: return .amo
+        
+        case 5: return .yelp
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -864,6 +879,10 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case .amo:
             writeInt(&buf, Int32(4))
+        
+        
+        case .yelp:
+            writeInt(&buf, Int32(5))
         
         }
     }
