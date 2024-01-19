@@ -25,7 +25,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2024, month: 1, day: 18, hour: 5, minute: 16, second: 24))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2024, month: 1, day: 19, hour: 5, minute: 20, second: 0))
     }
 
     enum NimbusEvents {
@@ -313,6 +313,18 @@ extension GleanMetrics {
                 disabled: false
             )
             , ["branch", "experiment", "feature_id"]
+        )
+
+        /// An event sent when Nimbus finishes launching.
+        static let isReady = EventMetricType<NoExtras>( // generated from nimbus_events.is_ready
+            CommonMetricData(
+                category: "nimbus_events",
+                name: "is_ready",
+                sendInPings: ["events"],
+                lifetime: .ping,
+                disabled: false
+            )
+            , []
         )
 
         /// Recorded when feature code detects a problem with some part of the feature
