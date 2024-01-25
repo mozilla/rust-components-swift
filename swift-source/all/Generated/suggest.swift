@@ -697,7 +697,7 @@ extension SuggestApiError: Error { }
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum Suggestion {
     
-    case amp(title: String, url: String, rawUrl: String, icon: [UInt8]?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String)
+    case amp(title: String, url: String, rawUrl: String, icon: [UInt8]?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double)
     case pocket(title: String, url: String, score: Double, isTopPick: Bool)
     case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
@@ -722,7 +722,8 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             iabCategory: try FfiConverterString.read(from: &buf), 
             impressionUrl: try FfiConverterString.read(from: &buf), 
             clickUrl: try FfiConverterString.read(from: &buf), 
-            rawClickUrl: try FfiConverterString.read(from: &buf)
+            rawClickUrl: try FfiConverterString.read(from: &buf), 
+            score: try FfiConverterDouble.read(from: &buf)
         )
         
         case 2: return .pocket(
@@ -763,7 +764,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         switch value {
         
         
-        case let .amp(title,url,rawUrl,icon,fullKeyword,blockId,advertiser,iabCategory,impressionUrl,clickUrl,rawClickUrl):
+        case let .amp(title,url,rawUrl,icon,fullKeyword,blockId,advertiser,iabCategory,impressionUrl,clickUrl,rawClickUrl,score):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
@@ -776,6 +777,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(impressionUrl, into: &buf)
             FfiConverterString.write(clickUrl, into: &buf)
             FfiConverterString.write(rawClickUrl, into: &buf)
+            FfiConverterDouble.write(score, into: &buf)
             
         
         case let .pocket(title,url,score,isTopPick):
