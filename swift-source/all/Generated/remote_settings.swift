@@ -539,53 +539,53 @@ public func FfiConverterTypeAttachment_lower(_ value: Attachment) -> RustBuffer 
 }
 
 public struct RemoteSettingsConfig {
-    public var serverUrl: String?
-    public var bucketName: String?
     public var collectionName: String
+    public var bucketName: String?
+    public var serverUrl: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(serverUrl: String? = nil, bucketName: String? = nil, collectionName: String) {
-        self.serverUrl = serverUrl
-        self.bucketName = bucketName
+    public init(collectionName: String, bucketName: String? = nil, serverUrl: String? = nil) {
         self.collectionName = collectionName
+        self.bucketName = bucketName
+        self.serverUrl = serverUrl
     }
 }
 
 extension RemoteSettingsConfig: Equatable, Hashable {
     public static func == (lhs: RemoteSettingsConfig, rhs: RemoteSettingsConfig) -> Bool {
-        if lhs.serverUrl != rhs.serverUrl {
+        if lhs.collectionName != rhs.collectionName {
             return false
         }
         if lhs.bucketName != rhs.bucketName {
             return false
         }
-        if lhs.collectionName != rhs.collectionName {
+        if lhs.serverUrl != rhs.serverUrl {
             return false
         }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(serverUrl)
-        hasher.combine(bucketName)
         hasher.combine(collectionName)
+        hasher.combine(bucketName)
+        hasher.combine(serverUrl)
     }
 }
 
 public struct FfiConverterTypeRemoteSettingsConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsConfig {
         return try RemoteSettingsConfig(
-            serverUrl: FfiConverterOptionString.read(from: &buf),
+            collectionName: FfiConverterString.read(from: &buf),
             bucketName: FfiConverterOptionString.read(from: &buf),
-            collectionName: FfiConverterString.read(from: &buf)
+            serverUrl: FfiConverterOptionString.read(from: &buf)
         )
     }
 
     public static func write(_ value: RemoteSettingsConfig, into buf: inout [UInt8]) {
-        FfiConverterOptionString.write(value.serverUrl, into: &buf)
-        FfiConverterOptionString.write(value.bucketName, into: &buf)
         FfiConverterString.write(value.collectionName, into: &buf)
+        FfiConverterOptionString.write(value.bucketName, into: &buf)
+        FfiConverterOptionString.write(value.serverUrl, into: &buf)
     }
 }
 
