@@ -702,6 +702,7 @@ public enum Suggestion {
     case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
     case yelp(url: String, title: String)
+    case mdn(title: String, url: String, description: String, score: Double)
 }
 
 public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
@@ -754,6 +755,13 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 5: return .yelp(
             url: try FfiConverterString.read(from: &buf), 
             title: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 6: return .mdn(
+            title: try FfiConverterString.read(from: &buf), 
+            url: try FfiConverterString.read(from: &buf), 
+            description: try FfiConverterString.read(from: &buf), 
+            score: try FfiConverterDouble.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -813,6 +821,14 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
             
+        
+        case let .mdn(title,url,description,score):
+            writeInt(&buf, Int32(6))
+            FfiConverterString.write(title, into: &buf)
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterString.write(description, into: &buf)
+            FfiConverterDouble.write(score, into: &buf)
+            
         }
     }
 }
@@ -840,6 +856,7 @@ public enum SuggestionProvider {
     case wikipedia
     case amo
     case yelp
+    case mdn
 }
 
 public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
@@ -858,6 +875,8 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         case 4: return .amo
         
         case 5: return .yelp
+        
+        case 6: return .mdn
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -885,6 +904,10 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case .yelp:
             writeInt(&buf, Int32(5))
+        
+        
+        case .mdn:
+            writeInt(&buf, Int32(6))
         
         }
     }
