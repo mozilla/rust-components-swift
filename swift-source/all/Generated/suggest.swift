@@ -647,6 +647,9 @@ public enum SuggestApiError {
 
     
     
+    case Interrupted
+    case Backoff(seconds: UInt64)
+    case Network(reason: String)
     case Other(reason: String)
 
     fileprivate static func uniffiErrorHandler(_ error: RustBuffer) throws -> Error {
@@ -665,7 +668,14 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
         
 
         
-        case 1: return .Other(
+        case 1: return .Interrupted
+        case 2: return .Backoff(
+            seconds: try FfiConverterUInt64.read(from: &buf)
+            )
+        case 3: return .Network(
+            reason: try FfiConverterString.read(from: &buf)
+            )
+        case 4: return .Other(
             reason: try FfiConverterString.read(from: &buf)
             )
 
@@ -680,8 +690,22 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
 
         
         
-        case let .Other(reason):
+        case .Interrupted:
             writeInt(&buf, Int32(1))
+        
+        
+        case let .Backoff(seconds):
+            writeInt(&buf, Int32(2))
+            FfiConverterUInt64.write(seconds, into: &buf)
+            
+        
+        case let .Network(reason):
+            writeInt(&buf, Int32(3))
+            FfiConverterString.write(reason, into: &buf)
+            
+        
+        case let .Other(reason):
+            writeInt(&buf, Int32(4))
             FfiConverterString.write(reason, into: &buf)
             
         }
