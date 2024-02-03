@@ -727,6 +727,7 @@ public enum Suggestion {
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
     case yelp(url: String, title: String)
     case mdn(title: String, url: String, description: String, score: Double)
+    case weather(score: Double)
 }
 
 public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
@@ -785,6 +786,10 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             title: try FfiConverterString.read(from: &buf), 
             url: try FfiConverterString.read(from: &buf), 
             description: try FfiConverterString.read(from: &buf), 
+            score: try FfiConverterDouble.read(from: &buf)
+        )
+        
+        case 7: return .weather(
             score: try FfiConverterDouble.read(from: &buf)
         )
         
@@ -853,6 +858,11 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(description, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             
+        
+        case let .weather(score):
+            writeInt(&buf, Int32(7))
+            FfiConverterDouble.write(score, into: &buf)
+            
         }
     }
 }
@@ -881,6 +891,7 @@ public enum SuggestionProvider {
     case amo
     case yelp
     case mdn
+    case weather
 }
 
 public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
@@ -901,6 +912,8 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         case 5: return .yelp
         
         case 6: return .mdn
+        
+        case 7: return .weather
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -932,6 +945,10 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case .mdn:
             writeInt(&buf, Int32(6))
+        
+        
+        case .weather:
+            writeInt(&buf, Int32(7))
         
         }
     }
