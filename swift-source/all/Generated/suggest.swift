@@ -534,6 +534,125 @@ public func FfiConverterTypeSuggestStore_lower(_ value: SuggestStore) -> UnsafeM
 }
 
 
+public protocol SuggestStoreBuilderProtocol {
+    func build()  throws -> SuggestStore
+    func cachePath(path: String)   -> SuggestStoreBuilder
+    func dataPath(path: String)   -> SuggestStoreBuilder
+    func remoteSettingsConfig(config: RemoteSettingsConfig)   -> SuggestStoreBuilder
+    
+}
+
+public class SuggestStoreBuilder: SuggestStoreBuilderProtocol {
+    fileprivate let pointer: UnsafeMutableRawPointer
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+    public convenience init()  {
+        self.init(unsafeFromRawPointer: try! rustCall() {
+    uniffi_suggest_fn_constructor_suggeststorebuilder_new($0)
+})
+    }
+
+    deinit {
+        try! rustCall { uniffi_suggest_fn_free_suggeststorebuilder(pointer, $0) }
+    }
+
+    
+
+    
+    
+
+    public func build() throws -> SuggestStore {
+        return try  FfiConverterTypeSuggestStore.lift(
+            try 
+    rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststorebuilder_build(self.pointer, $0
+    )
+}
+        )
+    }
+
+    public func cachePath(path: String)  -> SuggestStoreBuilder {
+        return try!  FfiConverterTypeSuggestStoreBuilder.lift(
+            try! 
+    rustCall() {
+    
+    uniffi_suggest_fn_method_suggeststorebuilder_cache_path(self.pointer, 
+        FfiConverterString.lower(path),$0
+    )
+}
+        )
+    }
+
+    public func dataPath(path: String)  -> SuggestStoreBuilder {
+        return try!  FfiConverterTypeSuggestStoreBuilder.lift(
+            try! 
+    rustCall() {
+    
+    uniffi_suggest_fn_method_suggeststorebuilder_data_path(self.pointer, 
+        FfiConverterString.lower(path),$0
+    )
+}
+        )
+    }
+
+    public func remoteSettingsConfig(config: RemoteSettingsConfig)  -> SuggestStoreBuilder {
+        return try!  FfiConverterTypeSuggestStoreBuilder.lift(
+            try! 
+    rustCall() {
+    
+    uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_config(self.pointer, 
+        FfiConverterTypeRemoteSettingsConfig_lower(config),$0
+    )
+}
+        )
+    }
+}
+
+public struct FfiConverterTypeSuggestStoreBuilder: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = SuggestStoreBuilder
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestStoreBuilder {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if (ptr == nil) {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: SuggestStoreBuilder, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SuggestStoreBuilder {
+        return SuggestStoreBuilder(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: SuggestStoreBuilder) -> UnsafeMutableRawPointer {
+        return value.pointer
+    }
+}
+
+
+public func FfiConverterTypeSuggestStoreBuilder_lift(_ pointer: UnsafeMutableRawPointer) throws -> SuggestStoreBuilder {
+    return try FfiConverterTypeSuggestStoreBuilder.lift(pointer)
+}
+
+public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuilder) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeSuggestStoreBuilder.lower(value)
+}
+
+
 public struct SuggestIngestionConstraints {
     public var maxSuggestions: UInt64?
 
@@ -725,7 +844,7 @@ public enum Suggestion {
     case pocket(title: String, url: String, score: Double, isTopPick: Bool)
     case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
-    case yelp(url: String, title: String)
+    case yelp(url: String, title: String, isTopPick: Bool)
     case mdn(title: String, url: String, description: String, score: Double)
     case weather(score: Double)
 }
@@ -779,7 +898,8 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         
         case 5: return .yelp(
             url: try FfiConverterString.read(from: &buf), 
-            title: try FfiConverterString.read(from: &buf)
+            title: try FfiConverterString.read(from: &buf), 
+            isTopPick: try FfiConverterBool.read(from: &buf)
         )
         
         case 6: return .mdn(
@@ -845,10 +965,11 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .yelp(url,title):
+        case let .yelp(url,title,isTopPick):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
+            FfiConverterBool.write(isTopPick, into: &buf)
             
         
         case let .mdn(title,url,description,score):
@@ -1181,7 +1302,22 @@ private var initializationResult: InitializationResult {
     if (uniffi_suggest_checksum_method_suggeststore_query() != 22367) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 32624) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_cache_path() != 30962) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_data_path() != 50155) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_config() != 34189) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_suggest_checksum_constructor_suggeststore_new() != 38439) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_constructor_suggeststorebuilder_new() != 26099) {
         return InitializationResult.apiChecksumMismatch
     }
 
