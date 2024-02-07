@@ -69,6 +69,10 @@ void*_Nonnull uniffi_suggest_fn_constructor_suggeststore_new(RustBuffer path, Ru
 );
 void uniffi_suggest_fn_method_suggeststore_clear(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+RustBuffer uniffi_suggest_fn_method_suggeststore_fetch_global_config(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+RustBuffer uniffi_suggest_fn_method_suggeststore_fetch_provider_config(void*_Nonnull ptr, RustBuffer provider, RustCallStatus *_Nonnull out_status
+);
 void uniffi_suggest_fn_method_suggeststore_ingest(void*_Nonnull ptr, RustBuffer constraints, RustCallStatus *_Nonnull out_status
 );
 void uniffi_suggest_fn_method_suggeststore_interrupt(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -208,6 +212,12 @@ uint16_t uniffi_suggest_checksum_func_raw_suggestion_url_matches(void
     
 );
 uint16_t uniffi_suggest_checksum_method_suggeststore_clear(void
+    
+);
+uint16_t uniffi_suggest_checksum_method_suggeststore_fetch_global_config(void
+    
+);
+uint16_t uniffi_suggest_checksum_method_suggeststore_fetch_provider_config(void
     
 );
 uint16_t uniffi_suggest_checksum_method_suggeststore_ingest(void

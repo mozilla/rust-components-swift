@@ -424,6 +424,8 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 public protocol SuggestStoreProtocol {
     func clear()  throws
+    func fetchGlobalConfig()  throws -> SuggestGlobalConfig
+    func fetchProviderConfig(provider: SuggestionProvider)  throws -> SuggestProviderConfig?
     func ingest(constraints: SuggestIngestionConstraints)  throws
     func interrupt()  
     func query(query: SuggestionQuery)  throws -> [Suggestion]
@@ -462,6 +464,27 @@ public class SuggestStore: SuggestStoreProtocol {
     uniffi_suggest_fn_method_suggeststore_clear(self.pointer, $0
     )
 }
+    }
+
+    public func fetchGlobalConfig() throws -> SuggestGlobalConfig {
+        return try  FfiConverterTypeSuggestGlobalConfig.lift(
+            try 
+    rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststore_fetch_global_config(self.pointer, $0
+    )
+}
+        )
+    }
+
+    public func fetchProviderConfig(provider: SuggestionProvider) throws -> SuggestProviderConfig? {
+        return try  FfiConverterOptionTypeSuggestProviderConfig.lift(
+            try 
+    rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststore_fetch_provider_config(self.pointer, 
+        FfiConverterTypeSuggestionProvider.lower(provider),$0
+    )
+}
+        )
     }
 
     public func ingest(constraints: SuggestIngestionConstraints) throws {
@@ -653,6 +676,53 @@ public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuild
 }
 
 
+public struct SuggestGlobalConfig {
+    public var showLessFrequentlyCap: Int32
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(showLessFrequentlyCap: Int32) {
+        self.showLessFrequentlyCap = showLessFrequentlyCap
+    }
+}
+
+
+extension SuggestGlobalConfig: Equatable, Hashable {
+    public static func ==(lhs: SuggestGlobalConfig, rhs: SuggestGlobalConfig) -> Bool {
+        if lhs.showLessFrequentlyCap != rhs.showLessFrequentlyCap {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(showLessFrequentlyCap)
+    }
+}
+
+
+public struct FfiConverterTypeSuggestGlobalConfig: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestGlobalConfig {
+        return try SuggestGlobalConfig(
+            showLessFrequentlyCap: FfiConverterInt32.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SuggestGlobalConfig, into buf: inout [UInt8]) {
+        FfiConverterInt32.write(value.showLessFrequentlyCap, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeSuggestGlobalConfig_lift(_ buf: RustBuffer) throws -> SuggestGlobalConfig {
+    return try FfiConverterTypeSuggestGlobalConfig.lift(buf)
+}
+
+public func FfiConverterTypeSuggestGlobalConfig_lower(_ value: SuggestGlobalConfig) -> RustBuffer {
+    return FfiConverterTypeSuggestGlobalConfig.lower(value)
+}
+
+
 public struct SuggestIngestionConstraints {
     public var maxSuggestions: UInt64?
 
@@ -835,6 +905,54 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
 extension SuggestApiError: Equatable, Hashable {}
 
 extension SuggestApiError: Error { }
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+public enum SuggestProviderConfig {
+    
+    case weather(minKeywordLength: Int32)
+}
+
+public struct FfiConverterTypeSuggestProviderConfig: FfiConverterRustBuffer {
+    typealias SwiftType = SuggestProviderConfig
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestProviderConfig {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .weather(
+            minKeywordLength: try FfiConverterInt32.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: SuggestProviderConfig, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .weather(minKeywordLength):
+            writeInt(&buf, Int32(1))
+            FfiConverterInt32.write(minKeywordLength, into: &buf)
+            
+        }
+    }
+}
+
+
+public func FfiConverterTypeSuggestProviderConfig_lift(_ buf: RustBuffer) throws -> SuggestProviderConfig {
+    return try FfiConverterTypeSuggestProviderConfig.lift(buf)
+}
+
+public func FfiConverterTypeSuggestProviderConfig_lower(_ value: SuggestProviderConfig) -> RustBuffer {
+    return FfiConverterTypeSuggestProviderConfig.lower(value)
+}
+
+
+extension SuggestProviderConfig: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -1152,6 +1270,27 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterOptionTypeSuggestProviderConfig: FfiConverterRustBuffer {
+    typealias SwiftType = SuggestProviderConfig?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeSuggestProviderConfig.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeSuggestProviderConfig.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionSequenceUInt8: FfiConverterRustBuffer {
     typealias SwiftType = [UInt8]?
 
@@ -1291,6 +1430,12 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_clear() != 23581) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_global_config() != 62773) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_provider_config() != 37376) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_ingest() != 53781) {
