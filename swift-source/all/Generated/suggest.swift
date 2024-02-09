@@ -962,7 +962,7 @@ public enum Suggestion {
     case pocket(title: String, url: String, score: Double, isTopPick: Bool)
     case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
-    case yelp(url: String, title: String, isTopPick: Bool)
+    case yelp(url: String, title: String, isTopPick: Bool, icon: [UInt8]?)
     case mdn(title: String, url: String, description: String, score: Double)
     case weather(score: Double)
 }
@@ -1017,7 +1017,8 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 5: return .yelp(
             url: try FfiConverterString.read(from: &buf), 
             title: try FfiConverterString.read(from: &buf), 
-            isTopPick: try FfiConverterBool.read(from: &buf)
+            isTopPick: try FfiConverterBool.read(from: &buf), 
+            icon: try FfiConverterOptionSequenceUInt8.read(from: &buf)
         )
         
         case 6: return .mdn(
@@ -1083,11 +1084,12 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .yelp(url,title,isTopPick):
+        case let .yelp(url,title,isTopPick,icon):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
             FfiConverterBool.write(isTopPick, into: &buf)
+            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
             
         
         case let .mdn(title,url,description,score):
