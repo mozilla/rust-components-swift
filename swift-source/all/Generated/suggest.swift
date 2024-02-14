@@ -1133,6 +1133,7 @@ public enum SuggestionProvider {
     case yelp
     case mdn
     case weather
+    case ampMobile
 }
 
 public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
@@ -1155,6 +1156,8 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         case 6: return .mdn
         
         case 7: return .weather
+        
+        case 8: return .ampMobile
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1190,6 +1193,10 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case .weather:
             writeInt(&buf, Int32(7))
+        
+        
+        case .ampMobile:
+            writeInt(&buf, Int32(8))
         
         }
     }
