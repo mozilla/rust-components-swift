@@ -568,9 +568,7 @@ public func FfiConverterTypeStore_lower(_ value: Store) -> UnsafeMutableRawPoint
 
 public struct Address {
     public var guid: String
-    public var givenName: String
-    public var additionalName: String
-    public var familyName: String
+    public var name: String
     public var organization: String
     public var streetAddress: String
     public var addressLevel3: String
@@ -587,11 +585,9 @@ public struct Address {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(guid: String, givenName: String, additionalName: String, familyName: String, organization: String, streetAddress: String, addressLevel3: String, addressLevel2: String, addressLevel1: String, postalCode: String, country: String, tel: String, email: String, timeCreated: Int64, timeLastUsed: Int64?, timeLastModified: Int64, timesUsed: Int64) {
+    public init(guid: String, name: String, organization: String, streetAddress: String, addressLevel3: String, addressLevel2: String, addressLevel1: String, postalCode: String, country: String, tel: String, email: String, timeCreated: Int64, timeLastUsed: Int64?, timeLastModified: Int64, timesUsed: Int64) {
         self.guid = guid
-        self.givenName = givenName
-        self.additionalName = additionalName
-        self.familyName = familyName
+        self.name = name
         self.organization = organization
         self.streetAddress = streetAddress
         self.addressLevel3 = addressLevel3
@@ -613,13 +609,7 @@ extension Address: Equatable, Hashable {
         if lhs.guid != rhs.guid {
             return false
         }
-        if lhs.givenName != rhs.givenName {
-            return false
-        }
-        if lhs.additionalName != rhs.additionalName {
-            return false
-        }
-        if lhs.familyName != rhs.familyName {
+        if lhs.name != rhs.name {
             return false
         }
         if lhs.organization != rhs.organization {
@@ -666,9 +656,7 @@ extension Address: Equatable, Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(guid)
-        hasher.combine(givenName)
-        hasher.combine(additionalName)
-        hasher.combine(familyName)
+        hasher.combine(name)
         hasher.combine(organization)
         hasher.combine(streetAddress)
         hasher.combine(addressLevel3)
@@ -689,9 +677,7 @@ public struct FfiConverterTypeAddress: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Address {
         return try Address(
             guid: FfiConverterString.read(from: &buf),
-            givenName: FfiConverterString.read(from: &buf),
-            additionalName: FfiConverterString.read(from: &buf),
-            familyName: FfiConverterString.read(from: &buf),
+            name: FfiConverterString.read(from: &buf),
             organization: FfiConverterString.read(from: &buf),
             streetAddress: FfiConverterString.read(from: &buf),
             addressLevel3: FfiConverterString.read(from: &buf),
@@ -710,9 +696,7 @@ public struct FfiConverterTypeAddress: FfiConverterRustBuffer {
 
     public static func write(_ value: Address, into buf: inout [UInt8]) {
         FfiConverterString.write(value.guid, into: &buf)
-        FfiConverterString.write(value.givenName, into: &buf)
-        FfiConverterString.write(value.additionalName, into: &buf)
-        FfiConverterString.write(value.familyName, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
         FfiConverterString.write(value.organization, into: &buf)
         FfiConverterString.write(value.streetAddress, into: &buf)
         FfiConverterString.write(value.addressLevel3, into: &buf)
@@ -861,9 +845,7 @@ public func FfiConverterTypeCreditCard_lower(_ value: CreditCard) -> RustBuffer 
 }
 
 public struct UpdatableAddressFields {
-    public var givenName: String
-    public var additionalName: String
-    public var familyName: String
+    public var name: String
     public var organization: String
     public var streetAddress: String
     public var addressLevel3: String
@@ -876,10 +858,8 @@ public struct UpdatableAddressFields {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(givenName: String, additionalName: String, familyName: String, organization: String, streetAddress: String, addressLevel3: String, addressLevel2: String, addressLevel1: String, postalCode: String, country: String, tel: String, email: String) {
-        self.givenName = givenName
-        self.additionalName = additionalName
-        self.familyName = familyName
+    public init(name: String, organization: String, streetAddress: String, addressLevel3: String, addressLevel2: String, addressLevel1: String, postalCode: String, country: String, tel: String, email: String) {
+        self.name = name
         self.organization = organization
         self.streetAddress = streetAddress
         self.addressLevel3 = addressLevel3
@@ -894,13 +874,7 @@ public struct UpdatableAddressFields {
 
 extension UpdatableAddressFields: Equatable, Hashable {
     public static func == (lhs: UpdatableAddressFields, rhs: UpdatableAddressFields) -> Bool {
-        if lhs.givenName != rhs.givenName {
-            return false
-        }
-        if lhs.additionalName != rhs.additionalName {
-            return false
-        }
-        if lhs.familyName != rhs.familyName {
+        if lhs.name != rhs.name {
             return false
         }
         if lhs.organization != rhs.organization {
@@ -934,9 +908,7 @@ extension UpdatableAddressFields: Equatable, Hashable {
     }
 
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(givenName)
-        hasher.combine(additionalName)
-        hasher.combine(familyName)
+        hasher.combine(name)
         hasher.combine(organization)
         hasher.combine(streetAddress)
         hasher.combine(addressLevel3)
@@ -952,9 +924,7 @@ extension UpdatableAddressFields: Equatable, Hashable {
 public struct FfiConverterTypeUpdatableAddressFields: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UpdatableAddressFields {
         return try UpdatableAddressFields(
-            givenName: FfiConverterString.read(from: &buf),
-            additionalName: FfiConverterString.read(from: &buf),
-            familyName: FfiConverterString.read(from: &buf),
+            name: FfiConverterString.read(from: &buf),
             organization: FfiConverterString.read(from: &buf),
             streetAddress: FfiConverterString.read(from: &buf),
             addressLevel3: FfiConverterString.read(from: &buf),
@@ -968,9 +938,7 @@ public struct FfiConverterTypeUpdatableAddressFields: FfiConverterRustBuffer {
     }
 
     public static func write(_ value: UpdatableAddressFields, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.givenName, into: &buf)
-        FfiConverterString.write(value.additionalName, into: &buf)
-        FfiConverterString.write(value.familyName, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
         FfiConverterString.write(value.organization, into: &buf)
         FfiConverterString.write(value.streetAddress, into: &buf)
         FfiConverterString.write(value.addressLevel3, into: &buf)
