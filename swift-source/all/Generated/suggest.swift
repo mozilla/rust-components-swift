@@ -962,7 +962,7 @@ public enum Suggestion {
     case pocket(title: String, url: String, score: Double, isTopPick: Bool)
     case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
-    case yelp(url: String, title: String, icon: [UInt8]?, hasLocationSign: Bool, subjectExactMatch: Bool, locationParam: String)
+    case yelp(url: String, title: String, icon: [UInt8]?, score: Double, hasLocationSign: Bool, subjectExactMatch: Bool, locationParam: String)
     case mdn(title: String, url: String, description: String, score: Double)
     case weather(score: Double)
 }
@@ -1018,6 +1018,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             url: try FfiConverterString.read(from: &buf), 
             title: try FfiConverterString.read(from: &buf), 
             icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
+            score: try FfiConverterDouble.read(from: &buf), 
             hasLocationSign: try FfiConverterBool.read(from: &buf), 
             subjectExactMatch: try FfiConverterBool.read(from: &buf), 
             locationParam: try FfiConverterString.read(from: &buf)
@@ -1086,11 +1087,12 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .yelp(url,title,icon,hasLocationSign,subjectExactMatch,locationParam):
+        case let .yelp(url,title,icon,score,hasLocationSign,subjectExactMatch,locationParam):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
             FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterDouble.write(score, into: &buf)
             FfiConverterBool.write(hasLocationSign, into: &buf)
             FfiConverterBool.write(subjectExactMatch, into: &buf)
             FfiConverterString.write(locationParam, into: &buf)
