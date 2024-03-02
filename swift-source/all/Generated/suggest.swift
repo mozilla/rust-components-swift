@@ -725,11 +725,13 @@ public func FfiConverterTypeSuggestGlobalConfig_lower(_ value: SuggestGlobalConf
 
 public struct SuggestIngestionConstraints {
     public var maxSuggestions: UInt64?
+    public var providers: [SuggestionProvider]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(maxSuggestions: UInt64? = nil) {
+    public init(maxSuggestions: UInt64? = nil, providers: [SuggestionProvider]? = nil) {
         self.maxSuggestions = maxSuggestions
+        self.providers = providers
     }
 }
 
@@ -739,11 +741,15 @@ extension SuggestIngestionConstraints: Equatable, Hashable {
         if lhs.maxSuggestions != rhs.maxSuggestions {
             return false
         }
+        if lhs.providers != rhs.providers {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(maxSuggestions)
+        hasher.combine(providers)
     }
 }
 
@@ -751,12 +757,14 @@ extension SuggestIngestionConstraints: Equatable, Hashable {
 public struct FfiConverterTypeSuggestIngestionConstraints: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestIngestionConstraints {
         return try SuggestIngestionConstraints(
-            maxSuggestions: FfiConverterOptionUInt64.read(from: &buf)
+            maxSuggestions: FfiConverterOptionUInt64.read(from: &buf), 
+            providers: FfiConverterOptionSequenceTypeSuggestionProvider.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestIngestionConstraints, into buf: inout [UInt8]) {
         FfiConverterOptionUInt64.write(value.maxSuggestions, into: &buf)
+        FfiConverterOptionSequenceTypeSuggestionProvider.write(value.providers, into: &buf)
     }
 }
 
@@ -1322,6 +1330,27 @@ fileprivate struct FfiConverterOptionSequenceUInt8: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterSequenceUInt8.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionSequenceTypeSuggestionProvider: FfiConverterRustBuffer {
+    typealias SwiftType = [SuggestionProvider]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceTypeSuggestionProvider.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceTypeSuggestionProvider.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
