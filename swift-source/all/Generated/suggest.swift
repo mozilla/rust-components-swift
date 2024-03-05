@@ -966,11 +966,11 @@ extension SuggestProviderConfig: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 public enum Suggestion {
     
-    case amp(title: String, url: String, rawUrl: String, icon: [UInt8]?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double)
+    case amp(title: String, url: String, rawUrl: String, icon: [UInt8]?, iconMimetype: String?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double)
     case pocket(title: String, url: String, score: Double, isTopPick: Bool)
-    case wikipedia(title: String, url: String, icon: [UInt8]?, fullKeyword: String)
+    case wikipedia(title: String, url: String, icon: [UInt8]?, iconMimetype: String?, fullKeyword: String)
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double)
-    case yelp(url: String, title: String, icon: [UInt8]?, score: Double, hasLocationSign: Bool, subjectExactMatch: Bool, locationParam: String)
+    case yelp(url: String, title: String, icon: [UInt8]?, iconMimetype: String?, score: Double, hasLocationSign: Bool, subjectExactMatch: Bool, locationParam: String)
     case mdn(title: String, url: String, description: String, score: Double)
     case weather(score: Double)
 }
@@ -987,6 +987,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             url: try FfiConverterString.read(from: &buf), 
             rawUrl: try FfiConverterString.read(from: &buf), 
             icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
+            iconMimetype: try FfiConverterOptionString.read(from: &buf), 
             fullKeyword: try FfiConverterString.read(from: &buf), 
             blockId: try FfiConverterInt64.read(from: &buf), 
             advertiser: try FfiConverterString.read(from: &buf), 
@@ -1008,6 +1009,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             title: try FfiConverterString.read(from: &buf), 
             url: try FfiConverterString.read(from: &buf), 
             icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
+            iconMimetype: try FfiConverterOptionString.read(from: &buf), 
             fullKeyword: try FfiConverterString.read(from: &buf)
         )
         
@@ -1026,6 +1028,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             url: try FfiConverterString.read(from: &buf), 
             title: try FfiConverterString.read(from: &buf), 
             icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), 
+            iconMimetype: try FfiConverterOptionString.read(from: &buf), 
             score: try FfiConverterDouble.read(from: &buf), 
             hasLocationSign: try FfiConverterBool.read(from: &buf), 
             subjectExactMatch: try FfiConverterBool.read(from: &buf), 
@@ -1051,12 +1054,13 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         switch value {
         
         
-        case let .amp(title,url,rawUrl,icon,fullKeyword,blockId,advertiser,iabCategory,impressionUrl,clickUrl,rawClickUrl,score):
+        case let .amp(title,url,rawUrl,icon,iconMimetype,fullKeyword,blockId,advertiser,iabCategory,impressionUrl,clickUrl,rawClickUrl,score):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(rawUrl, into: &buf)
             FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterString.write(fullKeyword, into: &buf)
             FfiConverterInt64.write(blockId, into: &buf)
             FfiConverterString.write(advertiser, into: &buf)
@@ -1075,11 +1079,12 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterBool.write(isTopPick, into: &buf)
             
         
-        case let .wikipedia(title,url,icon,fullKeyword):
+        case let .wikipedia(title,url,icon,iconMimetype,fullKeyword):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
             FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterString.write(fullKeyword, into: &buf)
             
         
@@ -1095,11 +1100,12 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .yelp(url,title,icon,score,hasLocationSign,subjectExactMatch,locationParam):
+        case let .yelp(url,title,icon,iconMimetype,score,hasLocationSign,subjectExactMatch,locationParam):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
             FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             FfiConverterBool.write(hasLocationSign, into: &buf)
             FfiConverterBool.write(subjectExactMatch, into: &buf)
