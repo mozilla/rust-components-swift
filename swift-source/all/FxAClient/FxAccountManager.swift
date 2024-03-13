@@ -90,6 +90,14 @@ open class FxAccountManager {
         return state == .authenticationProblem
     }
 
+    /// Set the user data before completing their authentication
+    public func setUserData(userData: UserData, completion: @escaping () -> Void) {
+        DispatchQueue.global().async {
+            self.account?.setUserData(userData: userData)
+            completion()
+        }
+    }
+
     /// Begins a new authentication flow.
     ///
     /// This function returns a URL string that the caller should open in a webview.
@@ -99,13 +107,18 @@ open class FxAccountManager {
     /// `finishAuthentication(...)` to complete the flow.
     public func beginAuthentication(
         entrypoint: String,
+        scopes: [String] = [],
         completionHandler: @escaping (Result<URL, Error>) -> Void
     ) {
         FxALog.info("beginAuthentication")
+        var scopes = scopes
+        if scopes.isEmpty {
+            scopes = applicationScopes
+        }
         DispatchQueue.global().async {
             let result = self.updatingLatestAuthState { account in
                 try account.beginOAuthFlow(
-                    scopes: self.applicationScopes,
+                    scopes: scopes,
                     entrypoint: entrypoint
                 )
             }
@@ -125,13 +138,18 @@ open class FxAccountManager {
     public func beginPairingAuthentication(
         pairingUrl: String,
         entrypoint: String,
+        scopes: [String] = [],
         completionHandler: @escaping (Result<URL, Error>) -> Void
     ) {
+        var scopes = scopes
+        if scopes.isEmpty {
+            scopes = applicationScopes
+        }
         DispatchQueue.global().async {
             let result = self.updatingLatestAuthState { account in
                 try account.beginPairingFlow(
                     pairingUrl: pairingUrl,
-                    scopes: self.applicationScopes,
+                    scopes: scopes,
                     entrypoint: entrypoint
                 )
             }

@@ -403,6 +403,7 @@ public protocol FirefoxAccountProtocol {
     func sendSingleTab(targetDeviceId: String, title: String, url: String) throws
     func setDeviceName(displayName: String) throws -> LocalDevice
     func setPushSubscription(subscription: DevicePushSubscription) throws -> LocalDevice
+    func setUserData(userData: UserData)
     func simulateNetworkError()
     func simulatePermanentAuthTokenIssue()
     func simulateTemporaryAuthTokenIssue()
@@ -714,6 +715,14 @@ public class FirefoxAccount: FirefoxAccountProtocol {
                                                                                  FfiConverterTypeDevicePushSubscription.lower(subscription), $0)
             }
         )
+    }
+
+    public func setUserData(userData: UserData) {
+        try!
+            rustCall {
+                uniffi_fxa_client_fn_method_firefoxaccount_set_user_data(self.pointer,
+                                                                         FfiConverterTypeUserData.lower(userData), $0)
+            }
     }
 
     public func simulateNetworkError() {
@@ -1799,6 +1808,73 @@ public func FfiConverterTypeTabHistoryEntry_lift(_ buf: RustBuffer) throws -> Ta
 
 public func FfiConverterTypeTabHistoryEntry_lower(_ value: TabHistoryEntry) -> RustBuffer {
     return FfiConverterTypeTabHistoryEntry.lower(value)
+}
+
+public struct UserData {
+    public var sessionToken: String
+    public var uid: String
+    public var email: String
+    public var verified: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(sessionToken: String, uid: String, email: String, verified: Bool) {
+        self.sessionToken = sessionToken
+        self.uid = uid
+        self.email = email
+        self.verified = verified
+    }
+}
+
+extension UserData: Equatable, Hashable {
+    public static func == (lhs: UserData, rhs: UserData) -> Bool {
+        if lhs.sessionToken != rhs.sessionToken {
+            return false
+        }
+        if lhs.uid != rhs.uid {
+            return false
+        }
+        if lhs.email != rhs.email {
+            return false
+        }
+        if lhs.verified != rhs.verified {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(sessionToken)
+        hasher.combine(uid)
+        hasher.combine(email)
+        hasher.combine(verified)
+    }
+}
+
+public struct FfiConverterTypeUserData: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserData {
+        return try UserData(
+            sessionToken: FfiConverterString.read(from: &buf),
+            uid: FfiConverterString.read(from: &buf),
+            email: FfiConverterString.read(from: &buf),
+            verified: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: UserData, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.sessionToken, into: &buf)
+        FfiConverterString.write(value.uid, into: &buf)
+        FfiConverterString.write(value.email, into: &buf)
+        FfiConverterBool.write(value.verified, into: &buf)
+    }
+}
+
+public func FfiConverterTypeUserData_lift(_ buf: RustBuffer) throws -> UserData {
+    return try FfiConverterTypeUserData.lift(buf)
+}
+
+public func FfiConverterTypeUserData_lower(_ value: UserData) -> RustBuffer {
+    return FfiConverterTypeUserData.lower(value)
 }
 
 // Note that we don't yet support `indirect` for enums.
@@ -2929,6 +3005,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription() != 47048 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_set_user_data() != 59605 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_simulate_network_error() != 61828 {
