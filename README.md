@@ -4,10 +4,10 @@ This repository is a Swift Package for distributing releases of Mozilla's variou
 Rust-based application components. It provides the Swift source code packaged in
 a format understood by the Swift package manager, and depends on a pre-compiled
 binary release of the underlying Rust code published from [mozilla/application-services](
-https://github.com/mozilla/application-service).
+https://github.com/mozilla/application-services).
 
 **This repository is mostly updated by automation, all the logic is copied from [mozilla/application-services](
-https://github.com/mozilla/application-service)**
+https://github.com/mozilla/application-services)**
 
 ## Overview
 
