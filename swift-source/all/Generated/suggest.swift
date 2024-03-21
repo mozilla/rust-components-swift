@@ -424,6 +424,8 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 public protocol SuggestStoreProtocol {
     func clear()  throws
+    func clearDismissedSuggestions()  throws
+    func dismissSuggestion(rawSuggestionUrl: String)  throws
     func fetchGlobalConfig()  throws -> SuggestGlobalConfig
     func fetchProviderConfig(provider: SuggestionProvider)  throws -> SuggestProviderConfig?
     func ingest(constraints: SuggestIngestionConstraints)  throws
@@ -462,6 +464,23 @@ public class SuggestStore: SuggestStoreProtocol {
         try 
     rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_clear(self.pointer, $0
+    )
+}
+    }
+
+    public func clearDismissedSuggestions() throws {
+        try 
+    rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststore_clear_dismissed_suggestions(self.pointer, $0
+    )
+}
+    }
+
+    public func dismissSuggestion(rawSuggestionUrl: String) throws {
+        try 
+    rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststore_dismiss_suggestion(self.pointer, 
+        FfiConverterString.lower(rawSuggestionUrl),$0
     )
 }
     }
@@ -1480,6 +1499,12 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_clear() != 23581) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_clear_dismissed_suggestions() != 16338) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion() != 6416) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_fetch_global_config() != 62773) {
