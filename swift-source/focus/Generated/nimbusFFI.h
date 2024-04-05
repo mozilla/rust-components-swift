@@ -24,24 +24,10 @@
 
 typedef struct RustBuffer
 {
-    int32_t capacity;
-    int32_t len;
+    uint64_t capacity;
+    uint64_t len;
     uint8_t *_Nullable data;
 } RustBuffer;
-
-typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
-
-// Task defined in Rust that Swift executes
-typedef void (*UniFfiRustTaskCallback)(const void * _Nullable, int8_t);
-
-// Callback to execute Rust tasks using a Swift Task
-//
-// Args:
-//   executor: ForeignExecutor lowered into a size_t value
-//   delay: Delay in MS
-//   task: UniFfiRustTaskCallback to call
-//   task_data: data to pass the task callback
-typedef int8_t (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -58,296 +44,925 @@ typedef struct RustCallStatus {
 // ⚠️ Attention: If you change this #else block (ending in `#endif // def UNIFFI_SHARED_H`) you *must* ⚠️
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
+#ifndef UNIFFI_FFIDEF_RUST_FUTURE_CONTINUATION_CALLBACK
+#define UNIFFI_FFIDEF_RUST_FUTURE_CONTINUATION_CALLBACK
+typedef void (*UniffiRustFutureContinuationCallback)(uint64_t, int8_t
+    );
 
-// Continuation callback for UniFFI Futures
-typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
+typedef void (*UniffiForeignFutureFree)(uint64_t
+    );
 
-// Scaffolding functions
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_FREE
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_FREE
+typedef void (*UniffiCallbackInterfaceFree)(uint64_t
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE
+typedef struct UniffiForeignFuture {
+    uint64_t handle;
+    UniffiForeignFutureFree _Nonnull free;
+} UniffiForeignFuture;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
+typedef struct UniffiForeignFutureStructU8 {
+    uint8_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU8;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
+typedef void (*UniffiForeignFutureCompleteU8)(uint64_t, UniffiForeignFutureStructU8
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
+typedef struct UniffiForeignFutureStructI8 {
+    int8_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI8;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
+typedef void (*UniffiForeignFutureCompleteI8)(uint64_t, UniffiForeignFutureStructI8
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
+typedef struct UniffiForeignFutureStructU16 {
+    uint16_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU16;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
+typedef void (*UniffiForeignFutureCompleteU16)(uint64_t, UniffiForeignFutureStructU16
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
+typedef struct UniffiForeignFutureStructI16 {
+    int16_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI16;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
+typedef void (*UniffiForeignFutureCompleteI16)(uint64_t, UniffiForeignFutureStructI16
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
+typedef struct UniffiForeignFutureStructU32 {
+    uint32_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
+typedef void (*UniffiForeignFutureCompleteU32)(uint64_t, UniffiForeignFutureStructU32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
+typedef struct UniffiForeignFutureStructI32 {
+    int32_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
+typedef void (*UniffiForeignFutureCompleteI32)(uint64_t, UniffiForeignFutureStructI32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
+typedef struct UniffiForeignFutureStructU64 {
+    uint64_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
+typedef void (*UniffiForeignFutureCompleteU64)(uint64_t, UniffiForeignFutureStructU64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
+typedef struct UniffiForeignFutureStructI64 {
+    int64_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
+typedef void (*UniffiForeignFutureCompleteI64)(uint64_t, UniffiForeignFutureStructI64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
+typedef struct UniffiForeignFutureStructF32 {
+    float returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructF32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
+typedef void (*UniffiForeignFutureCompleteF32)(uint64_t, UniffiForeignFutureStructF32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
+typedef struct UniffiForeignFutureStructF64 {
+    double returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructF64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
+typedef void (*UniffiForeignFutureCompleteF64)(uint64_t, UniffiForeignFutureStructF64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
+typedef struct UniffiForeignFutureStructPointer {
+    void*_Nonnull returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructPointer;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
+typedef void (*UniffiForeignFutureCompletePointer)(uint64_t, UniffiForeignFutureStructPointer
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
+typedef struct UniffiForeignFutureStructRustBuffer {
+    RustBuffer returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructRustBuffer;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
+typedef void (*UniffiForeignFutureCompleteRustBuffer)(uint64_t, UniffiForeignFutureStructRustBuffer
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
+typedef struct UniffiForeignFutureStructVoid {
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructVoid;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
+typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStructVoid
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD0
+typedef void (*UniffiCallbackInterfaceMetricsHandlerMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD1
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD1
+typedef void (*UniffiCallbackInterfaceMetricsHandlerMethod1)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD2
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD2
+typedef void (*UniffiCallbackInterfaceMetricsHandlerMethod2)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD3
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD3
+typedef void (*UniffiCallbackInterfaceMetricsHandlerMethod3)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_METRICS_HANDLER
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_METRICS_HANDLER
+typedef struct UniffiVTableCallbackInterfaceMetricsHandler {
+    UniffiCallbackInterfaceMetricsHandlerMethod0 _Nonnull recordEnrollmentStatuses;
+    UniffiCallbackInterfaceMetricsHandlerMethod1 _Nonnull recordFeatureActivation;
+    UniffiCallbackInterfaceMetricsHandlerMethod2 _Nonnull recordFeatureExposure;
+    UniffiCallbackInterfaceMetricsHandlerMethod3 _Nonnull recordMalformedFeatureConfig;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfaceMetricsHandler;
+
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSCLIENT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSCLIENT
+void*_Nonnull uniffi_nimbus_fn_clone_nimbusclient(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_NIMBUSCLIENT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_NIMBUSCLIENT
 void uniffi_nimbus_fn_free_nimbusclient(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
 void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, uint64_t metrics_handler, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
 void uniffi_nimbus_fn_method_nimbusclient_advance_event_time(void*_Nonnull ptr, int64_t by_seconds, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_APPLY_PENDING_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_APPLY_PENDING_EXPERIMENTS
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_apply_pending_experiments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_CLEAR_EVENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_CLEAR_EVENTS
 void uniffi_nimbus_fn_method_nimbusclient_clear_events(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_CREATE_STRING_HELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_CREATE_STRING_HELPER
 void*_Nonnull uniffi_nimbus_fn_method_nimbusclient_create_string_helper(void*_Nonnull ptr, RustBuffer additional_context, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_CREATE_TARGETING_HELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_CREATE_TARGETING_HELPER
 void*_Nonnull uniffi_nimbus_fn_method_nimbusclient_create_targeting_helper(void*_Nonnull ptr, RustBuffer additional_context, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_DUMP_STATE_TO_LOG
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_DUMP_STATE_TO_LOG
 void uniffi_nimbus_fn_method_nimbusclient_dump_state_to_log(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_FETCH_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_FETCH_EXPERIMENTS
 void uniffi_nimbus_fn_method_nimbusclient_fetch_experiments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_ACTIVE_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_ACTIVE_EXPERIMENTS
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_active_experiments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_AVAILABLE_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_AVAILABLE_EXPERIMENTS
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_available_experiments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCH
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCH
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_experiment_branch(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCHES
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCHES
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_experiment_branches(void*_Nonnull ptr, RustBuffer experiment_slug, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_FEATURE_CONFIG_VARIABLES
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_FEATURE_CONFIG_VARIABLES
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_get_feature_config_variables(void*_Nonnull ptr, RustBuffer feature_id, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_GLOBAL_USER_PARTICIPATION
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_GET_GLOBAL_USER_PARTICIPATION
 int8_t uniffi_nimbus_fn_method_nimbusclient_get_global_user_participation(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_INITIALIZE
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_INITIALIZE
 void uniffi_nimbus_fn_method_nimbusclient_initialize(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_IS_FETCH_ENABLED
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_IS_FETCH_ENABLED
 int8_t uniffi_nimbus_fn_method_nimbusclient_is_fetch_enabled(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_OPT_IN_WITH_BRANCH
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_OPT_IN_WITH_BRANCH
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_opt_in_with_branch(void*_Nonnull ptr, RustBuffer experiment_slug, RustBuffer branch, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_OPT_OUT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_OPT_OUT
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_opt_out(void*_Nonnull ptr, RustBuffer experiment_slug, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_EVENT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_EVENT
 void uniffi_nimbus_fn_method_nimbusclient_record_event(void*_Nonnull ptr, RustBuffer event_id, int64_t count, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_FEATURE_EXPOSURE
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_FEATURE_EXPOSURE
 void uniffi_nimbus_fn_method_nimbusclient_record_feature_exposure(void*_Nonnull ptr, RustBuffer feature_id, RustBuffer slug, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_MALFORMED_FEATURE_CONFIG
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_MALFORMED_FEATURE_CONFIG
 void uniffi_nimbus_fn_method_nimbusclient_record_malformed_feature_config(void*_Nonnull ptr, RustBuffer feature_id, RustBuffer part_id, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_PAST_EVENT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RECORD_PAST_EVENT
 void uniffi_nimbus_fn_method_nimbusclient_record_past_event(void*_Nonnull ptr, RustBuffer event_id, int64_t seconds_ago, int64_t count, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RESET_ENROLLMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RESET_ENROLLMENTS
 void uniffi_nimbus_fn_method_nimbusclient_reset_enrollments(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RESET_TELEMETRY_IDENTIFIERS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_RESET_TELEMETRY_IDENTIFIERS
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_SET_EXPERIMENTS_LOCALLY
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_SET_EXPERIMENTS_LOCALLY
 void uniffi_nimbus_fn_method_nimbusclient_set_experiments_locally(void*_Nonnull ptr, RustBuffer experiments_json, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_SET_FETCH_ENABLED
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_SET_FETCH_ENABLED
 void uniffi_nimbus_fn_method_nimbusclient_set_fetch_enabled(void*_Nonnull ptr, int8_t flag, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_SET_GLOBAL_USER_PARTICIPATION
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_SET_GLOBAL_USER_PARTICIPATION
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_set_global_user_participation(void*_Nonnull ptr, int8_t opt_in, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSSTRINGHELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSSTRINGHELPER
+void*_Nonnull uniffi_nimbus_fn_clone_nimbusstringhelper(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_NIMBUSSTRINGHELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_NIMBUSSTRINGHELPER
 void uniffi_nimbus_fn_free_nimbusstringhelper(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSSTRINGHELPER_GET_UUID
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSSTRINGHELPER_GET_UUID
 RustBuffer uniffi_nimbus_fn_method_nimbusstringhelper_get_uuid(void*_Nonnull ptr, RustBuffer template, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSSTRINGHELPER_STRING_FORMAT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSSTRINGHELPER_STRING_FORMAT
 RustBuffer uniffi_nimbus_fn_method_nimbusstringhelper_string_format(void*_Nonnull ptr, RustBuffer template, RustBuffer uuid, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSTARGETINGHELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSTARGETINGHELPER
+void*_Nonnull uniffi_nimbus_fn_clone_nimbustargetinghelper(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_NIMBUSTARGETINGHELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_NIMBUSTARGETINGHELPER
 void uniffi_nimbus_fn_free_nimbustargetinghelper(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
 int8_t uniffi_nimbus_fn_method_nimbustargetinghelper_eval_jexl(void*_Nonnull ptr, RustBuffer expression, RustCallStatus *_Nonnull out_status
 );
-void uniffi_nimbus_fn_init_callback_metricshandler(ForeignCallback _Nonnull callback_stub, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_METRICSHANDLER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_METRICSHANDLER
+void uniffi_nimbus_fn_init_callback_vtable_metricshandler(UniffiVTableCallbackInterfaceMetricsHandler* _Nonnull vtable
 );
-RustBuffer ffi_nimbus_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_ALLOC
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_ALLOC
+RustBuffer ffi_nimbus_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_FROM_BYTES
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_FROM_BYTES
 RustBuffer ffi_nimbus_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_FREE
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_FREE
 void ffi_nimbus_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_nimbus_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_RESERVE
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_RESERVE
+RustBuffer ffi_nimbus_rustbuffer_reserve(RustBuffer buf, uint64_t additional, RustCallStatus *_Nonnull out_status
 );
-void ffi_nimbus_rust_future_continuation_callback_set(UniFfiRustFutureContinuation _Nonnull callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U8
+void ffi_nimbus_rust_future_poll_u8(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_u8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U8
+void ffi_nimbus_rust_future_cancel_u8(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_u8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U8
+void ffi_nimbus_rust_future_free_u8(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_u8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U8
+uint8_t ffi_nimbus_rust_future_complete_u8(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint8_t ffi_nimbus_rust_future_complete_u8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I8
+void ffi_nimbus_rust_future_poll_i8(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_i8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I8
+void ffi_nimbus_rust_future_cancel_i8(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_i8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I8
+void ffi_nimbus_rust_future_free_i8(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_i8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I8
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I8
+int8_t ffi_nimbus_rust_future_complete_i8(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int8_t ffi_nimbus_rust_future_complete_i8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U16
+void ffi_nimbus_rust_future_poll_u16(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_u16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U16
+void ffi_nimbus_rust_future_cancel_u16(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_u16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U16
+void ffi_nimbus_rust_future_free_u16(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_u16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U16
+uint16_t ffi_nimbus_rust_future_complete_u16(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint16_t ffi_nimbus_rust_future_complete_u16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I16
+void ffi_nimbus_rust_future_poll_i16(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_i16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I16
+void ffi_nimbus_rust_future_cancel_i16(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_i16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I16
+void ffi_nimbus_rust_future_free_i16(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_i16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I16
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I16
+int16_t ffi_nimbus_rust_future_complete_i16(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int16_t ffi_nimbus_rust_future_complete_i16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U32
+void ffi_nimbus_rust_future_poll_u32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_u32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U32
+void ffi_nimbus_rust_future_cancel_u32(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_u32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U32
+void ffi_nimbus_rust_future_free_u32(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_u32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U32
+uint32_t ffi_nimbus_rust_future_complete_u32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint32_t ffi_nimbus_rust_future_complete_u32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I32
+void ffi_nimbus_rust_future_poll_i32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_i32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I32
+void ffi_nimbus_rust_future_cancel_i32(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_i32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I32
+void ffi_nimbus_rust_future_free_i32(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_i32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I32
+int32_t ffi_nimbus_rust_future_complete_i32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int32_t ffi_nimbus_rust_future_complete_i32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_U64
+void ffi_nimbus_rust_future_poll_u64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_u64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_U64
+void ffi_nimbus_rust_future_cancel_u64(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_u64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_U64
+void ffi_nimbus_rust_future_free_u64(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_u64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_U64
+uint64_t ffi_nimbus_rust_future_complete_u64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint64_t ffi_nimbus_rust_future_complete_u64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_I64
+void ffi_nimbus_rust_future_poll_i64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_i64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_I64
+void ffi_nimbus_rust_future_cancel_i64(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_i64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_I64
+void ffi_nimbus_rust_future_free_i64(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_i64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_I64
+int64_t ffi_nimbus_rust_future_complete_i64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int64_t ffi_nimbus_rust_future_complete_i64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_F32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_F32
+void ffi_nimbus_rust_future_poll_f32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_f32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_F32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_F32
+void ffi_nimbus_rust_future_cancel_f32(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_f32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_F32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_F32
+void ffi_nimbus_rust_future_free_f32(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_f32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_F32
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_F32
+float ffi_nimbus_rust_future_complete_f32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-float ffi_nimbus_rust_future_complete_f32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_F64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_F64
+void ffi_nimbus_rust_future_poll_f64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_f64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_F64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_F64
+void ffi_nimbus_rust_future_cancel_f64(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_f64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_F64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_F64
+void ffi_nimbus_rust_future_free_f64(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_f64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_F64
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_F64
+double ffi_nimbus_rust_future_complete_f64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-double ffi_nimbus_rust_future_complete_f64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_POINTER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_POINTER
+void ffi_nimbus_rust_future_poll_pointer(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_pointer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_POINTER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_POINTER
+void ffi_nimbus_rust_future_cancel_pointer(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_pointer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_POINTER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_POINTER
+void ffi_nimbus_rust_future_free_pointer(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_pointer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_POINTER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_POINTER
+void*_Nonnull ffi_nimbus_rust_future_complete_pointer(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull ffi_nimbus_rust_future_complete_pointer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_RUST_BUFFER
+void ffi_nimbus_rust_future_poll_rust_buffer(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_rust_buffer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_RUST_BUFFER
+void ffi_nimbus_rust_future_cancel_rust_buffer(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_rust_buffer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_RUST_BUFFER
+void ffi_nimbus_rust_future_free_rust_buffer(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_rust_buffer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_RUST_BUFFER
+RustBuffer ffi_nimbus_rust_future_complete_rust_buffer(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_nimbus_rust_future_complete_rust_buffer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_VOID
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_POLL_VOID
+void ffi_nimbus_rust_future_poll_void(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_nimbus_rust_future_poll_void(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_VOID
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_CANCEL_VOID
+void ffi_nimbus_rust_future_cancel_void(uint64_t handle
 );
-void ffi_nimbus_rust_future_cancel_void(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_VOID
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_FREE_VOID
+void ffi_nimbus_rust_future_free_void(uint64_t handle
 );
-void ffi_nimbus_rust_future_free_void(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_VOID
+#define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_VOID
+void ffi_nimbus_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-void ffi_nimbus_rust_future_complete_void(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
-);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_advance_event_time(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_APPLY_PENDING_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_APPLY_PENDING_EXPERIMENTS
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_apply_pending_experiments(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_CLEAR_EVENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_CLEAR_EVENTS
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_clear_events(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_CREATE_STRING_HELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_CREATE_STRING_HELPER
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_create_string_helper(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_CREATE_TARGETING_HELPER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_CREATE_TARGETING_HELPER
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_create_targeting_helper(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_DUMP_STATE_TO_LOG
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_DUMP_STATE_TO_LOG
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_dump_state_to_log(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_FETCH_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_FETCH_EXPERIMENTS
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_fetch_experiments(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_ACTIVE_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_ACTIVE_EXPERIMENTS
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_active_experiments(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_AVAILABLE_EXPERIMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_AVAILABLE_EXPERIMENTS
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_available_experiments(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCH
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCH
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_experiment_branch(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCHES
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_EXPERIMENT_BRANCHES
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_experiment_branches(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_FEATURE_CONFIG_VARIABLES
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_FEATURE_CONFIG_VARIABLES
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_feature_config_variables(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_GLOBAL_USER_PARTICIPATION
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_GET_GLOBAL_USER_PARTICIPATION
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_get_global_user_participation(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_INITIALIZE
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_INITIALIZE
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_initialize(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_IS_FETCH_ENABLED
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_IS_FETCH_ENABLED
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_is_fetch_enabled(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_OPT_IN_WITH_BRANCH
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_OPT_IN_WITH_BRANCH
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_opt_in_with_branch(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_OPT_OUT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_OPT_OUT
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_opt_out(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_EVENT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_EVENT
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_record_event(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_FEATURE_EXPOSURE
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_FEATURE_EXPOSURE
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_record_feature_exposure(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_MALFORMED_FEATURE_CONFIG
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_MALFORMED_FEATURE_CONFIG
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_record_malformed_feature_config(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_PAST_EVENT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RECORD_PAST_EVENT
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_record_past_event(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RESET_ENROLLMENTS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RESET_ENROLLMENTS
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_reset_enrollments(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RESET_TELEMETRY_IDENTIFIERS
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_RESET_TELEMETRY_IDENTIFIERS
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_reset_telemetry_identifiers(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_SET_EXPERIMENTS_LOCALLY
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_SET_EXPERIMENTS_LOCALLY
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_set_experiments_locally(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_SET_FETCH_ENABLED
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_SET_FETCH_ENABLED
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_set_fetch_enabled(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_SET_GLOBAL_USER_PARTICIPATION
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_SET_GLOBAL_USER_PARTICIPATION
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_set_global_user_participation(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSSTRINGHELPER_GET_UUID
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSSTRINGHELPER_GET_UUID
 uint16_t uniffi_nimbus_checksum_method_nimbusstringhelper_get_uuid(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSSTRINGHELPER_STRING_FORMAT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSSTRINGHELPER_STRING_FORMAT
 uint16_t uniffi_nimbus_checksum_method_nimbusstringhelper_string_format(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
 uint16_t uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_CONSTRUCTOR_NIMBUSCLIENT_NEW
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_CONSTRUCTOR_NIMBUSCLIENT_NEW
 uint16_t uniffi_nimbus_checksum_constructor_nimbusclient_new(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_ENROLLMENT_STATUSES
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_ENROLLMENT_STATUSES
 uint16_t uniffi_nimbus_checksum_method_metricshandler_record_enrollment_statuses(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_FEATURE_ACTIVATION
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_FEATURE_ACTIVATION
 uint16_t uniffi_nimbus_checksum_method_metricshandler_record_feature_activation(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_FEATURE_EXPOSURE
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_FEATURE_EXPOSURE
 uint16_t uniffi_nimbus_checksum_method_metricshandler_record_feature_exposure(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_MALFORMED_FEATURE_CONFIG
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_METRICSHANDLER_RECORD_MALFORMED_FEATURE_CONFIG
 uint16_t uniffi_nimbus_checksum_method_metricshandler_record_malformed_feature_config(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_NIMBUS_UNIFFI_CONTRACT_VERSION
+#define UNIFFI_FFIDEF_FFI_NIMBUS_UNIFFI_CONTRACT_VERSION
 uint32_t ffi_nimbus_uniffi_contract_version(void
     
 );
+#endif
 
