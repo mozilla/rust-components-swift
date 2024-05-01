@@ -1808,7 +1808,7 @@ public struct SendTabPayload {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(entries: [TabHistoryEntry], flowId: String, streamId: String) {
+    public init(entries: [TabHistoryEntry], flowId: String = "", streamId: String = "") {
         self.entries = entries
         self.flowId = flowId
         self.streamId = streamId
