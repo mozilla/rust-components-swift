@@ -465,6 +465,16 @@ public protocol FirefoxAccountProtocol: AnyObject {
 
     func clearDeviceName() throws
 
+    /**
+     * Use device commands to close one or more tabs on another device.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * If a device on the account has registered the [`CloseTabs`](DeviceCapability::CloseTabs)
+     * capability, this method can be used to close its tabs.
+     */
+    func closeTabs(targetDeviceId: String, urls: [String]) throws
+
     func completeOauthFlow(code: String, state: String) throws
 
     func disconnect()
@@ -621,6 +631,21 @@ open class FirefoxAccount:
 
     open func clearDeviceName() throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
         uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(self.uniffiClonePointer(), $0)
+    }
+    }
+
+    /**
+     * Use device commands to close one or more tabs on another device.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * If a device on the account has registered the [`CloseTabs`](DeviceCapability::CloseTabs)
+     * capability, this method can be used to close its tabs.
+     */
+    open func closeTabs(targetDeviceId: String, urls: [String]) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
+        uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(self.uniffiClonePointer(),
+                                                              FfiConverterString.lower(targetDeviceId),
+                                                              FfiConverterSequenceString.lower(urls), $0)
     }
     }
 
@@ -1283,6 +1308,60 @@ public func FfiConverterTypeAuthorizationParameters_lift(_ buf: RustBuffer) thro
 
 public func FfiConverterTypeAuthorizationParameters_lower(_ value: AuthorizationParameters) -> RustBuffer {
     return FfiConverterTypeAuthorizationParameters.lower(value)
+}
+
+/**
+ * The payload sent when invoking a "close tabs" command.
+ */
+public struct CloseTabsPayload {
+    /**
+     * The URLs of the tabs to close.
+     */
+    public var urls: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The URLs of the tabs to close.
+         */ urls: [String]
+    ) {
+        self.urls = urls
+    }
+}
+
+extension CloseTabsPayload: Equatable, Hashable {
+    public static func == (lhs: CloseTabsPayload, rhs: CloseTabsPayload) -> Bool {
+        if lhs.urls != rhs.urls {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(urls)
+    }
+}
+
+public struct FfiConverterTypeCloseTabsPayload: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloseTabsPayload {
+        return
+            try CloseTabsPayload(
+                urls: FfiConverterSequenceString.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: CloseTabsPayload, into buf: inout [UInt8]) {
+        FfiConverterSequenceString.write(value.urls, into: &buf)
+    }
+}
+
+public func FfiConverterTypeCloseTabsPayload_lift(_ buf: RustBuffer) throws -> CloseTabsPayload {
+    return try FfiConverterTypeCloseTabsPayload.lift(buf)
+}
+
+public func FfiConverterTypeCloseTabsPayload_lower(_ value: CloseTabsPayload) -> RustBuffer {
+    return FfiConverterTypeCloseTabsPayload.lower(value)
 }
 
 public struct Device {
@@ -2067,6 +2146,7 @@ extension AccountEvent: Equatable, Hashable {}
 
 public enum DeviceCapability {
     case sendTab
+    case closeTabs
 }
 
 public struct FfiConverterTypeDeviceCapability: FfiConverterRustBuffer {
@@ -2077,6 +2157,8 @@ public struct FfiConverterTypeDeviceCapability: FfiConverterRustBuffer {
         switch variant {
         case 1: return .sendTab
 
+        case 2: return .closeTabs
+
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
@@ -2085,6 +2167,9 @@ public struct FfiConverterTypeDeviceCapability: FfiConverterRustBuffer {
         switch value {
         case .sendTab:
             writeInt(&buf, Int32(1))
+
+        case .closeTabs:
+            writeInt(&buf, Int32(2))
         }
     }
 }
@@ -2678,6 +2763,10 @@ extension FxaStateCheckerState: Equatable, Hashable {}
 
 public enum IncomingDeviceCommand {
     case tabReceived(sender: Device?, payload: SendTabPayload)
+    /**
+     * Indicates that the sender wants to close one or more tabs on this device.
+     */
+    case tabsClosed(sender: Device?, payload: CloseTabsPayload)
 }
 
 public struct FfiConverterTypeIncomingDeviceCommand: FfiConverterRustBuffer {
@@ -2687,6 +2776,8 @@ public struct FfiConverterTypeIncomingDeviceCommand: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         case 1: return try .tabReceived(sender: FfiConverterOptionTypeDevice.read(from: &buf), payload: FfiConverterTypeSendTabPayload.read(from: &buf))
+
+        case 2: return try .tabsClosed(sender: FfiConverterOptionTypeDevice.read(from: &buf), payload: FfiConverterTypeCloseTabsPayload.read(from: &buf))
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2698,6 +2789,11 @@ public struct FfiConverterTypeIncomingDeviceCommand: FfiConverterRustBuffer {
             writeInt(&buf, Int32(1))
             FfiConverterOptionTypeDevice.write(sender, into: &buf)
             FfiConverterTypeSendTabPayload.write(payload, into: &buf)
+
+        case let .tabsClosed(sender, payload):
+            writeInt(&buf, Int32(2))
+            FfiConverterOptionTypeDevice.write(sender, into: &buf)
+            FfiConverterTypeCloseTabsPayload.write(payload, into: &buf)
         }
     }
 }
@@ -3002,6 +3098,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name() != 42324 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_fxa_client_checksum_method_firefoxaccount_close_tabs() != 64219 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow() != 41338 {

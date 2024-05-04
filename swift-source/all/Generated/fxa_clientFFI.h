@@ -301,6 +301,11 @@ void uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(void*_N
 void uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_FN_METHOD_FIREFOXACCOUNT_CLOSE_TABS
+#define UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_FN_METHOD_FIREFOXACCOUNT_CLOSE_TABS
+void uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(void*_Nonnull ptr, RustBuffer target_device_id, RustBuffer urls, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_FN_METHOD_FIREFOXACCOUNT_COMPLETE_OAUTH_FLOW
 #define UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_FN_METHOD_FIREFOXACCOUNT_COMPLETE_OAUTH_FLOW
 void uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(void*_Nonnull ptr, RustBuffer code, RustBuffer state, RustCallStatus *_Nonnull out_status
@@ -805,6 +810,12 @@ uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_clear_access_token_cac
 #ifndef UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_CHECKSUM_METHOD_FIREFOXACCOUNT_CLEAR_DEVICE_NAME
 #define UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_CHECKSUM_METHOD_FIREFOXACCOUNT_CLEAR_DEVICE_NAME
 uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_CHECKSUM_METHOD_FIREFOXACCOUNT_CLOSE_TABS
+#define UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_CHECKSUM_METHOD_FIREFOXACCOUNT_CLOSE_TABS
+uint16_t uniffi_fxa_client_checksum_method_firefoxaccount_close_tabs(void
     
 );
 #endif
