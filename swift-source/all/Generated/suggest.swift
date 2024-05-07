@@ -877,12 +877,14 @@ public func FfiConverterTypeSuggestGlobalConfig_lower(_ value: SuggestGlobalConf
 public struct SuggestIngestionConstraints {
     public var maxSuggestions: UInt64?
     public var providers: [SuggestionProvider]?
+    public var emptyOnly: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(maxSuggestions: UInt64? = nil, providers: [SuggestionProvider]? = nil) {
+    public init(maxSuggestions: UInt64? = nil, providers: [SuggestionProvider]? = nil, emptyOnly: Bool = false) {
         self.maxSuggestions = maxSuggestions
         self.providers = providers
+        self.emptyOnly = emptyOnly
     }
 }
 
@@ -896,12 +898,16 @@ extension SuggestIngestionConstraints: Equatable, Hashable {
         if lhs.providers != rhs.providers {
             return false
         }
+        if lhs.emptyOnly != rhs.emptyOnly {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(maxSuggestions)
         hasher.combine(providers)
+        hasher.combine(emptyOnly)
     }
 }
 
@@ -911,13 +917,15 @@ public struct FfiConverterTypeSuggestIngestionConstraints: FfiConverterRustBuffe
         return
             try SuggestIngestionConstraints(
                 maxSuggestions: FfiConverterOptionUInt64.read(from: &buf), 
-                providers: FfiConverterOptionSequenceTypeSuggestionProvider.read(from: &buf)
+                providers: FfiConverterOptionSequenceTypeSuggestionProvider.read(from: &buf), 
+                emptyOnly: FfiConverterBool.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestIngestionConstraints, into buf: inout [UInt8]) {
         FfiConverterOptionUInt64.write(value.maxSuggestions, into: &buf)
         FfiConverterOptionSequenceTypeSuggestionProvider.write(value.providers, into: &buf)
+        FfiConverterBool.write(value.emptyOnly, into: &buf)
     }
 }
 
