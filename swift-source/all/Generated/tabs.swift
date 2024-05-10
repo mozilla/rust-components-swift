@@ -636,6 +636,8 @@ public func FfiConverterTypeTabsBridgedEngine_lower(_ value: TabsBridgedEngine) 
 }
 
 public protocol TabsStoreProtocol: AnyObject {
+    func addPendingRemoteTabClosure(tabsRequestedClosed: [TabsRequestedClose])
+
     func bridgedEngine() -> TabsBridgedEngine
 
     func getAll() -> [ClientRemoteTabs]
@@ -691,6 +693,12 @@ open class TabsStore:
         }
 
         try! rustCall { uniffi_tabs_fn_free_tabsstore(pointer, $0) }
+    }
+
+    open func addPendingRemoteTabClosure(tabsRequestedClosed: [TabsRequestedClose]) { try! rustCall {
+        uniffi_tabs_fn_method_tabsstore_add_pending_remote_tab_closure(self.uniffiClonePointer(),
+                                                                       FfiConverterSequenceTypeTabsRequestedClose.lower(tabsRequestedClosed), $0)
+    }
     }
 
     open func bridgedEngine() -> TabsBridgedEngine {
@@ -907,6 +915,58 @@ public func FfiConverterTypeRemoteTabRecord_lower(_ value: RemoteTabRecord) -> R
     return FfiConverterTypeRemoteTabRecord.lower(value)
 }
 
+public struct TabsRequestedClose {
+    public var clientId: String
+    public var urls: [String]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(clientId: String, urls: [String]) {
+        self.clientId = clientId
+        self.urls = urls
+    }
+}
+
+extension TabsRequestedClose: Equatable, Hashable {
+    public static func == (lhs: TabsRequestedClose, rhs: TabsRequestedClose) -> Bool {
+        if lhs.clientId != rhs.clientId {
+            return false
+        }
+        if lhs.urls != rhs.urls {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(clientId)
+        hasher.combine(urls)
+    }
+}
+
+public struct FfiConverterTypeTabsRequestedClose: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsRequestedClose {
+        return
+            try TabsRequestedClose(
+                clientId: FfiConverterString.read(from: &buf),
+                urls: FfiConverterSequenceString.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: TabsRequestedClose, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.clientId, into: &buf)
+        FfiConverterSequenceString.write(value.urls, into: &buf)
+    }
+}
+
+public func FfiConverterTypeTabsRequestedClose_lift(_ buf: RustBuffer) throws -> TabsRequestedClose {
+    return try FfiConverterTypeTabsRequestedClose.lift(buf)
+}
+
+public func FfiConverterTypeTabsRequestedClose_lower(_ value: TabsRequestedClose) -> RustBuffer {
+    return FfiConverterTypeTabsRequestedClose.lower(value)
+}
+
 public enum TabsApiError {
     case SyncError(reason: String
     )
@@ -1044,6 +1104,28 @@ private struct FfiConverterSequenceTypeRemoteTabRecord: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterSequenceTypeTabsRequestedClose: FfiConverterRustBuffer {
+    typealias SwiftType = [TabsRequestedClose]
+
+    public static func write(_ value: [TabsRequestedClose], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeTabsRequestedClose.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TabsRequestedClose] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [TabsRequestedClose]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypeTabsRequestedClose.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeTabsGuid: FfiConverterRustBuffer {
     typealias SwiftType = [TabsGuid]
 
@@ -1150,6 +1232,9 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsbridgedengine_wipe() != 21505 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_tabs_checksum_method_tabsstore_add_pending_remote_tab_closure() != 37789 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsstore_bridged_engine() != 43478 {

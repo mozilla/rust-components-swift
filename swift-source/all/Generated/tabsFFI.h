@@ -341,6 +341,11 @@ void uniffi_tabs_fn_free_tabsstore(void*_Nonnull ptr, RustCallStatus *_Nonnull o
 void*_Nonnull uniffi_tabs_fn_constructor_tabsstore_new(RustBuffer path, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
+void uniffi_tabs_fn_method_tabsstore_add_pending_remote_tab_closure(void*_Nonnull ptr, RustBuffer tabs_requested_closed, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_BRIDGED_ENGINE
 #define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_BRIDGED_ENGINE
 void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -716,6 +721,12 @@ uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_sync_started(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSBRIDGEDENGINE_WIPE
 #define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSBRIDGEDENGINE_WIPE
 uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_wipe(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
+uint16_t uniffi_tabs_checksum_method_tabsstore_add_pending_remote_tab_closure(void
     
 );
 #endif
