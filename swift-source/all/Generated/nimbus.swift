@@ -549,11 +549,12 @@ open class NimbusClient:
         return try! rustCall { uniffi_nimbus_fn_clone_nimbusclient(self.pointer, $0) }
     }
 
-    public convenience init(appCtx: AppContext, coenrollingFeatureIds: [String], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, metricsHandler: MetricsHandler) throws {
+    public convenience init(appCtx: AppContext, recordedContext: RecordedContext?, coenrollingFeatureIds: [String], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, metricsHandler: MetricsHandler) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypeNimbusError.lift) {
                 uniffi_nimbus_fn_constructor_nimbusclient_new(
                     FfiConverterTypeAppContext.lower(appCtx),
+                    FfiConverterOptionTypeRecordedContext.lower(recordedContext),
                     FfiConverterSequenceString.lower(coenrollingFeatureIds),
                     FfiConverterString.lower(dbpath),
                     FfiConverterOptionTypeRemoteSettingsConfig.lower(remoteSettingsConfig),
@@ -963,6 +964,175 @@ public func FfiConverterTypeNimbusTargetingHelper_lift(_ pointer: UnsafeMutableR
 
 public func FfiConverterTypeNimbusTargetingHelper_lower(_ value: NimbusTargetingHelper) -> UnsafeMutableRawPointer {
     return FfiConverterTypeNimbusTargetingHelper.lower(value)
+}
+
+public protocol RecordedContext: AnyObject {
+    func record()
+
+    func toJson() -> JsonObject
+}
+
+open class RecordedContextImpl:
+    RecordedContext
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_nimbus_fn_clone_recordedcontext(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_nimbus_fn_free_recordedcontext(pointer, $0) }
+    }
+
+    open func record() { try! rustCall {
+        uniffi_nimbus_fn_method_recordedcontext_record(self.uniffiClonePointer(), $0)
+    }
+    }
+
+    open func toJson() -> JsonObject {
+        return try! FfiConverterTypeJsonObject.lift(try! rustCall {
+            uniffi_nimbus_fn_method_recordedcontext_to_json(self.uniffiClonePointer(), $0)
+        })
+    }
+}
+
+// Magic number for the Rust proxy to call using the same mechanism as every other method,
+// to free the callback once it's dropped by Rust.
+private let IDX_CALLBACK_FREE: Int32 = 0
+// Callback return codes
+private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
+private let UNIFFI_CALLBACK_ERROR: Int32 = 1
+private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
+
+// Put the implementation in a struct so we don't pollute the top-level namespace
+private enum UniffiCallbackInterfaceRecordedContext {
+    // Create the VTable using a series of closures.
+    // Swift automatically converts these into C callback functions.
+    static var vtable: UniffiVTableCallbackInterfaceRecordedContext = .init(
+        record: { (
+            uniffiHandle: UInt64,
+            _: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws in
+                guard let uniffiObj = try? FfiConverterTypeRecordedContext.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.record(
+                )
+            }
+
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        toJson: { (
+            uniffiHandle: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> JsonObject in
+                guard let uniffiObj = try? FfiConverterTypeRecordedContext.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.toJson(
+                )
+            }
+
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterTypeJsonObject.lower($0) }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        uniffiFree: { (uniffiHandle: UInt64) in
+            let result = try? FfiConverterTypeRecordedContext.handleMap.remove(handle: uniffiHandle)
+            if result == nil {
+                print("Uniffi callback interface RecordedContext: handle missing in uniffiFree")
+            }
+        }
+    )
+}
+
+private func uniffiCallbackInitRecordedContext() {
+    uniffi_nimbus_fn_init_callback_vtable_recordedcontext(&UniffiCallbackInterfaceRecordedContext.vtable)
+}
+
+public struct FfiConverterTypeRecordedContext: FfiConverter {
+    fileprivate static var handleMap = UniffiHandleMap<RecordedContext>()
+
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = RecordedContext
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> RecordedContext {
+        return RecordedContextImpl(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: RecordedContext) -> UnsafeMutableRawPointer {
+        guard let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: handleMap.insert(obj: value))) else {
+            fatalError("Cast to UnsafeMutableRawPointer failed")
+        }
+        return ptr
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RecordedContext {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: RecordedContext, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeRecordedContext_lift(_ pointer: UnsafeMutableRawPointer) throws -> RecordedContext {
+    return try FfiConverterTypeRecordedContext.lift(pointer)
+}
+
+public func FfiConverterTypeRecordedContext_lower(_ value: RecordedContext) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeRecordedContext.lower(value)
 }
 
 public struct AppContext {
@@ -1906,14 +2076,6 @@ public protocol MetricsHandler: AnyObject {
     func recordMalformedFeatureConfig(event: MalformedFeatureConfigExtraDef)
 }
 
-// Magic number for the Rust proxy to call using the same mechanism as every other method,
-// to free the callback once it's dropped by Rust.
-private let IDX_CALLBACK_FREE: Int32 = 0
-// Callback return codes
-private let UNIFFI_CALLBACK_SUCCESS: Int32 = 0
-private let UNIFFI_CALLBACK_ERROR: Int32 = 1
-private let UNIFFI_CALLBACK_UNEXPECTED_ERROR: Int32 = 2
-
 // Put the implementation in a struct so we don't pollute the top-level namespace
 private enum UniffiCallbackInterfaceMetricsHandler {
     // Create the VTable using a series of closures.
@@ -2088,6 +2250,27 @@ private struct FfiConverterOptionString: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+private struct FfiConverterOptionTypeRecordedContext: FfiConverterRustBuffer {
+    typealias SwiftType = RecordedContext?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeRecordedContext.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeRecordedContext.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -2401,7 +2584,13 @@ private var initializationResult: InitializationResult {
     if uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl() != 42395 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 55869 {
+    if uniffi_nimbus_checksum_method_recordedcontext_record() != 5916 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_nimbus_checksum_method_recordedcontext_to_json() != 530 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_nimbus_checksum_constructor_nimbusclient_new() != 54745 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_nimbus_checksum_method_metricshandler_record_enrollment_statuses() != 22229 {
@@ -2417,6 +2606,7 @@ private var initializationResult: InitializationResult {
         return InitializationResult.apiChecksumMismatch
     }
 
+    uniffiCallbackInitRecordedContext()
     uniffiCallbackInitMetricsHandler()
     return InitializationResult.ok
 }

@@ -279,6 +279,20 @@ typedef void (*UniffiCallbackInterfaceMetricsHandlerMethod3)(uint64_t, RustBuffe
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD0
+typedef void (*UniffiCallbackInterfaceRecordedContextMethod0)(uint64_t, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD1
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD1
+typedef void (*UniffiCallbackInterfaceRecordedContextMethod1)(uint64_t, RustBuffer* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
 #ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_METRICS_HANDLER
 #define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_METRICS_HANDLER
 typedef struct UniffiVTableCallbackInterfaceMetricsHandler {
@@ -288,6 +302,15 @@ typedef struct UniffiVTableCallbackInterfaceMetricsHandler {
     UniffiCallbackInterfaceMetricsHandlerMethod3 _Nonnull recordMalformedFeatureConfig;
     UniffiCallbackInterfaceFree _Nonnull uniffiFree;
 } UniffiVTableCallbackInterfaceMetricsHandler;
+
+#endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_RECORDED_CONTEXT
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_RECORDED_CONTEXT
+typedef struct UniffiVTableCallbackInterfaceRecordedContext {
+    UniffiCallbackInterfaceRecordedContextMethod0 _Nonnull record;
+    UniffiCallbackInterfaceRecordedContextMethod1 _Nonnull toJson;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfaceRecordedContext;
 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSCLIENT
@@ -302,7 +325,7 @@ void uniffi_nimbus_fn_free_nimbusclient(void*_Nonnull ptr, RustCallStatus *_Nonn
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
-void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, uint64_t metrics_handler, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer recorded_context, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, uint64_t metrics_handler, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
@@ -468,6 +491,31 @@ void uniffi_nimbus_fn_free_nimbustargetinghelper(void*_Nonnull ptr, RustCallStat
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
 int8_t uniffi_nimbus_fn_method_nimbustargetinghelper_eval_jexl(void*_Nonnull ptr, RustBuffer expression, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_RECORDEDCONTEXT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_RECORDEDCONTEXT
+void*_Nonnull uniffi_nimbus_fn_clone_recordedcontext(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_RECORDEDCONTEXT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FREE_RECORDEDCONTEXT
+void uniffi_nimbus_fn_free_recordedcontext(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_RECORDEDCONTEXT
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_RECORDEDCONTEXT
+void uniffi_nimbus_fn_init_callback_vtable_recordedcontext(UniffiVTableCallbackInterfaceRecordedContext* _Nonnull vtable
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_RECORD
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_RECORD
+void uniffi_nimbus_fn_method_recordedcontext_record(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_TO_JSON
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_TO_JSON
+RustBuffer uniffi_nimbus_fn_method_recordedcontext_to_json(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_METRICSHANDLER
@@ -926,6 +974,18 @@ uint16_t uniffi_nimbus_checksum_method_nimbusstringhelper_string_format(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSTARGETINGHELPER_EVAL_JEXL
 uint16_t uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_RECORD
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_RECORD
+uint16_t uniffi_nimbus_checksum_method_recordedcontext_record(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_TO_JSON
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_TO_JSON
+uint16_t uniffi_nimbus_checksum_method_recordedcontext_to_json(void
     
 );
 #endif
