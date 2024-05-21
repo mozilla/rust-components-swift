@@ -521,7 +521,7 @@ public protocol SuggestStoreProtocol : AnyObject {
     
     func ingest(constraints: SuggestIngestionConstraints) throws 
     
-    func interrupt() 
+    func interrupt(kind: InterruptKind?) 
     
     func query(query: SuggestionQuery) throws  -> [Suggestion]
     
@@ -617,8 +617,9 @@ open func ingest(constraints: SuggestIngestionConstraints)throws  {try rustCallW
 }
 }
     
-open func interrupt() {try! rustCall() {
-    uniffi_suggest_fn_method_suggeststore_interrupt(self.uniffiClonePointer(),$0
+open func interrupt(kind: InterruptKind? = nil) {try! rustCall() {
+    uniffi_suggest_fn_method_suggeststore_interrupt(self.uniffiClonePointer(),
+        FfiConverterOptionTypeInterruptKind.lower(kind),$0
     )
 }
 }
@@ -1002,6 +1003,68 @@ public func FfiConverterTypeSuggestionQuery_lift(_ buf: RustBuffer) throws -> Su
 public func FfiConverterTypeSuggestionQuery_lower(_ value: SuggestionQuery) -> RustBuffer {
     return FfiConverterTypeSuggestionQuery.lower(value)
 }
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum InterruptKind {
+    
+    case read
+    case write
+    case readWrite
+}
+
+
+public struct FfiConverterTypeInterruptKind: FfiConverterRustBuffer {
+    typealias SwiftType = InterruptKind
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> InterruptKind {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .read
+        
+        case 2: return .write
+        
+        case 3: return .readWrite
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: InterruptKind, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .read:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .write:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .readWrite:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+public func FfiConverterTypeInterruptKind_lift(_ buf: RustBuffer) throws -> InterruptKind {
+    return try FfiConverterTypeInterruptKind.lift(buf)
+}
+
+public func FfiConverterTypeInterruptKind_lower(_ value: InterruptKind) -> RustBuffer {
+    return FfiConverterTypeInterruptKind.lower(value)
+}
+
+
+
+extension InterruptKind: Equatable, Hashable {}
+
+
 
 
 public enum SuggestApiError {
@@ -1435,6 +1498,27 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterOptionTypeInterruptKind: FfiConverterRustBuffer {
+    typealias SwiftType = InterruptKind?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeInterruptKind.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeInterruptKind.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionTypeSuggestProviderConfig: FfiConverterRustBuffer {
     typealias SwiftType = SuggestProviderConfig?
 
@@ -1633,7 +1717,7 @@ private var initializationResult: InitializationResult {
     if (uniffi_suggest_checksum_method_suggeststore_ingest() != 4478) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 11751) {
+    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 17785) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_query() != 12875) {

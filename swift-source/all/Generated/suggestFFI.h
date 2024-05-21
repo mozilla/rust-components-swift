@@ -298,7 +298,7 @@ void uniffi_suggest_fn_method_suggeststore_ingest(void*_Nonnull ptr, RustBuffer 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_INTERRUPT
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_INTERRUPT
-void uniffi_suggest_fn_method_suggeststore_interrupt(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void uniffi_suggest_fn_method_suggeststore_interrupt(void*_Nonnull ptr, RustBuffer kind, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_QUERY
