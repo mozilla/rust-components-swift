@@ -452,6 +452,167 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+public protocol RemoteCommandStoreProtocol: AnyObject {
+    /**
+     * Add a new command, after which it will be pending. Returns false if the command is already active.
+     */
+    func addRemoteCommand(deviceId: String, command: RemoteCommand) throws -> Bool
+
+    /**
+     * Add a new command with an explicit timestamp. Primarily used by tests.
+     */
+    func addRemoteCommandAt(deviceId: String, command: RemoteCommand, when: Timestamp) throws -> Bool
+
+    /**
+     * Return all unsent commands. This is for the code sending the commands, result is sorted by time_requested.
+     */
+    func getUnsentCommands() throws -> [PendingCommand]
+
+    /**
+     * Removes the remote command. Typically used to implement "undo" but may also be used by the queue
+     * processor when it gives up trying to send a command.
+     */
+    func removeRemoteCommand(deviceId: String, command: RemoteCommand) throws -> Bool
+
+    /**
+     * Flag a command as sent.
+     */
+    func setPendingCommandSent(command: PendingCommand) throws -> Bool
+}
+
+open class RemoteCommandStore:
+    RemoteCommandStoreProtocol
+{
+    fileprivate let pointer: UnsafeMutableRawPointer!
+
+    /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+    public struct NoPointer {
+        public init() {}
+    }
+
+    // TODO: We'd like this to be `private` but for Swifty reasons,
+    // we can't implement `FfiConverter` without making this `required` and we can't
+    // make it `required` without making it `public`.
+    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+        self.pointer = pointer
+    }
+
+    /// This constructor can be used to instantiate a fake object.
+    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    ///
+    /// - Warning:
+    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+    public init(noPointer _: NoPointer) {
+        pointer = nil
+    }
+
+    public func uniffiClonePointer() -> UnsafeMutableRawPointer {
+        return try! rustCall { uniffi_tabs_fn_clone_remotecommandstore(self.pointer, $0) }
+    }
+
+    // No primary constructor declared for this class.
+
+    deinit {
+        guard let pointer = pointer else {
+            return
+        }
+
+        try! rustCall { uniffi_tabs_fn_free_remotecommandstore(pointer, $0) }
+    }
+
+    /**
+     * Add a new command, after which it will be pending. Returns false if the command is already active.
+     */
+    open func addRemoteCommand(deviceId: String, command: RemoteCommand) throws -> Bool {
+        return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeTabsApiError.lift) {
+            uniffi_tabs_fn_method_remotecommandstore_add_remote_command(self.uniffiClonePointer(),
+                                                                        FfiConverterString.lower(deviceId),
+                                                                        FfiConverterTypeRemoteCommand.lower(command), $0)
+        })
+    }
+
+    /**
+     * Add a new command with an explicit timestamp. Primarily used by tests.
+     */
+    open func addRemoteCommandAt(deviceId: String, command: RemoteCommand, when: Timestamp) throws -> Bool {
+        return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeTabsApiError.lift) {
+            uniffi_tabs_fn_method_remotecommandstore_add_remote_command_at(self.uniffiClonePointer(),
+                                                                           FfiConverterString.lower(deviceId),
+                                                                           FfiConverterTypeRemoteCommand.lower(command),
+                                                                           FfiConverterTypeTimestamp.lower(when), $0)
+        })
+    }
+
+    /**
+     * Return all unsent commands. This is for the code sending the commands, result is sorted by time_requested.
+     */
+    open func getUnsentCommands() throws -> [PendingCommand] {
+        return try FfiConverterSequenceTypePendingCommand.lift(rustCallWithError(FfiConverterTypeTabsApiError.lift) {
+            uniffi_tabs_fn_method_remotecommandstore_get_unsent_commands(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    /**
+     * Removes the remote command. Typically used to implement "undo" but may also be used by the queue
+     * processor when it gives up trying to send a command.
+     */
+    open func removeRemoteCommand(deviceId: String, command: RemoteCommand) throws -> Bool {
+        return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeTabsApiError.lift) {
+            uniffi_tabs_fn_method_remotecommandstore_remove_remote_command(self.uniffiClonePointer(),
+                                                                           FfiConverterString.lower(deviceId),
+                                                                           FfiConverterTypeRemoteCommand.lower(command), $0)
+        })
+    }
+
+    /**
+     * Flag a command as sent.
+     */
+    open func setPendingCommandSent(command: PendingCommand) throws -> Bool {
+        return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeTabsApiError.lift) {
+            uniffi_tabs_fn_method_remotecommandstore_set_pending_command_sent(self.uniffiClonePointer(),
+                                                                              FfiConverterTypePendingCommand.lower(command), $0)
+        })
+    }
+}
+
+public struct FfiConverterTypeRemoteCommandStore: FfiConverter {
+    typealias FfiType = UnsafeMutableRawPointer
+    typealias SwiftType = RemoteCommandStore
+
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> RemoteCommandStore {
+        return RemoteCommandStore(unsafeFromRawPointer: pointer)
+    }
+
+    public static func lower(_ value: RemoteCommandStore) -> UnsafeMutableRawPointer {
+        return value.uniffiClonePointer()
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteCommandStore {
+        let v: UInt64 = try readInt(&buf)
+        // The Rust code won't compile if a pointer won't fit in a UInt64.
+        // We have to go via `UInt` because that's the thing that's the size of a pointer.
+        let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
+        if ptr == nil {
+            throw UniffiInternalError.unexpectedNullPointer
+        }
+        return try lift(ptr!)
+    }
+
+    public static func write(_ value: RemoteCommandStore, into buf: inout [UInt8]) {
+        // This fiddling is because `Int` is the thing that's the same size as a pointer.
+        // The Rust code won't compile if a pointer won't fit in a `UInt64`.
+        writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
+    }
+}
+
+public func FfiConverterTypeRemoteCommandStore_lift(_ pointer: UnsafeMutableRawPointer) throws -> RemoteCommandStore {
+    return try FfiConverterTypeRemoteCommandStore.lift(pointer)
+}
+
+public func FfiConverterTypeRemoteCommandStore_lower(_ value: RemoteCommandStore) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeRemoteCommandStore.lower(value)
+}
+
 public protocol TabsBridgedEngineProtocol: AnyObject {
     func apply() throws -> [String]
 
@@ -636,11 +797,11 @@ public func FfiConverterTypeTabsBridgedEngine_lower(_ value: TabsBridgedEngine) 
 }
 
 public protocol TabsStoreProtocol: AnyObject {
-    func addPendingRemoteTabClosure(tabsRequestedClosed: [TabsRequestedClose])
-
     func bridgedEngine() -> TabsBridgedEngine
 
     func getAll() -> [ClientRemoteTabs]
+
+    func newRemoteCommandStore() -> RemoteCommandStore
 
     func registerWithSyncManager()
 
@@ -695,12 +856,6 @@ open class TabsStore:
         try! rustCall { uniffi_tabs_fn_free_tabsstore(pointer, $0) }
     }
 
-    open func addPendingRemoteTabClosure(tabsRequestedClosed: [TabsRequestedClose]) { try! rustCall {
-        uniffi_tabs_fn_method_tabsstore_add_pending_remote_tab_closure(self.uniffiClonePointer(),
-                                                                       FfiConverterSequenceTypeTabsRequestedClose.lower(tabsRequestedClosed), $0)
-    }
-    }
-
     open func bridgedEngine() -> TabsBridgedEngine {
         return try! FfiConverterTypeTabsBridgedEngine.lift(try! rustCall {
             uniffi_tabs_fn_method_tabsstore_bridged_engine(self.uniffiClonePointer(), $0)
@@ -710,6 +865,12 @@ open class TabsStore:
     open func getAll() -> [ClientRemoteTabs] {
         return try! FfiConverterSequenceTypeClientRemoteTabs.lift(try! rustCall {
             uniffi_tabs_fn_method_tabsstore_get_all(self.uniffiClonePointer(), $0)
+        })
+    }
+
+    open func newRemoteCommandStore() -> RemoteCommandStore {
+        return try! FfiConverterTypeRemoteCommandStore.lift(try! rustCall {
+            uniffi_tabs_fn_method_tabsstore_new_remote_command_store(self.uniffiClonePointer(), $0)
         })
     }
 
@@ -839,6 +1000,77 @@ public func FfiConverterTypeClientRemoteTabs_lower(_ value: ClientRemoteTabs) ->
     return FfiConverterTypeClientRemoteTabs.lower(value)
 }
 
+/**
+ * Represents a "pending" command.
+ */
+public struct PendingCommand {
+    public var deviceId: String
+    public var command: RemoteCommand
+    public var timeRequested: Timestamp
+    public var timeSent: Timestamp?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(deviceId: String, command: RemoteCommand, timeRequested: Timestamp, timeSent: Timestamp?) {
+        self.deviceId = deviceId
+        self.command = command
+        self.timeRequested = timeRequested
+        self.timeSent = timeSent
+    }
+}
+
+extension PendingCommand: Equatable, Hashable {
+    public static func == (lhs: PendingCommand, rhs: PendingCommand) -> Bool {
+        if lhs.deviceId != rhs.deviceId {
+            return false
+        }
+        if lhs.command != rhs.command {
+            return false
+        }
+        if lhs.timeRequested != rhs.timeRequested {
+            return false
+        }
+        if lhs.timeSent != rhs.timeSent {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(deviceId)
+        hasher.combine(command)
+        hasher.combine(timeRequested)
+        hasher.combine(timeSent)
+    }
+}
+
+public struct FfiConverterTypePendingCommand: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> PendingCommand {
+        return
+            try PendingCommand(
+                deviceId: FfiConverterString.read(from: &buf),
+                command: FfiConverterTypeRemoteCommand.read(from: &buf),
+                timeRequested: FfiConverterTypeTimestamp.read(from: &buf),
+                timeSent: FfiConverterOptionTypeTimestamp.read(from: &buf)
+            )
+    }
+
+    public static func write(_ value: PendingCommand, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.deviceId, into: &buf)
+        FfiConverterTypeRemoteCommand.write(value.command, into: &buf)
+        FfiConverterTypeTimestamp.write(value.timeRequested, into: &buf)
+        FfiConverterOptionTypeTimestamp.write(value.timeSent, into: &buf)
+    }
+}
+
+public func FfiConverterTypePendingCommand_lift(_ buf: RustBuffer) throws -> PendingCommand {
+    return try FfiConverterTypePendingCommand.lift(buf)
+}
+
+public func FfiConverterTypePendingCommand_lower(_ value: PendingCommand) -> RustBuffer {
+    return FfiConverterTypePendingCommand.lower(value)
+}
+
 public struct RemoteTabRecord {
     public var title: String
     public var urlHistory: [String]
@@ -915,57 +1147,48 @@ public func FfiConverterTypeRemoteTabRecord_lower(_ value: RemoteTabRecord) -> R
     return FfiConverterTypeRemoteTabRecord.lower(value)
 }
 
-public struct TabsRequestedClose {
-    public var clientId: String
-    public var urls: [String]
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * A command which should be sent to a remote device.
+ */
 
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(clientId: String, urls: [String]) {
-        self.clientId = clientId
-        self.urls = urls
-    }
+public enum RemoteCommand {
+    case closeTab(url: String
+    )
 }
 
-extension TabsRequestedClose: Equatable, Hashable {
-    public static func == (lhs: TabsRequestedClose, rhs: TabsRequestedClose) -> Bool {
-        if lhs.clientId != rhs.clientId {
-            return false
-        }
-        if lhs.urls != rhs.urls {
-            return false
-        }
-        return true
-    }
+public struct FfiConverterTypeRemoteCommand: FfiConverterRustBuffer {
+    typealias SwiftType = RemoteCommand
 
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(clientId)
-        hasher.combine(urls)
-    }
-}
-
-public struct FfiConverterTypeTabsRequestedClose: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabsRequestedClose {
-        return
-            try TabsRequestedClose(
-                clientId: FfiConverterString.read(from: &buf),
-                urls: FfiConverterSequenceString.read(from: &buf)
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteCommand {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return try .closeTab(url: FfiConverterString.read(from: &buf)
             )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
     }
 
-    public static func write(_ value: TabsRequestedClose, into buf: inout [UInt8]) {
-        FfiConverterString.write(value.clientId, into: &buf)
-        FfiConverterSequenceString.write(value.urls, into: &buf)
+    public static func write(_ value: RemoteCommand, into buf: inout [UInt8]) {
+        switch value {
+        case let .closeTab(url):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(url, into: &buf)
+        }
     }
 }
 
-public func FfiConverterTypeTabsRequestedClose_lift(_ buf: RustBuffer) throws -> TabsRequestedClose {
-    return try FfiConverterTypeTabsRequestedClose.lift(buf)
+public func FfiConverterTypeRemoteCommand_lift(_ buf: RustBuffer) throws -> RemoteCommand {
+    return try FfiConverterTypeRemoteCommand.lift(buf)
 }
 
-public func FfiConverterTypeTabsRequestedClose_lower(_ value: TabsRequestedClose) -> RustBuffer {
-    return FfiConverterTypeTabsRequestedClose.lower(value)
+public func FfiConverterTypeRemoteCommand_lower(_ value: RemoteCommand) -> RustBuffer {
+    return FfiConverterTypeRemoteCommand.lower(value)
 }
+
+extension RemoteCommand: Equatable, Hashable {}
 
 public enum TabsApiError {
     case SyncError(reason: String
@@ -1038,6 +1261,27 @@ private struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
+private struct FfiConverterOptionTypeTimestamp: FfiConverterRustBuffer {
+    typealias SwiftType = Timestamp?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeTimestamp.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeTimestamp.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 private struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -1082,6 +1326,28 @@ private struct FfiConverterSequenceTypeClientRemoteTabs: FfiConverterRustBuffer 
     }
 }
 
+private struct FfiConverterSequenceTypePendingCommand: FfiConverterRustBuffer {
+    typealias SwiftType = [PendingCommand]
+
+    public static func write(_ value: [PendingCommand], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypePendingCommand.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [PendingCommand] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [PendingCommand]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            try seq.append(FfiConverterTypePendingCommand.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 private struct FfiConverterSequenceTypeRemoteTabRecord: FfiConverterRustBuffer {
     typealias SwiftType = [RemoteTabRecord]
 
@@ -1099,28 +1365,6 @@ private struct FfiConverterSequenceTypeRemoteTabRecord: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             try seq.append(FfiConverterTypeRemoteTabRecord.read(from: &buf))
-        }
-        return seq
-    }
-}
-
-private struct FfiConverterSequenceTypeTabsRequestedClose: FfiConverterRustBuffer {
-    typealias SwiftType = [TabsRequestedClose]
-
-    public static func write(_ value: [TabsRequestedClose], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterTypeTabsRequestedClose.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [TabsRequestedClose] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [TabsRequestedClose]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeTabsRequestedClose.read(from: &buf))
         }
         return seq
     }
@@ -1179,6 +1423,37 @@ public func FfiConverterTypeTabsGuid_lower(_ value: TabsGuid) -> RustBuffer {
     return FfiConverterTypeTabsGuid.lower(value)
 }
 
+/**
+ * Typealias from the type name used in the UDL file to the builtin type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias Timestamp = Int64
+public struct FfiConverterTypeTimestamp: FfiConverter {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Timestamp {
+        return try FfiConverterInt64.read(from: &buf)
+    }
+
+    public static func write(_ value: Timestamp, into buf: inout [UInt8]) {
+        return FfiConverterInt64.write(value, into: &buf)
+    }
+
+    public static func lift(_ value: Int64) throws -> Timestamp {
+        return try FfiConverterInt64.lift(value)
+    }
+
+    public static func lower(_ value: Timestamp) -> Int64 {
+        return FfiConverterInt64.lower(value)
+    }
+}
+
+public func FfiConverterTypeTimestamp_lift(_ value: Int64) throws -> Timestamp {
+    return try FfiConverterTypeTimestamp.lift(value)
+}
+
+public func FfiConverterTypeTimestamp_lower(_ value: Timestamp) -> Int64 {
+    return FfiConverterTypeTimestamp.lower(value)
+}
+
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -1194,6 +1469,21 @@ private var initializationResult: InitializationResult {
     let scaffolding_contract_version = ffi_tabs_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if uniffi_tabs_checksum_method_remotecommandstore_add_remote_command() != 11837 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_tabs_checksum_method_remotecommandstore_add_remote_command_at() != 49793 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_tabs_checksum_method_remotecommandstore_get_unsent_commands() != 62092 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_tabs_checksum_method_remotecommandstore_remove_remote_command() != 19318 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_tabs_checksum_method_remotecommandstore_set_pending_command_sent() != 59831 {
+        return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsbridgedengine_apply() != 40956 {
         return InitializationResult.apiChecksumMismatch
@@ -1234,13 +1524,13 @@ private var initializationResult: InitializationResult {
     if uniffi_tabs_checksum_method_tabsbridgedengine_wipe() != 21505 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_tabs_checksum_method_tabsstore_add_pending_remote_tab_closure() != 37789 {
-        return InitializationResult.apiChecksumMismatch
-    }
     if uniffi_tabs_checksum_method_tabsstore_bridged_engine() != 43478 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsstore_get_all() != 1572 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_tabs_checksum_method_tabsstore_new_remote_command_store() != 26531 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsstore_register_with_sync_manager() != 1224 {

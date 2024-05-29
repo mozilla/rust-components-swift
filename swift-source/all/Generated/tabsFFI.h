@@ -251,6 +251,41 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_CLONE_REMOTECOMMANDSTORE
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_CLONE_REMOTECOMMANDSTORE
+void*_Nonnull uniffi_tabs_fn_clone_remotecommandstore(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_FREE_REMOTECOMMANDSTORE
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_FREE_REMOTECOMMANDSTORE
+void uniffi_tabs_fn_free_remotecommandstore(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND
+int8_t uniffi_tabs_fn_method_remotecommandstore_add_remote_command(void*_Nonnull ptr, RustBuffer device_id, RustBuffer command, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND_AT
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND_AT
+int8_t uniffi_tabs_fn_method_remotecommandstore_add_remote_command_at(void*_Nonnull ptr, RustBuffer device_id, RustBuffer command, int64_t when, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_GET_UNSENT_COMMANDS
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_GET_UNSENT_COMMANDS
+RustBuffer uniffi_tabs_fn_method_remotecommandstore_get_unsent_commands(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_REMOVE_REMOTE_COMMAND
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_REMOVE_REMOTE_COMMAND
+int8_t uniffi_tabs_fn_method_remotecommandstore_remove_remote_command(void*_Nonnull ptr, RustBuffer device_id, RustBuffer command, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_SET_PENDING_COMMAND_SENT
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_REMOTECOMMANDSTORE_SET_PENDING_COMMAND_SENT
+int8_t uniffi_tabs_fn_method_remotecommandstore_set_pending_command_sent(void*_Nonnull ptr, RustBuffer command, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_CLONE_TABSBRIDGEDENGINE
 #define UNIFFI_FFIDEF_UNIFFI_TABS_FN_CLONE_TABSBRIDGEDENGINE
 void*_Nonnull uniffi_tabs_fn_clone_tabsbridgedengine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -341,11 +376,6 @@ void uniffi_tabs_fn_free_tabsstore(void*_Nonnull ptr, RustCallStatus *_Nonnull o
 void*_Nonnull uniffi_tabs_fn_constructor_tabsstore_new(RustBuffer path, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
-#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
-void uniffi_tabs_fn_method_tabsstore_add_pending_remote_tab_closure(void*_Nonnull ptr, RustBuffer tabs_requested_closed, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_BRIDGED_ENGINE
 #define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_BRIDGED_ENGINE
 void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -354,6 +384,11 @@ void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, 
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_GET_ALL
 #define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_GET_ALL
 RustBuffer uniffi_tabs_fn_method_tabsstore_get_all(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_NEW_REMOTE_COMMAND_STORE
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_NEW_REMOTE_COMMAND_STORE
+void*_Nonnull uniffi_tabs_fn_method_tabsstore_new_remote_command_store(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_REGISTER_WITH_SYNC_MANAGER
@@ -646,6 +681,36 @@ void ffi_tabs_rust_future_free_void(uint64_t handle
 void ffi_tabs_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND
+uint16_t uniffi_tabs_checksum_method_remotecommandstore_add_remote_command(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND_AT
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_ADD_REMOTE_COMMAND_AT
+uint16_t uniffi_tabs_checksum_method_remotecommandstore_add_remote_command_at(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_GET_UNSENT_COMMANDS
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_GET_UNSENT_COMMANDS
+uint16_t uniffi_tabs_checksum_method_remotecommandstore_get_unsent_commands(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_REMOVE_REMOTE_COMMAND
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_REMOVE_REMOTE_COMMAND
+uint16_t uniffi_tabs_checksum_method_remotecommandstore_remove_remote_command(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_SET_PENDING_COMMAND_SENT
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_REMOTECOMMANDSTORE_SET_PENDING_COMMAND_SENT
+uint16_t uniffi_tabs_checksum_method_remotecommandstore_set_pending_command_sent(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSBRIDGEDENGINE_APPLY
 #define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSBRIDGEDENGINE_APPLY
 uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_apply(void
@@ -724,12 +789,6 @@ uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_wipe(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
-#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_ADD_PENDING_REMOTE_TAB_CLOSURE
-uint16_t uniffi_tabs_checksum_method_tabsstore_add_pending_remote_tab_closure(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_BRIDGED_ENGINE
 #define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_BRIDGED_ENGINE
 uint16_t uniffi_tabs_checksum_method_tabsstore_bridged_engine(void
@@ -739,6 +798,12 @@ uint16_t uniffi_tabs_checksum_method_tabsstore_bridged_engine(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_GET_ALL
 #define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_GET_ALL
 uint16_t uniffi_tabs_checksum_method_tabsstore_get_all(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_NEW_REMOTE_COMMAND_STORE
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_NEW_REMOTE_COMMAND_STORE
+uint16_t uniffi_tabs_checksum_method_tabsstore_new_remote_command_store(void
     
 );
 #endif
