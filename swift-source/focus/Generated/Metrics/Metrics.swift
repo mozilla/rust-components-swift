@@ -23,7 +23,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2024, month: 5, day: 31, hour: 5, minute: 16, second: 14))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2024, month: 6, day: 1, hour: 5, minute: 18, second: 43))
     }
 
     enum NimbusEvents {
@@ -320,7 +320,7 @@ extension GleanMetrics {
                 name: "is_ready",
                 sendInPings: ["events"],
                 lifetime: .ping,
-                disabled: false
+                disabled: true
             )
             , []
         )
