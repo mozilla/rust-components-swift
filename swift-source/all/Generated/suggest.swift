@@ -688,7 +688,7 @@ public protocol SuggestStoreBuilderProtocol : AnyObject {
     
     func dataPath(path: String)  -> SuggestStoreBuilder
     
-    func remoteSettingsConfig(config: RemoteSettingsConfig)  -> SuggestStoreBuilder
+    func remoteSettingsBucketName(bucketName: String)  -> SuggestStoreBuilder
     
     func remoteSettingsServer(server: RemoteSettingsServer)  -> SuggestStoreBuilder
     
@@ -764,10 +764,10 @@ open func dataPath(path: String) -> SuggestStoreBuilder {
 })
 }
     
-open func remoteSettingsConfig(config: RemoteSettingsConfig) -> SuggestStoreBuilder {
+open func remoteSettingsBucketName(bucketName: String) -> SuggestStoreBuilder {
     return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
-    uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_config(self.uniffiClonePointer(),
-        FfiConverterTypeRemoteSettingsConfig_lower(config),$0
+    uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_bucket_name(self.uniffiClonePointer(),
+        FfiConverterString.lower(bucketName),$0
     )
 })
 }
@@ -1732,7 +1732,7 @@ private var initializationResult: InitializationResult {
     if (uniffi_suggest_checksum_method_suggeststorebuilder_data_path() != 50155) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_config() != 33678) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_bucket_name() != 18802) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_server() != 22023) {
