@@ -1221,6 +1221,8 @@ public enum Suggestion {
     )
     case weather(score: Double
     )
+    case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: [UInt8]?, iconMimetype: String?, score: Double
+    )
 }
 
 
@@ -1250,6 +1252,9 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         )
         
         case 7: return .weather(score: try FfiConverterDouble.read(from: &buf)
+        )
+        
+        case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1330,6 +1335,19 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             writeInt(&buf, Int32(7))
             FfiConverterDouble.write(score, into: &buf)
             
+        
+        case let .fakespot(fakespotGrade,productId,rating,title,totalReviews,url,icon,iconMimetype,score):
+            writeInt(&buf, Int32(8))
+            FfiConverterString.write(fakespotGrade, into: &buf)
+            FfiConverterString.write(productId, into: &buf)
+            FfiConverterDouble.write(rating, into: &buf)
+            FfiConverterString.write(title, into: &buf)
+            FfiConverterInt64.write(totalReviews, into: &buf)
+            FfiConverterString.write(url, into: &buf)
+            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionString.write(iconMimetype, into: &buf)
+            FfiConverterDouble.write(score, into: &buf)
+            
         }
     }
 }
@@ -1362,6 +1380,7 @@ public enum SuggestionProvider {
     case mdn
     case weather
     case ampMobile
+    case fakespot
 }
 
 
@@ -1387,6 +1406,8 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         case 7: return .weather
         
         case 8: return .ampMobile
+        
+        case 9: return .fakespot
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1426,6 +1447,10 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case .ampMobile:
             writeInt(&buf, Int32(8))
+        
+        
+        case .fakespot:
+            writeInt(&buf, Int32(9))
         
         }
     }
