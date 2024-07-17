@@ -473,7 +473,7 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * If a device on the account has registered the [`CloseTabs`](DeviceCapability::CloseTabs)
      * capability, this method can be used to close its tabs.
      */
-    func closeTabs(targetDeviceId: String, urls: [String]) throws
+    func closeTabs(targetDeviceId: String, urls: [String]) throws -> CloseTabsResult
 
     func completeOauthFlow(code: String, state: String) throws
 
@@ -642,11 +642,12 @@ open class FirefoxAccount:
      * If a device on the account has registered the [`CloseTabs`](DeviceCapability::CloseTabs)
      * capability, this method can be used to close its tabs.
      */
-    open func closeTabs(targetDeviceId: String, urls: [String]) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
-        uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(self.uniffiClonePointer(),
-                                                              FfiConverterString.lower(targetDeviceId),
-                                                              FfiConverterSequenceString.lower(urls), $0)
-    }
+    open func closeTabs(targetDeviceId: String, urls: [String]) throws -> CloseTabsResult {
+        return try FfiConverterTypeCloseTabsResult.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
+            uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(self.uniffiClonePointer(),
+                                                                  FfiConverterString.lower(targetDeviceId),
+                                                                  FfiConverterSequenceString.lower(urls), $0)
+        })
     }
 
     open func completeOauthFlow(code: String, state: String) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
@@ -2143,6 +2144,77 @@ extension AccountEvent: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The result of invoking a "close tabs" command.
+ *
+ * If [`FirefoxAccount::close_tabs`] is called with more URLs than can fit
+ * into a single command payload, the URLs will be chunked and sent in
+ * multiple commands.
+ *
+ * Chunking breaks the atomicity of a "close tabs" command, but
+ * reduces the number of these commands that FxA sends to other devices.
+ * This is critical for platforms like iOS, where every command triggers a
+ * push message that must show a user-visible notification.
+ */
+
+public enum CloseTabsResult {
+    /**
+     * All URLs passed to [`FirefoxAccount::close_tabs`] were chunked and sent
+     * in one or more device commands.
+     */
+    case ok
+    /**
+     * One or more URLs passed to [`FirefoxAccount::close_tabs`] couldn't be sent
+     * in a device command. The caller can assume that:
+     *
+     * 1. Any URL in the returned list of `urls` was not sent, and
+     *    should be retried.
+     * 2. All other URLs that were passed to [`FirefoxAccount::close_tabs`], and
+     *    that are _not_ in the list of `urls`, were chunked and sent.
+     */
+    case tabsNotClosed(urls: [String]
+    )
+}
+
+public struct FfiConverterTypeCloseTabsResult: FfiConverterRustBuffer {
+    typealias SwiftType = CloseTabsResult
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloseTabsResult {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        case 1: return .ok
+
+        case 2: return try .tabsNotClosed(urls: FfiConverterSequenceString.read(from: &buf)
+            )
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: CloseTabsResult, into buf: inout [UInt8]) {
+        switch value {
+        case .ok:
+            writeInt(&buf, Int32(1))
+
+        case let .tabsNotClosed(urls):
+            writeInt(&buf, Int32(2))
+            FfiConverterSequenceString.write(urls, into: &buf)
+        }
+    }
+}
+
+public func FfiConverterTypeCloseTabsResult_lift(_ buf: RustBuffer) throws -> CloseTabsResult {
+    return try FfiConverterTypeCloseTabsResult.lift(buf)
+}
+
+public func FfiConverterTypeCloseTabsResult_lower(_ value: CloseTabsResult) -> RustBuffer {
+    return FfiConverterTypeCloseTabsResult.lower(value)
+}
+
+extension CloseTabsResult: Equatable, Hashable {}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum DeviceCapability {
     case sendTab
@@ -3100,7 +3172,7 @@ private var initializationResult: InitializationResult {
     if uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name() != 42324 {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_close_tabs() != 64219 {
+    if uniffi_fxa_client_checksum_method_firefoxaccount_close_tabs() != 55044 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow() != 41338 {

@@ -303,7 +303,7 @@ void uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(void*_Nonnull 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_FN_METHOD_FIREFOXACCOUNT_CLOSE_TABS
 #define UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_FN_METHOD_FIREFOXACCOUNT_CLOSE_TABS
-void uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(void*_Nonnull ptr, RustBuffer target_device_id, RustBuffer urls, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(void*_Nonnull ptr, RustBuffer target_device_id, RustBuffer urls, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_FXA_CLIENT_FN_METHOD_FIREFOXACCOUNT_COMPLETE_OAUTH_FLOW
