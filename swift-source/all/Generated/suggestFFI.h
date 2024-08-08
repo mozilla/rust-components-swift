@@ -293,7 +293,7 @@ RustBuffer uniffi_suggest_fn_method_suggeststore_fetch_provider_config(void*_Non
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_INGEST
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_INGEST
-void uniffi_suggest_fn_method_suggeststore_ingest(void*_Nonnull ptr, RustBuffer constraints, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_suggest_fn_method_suggeststore_ingest(void*_Nonnull ptr, RustBuffer constraints, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_INTERRUPT
@@ -304,6 +304,11 @@ void uniffi_suggest_fn_method_suggeststore_interrupt(void*_Nonnull ptr, RustBuff
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_QUERY
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_QUERY
 RustBuffer uniffi_suggest_fn_method_suggeststore_query(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_QUERY_WITH_METRICS
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_QUERY_WITH_METRICS
+RustBuffer uniffi_suggest_fn_method_suggeststore_query_with_metrics(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_CLONE_SUGGESTSTOREBUILDER
@@ -688,6 +693,12 @@ uint16_t uniffi_suggest_checksum_method_suggeststore_interrupt(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_QUERY
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_QUERY
 uint16_t uniffi_suggest_checksum_method_suggeststore_query(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_QUERY_WITH_METRICS
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_QUERY_WITH_METRICS
+uint16_t uniffi_suggest_checksum_method_suggeststore_query_with_metrics(void
     
 );
 #endif

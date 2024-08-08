@@ -519,11 +519,13 @@ public protocol SuggestStoreProtocol : AnyObject {
     
     func fetchProviderConfig(provider: SuggestionProvider) throws  -> SuggestProviderConfig?
     
-    func ingest(constraints: SuggestIngestionConstraints) throws 
+    func ingest(constraints: SuggestIngestionConstraints) throws  -> SuggestIngestionMetrics
     
     func interrupt(kind: InterruptKind?) 
     
     func query(query: SuggestionQuery) throws  -> [Suggestion]
+    
+    func queryWithMetrics(query: SuggestionQuery) throws  -> QueryWithMetricsResult
     
 }
 open class SuggestStore:
@@ -610,11 +612,12 @@ open func fetchProviderConfig(provider: SuggestionProvider)throws  -> SuggestPro
 })
 }
     
-open func ingest(constraints: SuggestIngestionConstraints)throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestIngestionMetrics {
+    return try  FfiConverterTypeSuggestIngestionMetrics.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_ingest(self.uniffiClonePointer(),
         FfiConverterTypeSuggestIngestionConstraints.lower(constraints),$0
     )
-}
+})
 }
     
 open func interrupt(kind: InterruptKind? = nil) {try! rustCall() {
@@ -627,6 +630,14 @@ open func interrupt(kind: InterruptKind? = nil) {try! rustCall() {
 open func query(query: SuggestionQuery)throws  -> [Suggestion] {
     return try  FfiConverterSequenceTypeSuggestion.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_query(self.uniffiClonePointer(),
+        FfiConverterTypeSuggestionQuery.lower(query),$0
+    )
+})
+}
+    
+open func queryWithMetrics(query: SuggestionQuery)throws  -> QueryWithMetricsResult {
+    return try  FfiConverterTypeQueryWithMetricsResult.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststore_query_with_metrics(self.uniffiClonePointer(),
         FfiConverterTypeSuggestionQuery.lower(query),$0
     )
 })
@@ -837,6 +848,123 @@ public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuild
 }
 
 
+/**
+ * A single sample for a labeled timing distribution metric
+ */
+public struct LabeledTimingSample {
+    public var label: String
+    public var value: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(label: String, value: UInt64) {
+        self.label = label
+        self.value = value
+    }
+}
+
+
+
+extension LabeledTimingSample: Equatable, Hashable {
+    public static func ==(lhs: LabeledTimingSample, rhs: LabeledTimingSample) -> Bool {
+        if lhs.label != rhs.label {
+            return false
+        }
+        if lhs.value != rhs.value {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(label)
+        hasher.combine(value)
+    }
+}
+
+
+public struct FfiConverterTypeLabeledTimingSample: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LabeledTimingSample {
+        return
+            try LabeledTimingSample(
+                label: FfiConverterString.read(from: &buf), 
+                value: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LabeledTimingSample, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.label, into: &buf)
+        FfiConverterUInt64.write(value.value, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeLabeledTimingSample_lift(_ buf: RustBuffer) throws -> LabeledTimingSample {
+    return try FfiConverterTypeLabeledTimingSample.lift(buf)
+}
+
+public func FfiConverterTypeLabeledTimingSample_lower(_ value: LabeledTimingSample) -> RustBuffer {
+    return FfiConverterTypeLabeledTimingSample.lower(value)
+}
+
+
+public struct QueryWithMetricsResult {
+    public var suggestions: [Suggestion]
+    public var queryTimes: [LabeledTimingSample]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(suggestions: [Suggestion], queryTimes: [LabeledTimingSample]) {
+        self.suggestions = suggestions
+        self.queryTimes = queryTimes
+    }
+}
+
+
+
+extension QueryWithMetricsResult: Equatable, Hashable {
+    public static func ==(lhs: QueryWithMetricsResult, rhs: QueryWithMetricsResult) -> Bool {
+        if lhs.suggestions != rhs.suggestions {
+            return false
+        }
+        if lhs.queryTimes != rhs.queryTimes {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(suggestions)
+        hasher.combine(queryTimes)
+    }
+}
+
+
+public struct FfiConverterTypeQueryWithMetricsResult: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> QueryWithMetricsResult {
+        return
+            try QueryWithMetricsResult(
+                suggestions: FfiConverterSequenceTypeSuggestion.read(from: &buf), 
+                queryTimes: FfiConverterSequenceTypeLabeledTimingSample.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: QueryWithMetricsResult, into buf: inout [UInt8]) {
+        FfiConverterSequenceTypeSuggestion.write(value.suggestions, into: &buf)
+        FfiConverterSequenceTypeLabeledTimingSample.write(value.queryTimes, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeQueryWithMetricsResult_lift(_ buf: RustBuffer) throws -> QueryWithMetricsResult {
+    return try FfiConverterTypeQueryWithMetricsResult.lift(buf)
+}
+
+public func FfiConverterTypeQueryWithMetricsResult_lower(_ value: QueryWithMetricsResult) -> RustBuffer {
+    return FfiConverterTypeQueryWithMetricsResult.lower(value)
+}
+
+
 public struct SuggestGlobalConfig {
     public var showLessFrequentlyCap: Int32
 
@@ -940,6 +1068,63 @@ public func FfiConverterTypeSuggestIngestionConstraints_lift(_ buf: RustBuffer) 
 
 public func FfiConverterTypeSuggestIngestionConstraints_lower(_ value: SuggestIngestionConstraints) -> RustBuffer {
     return FfiConverterTypeSuggestIngestionConstraints.lower(value)
+}
+
+
+public struct SuggestIngestionMetrics {
+    public var ingestionTimes: [LabeledTimingSample]
+    public var downloadTimes: [LabeledTimingSample]
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(ingestionTimes: [LabeledTimingSample], downloadTimes: [LabeledTimingSample]) {
+        self.ingestionTimes = ingestionTimes
+        self.downloadTimes = downloadTimes
+    }
+}
+
+
+
+extension SuggestIngestionMetrics: Equatable, Hashable {
+    public static func ==(lhs: SuggestIngestionMetrics, rhs: SuggestIngestionMetrics) -> Bool {
+        if lhs.ingestionTimes != rhs.ingestionTimes {
+            return false
+        }
+        if lhs.downloadTimes != rhs.downloadTimes {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(ingestionTimes)
+        hasher.combine(downloadTimes)
+    }
+}
+
+
+public struct FfiConverterTypeSuggestIngestionMetrics: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestIngestionMetrics {
+        return
+            try SuggestIngestionMetrics(
+                ingestionTimes: FfiConverterSequenceTypeLabeledTimingSample.read(from: &buf), 
+                downloadTimes: FfiConverterSequenceTypeLabeledTimingSample.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SuggestIngestionMetrics, into buf: inout [UInt8]) {
+        FfiConverterSequenceTypeLabeledTimingSample.write(value.ingestionTimes, into: &buf)
+        FfiConverterSequenceTypeLabeledTimingSample.write(value.downloadTimes, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeSuggestIngestionMetrics_lift(_ buf: RustBuffer) throws -> SuggestIngestionMetrics {
+    return try FfiConverterTypeSuggestIngestionMetrics.lift(buf)
+}
+
+public func FfiConverterTypeSuggestIngestionMetrics_lower(_ value: SuggestIngestionMetrics) -> RustBuffer {
+    return FfiConverterTypeSuggestIngestionMetrics.lower(value)
 }
 
 
@@ -1632,6 +1817,28 @@ fileprivate struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterSequenceTypeLabeledTimingSample: FfiConverterRustBuffer {
+    typealias SwiftType = [LabeledTimingSample]
+
+    public static func write(_ value: [LabeledTimingSample], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeLabeledTimingSample.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [LabeledTimingSample] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [LabeledTimingSample]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeLabeledTimingSample.read(from: &buf))
+        }
+        return seq
+    }
+}
+
 fileprivate struct FfiConverterSequenceTypeSuggestion: FfiConverterRustBuffer {
     typealias SwiftType = [Suggestion]
 
@@ -1721,13 +1928,16 @@ private var initializationResult: InitializationResult {
     if (uniffi_suggest_checksum_method_suggeststore_fetch_provider_config() != 5906) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_ingest() != 4478) {
+    if (uniffi_suggest_checksum_method_suggeststore_ingest() != 27906) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 17785) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_query() != 12875) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_query_with_metrics() != 29421) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 28243) {
