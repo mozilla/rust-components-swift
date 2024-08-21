@@ -1016,12 +1016,14 @@ public func FfiConverterTypeSuggestGlobalConfig_lower(_ value: SuggestGlobalConf
 
 public struct SuggestIngestionConstraints {
     public var providers: [SuggestionProvider]?
+    public var providerConstraints: SuggestionProviderConstraints?
     public var emptyOnly: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(providers: [SuggestionProvider]? = nil, emptyOnly: Bool = false) {
+    public init(providers: [SuggestionProvider]? = nil, providerConstraints: SuggestionProviderConstraints? = nil, emptyOnly: Bool = false) {
         self.providers = providers
+        self.providerConstraints = providerConstraints
         self.emptyOnly = emptyOnly
     }
 }
@@ -1033,6 +1035,9 @@ extension SuggestIngestionConstraints: Equatable, Hashable {
         if lhs.providers != rhs.providers {
             return false
         }
+        if lhs.providerConstraints != rhs.providerConstraints {
+            return false
+        }
         if lhs.emptyOnly != rhs.emptyOnly {
             return false
         }
@@ -1041,6 +1046,7 @@ extension SuggestIngestionConstraints: Equatable, Hashable {
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(providers)
+        hasher.combine(providerConstraints)
         hasher.combine(emptyOnly)
     }
 }
@@ -1051,12 +1057,14 @@ public struct FfiConverterTypeSuggestIngestionConstraints: FfiConverterRustBuffe
         return
             try SuggestIngestionConstraints(
                 providers: FfiConverterOptionSequenceTypeSuggestionProvider.read(from: &buf), 
+                providerConstraints: FfiConverterOptionTypeSuggestionProviderConstraints.read(from: &buf), 
                 emptyOnly: FfiConverterBool.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestIngestionConstraints, into buf: inout [UInt8]) {
         FfiConverterOptionSequenceTypeSuggestionProvider.write(value.providers, into: &buf)
+        FfiConverterOptionTypeSuggestionProviderConstraints.write(value.providerConstraints, into: &buf)
         FfiConverterBool.write(value.emptyOnly, into: &buf)
     }
 }
@@ -1128,16 +1136,67 @@ public func FfiConverterTypeSuggestIngestionMetrics_lower(_ value: SuggestIngest
 }
 
 
+public struct SuggestionProviderConstraints {
+    public var exposureSuggestionTypes: [String]?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(exposureSuggestionTypes: [String]? = nil) {
+        self.exposureSuggestionTypes = exposureSuggestionTypes
+    }
+}
+
+
+
+extension SuggestionProviderConstraints: Equatable, Hashable {
+    public static func ==(lhs: SuggestionProviderConstraints, rhs: SuggestionProviderConstraints) -> Bool {
+        if lhs.exposureSuggestionTypes != rhs.exposureSuggestionTypes {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(exposureSuggestionTypes)
+    }
+}
+
+
+public struct FfiConverterTypeSuggestionProviderConstraints: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestionProviderConstraints {
+        return
+            try SuggestionProviderConstraints(
+                exposureSuggestionTypes: FfiConverterOptionSequenceString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: SuggestionProviderConstraints, into buf: inout [UInt8]) {
+        FfiConverterOptionSequenceString.write(value.exposureSuggestionTypes, into: &buf)
+    }
+}
+
+
+public func FfiConverterTypeSuggestionProviderConstraints_lift(_ buf: RustBuffer) throws -> SuggestionProviderConstraints {
+    return try FfiConverterTypeSuggestionProviderConstraints.lift(buf)
+}
+
+public func FfiConverterTypeSuggestionProviderConstraints_lower(_ value: SuggestionProviderConstraints) -> RustBuffer {
+    return FfiConverterTypeSuggestionProviderConstraints.lower(value)
+}
+
+
 public struct SuggestionQuery {
     public var keyword: String
     public var providers: [SuggestionProvider]
+    public var providerConstraints: SuggestionProviderConstraints?
     public var limit: Int32?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(keyword: String, providers: [SuggestionProvider], limit: Int32? = nil) {
+    public init(keyword: String, providers: [SuggestionProvider], providerConstraints: SuggestionProviderConstraints? = nil, limit: Int32? = nil) {
         self.keyword = keyword
         self.providers = providers
+        self.providerConstraints = providerConstraints
         self.limit = limit
     }
 }
@@ -1152,6 +1211,9 @@ extension SuggestionQuery: Equatable, Hashable {
         if lhs.providers != rhs.providers {
             return false
         }
+        if lhs.providerConstraints != rhs.providerConstraints {
+            return false
+        }
         if lhs.limit != rhs.limit {
             return false
         }
@@ -1161,6 +1223,7 @@ extension SuggestionQuery: Equatable, Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(keyword)
         hasher.combine(providers)
+        hasher.combine(providerConstraints)
         hasher.combine(limit)
     }
 }
@@ -1172,6 +1235,7 @@ public struct FfiConverterTypeSuggestionQuery: FfiConverterRustBuffer {
             try SuggestionQuery(
                 keyword: FfiConverterString.read(from: &buf), 
                 providers: FfiConverterSequenceTypeSuggestionProvider.read(from: &buf), 
+                providerConstraints: FfiConverterOptionTypeSuggestionProviderConstraints.read(from: &buf), 
                 limit: FfiConverterOptionInt32.read(from: &buf)
         )
     }
@@ -1179,6 +1243,7 @@ public struct FfiConverterTypeSuggestionQuery: FfiConverterRustBuffer {
     public static func write(_ value: SuggestionQuery, into buf: inout [UInt8]) {
         FfiConverterString.write(value.keyword, into: &buf)
         FfiConverterSequenceTypeSuggestionProvider.write(value.providers, into: &buf)
+        FfiConverterOptionTypeSuggestionProviderConstraints.write(value.providerConstraints, into: &buf)
         FfiConverterOptionInt32.write(value.limit, into: &buf)
     }
 }
@@ -1400,6 +1465,8 @@ public enum Suggestion {
     )
     case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: [UInt8]?, iconMimetype: String?, score: Double
     )
+    case exposure(suggestionType: String, score: Double
+    )
 }
 
 
@@ -1432,6 +1499,9 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         )
         
         case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        )
+        
+        case 9: return .exposure(suggestionType: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1525,6 +1595,12 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             
+        
+        case let .exposure(suggestionType,score):
+            writeInt(&buf, Int32(9))
+            FfiConverterString.write(suggestionType, into: &buf)
+            FfiConverterDouble.write(score, into: &buf)
+            
         }
     }
 }
@@ -1558,6 +1634,7 @@ public enum SuggestionProvider {
     case weather
     case ampMobile
     case fakespot
+    case exposure
 }
 
 
@@ -1585,6 +1662,8 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         case 8: return .ampMobile
         
         case 9: return .fakespot
+        
+        case 10: return .exposure
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -1628,6 +1707,10 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case .fakespot:
             writeInt(&buf, Int32(9))
+        
+        
+        case .exposure:
+            writeInt(&buf, Int32(10))
         
         }
     }
@@ -1685,6 +1768,27 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+fileprivate struct FfiConverterOptionTypeSuggestionProviderConstraints: FfiConverterRustBuffer {
+    typealias SwiftType = SuggestionProviderConstraints?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeSuggestionProviderConstraints.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeSuggestionProviderConstraints.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -1753,6 +1857,27 @@ fileprivate struct FfiConverterOptionSequenceUInt8: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionSequenceTypeSuggestionProvider: FfiConverterRustBuffer {
     typealias SwiftType = [SuggestionProvider]?
 
@@ -1812,6 +1937,28 @@ fileprivate struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterUInt8.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
+    typealias SwiftType = [String]
+
+    public static func write(_ value: [String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterString.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [String]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterString.read(from: &buf))
         }
         return seq
     }
