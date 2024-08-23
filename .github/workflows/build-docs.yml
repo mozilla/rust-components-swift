@@ -1,0 +1,114 @@
+name: Generate and Deploy Documentation
+
+on:
+  push:
+    branches:
+      - generate-docs # replace with main
+
+jobs:
+  build-docs:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ensures all branches are fetched
+
+      - name: Select Xcode Command Line Tools 15.1
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.1.app/Contents/Developer
+
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        shell: bash
+
+      - name: Clone application-services repository with submodules
+        run: |
+          git clone https://github.com/mozilla/application-services.git /tmp/application-services
+          cd /tmp/application-services
+          git submodule init
+          git submodule update --recursive
+
+      - name: Install Python, setuptools, six and gyp
+        run: |
+          brew install ninja python@3.9 python-setuptools
+          
+          # Create and activate a virtual environment
+          python3.9 -m venv myenv
+          source myenv/bin/activate
+          
+          # Upgrade pip and install setuptools and six within the virtual environment
+          pip install --upgrade pip setuptools six
+          
+          
+          wget https://bootstrap.pypa.io/ez_setup.py -O - | python3 -
+          git clone https://chromium.googlesource.com/external/gyp.git ~/tools/gyp
+          cd ~/tools/gyp
+          python3.9 setup.py install
+          
+          echo "export PATH=~/tools/gyp:\$PATH" >> ~/.bash_profile
+          echo 'export PATH="$PATH:$(brew --prefix)/opt/python@3.9/Frameworks/Python.framework/Versions/3.9/bin"' >> ~/.bash_profile
+        shell: bash
+
+      - name: Setup iOS environment
+        run: |
+          # Activate the virtual environment
+          source myenv/bin/activate  
+          
+          # Copy over the build files without iOS-simulator and x86 targets
+          cp ./automation/build-docs/overwrites/build-all-ios.sh /tmp/application-services/libs/
+          cp ./automation/build-docs/overwrites/build-nss-ios.sh /tmp/application-services/libs/
+          cp ./automation/build-docs/overwrites/verify-ios-ci-environment.sh /tmp/application-services/libs/   
+          
+          # Overwrite how to build the swift code (without FirefoxFocus and x86 targets)
+          cp ./automation/build-docs/overwrites/build-and-test-swift.py /tmp/application-services/taskcluster/scripts/
+    
+          cp ./automation/build-docs/overwrites/build-xcframework.sh /tmp/application-services/megazords/ios-rust/
+          cd /tmp/application-services
+          ./libs/verify-ios-ci-environment.sh
+        shell: bash
+
+      - name: Build the XCFramework from application-services
+        run: |
+          cd ./automation/build-docs/
+          ./build_local_xcframework_for_docs.sh /tmp/application-services
+
+      - name: Build the documentation
+        run: |
+          cd ./automation/build-docs/
+          ./generate_docs.sh
+
+      - name: Upload Documentation as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: ./automation/build-docs/docs-website
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    needs: build-docs
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Ensures all branches are fetched
+
+      - name: Download Documentation
+        uses: actions/download-artifact@v3
+        with:
+          name: docs
+          path: ./automation/build-docs/docs-website
+
+      - name: Deploy to /docs Branch
+        run: |
+          git checkout --orphan docs
+          git reset --hard
+          cp -r ./automation/build-docs/docs-website* .
+          git add -A
+          git commit -m "Deploy documentation to /docs branch"
+          git push -f origin docs
+
+      - name: Clean up workspace
+        run: |
+          git checkout main

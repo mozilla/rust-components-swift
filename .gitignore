@@ -5,3 +5,12 @@ Package.resolved
 
 # From the Glean sdk generator
 .venv
+
+# Docs generation
+/automation/build-docs/docs-website/
+/automation/build-docs/docs_output/
+/automation/build-docs/MozillaRustComponents.xcframework
+/automation/build-docs/build
+automation/build-docs/swift-source/
+
+.idea
