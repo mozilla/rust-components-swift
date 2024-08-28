@@ -85,6 +85,11 @@ jobs:
           name: docs
           path: ./automation/build-docs/docs-website
 
+      - name: Run rename and update script
+        run: |
+          cd ./automation/build-docs/
+          ./rename-and-update.sh
+
   deploy-docs:
     runs-on: macos-latest
     needs: build-docs
