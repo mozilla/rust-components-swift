@@ -56,6 +56,9 @@ jobs:
           # Activate the virtual environment
           source myenv/bin/activate  
           
+          # Ensure clean build directory
+          rm -rf /tmp/application-services/build
+          
           # Copy over the build files without iOS-simulator and x86 targets
           cp ./automation/build-docs/overwrites/build-all-ios.sh /tmp/application-services/libs/
           cp ./automation/build-docs/overwrites/build-nss-ios.sh /tmp/application-services/libs/
@@ -63,8 +66,10 @@ jobs:
           
           # Overwrite how to build the swift code (without FirefoxFocus and x86 targets)
           cp ./automation/build-docs/overwrites/build-and-test-swift.py /tmp/application-services/taskcluster/scripts/
-    
+          
+          # Overwrite how to build the xcframework, without the focus app
           cp ./automation/build-docs/overwrites/build-xcframework.sh /tmp/application-services/megazords/ios-rust/
+          
           cd /tmp/application-services
           ./libs/verify-ios-ci-environment.sh
         shell: bash
