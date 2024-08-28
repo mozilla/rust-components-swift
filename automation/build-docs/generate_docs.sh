@@ -8,6 +8,7 @@ DESTINATION="generic/platform=iOS"
 DOCC_NAME="MozillaAppServices"
 DOCC_ARCHIVE_PATH="$OUTPUT_DIR/Build/Products/Debug-iphoneos/$DOCC_NAME.doccarchive"
 STATIC_FILES_FOLDER="./docs-website"
+BASE_PATH_NAME="rust-components-swift"
 
 # Run xcodebuild to build documentation
 echo "Running xcodebuild for documentation generation..."
@@ -15,7 +16,7 @@ xcodebuild docbuild -scheme $SCHEME -destination $DESTINATION -derivedDataPath $
 
 # Run xcrun to generate the final DocC archive
 echo "Running xcrun to generate DocC archive..."
-xcrun docc process-archive transform-for-static-hosting $DOCC_ARCHIVE_PATH --output-path $STATIC_FILES_FOLDER --hosting-base-path DOCC_NAME
+xcrun docc process-archive transform-for-static-hosting $DOCC_ARCHIVE_PATH --output-path $STATIC_FILES_FOLDER --hosting-base-path $BASE_PATH_NAME
 
 # Cleanup
 echo "Cleaning up..."

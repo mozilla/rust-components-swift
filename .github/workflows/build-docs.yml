@@ -86,7 +86,7 @@ jobs:
           path: ./automation/build-docs/docs-website
 
   deploy-docs:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     needs: build-docs
     steps:
       - name: Checkout repository
