@@ -381,6 +381,11 @@ void*_Nonnull uniffi_tabs_fn_constructor_tabsstore_new(RustBuffer path, RustCall
 void*_Nonnull uniffi_tabs_fn_method_tabsstore_bridged_engine(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_CLOSE_CONNECTION
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_CLOSE_CONNECTION
+void uniffi_tabs_fn_method_tabsstore_close_connection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_GET_ALL
 #define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_GET_ALL
 RustBuffer uniffi_tabs_fn_method_tabsstore_get_all(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -792,6 +797,12 @@ uint16_t uniffi_tabs_checksum_method_tabsbridgedengine_wipe(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_BRIDGED_ENGINE
 #define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_BRIDGED_ENGINE
 uint16_t uniffi_tabs_checksum_method_tabsstore_bridged_engine(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_CLOSE_CONNECTION
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_CLOSE_CONNECTION
+uint16_t uniffi_tabs_checksum_method_tabsstore_close_connection(void
     
 );
 #endif

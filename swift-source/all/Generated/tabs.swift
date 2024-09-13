@@ -800,6 +800,8 @@ public func FfiConverterTypeTabsBridgedEngine_lower(_ value: TabsBridgedEngine) 
 public protocol TabsStoreProtocol: AnyObject {
     func bridgedEngine() -> TabsBridgedEngine
 
+    func closeConnection()
+
     func getAll() -> [ClientRemoteTabs]
 
     func newRemoteCommandStore() -> RemoteCommandStore
@@ -861,6 +863,11 @@ open class TabsStore:
         return try! FfiConverterTypeTabsBridgedEngine.lift(try! rustCall {
             uniffi_tabs_fn_method_tabsstore_bridged_engine(self.uniffiClonePointer(), $0)
         })
+    }
+
+    open func closeConnection() { try! rustCall {
+        uniffi_tabs_fn_method_tabsstore_close_connection(self.uniffiClonePointer(), $0)
+    }
     }
 
     open func getAll() -> [ClientRemoteTabs] {
@@ -1530,6 +1537,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsstore_bridged_engine() != 43478 {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if uniffi_tabs_checksum_method_tabsstore_close_connection() != 6630 {
         return InitializationResult.apiChecksumMismatch
     }
     if uniffi_tabs_checksum_method_tabsstore_get_all() != 1572 {
