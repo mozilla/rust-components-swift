@@ -476,10 +476,19 @@ private struct FfiConverterTimestamp: FfiConverterRustBuffer {
 }
 
 public protocol SyncManagerProtocol: AnyObject {
+    /**
+     * Disconnect engines from sync, deleting/resetting the sync-related data
+     */
     func disconnect()
 
+    /**
+     * Get a list of engine names available for syncing
+     */
     func getAvailableEngines() -> [String]
 
+    /**
+     * Perform a sync.  See [SyncParams] and [SyncResult] for details on how this works
+     */
     func sync(params: SyncParams) throws -> SyncResult
 }
 
@@ -530,17 +539,26 @@ open class SyncManager:
         try! rustCall { uniffi_sync_manager_fn_free_syncmanager(pointer, $0) }
     }
 
+    /**
+     * Disconnect engines from sync, deleting/resetting the sync-related data
+     */
     open func disconnect() { try! rustCall {
         uniffi_sync_manager_fn_method_syncmanager_disconnect(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Get a list of engine names available for syncing
+     */
     open func getAvailableEngines() -> [String] {
         return try! FfiConverterSequenceString.lift(try! rustCall {
             uniffi_sync_manager_fn_method_syncmanager_get_available_engines(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Perform a sync.  See [SyncParams] and [SyncResult] for details on how this works
+     */
     open func sync(params: SyncParams) throws -> SyncResult {
         return try FfiConverterTypeSyncResult.lift(rustCallWithError(FfiConverterTypeSyncManagerError.lift) {
             uniffi_sync_manager_fn_method_syncmanager_sync(self.uniffiClonePointer(),
@@ -716,17 +734,76 @@ public func FfiConverterTypeSyncAuthInfo_lower(_ value: SyncAuthInfo) -> RustBuf
 }
 
 public struct SyncParams {
+    /**
+     * Why are we performing this sync?
+     */
     public var reason: SyncReason
+    /**
+     * Which engines should we sync?
+     */
     public var engines: SyncEngineSelection
+    /**
+     * Which engines should be enabled in the "account global" list (for
+     * example, if the UI was used to change an engine's state since the last
+     * sync).
+     */
     public var enabledChanges: [String: Bool]
+    /**
+     * Keys to encrypt/decrypt data from local database files.  These are
+     * separate from the key we use to encrypt the sync payload as a whole.
+     */
     public var localEncryptionKeys: [String: String]
+    /**
+     * Authorization for the sync server
+     */
     public var authInfo: SyncAuthInfo
+    /**
+     * An opaque string, as returned in the previous sync's SyncResult and
+     * persisted to disk, or null if no such state is available. This includes
+     * information such as the list of engines previously enabled, certain
+     * server timestamps and GUIDs etc. If this value isn't correctly persisted
+     * and round-tripped, each sync may look like a "first sync".
+     */
     public var persistedState: String?
+    /**
+     * Information about the current device, such as its name, formfactor and
+     * FxA device ID.
+     */
     public var deviceSettings: DeviceSettings
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(reason: SyncReason, engines: SyncEngineSelection, enabledChanges: [String: Bool], localEncryptionKeys: [String: String], authInfo: SyncAuthInfo, persistedState: String?, deviceSettings: DeviceSettings) {
+    public init(
+        /**
+         * Why are we performing this sync?
+         */ reason: SyncReason,
+        /**
+            * Which engines should we sync?
+            */ engines: SyncEngineSelection,
+        /**
+            * Which engines should be enabled in the "account global" list (for
+            * example, if the UI was used to change an engine's state since the last
+            * sync).
+            */ enabledChanges: [String: Bool],
+        /**
+            * Keys to encrypt/decrypt data from local database files.  These are
+            * separate from the key we use to encrypt the sync payload as a whole.
+            */ localEncryptionKeys: [String: String],
+        /**
+            * Authorization for the sync server
+            */ authInfo: SyncAuthInfo,
+        /**
+            * An opaque string, as returned in the previous sync's SyncResult and
+            * persisted to disk, or null if no such state is available. This includes
+            * information such as the list of engines previously enabled, certain
+            * server timestamps and GUIDs etc. If this value isn't correctly persisted
+            * and round-tripped, each sync may look like a "first sync".
+            */ persistedState: String?,
+        /**
+            * Information about the current device, such as its name, formfactor and
+            * FxA device ID.
+            */ deviceSettings: DeviceSettings
+    ) {
         self.reason = reason
         self.engines = engines
         self.enabledChanges = enabledChanges
@@ -808,17 +885,72 @@ public func FfiConverterTypeSyncParams_lower(_ value: SyncParams) -> RustBuffer 
 }
 
 public struct SyncResult {
+    /**
+     * Result from the sync server
+     */
     public var status: ServiceStatus
+    /**
+     * Engines that synced successfully
+     */
     public var successful: [String]
+    /**
+     * Maps the names of engines that failed to sync to the reason why
+     */
     public var failures: [String: String]
+    /**
+     * State that should be persisted to disk and supplied to the sync method
+     * on the next sync (See SyncParams.persisted_state).
+     */
     public var persistedState: String
+    /**
+     * The list of engines which are marked as "declined" (ie, disabled) on the
+     * sync server. The list of declined engines is global to the account
+     * rather than to the device. Apps should use this after every sync to
+     * update the local state (ie, to ensure that their Sync UI correctly
+     * reflects what engines are enabled and disabled), because these could
+     * change after every sync.
+     */
     public var declined: [String]?
+    /**
+     * Earliest time that the next sync should happen at
+     */
     public var nextSyncAllowedAt: Date?
+    /**
+     * JSON string encoding a `SyncTelemetryPing` object
+     */
     public var telemetryJson: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(status: ServiceStatus, successful: [String], failures: [String: String], persistedState: String, declined: [String]?, nextSyncAllowedAt: Date?, telemetryJson: String?) {
+    public init(
+        /**
+         * Result from the sync server
+         */ status: ServiceStatus,
+        /**
+            * Engines that synced successfully
+            */ successful: [String],
+        /**
+            * Maps the names of engines that failed to sync to the reason why
+            */ failures: [String: String],
+        /**
+            * State that should be persisted to disk and supplied to the sync method
+            * on the next sync (See SyncParams.persisted_state).
+            */ persistedState: String,
+        /**
+            * The list of engines which are marked as "declined" (ie, disabled) on the
+            * sync server. The list of declined engines is global to the account
+            * rather than to the device. Apps should use this after every sync to
+            * update the local state (ie, to ensure that their Sync UI correctly
+            * reflects what engines are enabled and disabled), because these could
+            * change after every sync.
+            */ declined: [String]?,
+        /**
+            * Earliest time that the next sync should happen at
+            */ nextSyncAllowedAt: Date?,
+        /**
+            * JSON string encoding a `SyncTelemetryPing` object
+            */ telemetryJson: String?
+    ) {
         self.status = status
         self.successful = successful
         self.failures = failures

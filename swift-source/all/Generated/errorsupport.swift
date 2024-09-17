@@ -545,6 +545,9 @@ extension FfiConverterCallbackInterfaceApplicationErrorReporter: FfiConverter {
     }
 }
 
+/**
+ * Set the global error reporter.  This is typically done early in startup.
+ */
 public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter) { try! rustCall {
     uniffi_error_support_fn_func_set_application_error_reporter(
         FfiConverterCallbackInterfaceApplicationErrorReporter.lower(errorReporter), $0
@@ -552,6 +555,10 @@ public func setApplicationErrorReporter(errorReporter: ApplicationErrorReporter)
 }
 }
 
+/**
+ * Unset the global error reporter.  This is typically done at shutdown for
+ * platforms that want to cleanup references like Desktop.
+ */
 public func unsetApplicationErrorReporter() { try! rustCall {
     uniffi_error_support_fn_func_unset_application_error_reporter($0
     )

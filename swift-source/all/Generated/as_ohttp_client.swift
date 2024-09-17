@@ -445,12 +445,30 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+/**
+ * Each OHTTP request-reply exchange needs to create an OhttpSession
+ * object to manage encryption state.
+ */
 public protocol OhttpSessionProtocol: AnyObject {
+    /**
+     * Decypt and unpack the response from the Relay for the previously
+     * encapsulated request. You must use the same OhttpSession that
+     * generated the request message.
+     */
     func decapsulate(encoded: [UInt8]) throws -> OhttpResponse
 
+    /**
+     * Encapsulate an HTTP request as Binary HTTP and then encrypt that
+     * payload using HPKE. The caller is responsible for sending the
+     * resulting message to the Relay.
+     */
     func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws -> [UInt8]
 }
 
+/**
+ * Each OHTTP request-reply exchange needs to create an OhttpSession
+ * object to manage encryption state.
+ */
 open class OhttpSession:
     OhttpSessionProtocol
 {
@@ -481,6 +499,9 @@ open class OhttpSession:
         return try! rustCall { uniffi_as_ohttp_client_fn_clone_ohttpsession(self.pointer, $0) }
     }
 
+    /**
+     * Initialize encryption state based on specific Gateway key config
+     */
     public convenience init(config: [UInt8]) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypeOhttpError.lift) {
@@ -499,6 +520,11 @@ open class OhttpSession:
         try! rustCall { uniffi_as_ohttp_client_fn_free_ohttpsession(pointer, $0) }
     }
 
+    /**
+     * Decypt and unpack the response from the Relay for the previously
+     * encapsulated request. You must use the same OhttpSession that
+     * generated the request message.
+     */
     open func decapsulate(encoded: [UInt8]) throws -> OhttpResponse {
         return try FfiConverterTypeOhttpResponse.lift(rustCallWithError(FfiConverterTypeOhttpError.lift) {
             uniffi_as_ohttp_client_fn_method_ohttpsession_decapsulate(self.uniffiClonePointer(),
@@ -506,6 +532,11 @@ open class OhttpSession:
         })
     }
 
+    /**
+     * Encapsulate an HTTP request as Binary HTTP and then encrypt that
+     * payload using HPKE. The caller is responsible for sending the
+     * resulting message to the Relay.
+     */
     open func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws -> [UInt8] {
         return try FfiConverterSequenceUInt8.lift(rustCallWithError(FfiConverterTypeOhttpError.lift) {
             uniffi_as_ohttp_client_fn_method_ohttpsession_encapsulate(self.uniffiClonePointer(),
@@ -557,7 +588,14 @@ public func FfiConverterTypeOhttpSession_lower(_ value: OhttpSession) -> UnsafeM
     return FfiConverterTypeOhttpSession.lower(value)
 }
 
+/**
+ * A testing interface for decrypting and responding to OHTTP messages. This
+ * should only be used for testing.
+ */
 public protocol OhttpTestServerProtocol: AnyObject {
+    /**
+     * Return the unique encryption key config for this instance of test server.
+     */
     func getConfig() -> [UInt8]
 
     func receive(message: [UInt8]) throws -> TestServerRequest
@@ -565,6 +603,10 @@ public protocol OhttpTestServerProtocol: AnyObject {
     func respond(response: OhttpResponse) throws -> [UInt8]
 }
 
+/**
+ * A testing interface for decrypting and responding to OHTTP messages. This
+ * should only be used for testing.
+ */
 open class OhttpTestServer:
     OhttpTestServerProtocol
 {
@@ -612,6 +654,9 @@ open class OhttpTestServer:
         try! rustCall { uniffi_as_ohttp_client_fn_free_ohttptestserver(pointer, $0) }
     }
 
+    /**
+     * Return the unique encryption key config for this instance of test server.
+     */
     open func getConfig() -> [UInt8] {
         return try! FfiConverterSequenceUInt8.lift(try! rustCall {
             uniffi_as_ohttp_client_fn_method_ohttptestserver_get_config(self.uniffiClonePointer(), $0)
@@ -671,6 +716,9 @@ public func FfiConverterTypeOhttpTestServer_lower(_ value: OhttpTestServer) -> U
     return FfiConverterTypeOhttpTestServer.lower(value)
 }
 
+/**
+ * The decrypted response from the Gateway/Target
+ */
 public struct OhttpResponse {
     public var statusCode: UInt16
     public var headers: [String: String]

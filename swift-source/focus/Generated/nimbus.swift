@@ -467,54 +467,176 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol NimbusClientProtocol: AnyObject {
+    /**
+     * Advances what the event store thinks is now.
+     * This, and `record_past_event` are useful for testing.
+     * `by_seconds` must be positive.
+     */
     func advanceEventTime(bySeconds: Int64) throws
 
+    /**
+     * Apply the updated experiments from the last fetch.
+     * After calling this, the list of active experiments might change
+     * (there might be new experiments, or old experiments might have expired).
+     */
     func applyPendingExperiments() throws -> [EnrollmentChangeEvent]
 
     func clearEvents() throws
 
+    /**
+     * This provides a unified String interpolation library which exposes the application context.
+     * It's first use is in the messaging helper, to add extra parameters to URLs.
+     */
     func createStringHelper(additionalContext: JsonObject?) throws -> NimbusStringHelper
 
+    /**
+     * This provides low level access to the targeting machinery for other uses by the application (e.g. messages)
+     * Additional parameters can be added via the optional JSON object. This allows for many JEXL expressions
+     * to be run across the same context.
+     */
     func createTargetingHelper(additionalContext: JsonObject?) throws -> NimbusTargetingHelper
 
     func dumpStateToLog() throws
 
+    /**
+     * Fetches the list of experiments from the server. This does not affect the list
+     * of active experiments or experiment enrolment.
+     * Fetched experiments are not applied until `apply_pending_updates()` is called.
+     */
     func fetchExperiments() throws
 
+    /**
+     * Returns a list of experiments this user is enrolled in.
+     */
     func getActiveExperiments() throws -> [EnrolledExperiment]
 
+    /**
+     * Returns a list of experiments for this `app_name`, as specified in the `AppContext`.
+     * It is not intended to be used to be used for user facing applications.
+     */
     func getAvailableExperiments() throws -> [AvailableExperiment]
 
+    /**
+     * Returns the branch allocated for a given slug or id.
+     */
     func getExperimentBranch(id: String) throws -> String?
 
+    /**
+     * Returns a list of experiment branches for a given experiment ID.
+     */
     func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch]
 
     func getFeatureConfigVariables(featureId: String) throws -> String?
 
+    /**
+     * Getter and setter for user's participation in all experiments.
+     * Possible values are:
+     * * `true`: the user will not enroll in new experiments, and opt out of all existing ones.
+     * * `false`: experiments proceed as usual.
+     */
     func getGlobalUserParticipation() throws -> Bool
 
+    /**
+     * Initializes the database and caches enough information so that the
+     * non-blocking API functions (eg, `get_experiment_branch()`) can
+     * return accurate results rather than throwing a "not initialized" error.
+     * It's not strictly necessary to call this function - any function that
+     * wants to use the database will implicitly initialize too - this exists
+     * so that the consuming application can have confidence the non-blocking
+     * functions will return data instead of returning an error, and will do
+     * the minimum amount of work to achieve that.
+     */
     func initialize() throws
 
     func isFetchEnabled() throws -> Bool
 
+    /**
+     * Opt in to a specific branch on a specific experiment. Useful for
+     * developers to test their app's interaction with the experiment.
+     */
     func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent]
 
+    /**
+     * Opt out of a specific experiment.
+     */
     func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent]
 
+    /**
+     * Records an event for the purposes of behavioral targeting.
+     * This function is used to record and persist data used for the behavioral
+     * targeting such as "core-active" user targeting.
+     */
     func recordEvent(eventId: String, count: Int64) throws
 
+    /**
+     * Records a Glean event that this feature has been exposed.
+     * If the feature is not involved in an experiment, then the event is suppressed.
+     * If the feature is only involved in a rollout, then the event is suppressed.
+     * If the feature is involved in an experiment, then record the experiment slug
+     * and branch.
+     * If the feature is involved in an experiment and a rollout, then record only the
+     * experiment slug and branch.
+     * If the slug is specified, then use this as the experiment, and use it to look up
+     * the branch. This is useful for coenrolling features.
+     */
     func recordFeatureExposure(featureId: String, slug: String?)
 
+    /**
+     * Records a Glean event that this feature configuration is malformed.
+     * Accepts a part_id to give the experiment owner or feature implementer
+     * clues where to look.
+     * The Glean event will always fire, but the content of that event will
+     * vary depending on whether then feature is part of an experiment or rollout
+     * or not.
+     */
     func recordMalformedFeatureConfig(featureId: String, partId: String)
 
+    /**
+     * Records an event as if it were in the past.
+     * This, and `advance_event_time` are useful for testing.
+     * `seconds_ago` must be positive.
+     */
     func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64) throws
 
+    /**
+     * These are test-only functions and should never be exposed to production
+     * users, as they mess with the "statistical requirements" of the SDK.
+     * Reset the enrollments and experiments in the database to an empty state.
+     */
     func resetEnrollments() throws
 
+    /**
+     * Reset internal state in response to application-level telemetry reset.
+     *
+     * Consumers should call this method when the user resets the telemetry state of the
+     * consuming application, such as by opting out of submitting telemetry. It resets the
+     * internal state of the Nimbus client to create a clean break between data collected
+     * before and after the reset, including:
+     *
+     *    * clearing any unique identifiers used internally, so they will reset to
+     *      new random values on next use.
+     *    * accepting new randomization units, based on application-level ids that
+     *      may have also changed.
+     *    * disqualifying this client out of any active experiments, to avoid submitting
+     *      misleading incomplete data.
+
+     */
     func resetTelemetryIdentifiers() throws -> [EnrollmentChangeEvent]
 
+    /**
+     * A convenience method for apps to set the experiments from a local source
+     * for either testing, or before the first fetch has finished.
+     *
+     * Experiments set with this method are not applied until `apply_pending_updates()` is called.
+     */
     func setExperimentsLocally(experimentsJson: String) throws
 
+    /**
+     * Toggles the enablement of the fetch. If `false`, then calling `fetch_experiments`
+     * returns immediately, having not done any fetching from remote settings.
+     * This is only useful for QA, and should not be used in production: use
+     * `set_global_user_participation` instead.
+     */
     func setFetchEnabled(flag: Bool) throws
 
     func setGlobalUserParticipation(optIn: Bool) throws -> [EnrollmentChangeEvent]
@@ -573,12 +695,22 @@ open class NimbusClient:
         try! rustCall { uniffi_nimbus_fn_free_nimbusclient(pointer, $0) }
     }
 
+    /**
+     * Advances what the event store thinks is now.
+     * This, and `record_past_event` are useful for testing.
+     * `by_seconds` must be positive.
+     */
     open func advanceEventTime(bySeconds: Int64) throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_advance_event_time(self.uniffiClonePointer(),
                                                                 FfiConverterInt64.lower(bySeconds), $0)
     }
     }
 
+    /**
+     * Apply the updated experiments from the last fetch.
+     * After calling this, the list of active experiments might change
+     * (there might be new experiments, or old experiments might have expired).
+     */
     open func applyPendingExperiments() throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_apply_pending_experiments(self.uniffiClonePointer(), $0)
@@ -590,6 +722,10 @@ open class NimbusClient:
     }
     }
 
+    /**
+     * This provides a unified String interpolation library which exposes the application context.
+     * It's first use is in the messaging helper, to add extra parameters to URLs.
+     */
     open func createStringHelper(additionalContext: JsonObject? = nil) throws -> NimbusStringHelper {
         return try FfiConverterTypeNimbusStringHelper.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_create_string_helper(self.uniffiClonePointer(),
@@ -597,6 +733,11 @@ open class NimbusClient:
         })
     }
 
+    /**
+     * This provides low level access to the targeting machinery for other uses by the application (e.g. messages)
+     * Additional parameters can be added via the optional JSON object. This allows for many JEXL expressions
+     * to be run across the same context.
+     */
     open func createTargetingHelper(additionalContext: JsonObject? = nil) throws -> NimbusTargetingHelper {
         return try FfiConverterTypeNimbusTargetingHelper.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_create_targeting_helper(self.uniffiClonePointer(),
@@ -609,23 +750,38 @@ open class NimbusClient:
     }
     }
 
+    /**
+     * Fetches the list of experiments from the server. This does not affect the list
+     * of active experiments or experiment enrolment.
+     * Fetched experiments are not applied until `apply_pending_updates()` is called.
+     */
     open func fetchExperiments() throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_fetch_experiments(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Returns a list of experiments this user is enrolled in.
+     */
     open func getActiveExperiments() throws -> [EnrolledExperiment] {
         return try FfiConverterSequenceTypeEnrolledExperiment.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_get_active_experiments(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Returns a list of experiments for this `app_name`, as specified in the `AppContext`.
+     * It is not intended to be used to be used for user facing applications.
+     */
     open func getAvailableExperiments() throws -> [AvailableExperiment] {
         return try FfiConverterSequenceTypeAvailableExperiment.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_get_available_experiments(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Returns the branch allocated for a given slug or id.
+     */
     open func getExperimentBranch(id: String) throws -> String? {
         return try FfiConverterOptionString.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_get_experiment_branch(self.uniffiClonePointer(),
@@ -633,6 +789,9 @@ open class NimbusClient:
         })
     }
 
+    /**
+     * Returns a list of experiment branches for a given experiment ID.
+     */
     open func getExperimentBranches(experimentSlug: String) throws -> [ExperimentBranch] {
         return try FfiConverterSequenceTypeExperimentBranch.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_get_experiment_branches(self.uniffiClonePointer(),
@@ -647,12 +806,28 @@ open class NimbusClient:
         })
     }
 
+    /**
+     * Getter and setter for user's participation in all experiments.
+     * Possible values are:
+     * * `true`: the user will not enroll in new experiments, and opt out of all existing ones.
+     * * `false`: experiments proceed as usual.
+     */
     open func getGlobalUserParticipation() throws -> Bool {
         return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_get_global_user_participation(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Initializes the database and caches enough information so that the
+     * non-blocking API functions (eg, `get_experiment_branch()`) can
+     * return accurate results rather than throwing a "not initialized" error.
+     * It's not strictly necessary to call this function - any function that
+     * wants to use the database will implicitly initialize too - this exists
+     * so that the consuming application can have confidence the non-blocking
+     * functions will return data instead of returning an error, and will do
+     * the minimum amount of work to achieve that.
+     */
     open func initialize() throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_initialize(self.uniffiClonePointer(), $0)
     }
@@ -664,6 +839,10 @@ open class NimbusClient:
         })
     }
 
+    /**
+     * Opt in to a specific branch on a specific experiment. Useful for
+     * developers to test their app's interaction with the experiment.
+     */
     open func optInWithBranch(experimentSlug: String, branch: String) throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_opt_in_with_branch(self.uniffiClonePointer(),
@@ -672,6 +851,9 @@ open class NimbusClient:
         })
     }
 
+    /**
+     * Opt out of a specific experiment.
+     */
     open func optOut(experimentSlug: String) throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_opt_out(self.uniffiClonePointer(),
@@ -679,6 +861,11 @@ open class NimbusClient:
         })
     }
 
+    /**
+     * Records an event for the purposes of behavioral targeting.
+     * This function is used to record and persist data used for the behavioral
+     * targeting such as "core-active" user targeting.
+     */
     open func recordEvent(eventId: String, count: Int64 = Int64(1)) throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_record_event(self.uniffiClonePointer(),
                                                           FfiConverterString.lower(eventId),
@@ -686,6 +873,17 @@ open class NimbusClient:
     }
     }
 
+    /**
+     * Records a Glean event that this feature has been exposed.
+     * If the feature is not involved in an experiment, then the event is suppressed.
+     * If the feature is only involved in a rollout, then the event is suppressed.
+     * If the feature is involved in an experiment, then record the experiment slug
+     * and branch.
+     * If the feature is involved in an experiment and a rollout, then record only the
+     * experiment slug and branch.
+     * If the slug is specified, then use this as the experiment, and use it to look up
+     * the branch. This is useful for coenrolling features.
+     */
     open func recordFeatureExposure(featureId: String, slug: String?) { try! rustCall {
         uniffi_nimbus_fn_method_nimbusclient_record_feature_exposure(self.uniffiClonePointer(),
                                                                      FfiConverterString.lower(featureId),
@@ -693,6 +891,14 @@ open class NimbusClient:
     }
     }
 
+    /**
+     * Records a Glean event that this feature configuration is malformed.
+     * Accepts a part_id to give the experiment owner or feature implementer
+     * clues where to look.
+     * The Glean event will always fire, but the content of that event will
+     * vary depending on whether then feature is part of an experiment or rollout
+     * or not.
+     */
     open func recordMalformedFeatureConfig(featureId: String, partId: String) { try! rustCall {
         uniffi_nimbus_fn_method_nimbusclient_record_malformed_feature_config(self.uniffiClonePointer(),
                                                                              FfiConverterString.lower(featureId),
@@ -700,6 +906,11 @@ open class NimbusClient:
     }
     }
 
+    /**
+     * Records an event as if it were in the past.
+     * This, and `advance_event_time` are useful for testing.
+     * `seconds_ago` must be positive.
+     */
     open func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64 = Int64(1)) throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_record_past_event(self.uniffiClonePointer(),
                                                                FfiConverterString.lower(eventId),
@@ -708,23 +919,56 @@ open class NimbusClient:
     }
     }
 
+    /**
+     * These are test-only functions and should never be exposed to production
+     * users, as they mess with the "statistical requirements" of the SDK.
+     * Reset the enrollments and experiments in the database to an empty state.
+     */
     open func resetEnrollments() throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_reset_enrollments(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Reset internal state in response to application-level telemetry reset.
+     *
+     * Consumers should call this method when the user resets the telemetry state of the
+     * consuming application, such as by opting out of submitting telemetry. It resets the
+     * internal state of the Nimbus client to create a clean break between data collected
+     * before and after the reset, including:
+     *
+     *    * clearing any unique identifiers used internally, so they will reset to
+     *      new random values on next use.
+     *    * accepting new randomization units, based on application-level ids that
+     *      may have also changed.
+     *    * disqualifying this client out of any active experiments, to avoid submitting
+     *      misleading incomplete data.
+
+     */
     open func resetTelemetryIdentifiers() throws -> [EnrollmentChangeEvent] {
         return try FfiConverterSequenceTypeEnrollmentChangeEvent.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * A convenience method for apps to set the experiments from a local source
+     * for either testing, or before the first fetch has finished.
+     *
+     * Experiments set with this method are not applied until `apply_pending_updates()` is called.
+     */
     open func setExperimentsLocally(experimentsJson: String) throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_set_experiments_locally(self.uniffiClonePointer(),
                                                                      FfiConverterString.lower(experimentsJson), $0)
     }
     }
 
+    /**
+     * Toggles the enablement of the fetch. If `false`, then calling `fetch_experiments`
+     * returns immediately, having not done any fetching from remote settings.
+     * This is only useful for QA, and should not be used in production: use
+     * `set_global_user_participation` instead.
+     */
     open func setFetchEnabled(flag: Bool) throws { try rustCallWithError(FfiConverterTypeNimbusError.lift) {
         uniffi_nimbus_fn_method_nimbusclient_set_fetch_enabled(self.uniffiClonePointer(),
                                                                FfiConverterBool.lower(flag), $0)
@@ -778,8 +1022,16 @@ public func FfiConverterTypeNimbusClient_lower(_ value: NimbusClient) -> UnsafeM
 }
 
 public protocol NimbusStringHelperProtocol: AnyObject {
+    /**
+     * Generates an optional UUID to be passed into the `string_format` method.
+     * If the return is not null, then it should be recorded with Glean as a UuidMetricType.
+     */
     func getUuid(template: String) -> String?
 
+    /**
+     * Take the given template and find patterns that match the regular expression `{\w+}`.
+     * Any matches are used as keys into the application context, the `additional_context` or the special case `uuid`.
+     */
     func stringFormat(template: String, uuid: String?) -> String
 }
 
@@ -823,6 +1075,10 @@ open class NimbusStringHelper:
         try! rustCall { uniffi_nimbus_fn_free_nimbusstringhelper(pointer, $0) }
     }
 
+    /**
+     * Generates an optional UUID to be passed into the `string_format` method.
+     * If the return is not null, then it should be recorded with Glean as a UuidMetricType.
+     */
     open func getUuid(template: String) -> String? {
         return try! FfiConverterOptionString.lift(try! rustCall {
             uniffi_nimbus_fn_method_nimbusstringhelper_get_uuid(self.uniffiClonePointer(),
@@ -830,6 +1086,10 @@ open class NimbusStringHelper:
         })
     }
 
+    /**
+     * Take the given template and find patterns that match the regular expression `{\w+}`.
+     * Any matches are used as keys into the application context, the `additional_context` or the special case `uuid`.
+     */
     open func stringFormat(template: String, uuid: String? = nil) -> String {
         return try! FfiConverterString.lift(try! rustCall {
             uniffi_nimbus_fn_method_nimbusstringhelper_string_format(self.uniffiClonePointer(),
@@ -878,6 +1138,10 @@ public func FfiConverterTypeNimbusStringHelper_lower(_ value: NimbusStringHelper
 }
 
 public protocol NimbusTargetingHelperProtocol: AnyObject {
+    /**
+     * Execute the given jexl expression and evaluate against the existing targeting parameters and context passed to
+     * the helper at construction.
+     */
     func evalJexl(expression: String) throws -> Bool
 }
 
@@ -921,6 +1185,10 @@ open class NimbusTargetingHelper:
         try! rustCall { uniffi_nimbus_fn_free_nimbustargetinghelper(pointer, $0) }
     }
 
+    /**
+     * Execute the given jexl expression and evaluate against the existing targeting parameters and context passed to
+     * the helper at construction.
+     */
     open func evalJexl(expression: String) throws -> Bool {
         return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeNimbusError.lift) {
             uniffi_nimbus_fn_method_nimbustargetinghelper_eval_jexl(self.uniffiClonePointer(),
@@ -2074,6 +2342,10 @@ extension NimbusError: Foundation.LocalizedError {
 public protocol MetricsHandler: AnyObject {
     func recordEnrollmentStatuses(enrollmentStatusExtras: [EnrollmentStatusExtraDef])
 
+    /**
+     * Feature activation is the pre-cursor to feature exposure: it is defined as the first time
+     * the feature configuration is asked for.
+     */
     func recordFeatureActivation(event: FeatureExposureExtraDef)
 
     func recordFeatureExposure(event: FeatureExposureExtraDef)

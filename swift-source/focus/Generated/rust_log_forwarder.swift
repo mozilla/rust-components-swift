@@ -421,12 +421,19 @@ private struct FfiConverterString: FfiConverter {
 
 public struct Record {
     public var level: Level
+    /**
+     * The target field from the Rust log crate.  Usually the Rust module name, however log! calls can manually override the target name.
+     */
     public var target: String
     public var message: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(level: Level, target: String, message: String) {
+    public init(level: Level,
+                /**
+                    * The target field from the Rust log crate.  Usually the Rust module name, however log! calls can manually override the target name.
+                    */ target: String, message: String)
+    {
         self.level = level
         self.target = target
         self.message = message
@@ -641,6 +648,11 @@ private struct FfiConverterOptionCallbackInterfaceAppServicesLogger: FfiConverte
     }
 }
 
+/**
+ * Set the logger to forward to.
+ *
+ * Pass in null to disable logging.
+ */
 public func setLogger(logger: AppServicesLogger?) { try! rustCall {
     uniffi_rust_log_forwarder_fn_func_set_logger(
         FfiConverterOptionCallbackInterfaceAppServicesLogger.lower(logger), $0
@@ -648,6 +660,9 @@ public func setLogger(logger: AppServicesLogger?) { try! rustCall {
 }
 }
 
+/**
+ * Set the maximum log level filter.  Records below this level will not be sent to the logger.
+ */
 public func setMaxLevel(level: Level) { try! rustCall {
     uniffi_rust_log_forwarder_fn_func_set_max_level(
         FfiConverterTypeLevel.lower(level), $0

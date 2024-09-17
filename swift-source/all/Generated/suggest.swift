@@ -522,6 +522,12 @@ public protocol SuggestStoreProtocol : AnyObject {
     
     func ingest(constraints: SuggestIngestionConstraints) throws  -> SuggestIngestionMetrics
     
+    /**
+     * Interrupt operations
+     *
+     * This is optional for backwards compatibility, but this is deprecated.  Consumers should
+     * update their code to pass in a InterruptKind value.
+     */
     func interrupt(kind: InterruptKind?) 
     
     func query(query: SuggestionQuery) throws  -> [Suggestion]
@@ -621,6 +627,12 @@ open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestInge
 })
 }
     
+    /**
+     * Interrupt operations
+     *
+     * This is optional for backwards compatibility, but this is deprecated.  Consumers should
+     * update their code to pass in a InterruptKind value.
+     */
 open func interrupt(kind: InterruptKind? = nil) {try! rustCall() {
     uniffi_suggest_fn_method_suggeststore_interrupt(self.uniffiClonePointer(),
         FfiConverterOptionTypeInterruptKind.lower(kind),$0
@@ -696,10 +708,20 @@ public protocol SuggestStoreBuilderProtocol : AnyObject {
     
     func build() throws  -> SuggestStore
     
+    /**
+     * Deprecated: this is no longer used by the suggest component.
+     */
     func cachePath(path: String)  -> SuggestStoreBuilder
     
     func dataPath(path: String)  -> SuggestStoreBuilder
     
+    /**
+     * Add an sqlite3 extension to load
+     *
+     * library_name should be the name of the library without any extension, for example `libmozsqlite3`.
+     * entrypoint should be the entry point, for example `sqlite3_fts5_init`.  If `null` (the default)
+     * entry point will be used (see https://sqlite.org/loadext.html for details).
+     */
     func loadExtension(libraryName: String, entrypoint: String?)  -> SuggestStoreBuilder
     
     func remoteSettingsBucketName(bucketName: String)  -> SuggestStoreBuilder
@@ -762,6 +784,9 @@ open func build()throws  -> SuggestStore {
 })
 }
     
+    /**
+     * Deprecated: this is no longer used by the suggest component.
+     */
 open func cachePath(path: String) -> SuggestStoreBuilder {
     return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_cache_path(self.uniffiClonePointer(),
@@ -778,6 +803,13 @@ open func dataPath(path: String) -> SuggestStoreBuilder {
 })
 }
     
+    /**
+     * Add an sqlite3 extension to load
+     *
+     * library_name should be the name of the library without any extension, for example `libmozsqlite3`.
+     * entrypoint should be the entry point, for example `sqlite3_fts5_init`.  If `null` (the default)
+     * entry point will be used (see https://sqlite.org/loadext.html for details).
+     */
 open func loadExtension(libraryName: String, entrypoint: String?) -> SuggestStoreBuilder {
     return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_load_extension(self.uniffiClonePointer(),
@@ -850,15 +882,21 @@ public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuild
 
 
 /**
- * A single sample for a labeled timing distribution metric
+ * / A single sample for a labeled timing distribution metric
  */
 public struct LabeledTimingSample {
     public var label: String
+    /**
+     * Time in microseconds
+     */
     public var value: UInt64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(label: String, value: UInt64) {
+    public init(label: String, 
+        /**
+         * Time in microseconds
+         */value: UInt64) {
         self.label = label
         self.value = value
     }
@@ -911,11 +949,17 @@ public func FfiConverterTypeLabeledTimingSample_lower(_ value: LabeledTimingSamp
 
 public struct QueryWithMetricsResult {
     public var suggestions: [Suggestion]
+    /**
+     * Samples for the `suggest.query_time` metric
+     */
     public var queryTimes: [LabeledTimingSample]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(suggestions: [Suggestion], queryTimes: [LabeledTimingSample]) {
+    public init(suggestions: [Suggestion], 
+        /**
+         * Samples for the `suggest.query_time` metric
+         */queryTimes: [LabeledTimingSample]) {
         self.suggestions = suggestions
         self.queryTimes = queryTimes
     }
@@ -1018,11 +1062,29 @@ public func FfiConverterTypeSuggestGlobalConfig_lower(_ value: SuggestGlobalConf
 public struct SuggestIngestionConstraints {
     public var providers: [SuggestionProvider]?
     public var providerConstraints: SuggestionProviderConstraints?
+    /**
+     * Only ingest if the table `suggestions` is empty.
+     *
+     * This is indented to handle periodic updates.  Consumers can schedule an ingest with
+     * `empty_only=true` on startup and a regular ingest with `empty_only=false` to run on a long periodic schedule (maybe
+     * once a day). This allows ingestion to normally be run at a slow, periodic rate.  However, if
+     * there is a schema upgrade that causes the database to be thrown away, then the
+     * `empty_only=true` ingestion that runs on startup will repopulate it.
+     */
     public var emptyOnly: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(providers: [SuggestionProvider]? = nil, providerConstraints: SuggestionProviderConstraints? = nil, emptyOnly: Bool = false) {
+    public init(providers: [SuggestionProvider]? = nil, providerConstraints: SuggestionProviderConstraints? = nil, 
+        /**
+         * Only ingest if the table `suggestions` is empty.
+         *
+         * This is indented to handle periodic updates.  Consumers can schedule an ingest with
+         * `empty_only=true` on startup and a regular ingest with `empty_only=false` to run on a long periodic schedule (maybe
+         * once a day). This allows ingestion to normally be run at a slow, periodic rate.  However, if
+         * there is a schema upgrade that causes the database to be thrown away, then the
+         * `empty_only=true` ingestion that runs on startup will repopulate it.
+         */emptyOnly: Bool = false) {
         self.providers = providers
         self.providerConstraints = providerConstraints
         self.emptyOnly = emptyOnly
@@ -1081,12 +1143,24 @@ public func FfiConverterTypeSuggestIngestionConstraints_lower(_ value: SuggestIn
 
 
 public struct SuggestIngestionMetrics {
+    /**
+     * Samples for the `suggest.ingestion_time` metric
+     */
     public var ingestionTimes: [LabeledTimingSample]
+    /**
+     * Samples for the `suggest.ingestion_download_time` metric
+     */
     public var downloadTimes: [LabeledTimingSample]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(ingestionTimes: [LabeledTimingSample], downloadTimes: [LabeledTimingSample]) {
+    public init(
+        /**
+         * Samples for the `suggest.ingestion_time` metric
+         */ingestionTimes: [LabeledTimingSample], 
+        /**
+         * Samples for the `suggest.ingestion_download_time` metric
+         */downloadTimes: [LabeledTimingSample]) {
         self.ingestionTimes = ingestionTimes
         self.downloadTimes = downloadTimes
     }
@@ -1137,12 +1211,26 @@ public func FfiConverterTypeSuggestIngestionMetrics_lower(_ value: SuggestIngest
 }
 
 
+/**
+ * Some providers manage multiple suggestion subtypes. Queries, ingests, and
+ * other operations on those providers must be constrained to a desired subtype.
+ */
 public struct SuggestionProviderConstraints {
+    /**
+     * `Exposure` provider - For each desired exposure suggestion type, this
+     * should contain the value of the `suggestion_type` field of its remote
+     * settings record(s).
+     */
     public var exposureSuggestionTypes: [String]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(exposureSuggestionTypes: [String]? = nil) {
+    public init(
+        /**
+         * `Exposure` provider - For each desired exposure suggestion type, this
+         * should contain the value of the `suggestion_type` field of its remote
+         * settings record(s).
+         */exposureSuggestionTypes: [String]? = nil) {
         self.exposureSuggestionTypes = exposureSuggestionTypes
     }
 }
@@ -1325,7 +1413,13 @@ public enum SuggestApiError {
 
     
     
+    /**
+     * An operation was interrupted by calling `SuggestStore.interrupt()`
+     */
     case Interrupted
+    /**
+     * The server requested a backoff after too many requests
+     */
     case Backoff(seconds: UInt64
     )
     case Network(reason: String

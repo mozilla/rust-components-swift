@@ -647,14 +647,25 @@ public func FfiConverterTypeLoginStore_lower(_ value: LoginStore) -> UnsafeMutab
     return FfiConverterTypeLoginStore.lower(value)
 }
 
+/**
+ * An encrypted version of [Login].  This is what we return for all the "read"
+ * APIs - we never return the cleartext of encrypted fields.
+ */
 public struct EncryptedLogin {
     public var record: RecordFields
     public var fields: LoginFields
+    /**
+     * ciphertext of a SecureLoginFields
+     */
     public var secFields: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(record: RecordFields, fields: LoginFields, secFields: String) {
+    public init(record: RecordFields, fields: LoginFields,
+                /**
+                    * ciphertext of a SecureLoginFields
+                    */ secFields: String)
+    {
         self.record = record
         self.fields = fields
         self.secFields = secFields
@@ -707,6 +718,9 @@ public func FfiConverterTypeEncryptedLogin_lower(_ value: EncryptedLogin) -> Rus
     return FfiConverterTypeEncryptedLogin.lower(value)
 }
 
+/**
+ * A login stored in the database
+ */
 public struct Login {
     public var record: RecordFields
     public var fields: LoginFields
@@ -767,6 +781,10 @@ public func FfiConverterTypeLogin_lower(_ value: Login) -> RustBuffer {
     return FfiConverterTypeLogin.lower(value)
 }
 
+/**
+ * A login entry from the user, not linked to any database record.
+ * The add/update APIs input these, alongside an encryption key.
+ */
 public struct LoginEntry {
     public var fields: LoginFields
     public var secFields: SecureLoginFields
@@ -819,6 +837,9 @@ public func FfiConverterTypeLoginEntry_lower(_ value: LoginEntry) -> RustBuffer 
     return FfiConverterTypeLoginEntry.lower(value)
 }
 
+/**
+ * The fields you can add or update.
+ */
 public struct LoginFields {
     public var origin: String
     public var httpRealm: String?
@@ -895,6 +916,9 @@ public func FfiConverterTypeLoginFields_lower(_ value: LoginFields) -> RustBuffe
     return FfiConverterTypeLoginFields.lower(value)
 }
 
+/**
+ * Fields specific to database records
+ */
 public struct RecordFields {
     public var id: String
     public var timesUsed: Int64
@@ -971,6 +995,9 @@ public func FfiConverterTypeRecordFields_lower(_ value: RecordFields) -> RustBuf
     return FfiConverterTypeRecordFields.lower(value)
 }
 
+/**
+ * Fields available only while the encryption key is known.
+ */
 public struct SecureLoginFields {
     public var password: String
     public var username: String
@@ -1023,16 +1050,40 @@ public func FfiConverterTypeSecureLoginFields_lower(_ value: SecureLoginFields) 
     return FfiConverterTypeSecureLoginFields.lower(value)
 }
 
+/**
+ * These are the errors returned by our public API.
+ */
 public enum LoginsApiError {
+    /**
+     * The login data supplied is invalid. The reason will indicate what's wrong with it.
+     */
     case InvalidRecord(reason: String
     )
+    /**
+     * Asking to do something with a guid which doesn't exist.
+     */
     case NoSuchRecord(reason: String
     )
+    /**
+     * The encryption key supplied of the correct format, but not the correct key.
+     */
     case IncorrectKey
+    /**
+     * An operation was interrupted at the request of the consuming app.
+     */
     case Interrupted(reason: String
     )
+    /**
+     * Sync reported that authentication failed and the user should re-enter their FxA password.
+     */
     case SyncAuthInvalid(reason: String
     )
+    /**
+     * something internal went wrong which doesn't have a public error value
+     * because the consuming app can not reasonably take any action to resolve it.
+     * The underlying error will have been logged and reported.
+     * (ideally would just be `Unexpected`, but that would be a breaking change)
+     */
     case UnexpectedLoginsApiError(reason: String
     )
 }
@@ -1185,6 +1236,9 @@ private struct FfiConverterSequenceTypeEncryptedLogin: FfiConverterRustBuffer {
     }
 }
 
+/**
+ * Check that key is still valid using the output of `create_canary`.  `text` much match the text you initially passed to `create_canary()`
+ */
 public func checkCanary(canary: String, text: String, encryptionKey: String) throws -> Bool {
     return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
         uniffi_logins_fn_func_check_canary(
@@ -1195,6 +1249,9 @@ public func checkCanary(canary: String, text: String, encryptionKey: String) thr
     })
 }
 
+/**
+ * Create a "canary" string, which can be used to test if the encryption key is still valid for the logins data
+ */
 public func createCanary(text: String, encryptionKey: String) throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
         uniffi_logins_fn_func_create_canary(
@@ -1204,6 +1261,10 @@ public func createCanary(text: String, encryptionKey: String) throws -> String {
     })
 }
 
+/**
+ * We expose the crypto primitives on the namespace
+ * Create a new, random, encryption key.
+ */
 public func createKey() throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
         uniffi_logins_fn_func_create_key($0
@@ -1211,6 +1272,9 @@ public func createKey() throws -> String {
     })
 }
 
+/**
+ * Decrypt an encrypted `string` to `SecureLoginFields`
+ */
 public func decryptFields(secFields: String, encryptionKey: String) throws -> SecureLoginFields {
     return try FfiConverterTypeSecureLoginFields.lift(rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
         uniffi_logins_fn_func_decrypt_fields(
@@ -1220,6 +1284,9 @@ public func decryptFields(secFields: String, encryptionKey: String) throws -> Se
     })
 }
 
+/**
+ * Decrypt an `EncryptedLogin` to a `Login`
+ */
 public func decryptLogin(login: EncryptedLogin, encryptionKey: String) throws -> Login {
     return try FfiConverterTypeLogin.lift(rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
         uniffi_logins_fn_func_decrypt_login(
@@ -1229,6 +1296,9 @@ public func decryptLogin(login: EncryptedLogin, encryptionKey: String) throws ->
     })
 }
 
+/**
+ * Encrypt `SecureLoginFields` to an encrypted `string`
+ */
 public func encryptFields(secFields: SecureLoginFields, encryptionKey: String) throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
         uniffi_logins_fn_func_encrypt_fields(
@@ -1238,6 +1308,9 @@ public func encryptFields(secFields: SecureLoginFields, encryptionKey: String) t
     })
 }
 
+/**
+ * Encrypt a `Login` to an `EncryptedLogin`
+ */
 public func encryptLogin(login: Login, encryptionKey: String) throws -> EncryptedLogin {
     return try FfiConverterTypeEncryptedLogin.lift(rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
         uniffi_logins_fn_func_encrypt_login(

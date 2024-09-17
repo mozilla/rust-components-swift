@@ -614,6 +614,11 @@ public func FfiConverterTypeRemoteCommandStore_lower(_ value: RemoteCommandStore
     return FfiConverterTypeRemoteCommandStore.lower(value)
 }
 
+/**
+ * Note the canonical docs for this are in https://searchfox.org/mozilla-central/source/services/interfaces/mozIBridgedSyncEngine.idl
+ * It's only actually used in desktop, but it's fine to expose this everywhere.
+ * NOTE: all timestamps here are milliseconds.
+ */
 public protocol TabsBridgedEngineProtocol: AnyObject {
     func apply() throws -> [String]
 
@@ -642,6 +647,11 @@ public protocol TabsBridgedEngineProtocol: AnyObject {
     func wipe() throws
 }
 
+/**
+ * Note the canonical docs for this are in https://searchfox.org/mozilla-central/source/services/interfaces/mozIBridgedSyncEngine.idl
+ * It's only actually used in desktop, but it's fine to expose this everywhere.
+ * NOTE: all timestamps here are milliseconds.
+ */
 open class TabsBridgedEngine:
     TabsBridgedEngineProtocol
 {
@@ -936,12 +946,19 @@ public struct ClientRemoteTabs {
     public var clientId: String
     public var clientName: String
     public var deviceType: DeviceType
+    /**
+     * Number of ms since the unix epoch (as reported by the server's clock)
+     */
     public var lastModified: Int64
     public var remoteTabs: [RemoteTabRecord]
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(clientId: String, clientName: String, deviceType: DeviceType, lastModified: Int64, remoteTabs: [RemoteTabRecord]) {
+    public init(clientId: String, clientName: String, deviceType: DeviceType,
+                /**
+                    * Number of ms since the unix epoch (as reported by the server's clock)
+                    */ lastModified: Int64, remoteTabs: [RemoteTabRecord])
+    {
         self.clientId = clientId
         self.clientName = clientName
         self.deviceType = deviceType
@@ -1083,12 +1100,19 @@ public struct RemoteTabRecord {
     public var title: String
     public var urlHistory: [String]
     public var icon: String?
+    /**
+     * Number of ms since the unix epoch (as reported by the client's clock)
+     */
     public var lastUsed: Int64
     public var inactive: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(title: String, urlHistory: [String], icon: String?, lastUsed: Int64, inactive: Bool = false) {
+    public init(title: String, urlHistory: [String], icon: String?,
+                /**
+                    * Number of ms since the unix epoch (as reported by the client's clock)
+                    */ lastUsed: Int64, inactive: Bool = false)
+    {
         self.title = title
         self.urlHistory = urlHistory
         self.icon = icon

@@ -454,10 +454,20 @@ private struct FfiConverterString: FfiConverter {
 }
 
 public protocol RemoteSettingsProtocol: AnyObject {
+    /**
+     * Download an attachment with the provided id to the provided path.
+     */
     func downloadAttachmentToPath(attachmentId: String, path: String) throws
 
+    /**
+     * Fetch all records for the configuration this client was initialized with.
+     */
     func getRecords() throws -> RemoteSettingsResponse
 
+    /**
+     * Fetch all records added to the server since the provided timestamp,
+     * using the configuration this client was initialized with.
+     */
     func getRecordsSince(timestamp: UInt64) throws -> RemoteSettingsResponse
 }
 
@@ -491,6 +501,9 @@ open class RemoteSettings:
         return try! rustCall { uniffi_remote_settings_fn_clone_remotesettings(self.pointer, $0) }
     }
 
+    /**
+     * Construct a new Remote Settings client with the given configuration.
+     */
     public convenience init(remoteSettingsConfig: RemoteSettingsConfig) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
@@ -509,6 +522,9 @@ open class RemoteSettings:
         try! rustCall { uniffi_remote_settings_fn_free_remotesettings(pointer, $0) }
     }
 
+    /**
+     * Download an attachment with the provided id to the provided path.
+     */
     open func downloadAttachmentToPath(attachmentId: String, path: String) throws { try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
         uniffi_remote_settings_fn_method_remotesettings_download_attachment_to_path(self.uniffiClonePointer(),
                                                                                     FfiConverterString.lower(attachmentId),
@@ -516,12 +532,19 @@ open class RemoteSettings:
     }
     }
 
+    /**
+     * Fetch all records for the configuration this client was initialized with.
+     */
     open func getRecords() throws -> RemoteSettingsResponse {
         return try FfiConverterTypeRemoteSettingsResponse.lift(rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
             uniffi_remote_settings_fn_method_remotesettings_get_records(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Fetch all records added to the server since the provided timestamp,
+     * using the configuration this client was initialized with.
+     */
     open func getRecordsSince(timestamp: UInt64) throws -> RemoteSettingsResponse {
         return try FfiConverterTypeRemoteSettingsResponse.lift(rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
             uniffi_remote_settings_fn_method_remotesettings_get_records_since(self.uniffiClonePointer(),

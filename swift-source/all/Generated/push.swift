@@ -466,22 +466,146 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+/**
+ * Object representing the PushManager used to manage subscriptions
+ *
+ * The `PushManager` object is the main interface provided by this crate
+ * it allow consumers to manage push subscriptions. It exposes methods that
+ * interact with the [`autopush server`](https:///autopush.readthedocs.io/en/latest/)
+ * and persists state representing subscriptions.
+ */
 public protocol PushManagerProtocol: AnyObject {
+    /**
+     * Decrypts a raw push message.
+     *
+     * This accepts the content of a Push Message (from websocket or via Native Push systems).
+     * # Arguments:
+     *   - `payload`: The Push payload as received by the client from Push.
+     *
+     * # Returns
+     * Decrypted message body
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - There are no records associated with the UAID the [`PushManager`] contains
+     *   - An error occurred while decrypting the message
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     func decrypt(payload: [String: String]) throws -> DecryptResponse
 
+    /**
+     * Retrieves an existing push subscription
+     *
+     * # Arguments
+     *   - `scope` - Site scope string
+     *
+     * # Returns
+     * A Subscription response that includes the following:
+     *   - A URL that can be used to deliver push messages
+     *   - A cryptographic key that can be used to encrypt messages
+     *     that would then be decrypted using the [`PushManager::decrypt`] function
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - PushManager was unable to access its persisted storage
+     *   - An error occurred generating or deserializing the cryptographic keys
+     */
     func getSubscription(scope: String) throws -> SubscriptionResponse?
 
+    /**
+     * Subscribes to a new channel and gets the Subscription Info block
+     *
+     * # Arguments
+     *   - `scope` - Site scope string
+     *   - `server_key` - optional VAPID public key to "lock" subscriptions (defaults to "" for no key)
+     *
+     * # Returns
+     * A Subscription response that includes the following:
+     *   - A URL that can be used to deliver push messages
+     *   - A cryptographic key that can be used to encrypt messages
+     *     that would then be decrypted using the [`PushManager::decrypt`] function
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - PushManager was unable to access its persisted storage
+     *   - An error occurred sending a subscription request to the autopush server
+     *   - An error occurred generating or deserializing the cryptographic keys
+     */
     func subscribe(scope: String, appServerSey: String?) throws -> SubscriptionResponse
 
+    /**
+     * Unsubscribe from given scope, ending that subscription for the user.
+     *
+     * # Arguments
+     *   - `scope` - The scope for the channel to remove
+     *
+     * # Returns
+     * Returns a boolean. Boolean is False if the subscription was already
+     * terminated in the past.
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - An error occurred sending an unsubscribe request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     func unsubscribe(scope: String) throws -> Bool
 
+    /**
+     * Unsubscribe all channels for the user
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - An error occurred sending an unsubscribe request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     func unsubscribeAll() throws
 
+    /**
+     * Updates the Native OS push registration ID.
+     *
+     * # Arguments:
+     *   - `new_token` - the new Native OS push registration ID
+     *
+     * # Errors
+     * Return an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - An error occurred sending an update request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     func update(registrationToken: String) throws
 
+    /**
+     * Verifies the connection state
+     *
+     * **NOTE**: This does not resubscribe to any channels
+     * it only returns the list of channels that the client should
+     * re-subscribe to.
+     *
+     * # Returns
+     * Returns a list of [`PushSubscriptionChanged`]
+     * indicating the channels the consumer the client should re-subscribe
+     * to. If the list is empty, the client's connection was verified
+     * successfully, and the client does not need to resubscribe
+     *
+     * # Errors
+     * Return an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - An error occurred sending an channel list retrieval request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     func verifyConnection(forceVerify: Bool) throws -> [PushSubscriptionChanged]
 }
 
+/**
+ * Object representing the PushManager used to manage subscriptions
+ *
+ * The `PushManager` object is the main interface provided by this crate
+ * it allow consumers to manage push subscriptions. It exposes methods that
+ * interact with the [`autopush server`](https:///autopush.readthedocs.io/en/latest/)
+ * and persists state representing subscriptions.
+ */
 open class PushManager:
     PushManagerProtocol
 {
@@ -512,6 +636,18 @@ open class PushManager:
         return try! rustCall { uniffi_push_fn_clone_pushmanager(self.pointer, $0) }
     }
 
+    /**
+     * Creates a new [`PushManager`] object, not subscribed to any
+     * channels
+     *
+     * # Arguments
+     *
+     *   - `config`: The PushConfiguration for the PushManager
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - PushManager is unable to open the `database_path` given
+     */
     public convenience init(config: PushConfiguration) throws {
         let pointer =
             try rustCallWithError(FfiConverterTypePushApiError.lift) {
@@ -530,6 +666,23 @@ open class PushManager:
         try! rustCall { uniffi_push_fn_free_pushmanager(pointer, $0) }
     }
 
+    /**
+     * Decrypts a raw push message.
+     *
+     * This accepts the content of a Push Message (from websocket or via Native Push systems).
+     * # Arguments:
+     *   - `payload`: The Push payload as received by the client from Push.
+     *
+     * # Returns
+     * Decrypted message body
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - There are no records associated with the UAID the [`PushManager`] contains
+     *   - An error occurred while decrypting the message
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     open func decrypt(payload: [String: String]) throws -> DecryptResponse {
         return try FfiConverterTypeDecryptResponse.lift(rustCallWithError(FfiConverterTypePushApiError.lift) {
             uniffi_push_fn_method_pushmanager_decrypt(self.uniffiClonePointer(),
@@ -537,6 +690,23 @@ open class PushManager:
         })
     }
 
+    /**
+     * Retrieves an existing push subscription
+     *
+     * # Arguments
+     *   - `scope` - Site scope string
+     *
+     * # Returns
+     * A Subscription response that includes the following:
+     *   - A URL that can be used to deliver push messages
+     *   - A cryptographic key that can be used to encrypt messages
+     *     that would then be decrypted using the [`PushManager::decrypt`] function
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - PushManager was unable to access its persisted storage
+     *   - An error occurred generating or deserializing the cryptographic keys
+     */
     open func getSubscription(scope: String) throws -> SubscriptionResponse? {
         return try FfiConverterOptionTypeSubscriptionResponse.lift(rustCallWithError(FfiConverterTypePushApiError.lift) {
             uniffi_push_fn_method_pushmanager_get_subscription(self.uniffiClonePointer(),
@@ -544,6 +714,25 @@ open class PushManager:
         })
     }
 
+    /**
+     * Subscribes to a new channel and gets the Subscription Info block
+     *
+     * # Arguments
+     *   - `scope` - Site scope string
+     *   - `server_key` - optional VAPID public key to "lock" subscriptions (defaults to "" for no key)
+     *
+     * # Returns
+     * A Subscription response that includes the following:
+     *   - A URL that can be used to deliver push messages
+     *   - A cryptographic key that can be used to encrypt messages
+     *     that would then be decrypted using the [`PushManager::decrypt`] function
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - PushManager was unable to access its persisted storage
+     *   - An error occurred sending a subscription request to the autopush server
+     *   - An error occurred generating or deserializing the cryptographic keys
+     */
     open func subscribe(scope: String, appServerSey: String? = nil) throws -> SubscriptionResponse {
         return try FfiConverterTypeSubscriptionResponse.lift(rustCallWithError(FfiConverterTypePushApiError.lift) {
             uniffi_push_fn_method_pushmanager_subscribe(self.uniffiClonePointer(),
@@ -552,6 +741,21 @@ open class PushManager:
         })
     }
 
+    /**
+     * Unsubscribe from given scope, ending that subscription for the user.
+     *
+     * # Arguments
+     *   - `scope` - The scope for the channel to remove
+     *
+     * # Returns
+     * Returns a boolean. Boolean is False if the subscription was already
+     * terminated in the past.
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - An error occurred sending an unsubscribe request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     open func unsubscribe(scope: String) throws -> Bool {
         return try FfiConverterBool.lift(rustCallWithError(FfiConverterTypePushApiError.lift) {
             uniffi_push_fn_method_pushmanager_unsubscribe(self.uniffiClonePointer(),
@@ -559,17 +763,57 @@ open class PushManager:
         })
     }
 
+    /**
+     * Unsubscribe all channels for the user
+     *
+     * # Errors
+     * Returns an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - An error occurred sending an unsubscribe request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     open func unsubscribeAll() throws { try rustCallWithError(FfiConverterTypePushApiError.lift) {
         uniffi_push_fn_method_pushmanager_unsubscribe_all(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Updates the Native OS push registration ID.
+     *
+     * # Arguments:
+     *   - `new_token` - the new Native OS push registration ID
+     *
+     * # Errors
+     * Return an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - An error occurred sending an update request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     open func update(registrationToken: String) throws { try rustCallWithError(FfiConverterTypePushApiError.lift) {
         uniffi_push_fn_method_pushmanager_update(self.uniffiClonePointer(),
                                                  FfiConverterString.lower(registrationToken), $0)
     }
     }
 
+    /**
+     * Verifies the connection state
+     *
+     * **NOTE**: This does not resubscribe to any channels
+     * it only returns the list of channels that the client should
+     * re-subscribe to.
+     *
+     * # Returns
+     * Returns a list of [`PushSubscriptionChanged`]
+     * indicating the channels the consumer the client should re-subscribe
+     * to. If the list is empty, the client's connection was verified
+     * successfully, and the client does not need to resubscribe
+     *
+     * # Errors
+     * Return an error in the following cases:
+     *   - The PushManager does not contain a valid UAID
+     *   - An error occurred sending an channel list retrieval request to the autopush server
+     *   - An error occurred accessing the PushManager's persisted storage
+     */
     open func verifyConnection(forceVerify: Bool = false) throws -> [PushSubscriptionChanged] {
         return try FfiConverterSequenceTypePushSubscriptionChanged.lift(rustCallWithError(FfiConverterTypePushApiError.lift) {
             uniffi_push_fn_method_pushmanager_verify_connection(self.uniffiClonePointer(),
@@ -668,6 +912,9 @@ public func FfiConverterTypeDecryptResponse_lower(_ value: DecryptResponse) -> R
     return FfiConverterTypeDecryptResponse.lower(value)
 }
 
+/**
+ * Key Information that can be used to encrypt payloads
+ */
 public struct KeyInfo {
     public var auth: String
     public var p256dh: String
@@ -804,6 +1051,12 @@ public func FfiConverterTypePushConfiguration_lower(_ value: PushConfiguration) 
     return FfiConverterTypePushConfiguration.lower(value)
 }
 
+/**
+ * An dictionary describing the push subscription that changed, the caller
+ * will receive a list of [`PushSubscriptionChanged`] when calling
+ * [`PushManager::verify_connection`], one entry for each channel that the
+ * caller should resubscribe to
+ */
 public struct PushSubscriptionChanged {
     public var channelId: String
     public var scope: String
@@ -856,6 +1109,10 @@ public func FfiConverterTypePushSubscriptionChanged_lower(_ value: PushSubscript
     return FfiConverterTypePushSubscriptionChanged.lower(value)
 }
 
+/**
+ * Subscription Information, the endpoint to send push messages to and
+ * the key information that can be used to encrypt payloads
+ */
 public struct SubscriptionInfo {
     public var endpoint: String
     public var keys: KeyInfo
@@ -908,6 +1165,9 @@ public func FfiConverterTypeSubscriptionInfo_lower(_ value: SubscriptionInfo) ->
     return FfiConverterTypeSubscriptionInfo.lower(value)
 }
 
+/**
+ * The subscription response object returned from [`PushManager::subscribe`]
+ */
 public struct SubscriptionResponse {
     public var channelId: String
     public var subscriptionInfo: SubscriptionInfo
@@ -962,6 +1222,16 @@ public func FfiConverterTypeSubscriptionResponse_lower(_ value: SubscriptionResp
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The types of supported native bridges.
+ *
+ * FCM = Google Android Firebase Cloud Messaging
+ * ADM = Amazon Device Messaging for FireTV
+ * APNS = Apple Push Notification System for iOS
+ *
+ * Please contact services back-end for any additional bridge protocols.
+
+ */
 
 public enum BridgeType {
     case fcm
@@ -1009,6 +1279,10 @@ public func FfiConverterTypeBridgeType_lower(_ value: BridgeType) -> RustBuffer 
 
 extension BridgeType: Equatable, Hashable {}
 
+/**
+ * The main Error returned from the Push component, each
+ * variant describes a different error
+ */
 public enum PushApiError {
     case UaidNotRecognizedError(message: String)
 
@@ -1061,6 +1335,11 @@ extension PushApiError: Foundation.LocalizedError {
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Supported protocols for push
+ * "Https" is default, and "Http" is only
+ *  supported  for tests
+ */
 
 public enum PushHttpProtocol {
     case https

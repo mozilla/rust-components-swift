@@ -641,10 +641,20 @@ public func FfiConverterTypePlacesApi_lower(_ value: PlacesApi) -> UnsafeMutable
 }
 
 public protocol PlacesConnectionProtocol: AnyObject {
+    /**
+     * `url` is a `string` and not a `URL` because `accept_result`
+     * handles malformed urls
+     */
     func acceptResult(searchString: String, url: String) throws
 
     func applyObservation(visit: VisitObservation) throws
 
+    /**
+     * Counts the number of bookmarks in the bookmark tree under the specified GUID. Does not count
+     * the passed item, so an empty folder will return zero, as will a non-existing GUID or the
+     * guid of a non-folder item.
+     * Counts only bookmark items - ie, sub-folders and separators are not counted.
+     */
     func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32
 
     func bookmarksDelete(id: Guid) throws -> Bool
@@ -799,6 +809,10 @@ open class PlacesConnection:
         try! rustCall { uniffi_places_fn_free_placesconnection(pointer, $0) }
     }
 
+    /**
+     * `url` is a `string` and not a `URL` because `accept_result`
+     * handles malformed urls
+     */
     open func acceptResult(searchString: String, url: String) throws { try rustCallWithError(FfiConverterTypePlacesApiError.lift) {
         uniffi_places_fn_method_placesconnection_accept_result(self.uniffiClonePointer(),
                                                                FfiConverterString.lower(searchString),
@@ -812,6 +826,12 @@ open class PlacesConnection:
     }
     }
 
+    /**
+     * Counts the number of bookmarks in the bookmark tree under the specified GUID. Does not count
+     * the passed item, so an empty folder will return zero, as will a non-existing GUID or the
+     * guid of a non-folder item.
+     * Counts only bookmark items - ie, sub-folders and separators are not counted.
+     */
     open func bookmarksCountBookmarksInTrees(folderGuids: [Guid]) throws -> UInt32 {
         return try FfiConverterUInt32.lift(rustCallWithError(FfiConverterTypePlacesApiError.lift) {
             uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(self.uniffiClonePointer(),
@@ -1590,6 +1610,9 @@ public func FfiConverterTypeBookmarkUpdateInfo_lower(_ value: BookmarkUpdateInfo
     return FfiConverterTypeBookmarkUpdateInfo.lower(value)
 }
 
+/**
+ * Exists just to convince uniffi to generate `liftSequence*` helpers!
+ */
 public struct Dummy {
     public var md: [HistoryMetadata]?
 
@@ -1762,6 +1785,9 @@ public func FfiConverterTypeHistoryHighlightWeights_lower(_ value: HistoryHighli
     return FfiConverterTypeHistoryHighlightWeights.lower(value)
 }
 
+/**
+ * This is what is returned.
+ */
 public struct HistoryMetadata {
     public var url: String
     public var title: String?
@@ -1870,6 +1896,9 @@ public func FfiConverterTypeHistoryMetadata_lower(_ value: HistoryMetadata) -> R
     return FfiConverterTypeHistoryMetadata.lower(value)
 }
 
+/**
+ * This is used as an "input" to the api.
+ */
 public struct HistoryMetadataObservation {
     public var url: String
     public var referrerUrl: String?
@@ -2606,6 +2635,10 @@ public func FfiConverterTypeTopFrecentSiteInfo_lower(_ value: TopFrecentSiteInfo
     return FfiConverterTypeTopFrecentSiteInfo.lower(value)
 }
 
+/**
+ * Encapsulates either information about a visit to a page, or meta information about the page,
+ * or both. Use [VisitType.UPDATE_PLACE] to differentiate an update from a visit.
+ */
 public struct VisitObservation {
     public var url: Url
     public var title: String?
@@ -2782,6 +2815,9 @@ extension BookmarkItem: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Where the item should be placed.
+ */
 
 public enum BookmarkPosition {
     case specific(pos: UInt32
@@ -2879,7 +2915,13 @@ extension ConnectionType: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum DocumentType {
+    /**
+     * A page that isn't described by any other more specific types.
+     */
     case regular
+    /**
+     * A media page.
+     */
     case media
 }
 
@@ -2920,9 +2962,19 @@ extension DocumentType: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Frecency threshold options for fetching top frecent sites. Requests a page that was visited
+ * with a frecency score greater or equal to the value associated with the enums
+ */
 
 public enum FrecencyThresholdOption {
+    /**
+     * Returns all visited pages. The frecency score is 0
+     */
     case none
+    /**
+     * Skip visited pages that were only visited once. The frecency score is 101
+     */
     case skipOneTimePages
 }
 
@@ -3104,7 +3156,14 @@ extension PlacesApiError: Foundation.LocalizedError {
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum VisitType {
+    /**
+     * This transition type means the user followed a link.
+     */
     case link
+    /**
+     * This transition type means that the user typed the page's URL in the
+     * URL bar or selected it from UI (URL bar autocomplete results, etc)
+     */
     case typed
     case bookmark
     case embed
@@ -3113,6 +3172,9 @@ public enum VisitType {
     case download
     case framedLink
     case reload
+    /**
+     * Internal visit type used for meta data updates. Doesn't represent an actual page visit
+     */
     case updatePlace
 }
 

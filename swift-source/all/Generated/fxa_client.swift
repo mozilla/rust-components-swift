@@ -2,6 +2,41 @@
 // Trust me, you don't want to mess with it!
 
 // swiftlint:disable all
+/**
+ * # Firefox Accounts Client
+ *
+ * The fxa-client component lets applications integrate with the
+ * [Firefox Accounts](https://mozilla.github.io/ecosystem-platform/docs/features/firefox-accounts/fxa-overview)
+ * identity service. The shape of a typical integration would look
+ * something like:
+ *
+ * * Out-of-band, register your application with the Firefox Accounts service,
+ *   providing an OAuth `redirect_uri` controlled by your application and
+ *   obtaining an OAuth `client_id`.
+ *
+ * * On application startup, create a [`FirefoxAccount`] object to represent the
+ *   signed-in state of the application.
+ *     * On first startup, a new [`FirefoxAccount`] can be created by calling
+ *       [`FirefoxAccount::new`] and passing the application's `client_id`.
+ *     * For subsequent startups the object can be persisted using the
+ *       [`to_json`](FirefoxAccount::to_json) method and re-created by
+ *       calling [`FirefoxAccount::from_json`].
+ *
+ * * When the user wants to sign in to your application, direct them through
+ *   a web-based OAuth flow using [`begin_oauth_flow`](FirefoxAccount::begin_oauth_flow)
+ *   or [`begin_pairing_flow`](FirefoxAccount::begin_pairing_flow); when they return
+ *   to your registered `redirect_uri`, pass the resulting authorization state back to
+ *   [`complete_oauth_flow`](FirefoxAccount::complete_oauth_flow) to sign them in.
+ *
+ * * Display information about the signed-in user by using the data from
+ *   [`get_profile`](FirefoxAccount::get_profile).
+ *
+ * * Access account-related services on behalf of the user by obtaining OAuth
+ *   access tokens via [`get_access_token`](FirefoxAccount::get_access_token).
+ *
+ * * If the user opts to sign out of the application, calling [`disconnect`](FirefoxAccount::disconnect)
+ *   and then discarding any persisted account data.
+ */
 import Foundation
 
 // Depending on the consumer's build setup, the low-level FFI code
@@ -453,17 +488,126 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+/**
+ * Object representing the signed-in state of an application.
+ *
+ * The `FirefoxAccount` object is the main interface provided by this crate.
+ * It represents the signed-in state of an application that may be connected to
+ * user's Firefox Account, and provides methods for inspecting the state of the
+ * account and accessing other services on behalf of the user.
+
+ */
 public protocol FirefoxAccountProtocol: AnyObject {
+    /**
+     * Create a new OAuth authorization code using the stored session token.
+     *
+     * When a signed-in application receives an incoming device pairing request, it can
+     * use this method to grant the request and generate a corresponding OAuth authorization
+     * code. This code would then be passed back to the connecting device over the
+     * pairing channel (a process which is not currently supported by any code in this
+     * component).
+     *
+     * # Arguments
+     *
+     *    - `params` - the OAuth parameters from the incoming authorization request
+
+     */
     func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws -> String
 
+    /**
+     * Initiate a web-based OAuth sign-in flow.
+     *
+     * This method initializes some internal state and then returns a URL at which the
+     * user may perform a web-based authorization flow to connect the application to
+     * their account. The application should direct the user to the provided URL.
+     *
+     * When the resulting OAuth flow redirects back to the configured `redirect_uri`,
+     * the query parameters should be extracting from the URL and passed to the
+     * [`complete_oauth_flow`](FirefoxAccount::complete_oauth_flow) method to finalize
+     * the signin.
+     *
+     * # Arguments
+     *
+     *   - `scopes` - list of OAuth scopes to request.
+     *       - The requested scopes will determine what account-related data
+     *         the application is able to access.
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user triggered the signin request.
+     *         For example, the application toolbar, on the onboarding flow.
+     *   - `metrics` - optionally, additional metrics tracking parameters.
+     *       - These will be included as query parameters in the resulting URL.
+
+     */
     func beginOauthFlow(scopes: [String], entrypoint: String) throws -> String
 
+    /**
+     * Initiate a device-pairing sign-in flow.
+     *
+     * Once the user has scanned a pairing QR code, pass the scanned value to this
+     * method. It will return a URL to which the application should redirect the user
+     * in order to continue the sign-in flow.
+     *
+     * When the resulting flow redirects back to the configured `redirect_uri`,
+     * the resulting OAuth parameters should be extracting from the URL and passed
+     * to [`complete_oauth_flow`](FirefoxAccount::complete_oauth_flow) to finalize
+     * the signin.
+     *
+     * # Arguments
+     *
+     *   - `pairing_url` - the URL scanned from a QR code on another device.
+     *   - `scopes` - list of OAuth scopes to request.
+     *       - The requested scopes will determine what account-related data
+     *         the application is able to access.
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user triggered the signin request.
+     *         For example, the application toolbar, on the onboarding flow.
+     *   - `metrics` - optionally, additional metrics tracking parameters.
+     *       - These will be included as query parameters in the resulting URL.
+
+     */
     func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String) throws -> String
 
+    /**
+     * Check authorization status for this application.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications may call this method to check with the FxA server about the status
+     * of their authentication tokens. It returns an [`AuthorizationInfo`] struct
+     * with details about whether the tokens are still active.
+
+     */
     func checkAuthorizationStatus() throws -> AuthorizationInfo
 
+    /**
+     * Clear the access token cache in response to an auth failure.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that receive an authentication error when trying to use an access token,
+     * should call this method before creating a new token and retrying the failed operation.
+     * It ensures that the expired token is removed and a fresh one generated.
+
+     */
     func clearAccessTokenCache()
 
+    /**
+     * Clear any custom display name used for this application instance.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method clears the name of the current application's device record, causing other
+     * applications or the user's account management pages to have to fill in some sort of
+     * default name when displaying this device.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func clearDeviceName() throws
 
     /**
@@ -476,69 +620,500 @@ public protocol FirefoxAccountProtocol: AnyObject {
      */
     func closeTabs(targetDeviceId: String, urls: [String]) throws -> CloseTabsResult
 
+    /**
+     * Complete an OAuth flow.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * At the conclusion of an OAuth flow, the user will be redirect to the
+     * application's registered `redirect_uri`. It should extract the `code`
+     * and `state` parameters from the resulting URL and pass them to this
+     * method in order to complete the sign-in.
+     *
+     * # Arguments
+     *
+     *   - `code` - the OAuth authorization code obtained from the redirect URI.
+     *   - `state` - the OAuth state parameter obtained from the redirect URI.
+
+     */
     func completeOauthFlow(code: String, state: String) throws
 
+    /**
+     * Disconnect from the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method destroys any tokens held by the client, effectively disconnecting
+     * from the user's account. Applications should call this when the user opts to
+     * sign out.
+     *
+     * The persisted account state after calling this method will contain only the
+     * user's last-seen profile information, if any. This may be useful in helping
+     * the user to reconnnect to their account. If reconnecting to the same account
+     * is not desired then the application should discard the persisted account state.
+
+     */
     func disconnect()
 
+    /**
+     * Ensure that the device record has a specific set of capabilities.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method checks that the currently-registered device record is advertising the
+     * given set of capabilities in the FxA "device commands" ecosystem. If not, then it
+     * updates the device record to do so.
+     *
+     * Applications should call this method on each startup as a way to ensure that their
+     * expected set of capabilities is being accurately reflected on the FxA server, and
+     * to handle the rollout of new capabilities over time.
+     *
+     * # Arguments
+     *
+     *    - `supported_capabilities` - the set of [capabilities](DeviceCapability) to register
+     *       for this device in the "device commands" ecosystem.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func ensureCapabilities(supportedCapabilities: [DeviceCapability]) throws -> LocalDevice
 
+    /**
+     * Collect and return telemetry about incoming and outgoing device commands.
+     *
+     * Applications that have registered one or more [`DeviceCapability`]s
+     * should also arrange to submit "sync ping" telemetry. Calling this method will
+     * return a JSON string of telemetry data that can be incorporated into that ping.
+     *
+     * Sorry, this is not particularly carefully documented because it is intended
+     * as a stop-gap until we get native Glean support. If you know how to submit
+     * a sync ping, you'll know what to do with the contents of the JSON string.
+
+     */
     func gatherTelemetry() throws -> String
 
+    /**
+     * Get a short-lived OAuth access token for the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that need to access resources on behalf of the user must obtain an
+     * `access_token` in order to do so. For example, an access token is required when
+     * fetching the user's profile data, or when accessing their data stored in Firefox Sync.
+     *
+     * This method will obtain and return an access token bearing the requested scopes, either
+     * from a local cache of previously-issued tokens, or by creating a new one from the server.
+     *
+     * # Arguments
+     *
+     *    - `scope` - the OAuth scope to be granted by the token.
+     *        - This must be one of the scopes requested during the signin flow.
+     *        - Only a single scope is supported; for multiple scopes request multiple tokens.
+     *    - `ttl` - optionally, the time for which the token should be valid, in seconds.
+     *
+     * # Notes
+     *
+     *    - If the application receives an authorization error when trying to use the resulting
+     *      token, it should call [`clear_access_token_cache`](FirefoxAccount::clear_access_token_cache)
+     *      before requesting a fresh token.
+
+     */
     func getAccessToken(scope: String, ttl: Int64?) throws -> AccessTokenInfo
 
+    /**
+     * Get the list of all client applications attached to the user's account.
+     *
+     * This method returns a list of [`AttachedClient`] structs representing all the applications
+     * connected to the user's account. This includes applications that are registered as a device
+     * as well as server-side services that the user has connected.
+     *
+     * This information is really only useful for targeted messaging or marketing purposes,
+     * e.g. if the application wants to advertize a related product, but first wants to check
+     * whether the user is already using that product.
+     *
+     * # Notes
+     *
+     *    - Attached client metadata is only visible to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func getAttachedClients() throws -> [AttachedClient]
 
+    /**
+     * Get the high-level authentication state of the client
+     *
+     * Deprecated: Use get_state() instead
+     */
     func getAuthState() -> FxaRustAuthState
 
+    /**
+     * Get a URL which shows a "successfully connceted!" message.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications can use this method after a successful signin, to redirect the
+     * user to a success message displayed in web content rather than having to
+     * implement their own native success UI.
+
+     */
     func getConnectionSuccessUrl() throws -> String
 
+    /**
+     * Get the device id registered for this application.
+     *
+     * # Notes
+     *
+     *    - If the application has not registered a device record, this method will
+     *      throw an [`Other`](FxaError::Other) error.
+     *        - (Yeah...sorry. This should be changed to do something better.)
+     *    - Device metadata is only visible to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func getCurrentDeviceId() throws -> String
 
+    /**
+     * Get the list of devices registered on the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method returns a list of [`Device`] structs representing all the devices
+     * currently attached to the user's account (including the current device).
+     * The application might use this information to e.g. display a list of appropriate
+     * send-tab targets.
+     *
+     * # Arguments
+     *
+     *    - `ignore_cache` - if true, always hit the server for fresh profile information.
+     *
+     * # Notes
+     *
+     *    - Device metadata is only visible to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func getDevices(ignoreCache: Bool) throws -> [Device]
 
+    /**
+     * Get a URL at which the user can manage their account and profile data.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications should link the user out to this URL from an appropriate place
+     * in their signed-in settings UI.
+     *
+     * # Arguments
+     *
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user followed the link.
+
+     */
     func getManageAccountUrl(entrypoint: String) throws -> String
 
+    /**
+     * Get a URL at which the user can manage the devices connected to their account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications should link the user out to this URL from an appropriate place
+     * in their signed-in settings UI. For example, "Manage your devices..." may be
+     * a useful link to place somewhere near the device list in the send-tab UI.
+     *
+     * # Arguments
+     *
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user followed the link.
+
+     */
     func getManageDevicesUrl(entrypoint: String) throws -> String
 
+    /**
+     * Get the URL at which to begin a device-pairing signin flow.
+     *
+     * If the user wants to sign in using device pairing, call this method and then
+     * direct them to visit the resulting URL on an already-signed-in device. Doing
+     * so will trigger the other device to show a QR code to be scanned, and the result
+     * from said QR code can be passed to [`begin_pairing_flow`](FirefoxAccount::begin_pairing_flow).
+
+     */
     func getPairingAuthorityUrl() throws -> String
 
+    /**
+     * Get profile information for the signed-in user, if any.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method fetches a [`Profile`] struct with information about the currently-signed-in
+     * user, either by using locally-cached profile information or by fetching fresh data from
+     * the server.
+     *
+     * # Arguments
+     *
+     *    - `ignore_cache` - if true, always hit the server for fresh profile information.
+     *
+     * # Notes
+     *
+     *    - Profile information is only available to applications that have been
+     *      granted the `profile` scope.
+     *    - There is currently no API for fetching cached profile information without
+     *      potentially hitting the server.
+     *    - If there is no signed-in user, this method will throw an
+     *      [`Authentication`](FxaError::Authentication) error.
+
+     */
     func getProfile(ignoreCache: Bool) throws -> Profile
 
+    /**
+     * Get the session token for the user's account, if one is available.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that function as a web browser may need to hold on to a session token
+     * on behalf of Firefox Accounts web content. This method exists so that they can retrieve
+     * it an pass it back to said web content when required.
+     *
+     * # Notes
+     *
+     *    - Please do not attempt to use the resulting token to directly make calls to the
+     *      Firefox Accounts servers! All account management functionality should be performed
+     *      in web content.
+     *    - A session token is only available to applications that have requested the
+     *      `https:///identity.mozilla.com/tokens/session` scope.
+
+     */
     func getSessionToken() throws -> String
 
+    /**
+     * Get the current state
+     */
     func getState() -> FxaState
 
+    /**
+     * Get the URL at which to access the user's sync data.
+     *
+     * **💾 This method alters the persisted account state.**
+
+     */
     func getTokenServerEndpointUrl() throws -> String
 
+    /**
+     * Process and respond to a server-delivered account update message
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications should call this method whenever they receive a push notification from the Firefox Accounts server.
+     * Such messages typically indicate a noteworthy change of state on the user's account, such as an update to their profile information
+     * or the disconnection of a client. The [`FirefoxAccount`] struct will update its internal state
+     * accordingly and return an individual [`AccountEvent`] struct describing the event, which the application
+     * may use for further processing.
+     *
+     * It's important to note if the event is [`AccountEvent::CommandReceived`], the caller should call
+     * [`FirefoxAccount::poll_device_commands`]
+
+     */
     func handlePushMessage(payload: String) throws -> AccountEvent
 
+    /**
+     * Update the stored session token for the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that function as a web browser may need to hold on to a session token
+     * on behalf of Firefox Accounts web content. This method exists so that said web content
+     * signals that it has generated a new session token, the stored value can be updated
+     * to match.
+     *
+     * # Arguments
+     *
+     *    - `session_token` - the new session token value provided from web content.
+
+     */
     func handleSessionTokenChange(sessionToken: String) throws
 
+    /**
+     * Create a new device record for this application.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method registered a device record for the application, providing basic metadata for
+     * the device along with a list of supported [Device Capabilities](DeviceCapability) for
+     * participating in the "device commands" ecosystem.
+     *
+     * Applications should call this method soon after a successful sign-in, to ensure
+     * they they appear correctly in the user's account-management pages and when discovered
+     * by other devices connected to the account.
+     *
+     * # Arguments
+     *
+     *    - `name` - human-readable display name to use for this application
+     *    - `device_type` - the [type](DeviceType) of device the application is installed on
+     *    - `supported_capabilities` - the set of [capabilities](DeviceCapability) to register
+     *       for this device in the "device commands" ecosystem.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws -> LocalDevice
 
+    /**
+     * Update the state based on authentication issues.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Call this if you know there's an authentication / authorization issue that requires the
+     * user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
+     */
     func onAuthIssues()
 
+    /**
+     * Poll the server for any pending device commands.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that have registered one or more [`DeviceCapability`]s with the server can use
+     * this method to check whether other devices on the account have sent them any commands.
+     * It will return a list of [`IncomingDeviceCommand`] structs for the application to process.
+     *
+     * # Notes
+     *
+     *    - Device commands are typically delivered via push message and the [`CommandReceived`](
+     *      AccountEvent::CommandReceived) event. Polling should only be used as a backup delivery
+     *      mechanism, f the application has reason to believe that push messages may have been missed.
+     *    - Device commands functionality is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func pollDeviceCommands() throws -> [IncomingDeviceCommand]
 
+    /**
+     * Process an event (login, logout, etc).
+     *
+     * On success, update the current state and return it.
+     * On error, the current state will remain the same.
+     */
     func processEvent(event: FxaEvent) throws -> FxaState
 
+    /**
+     * Use device commands to send a single tab to another device.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * If a device on the account has registered the [`SendTab`](DeviceCapability::SendTab)
+     * capability, this method can be used to send it a tab.
+     *
+     * # Notes
+     *
+     *    - If the given device id does not existing or is not capable of receiving tabs,
+     *      this method will throw an [`Other`](FxaError::Other) error.
+     *        - (Yeah...sorry. This should be changed to do something better.)
+     *    - It is not currently possible to send a full [`SendTabPayload`] to another device,
+     *      but that's purely an API limitation that should go away in future.
+     *    - Device commands functionality is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func sendSingleTab(targetDeviceId: String, title: String, url: String) throws
 
+    /**
+     * Update the display name used for this application instance.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method modifies the name of the current application's device record, as seen by
+     * other applications and in the user's account management pages.
+     *
+     * # Arguments
+     *
+     *    - `display_name` - the new name for the current device.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func setDeviceName(displayName: String) throws -> LocalDevice
 
+    /**
+     * Set or update a push subscription endpoint for this device.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method registers the given webpush subscription with the FxA server, requesting
+     * that is send notifications in the event of any significant changes to the user's
+     * account. When the application receives a push message at the registered subscription
+     * endpoint, it should decrypt the payload and pass it to the [`handle_push_message`](
+     * FirefoxAccount::handle_push_message) method for processing.
+     *
+     * # Arguments
+     *
+     *    - `subscription` - the [`DevicePushSubscription`] details to register with the server.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     func setPushSubscription(subscription: DevicePushSubscription) throws -> LocalDevice
 
+    /**
+     * Sets the users information based on the web content's login information
+     * This is intended to only be used by user agents (eg: Firefox) to set the users
+     * session token and tie it to the refresh token that will be issued at the end of the
+     * oauth flow.
+     */
     func setUserData(userData: UserData)
 
+    /**
+     * Used by the application to test auth token issues
+     */
     func simulateNetworkError()
 
+    /**
+     * Used by the application to test auth token issues
+     */
     func simulatePermanentAuthTokenIssue()
 
+    /**
+     * Used by the application to test auth token issues
+     */
     func simulateTemporaryAuthTokenIssue()
 
+    /**
+     * Save current state to a JSON string.
+     *
+     * This method serializes the current account state into a JSON string, which
+     * the application can use to persist the user's signed-in state across restarts.
+     * The application should call this method and update its persisted state after
+     * any potentially-state-changing operation.
+     *
+     * **⚠️ Warning:** the serialized state may contain encryption keys and access
+     * tokens that let anyone holding them access the user's data in Firefox Sync
+     * and/or other FxA services. Applications should take care to store the resulting
+     * data in a secure fashion, as appropriate for their target platform.
+
+     */
     func toJson() throws -> String
 }
 
+/**
+ * Object representing the signed-in state of an application.
+ *
+ * The `FirefoxAccount` object is the main interface provided by this crate.
+ * It represents the signed-in state of an application that may be connected to
+ * user's Firefox Account, and provides methods for inspecting the state of the
+ * account and accessing other services on behalf of the user.
+
+ */
 open class FirefoxAccount:
     FirefoxAccountProtocol
 {
@@ -569,6 +1144,14 @@ open class FirefoxAccount:
         return try! rustCall { uniffi_fxa_client_fn_clone_firefoxaccount(self.pointer, $0) }
     }
 
+    /**
+     * Create a new [`FirefoxAccount`] instance, not connected to any account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method constructs as new [`FirefoxAccount`] instance configured to connect
+     * the application to a user's account.
+     */
     public convenience init(config: FxaConfig) {
         let pointer =
             try! rustCall {
@@ -587,6 +1170,18 @@ open class FirefoxAccount:
         try! rustCall { uniffi_fxa_client_fn_free_firefoxaccount(pointer, $0) }
     }
 
+    /**
+     * Restore a [`FirefoxAccount`] instance from serialized state.
+     *
+     * Given a JSON string previously obtained from [`FirefoxAccount::to_json`], this
+     * method will deserialize it and return a live [`FirefoxAccount`] instance.
+     *
+     * **⚠️ Warning:** since the serialized state contains access tokens, you should
+     * not call `from_json` multiple times on the same data. This would result
+     * in multiple live objects sharing the same access tokens and is likely to
+     * produce unexpected behaviour.
+
+     */
     public static func fromJson(data: String) throws -> FirefoxAccount {
         return try FfiConverterTypeFirefoxAccount.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_constructor_firefoxaccount_from_json(
@@ -595,6 +1190,20 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Create a new OAuth authorization code using the stored session token.
+     *
+     * When a signed-in application receives an incoming device pairing request, it can
+     * use this method to grant the request and generate a corresponding OAuth authorization
+     * code. This code would then be passed back to the connecting device over the
+     * pairing channel (a process which is not currently supported by any code in this
+     * component).
+     *
+     * # Arguments
+     *
+     *    - `params` - the OAuth parameters from the incoming authorization request
+
+     */
     open func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_authorize_code_using_session_token(self.uniffiClonePointer(),
@@ -602,6 +1211,31 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Initiate a web-based OAuth sign-in flow.
+     *
+     * This method initializes some internal state and then returns a URL at which the
+     * user may perform a web-based authorization flow to connect the application to
+     * their account. The application should direct the user to the provided URL.
+     *
+     * When the resulting OAuth flow redirects back to the configured `redirect_uri`,
+     * the query parameters should be extracting from the URL and passed to the
+     * [`complete_oauth_flow`](FirefoxAccount::complete_oauth_flow) method to finalize
+     * the signin.
+     *
+     * # Arguments
+     *
+     *   - `scopes` - list of OAuth scopes to request.
+     *       - The requested scopes will determine what account-related data
+     *         the application is able to access.
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user triggered the signin request.
+     *         For example, the application toolbar, on the onboarding flow.
+     *   - `metrics` - optionally, additional metrics tracking parameters.
+     *       - These will be included as query parameters in the resulting URL.
+
+     */
     open func beginOauthFlow(scopes: [String], entrypoint: String) throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(self.uniffiClonePointer(),
@@ -610,6 +1244,32 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Initiate a device-pairing sign-in flow.
+     *
+     * Once the user has scanned a pairing QR code, pass the scanned value to this
+     * method. It will return a URL to which the application should redirect the user
+     * in order to continue the sign-in flow.
+     *
+     * When the resulting flow redirects back to the configured `redirect_uri`,
+     * the resulting OAuth parameters should be extracting from the URL and passed
+     * to [`complete_oauth_flow`](FirefoxAccount::complete_oauth_flow) to finalize
+     * the signin.
+     *
+     * # Arguments
+     *
+     *   - `pairing_url` - the URL scanned from a QR code on another device.
+     *   - `scopes` - list of OAuth scopes to request.
+     *       - The requested scopes will determine what account-related data
+     *         the application is able to access.
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user triggered the signin request.
+     *         For example, the application toolbar, on the onboarding flow.
+     *   - `metrics` - optionally, additional metrics tracking parameters.
+     *       - These will be included as query parameters in the resulting URL.
+
+     */
     open func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String) throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(self.uniffiClonePointer(),
@@ -619,17 +1279,52 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Check authorization status for this application.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications may call this method to check with the FxA server about the status
+     * of their authentication tokens. It returns an [`AuthorizationInfo`] struct
+     * with details about whether the tokens are still active.
+
+     */
     open func checkAuthorizationStatus() throws -> AuthorizationInfo {
         return try FfiConverterTypeAuthorizationInfo.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_check_authorization_status(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Clear the access token cache in response to an auth failure.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that receive an authentication error when trying to use an access token,
+     * should call this method before creating a new token and retrying the failed operation.
+     * It ensures that the expired token is removed and a fresh one generated.
+
+     */
     open func clearAccessTokenCache() { try! rustCall {
         uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Clear any custom display name used for this application instance.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method clears the name of the current application's device record, causing other
+     * applications or the user's account management pages to have to fill in some sort of
+     * default name when displaying this device.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func clearDeviceName() throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
         uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(self.uniffiClonePointer(), $0)
     }
@@ -651,6 +1346,22 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Complete an OAuth flow.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * At the conclusion of an OAuth flow, the user will be redirect to the
+     * application's registered `redirect_uri`. It should extract the `code`
+     * and `state` parameters from the resulting URL and pass them to this
+     * method in order to complete the sign-in.
+     *
+     * # Arguments
+     *
+     *   - `code` - the OAuth authorization code obtained from the redirect URI.
+     *   - `state` - the OAuth state parameter obtained from the redirect URI.
+
+     */
     open func completeOauthFlow(code: String, state: String) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
         uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(self.uniffiClonePointer(),
                                                                        FfiConverterString.lower(code),
@@ -658,11 +1369,50 @@ open class FirefoxAccount:
     }
     }
 
+    /**
+     * Disconnect from the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method destroys any tokens held by the client, effectively disconnecting
+     * from the user's account. Applications should call this when the user opts to
+     * sign out.
+     *
+     * The persisted account state after calling this method will contain only the
+     * user's last-seen profile information, if any. This may be useful in helping
+     * the user to reconnnect to their account. If reconnecting to the same account
+     * is not desired then the application should discard the persisted account state.
+
+     */
     open func disconnect() { try! rustCall {
         uniffi_fxa_client_fn_method_firefoxaccount_disconnect(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Ensure that the device record has a specific set of capabilities.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method checks that the currently-registered device record is advertising the
+     * given set of capabilities in the FxA "device commands" ecosystem. If not, then it
+     * updates the device record to do so.
+     *
+     * Applications should call this method on each startup as a way to ensure that their
+     * expected set of capabilities is being accurately reflected on the FxA server, and
+     * to handle the rollout of new capabilities over time.
+     *
+     * # Arguments
+     *
+     *    - `supported_capabilities` - the set of [capabilities](DeviceCapability) to register
+     *       for this device in the "device commands" ecosystem.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func ensureCapabilities(supportedCapabilities: [DeviceCapability]) throws -> LocalDevice {
         return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(self.uniffiClonePointer(),
@@ -670,12 +1420,50 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Collect and return telemetry about incoming and outgoing device commands.
+     *
+     * Applications that have registered one or more [`DeviceCapability`]s
+     * should also arrange to submit "sync ping" telemetry. Calling this method will
+     * return a JSON string of telemetry data that can be incorporated into that ping.
+     *
+     * Sorry, this is not particularly carefully documented because it is intended
+     * as a stop-gap until we get native Glean support. If you know how to submit
+     * a sync ping, you'll know what to do with the contents of the JSON string.
+
+     */
     open func gatherTelemetry() throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_gather_telemetry(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get a short-lived OAuth access token for the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that need to access resources on behalf of the user must obtain an
+     * `access_token` in order to do so. For example, an access token is required when
+     * fetching the user's profile data, or when accessing their data stored in Firefox Sync.
+     *
+     * This method will obtain and return an access token bearing the requested scopes, either
+     * from a local cache of previously-issued tokens, or by creating a new one from the server.
+     *
+     * # Arguments
+     *
+     *    - `scope` - the OAuth scope to be granted by the token.
+     *        - This must be one of the scopes requested during the signin flow.
+     *        - Only a single scope is supported; for multiple scopes request multiple tokens.
+     *    - `ttl` - optionally, the time for which the token should be valid, in seconds.
+     *
+     * # Notes
+     *
+     *    - If the application receives an authorization error when trying to use the resulting
+     *      token, it should call [`clear_access_token_cache`](FirefoxAccount::clear_access_token_cache)
+     *      before requesting a fresh token.
+
+     */
     open func getAccessToken(scope: String, ttl: Int64? = nil) throws -> AccessTokenInfo {
         return try FfiConverterTypeAccessTokenInfo.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_access_token(self.uniffiClonePointer(),
@@ -684,30 +1472,94 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Get the list of all client applications attached to the user's account.
+     *
+     * This method returns a list of [`AttachedClient`] structs representing all the applications
+     * connected to the user's account. This includes applications that are registered as a device
+     * as well as server-side services that the user has connected.
+     *
+     * This information is really only useful for targeted messaging or marketing purposes,
+     * e.g. if the application wants to advertize a related product, but first wants to check
+     * whether the user is already using that product.
+     *
+     * # Notes
+     *
+     *    - Attached client metadata is only visible to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func getAttachedClients() throws -> [AttachedClient] {
         return try FfiConverterSequenceTypeAttachedClient.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_attached_clients(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get the high-level authentication state of the client
+     *
+     * Deprecated: Use get_state() instead
+     */
     open func getAuthState() -> FxaRustAuthState {
         return try! FfiConverterTypeFxaRustAuthState.lift(try! rustCall {
             uniffi_fxa_client_fn_method_firefoxaccount_get_auth_state(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get a URL which shows a "successfully connceted!" message.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications can use this method after a successful signin, to redirect the
+     * user to a success message displayed in web content rather than having to
+     * implement their own native success UI.
+
+     */
     open func getConnectionSuccessUrl() throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_connection_success_url(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get the device id registered for this application.
+     *
+     * # Notes
+     *
+     *    - If the application has not registered a device record, this method will
+     *      throw an [`Other`](FxaError::Other) error.
+     *        - (Yeah...sorry. This should be changed to do something better.)
+     *    - Device metadata is only visible to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func getCurrentDeviceId() throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_current_device_id(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get the list of devices registered on the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method returns a list of [`Device`] structs representing all the devices
+     * currently attached to the user's account (including the current device).
+     * The application might use this information to e.g. display a list of appropriate
+     * send-tab targets.
+     *
+     * # Arguments
+     *
+     *    - `ignore_cache` - if true, always hit the server for fresh profile information.
+     *
+     * # Notes
+     *
+     *    - Device metadata is only visible to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func getDevices(ignoreCache: Bool) throws -> [Device] {
         return try FfiConverterSequenceTypeDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_devices(self.uniffiClonePointer(),
@@ -715,6 +1567,21 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Get a URL at which the user can manage their account and profile data.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications should link the user out to this URL from an appropriate place
+     * in their signed-in settings UI.
+     *
+     * # Arguments
+     *
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user followed the link.
+
+     */
     open func getManageAccountUrl(entrypoint: String) throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_manage_account_url(self.uniffiClonePointer(),
@@ -722,6 +1589,22 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Get a URL at which the user can manage the devices connected to their account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications should link the user out to this URL from an appropriate place
+     * in their signed-in settings UI. For example, "Manage your devices..." may be
+     * a useful link to place somewhere near the device list in the send-tab UI.
+     *
+     * # Arguments
+     *
+     *   - `entrypoint` - metrics identifier for UX entrypoint.
+     *       - This parameter is used for metrics purposes, to identify the
+     *         UX entrypoint from which the user followed the link.
+
+     */
     open func getManageDevicesUrl(entrypoint: String) throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_manage_devices_url(self.uniffiClonePointer(),
@@ -729,12 +1612,44 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Get the URL at which to begin a device-pairing signin flow.
+     *
+     * If the user wants to sign in using device pairing, call this method and then
+     * direct them to visit the resulting URL on an already-signed-in device. Doing
+     * so will trigger the other device to show a QR code to be scanned, and the result
+     * from said QR code can be passed to [`begin_pairing_flow`](FirefoxAccount::begin_pairing_flow).
+
+     */
     open func getPairingAuthorityUrl() throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get profile information for the signed-in user, if any.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method fetches a [`Profile`] struct with information about the currently-signed-in
+     * user, either by using locally-cached profile information or by fetching fresh data from
+     * the server.
+     *
+     * # Arguments
+     *
+     *    - `ignore_cache` - if true, always hit the server for fresh profile information.
+     *
+     * # Notes
+     *
+     *    - Profile information is only available to applications that have been
+     *      granted the `profile` scope.
+     *    - There is currently no API for fetching cached profile information without
+     *      potentially hitting the server.
+     *    - If there is no signed-in user, this method will throw an
+     *      [`Authentication`](FxaError::Authentication) error.
+
+     */
     open func getProfile(ignoreCache: Bool) throws -> Profile {
         return try FfiConverterTypeProfile.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_profile(self.uniffiClonePointer(),
@@ -742,24 +1657,66 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Get the session token for the user's account, if one is available.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that function as a web browser may need to hold on to a session token
+     * on behalf of Firefox Accounts web content. This method exists so that they can retrieve
+     * it an pass it back to said web content when required.
+     *
+     * # Notes
+     *
+     *    - Please do not attempt to use the resulting token to directly make calls to the
+     *      Firefox Accounts servers! All account management functionality should be performed
+     *      in web content.
+     *    - A session token is only available to applications that have requested the
+     *      `https:///identity.mozilla.com/tokens/session` scope.
+
+     */
     open func getSessionToken() throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_session_token(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get the current state
+     */
     open func getState() -> FxaState {
         return try! FfiConverterTypeFxaState.lift(try! rustCall {
             uniffi_fxa_client_fn_method_firefoxaccount_get_state(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Get the URL at which to access the user's sync data.
+     *
+     * **💾 This method alters the persisted account state.**
+
+     */
     open func getTokenServerEndpointUrl() throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_get_token_server_endpoint_url(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Process and respond to a server-delivered account update message
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications should call this method whenever they receive a push notification from the Firefox Accounts server.
+     * Such messages typically indicate a noteworthy change of state on the user's account, such as an update to their profile information
+     * or the disconnection of a client. The [`FirefoxAccount`] struct will update its internal state
+     * accordingly and return an individual [`AccountEvent`] struct describing the event, which the application
+     * may use for further processing.
+     *
+     * It's important to note if the event is [`AccountEvent::CommandReceived`], the caller should call
+     * [`FirefoxAccount::poll_device_commands`]
+
+     */
     open func handlePushMessage(payload: String) throws -> AccountEvent {
         return try FfiConverterTypeAccountEvent.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_handle_push_message(self.uniffiClonePointer(),
@@ -767,12 +1724,53 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Update the stored session token for the user's account.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that function as a web browser may need to hold on to a session token
+     * on behalf of Firefox Accounts web content. This method exists so that said web content
+     * signals that it has generated a new session token, the stored value can be updated
+     * to match.
+     *
+     * # Arguments
+     *
+     *    - `session_token` - the new session token value provided from web content.
+
+     */
     open func handleSessionTokenChange(sessionToken: String) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
         uniffi_fxa_client_fn_method_firefoxaccount_handle_session_token_change(self.uniffiClonePointer(),
                                                                                FfiConverterString.lower(sessionToken), $0)
     }
     }
 
+    /**
+     * Create a new device record for this application.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method registered a device record for the application, providing basic metadata for
+     * the device along with a list of supported [Device Capabilities](DeviceCapability) for
+     * participating in the "device commands" ecosystem.
+     *
+     * Applications should call this method soon after a successful sign-in, to ensure
+     * they they appear correctly in the user's account-management pages and when discovered
+     * by other devices connected to the account.
+     *
+     * # Arguments
+     *
+     *    - `name` - human-readable display name to use for this application
+     *    - `device_type` - the [type](DeviceType) of device the application is installed on
+     *    - `supported_capabilities` - the set of [capabilities](DeviceCapability) to register
+     *       for this device in the "device commands" ecosystem.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws -> LocalDevice {
         return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(self.uniffiClonePointer(),
@@ -782,17 +1780,49 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Update the state based on authentication issues.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Call this if you know there's an authentication / authorization issue that requires the
+     * user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
+     */
     open func onAuthIssues() { try! rustCall {
         uniffi_fxa_client_fn_method_firefoxaccount_on_auth_issues(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Poll the server for any pending device commands.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * Applications that have registered one or more [`DeviceCapability`]s with the server can use
+     * this method to check whether other devices on the account have sent them any commands.
+     * It will return a list of [`IncomingDeviceCommand`] structs for the application to process.
+     *
+     * # Notes
+     *
+     *    - Device commands are typically delivered via push message and the [`CommandReceived`](
+     *      AccountEvent::CommandReceived) event. Polling should only be used as a backup delivery
+     *      mechanism, f the application has reason to believe that push messages may have been missed.
+     *    - Device commands functionality is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func pollDeviceCommands() throws -> [IncomingDeviceCommand] {
         return try FfiConverterSequenceTypeIncomingDeviceCommand.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_poll_device_commands(self.uniffiClonePointer(), $0)
         })
     }
 
+    /**
+     * Process an event (login, logout, etc).
+     *
+     * On success, update the current state and return it.
+     * On error, the current state will remain the same.
+     */
     open func processEvent(event: FxaEvent) throws -> FxaState {
         return try FfiConverterTypeFxaState.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_process_event(self.uniffiClonePointer(),
@@ -800,6 +1830,25 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Use device commands to send a single tab to another device.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * If a device on the account has registered the [`SendTab`](DeviceCapability::SendTab)
+     * capability, this method can be used to send it a tab.
+     *
+     * # Notes
+     *
+     *    - If the given device id does not existing or is not capable of receiving tabs,
+     *      this method will throw an [`Other`](FxaError::Other) error.
+     *        - (Yeah...sorry. This should be changed to do something better.)
+     *    - It is not currently possible to send a full [`SendTabPayload`] to another device,
+     *      but that's purely an API limitation that should go away in future.
+     *    - Device commands functionality is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func sendSingleTab(targetDeviceId: String, title: String, url: String) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
         uniffi_fxa_client_fn_method_firefoxaccount_send_single_tab(self.uniffiClonePointer(),
                                                                    FfiConverterString.lower(targetDeviceId),
@@ -808,6 +1857,24 @@ open class FirefoxAccount:
     }
     }
 
+    /**
+     * Update the display name used for this application instance.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method modifies the name of the current application's device record, as seen by
+     * other applications and in the user's account management pages.
+     *
+     * # Arguments
+     *
+     *    - `display_name` - the new name for the current device.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func setDeviceName(displayName: String) throws -> LocalDevice {
         return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(self.uniffiClonePointer(),
@@ -815,6 +1882,27 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Set or update a push subscription endpoint for this device.
+     *
+     * **💾 This method alters the persisted account state.**
+     *
+     * This method registers the given webpush subscription with the FxA server, requesting
+     * that is send notifications in the event of any significant changes to the user's
+     * account. When the application receives a push message at the registered subscription
+     * endpoint, it should decrypt the payload and pass it to the [`handle_push_message`](
+     * FirefoxAccount::handle_push_message) method for processing.
+     *
+     * # Arguments
+     *
+     *    - `subscription` - the [`DevicePushSubscription`] details to register with the server.
+     *
+     * # Notes
+     *
+     *    - Device registration is only available to applications that have been
+     *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
+
+     */
     open func setPushSubscription(subscription: DevicePushSubscription) throws -> LocalDevice {
         return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(self.uniffiClonePointer(),
@@ -822,27 +1910,56 @@ open class FirefoxAccount:
         })
     }
 
+    /**
+     * Sets the users information based on the web content's login information
+     * This is intended to only be used by user agents (eg: Firefox) to set the users
+     * session token and tie it to the refresh token that will be issued at the end of the
+     * oauth flow.
+     */
     open func setUserData(userData: UserData) { try! rustCall {
         uniffi_fxa_client_fn_method_firefoxaccount_set_user_data(self.uniffiClonePointer(),
                                                                  FfiConverterTypeUserData.lower(userData), $0)
     }
     }
 
+    /**
+     * Used by the application to test auth token issues
+     */
     open func simulateNetworkError() { try! rustCall {
         uniffi_fxa_client_fn_method_firefoxaccount_simulate_network_error(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Used by the application to test auth token issues
+     */
     open func simulatePermanentAuthTokenIssue() { try! rustCall {
         uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_issue(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Used by the application to test auth token issues
+     */
     open func simulateTemporaryAuthTokenIssue() { try! rustCall {
         uniffi_fxa_client_fn_method_firefoxaccount_simulate_temporary_auth_token_issue(self.uniffiClonePointer(), $0)
     }
     }
 
+    /**
+     * Save current state to a JSON string.
+     *
+     * This method serializes the current account state into a JSON string, which
+     * the application can use to persist the user's signed-in state across restarts.
+     * The application should call this method and update its persisted state after
+     * any potentially-state-changing operation.
+     *
+     * **⚠️ Warning:** the serialized state may contain encryption keys and access
+     * tokens that let anyone holding them access the user's data in Firefox Sync
+     * and/or other FxA services. Applications should take care to store the resulting
+     * data in a secure fashion, as appropriate for their target platform.
+
+     */
     open func toJson() throws -> String {
         return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
             uniffi_fxa_client_fn_method_firefoxaccount_to_json(self.uniffiClonePointer(), $0)
@@ -888,6 +2005,12 @@ public func FfiConverterTypeFirefoxAccount_lower(_ value: FirefoxAccount) -> Uns
     return FfiConverterTypeFirefoxAccount.lower(value)
 }
 
+/**
+ * Machinery for dry-run testing of FxaAuthStateMachine
+ *
+ * Remove this once we've migrated the firefox-android and firefox-ios code to using FxaAuthStateMachine
+ * https:///bugzilla.mozilla.org/show_bug.cgi?id=1867793
+ */
 public protocol FxaStateMachineCheckerProtocol: AnyObject {
     func checkInternalState(state: FxaStateCheckerState)
 
@@ -898,6 +2021,12 @@ public protocol FxaStateMachineCheckerProtocol: AnyObject {
     func handlePublicEvent(event: FxaEvent)
 }
 
+/**
+ * Machinery for dry-run testing of FxaAuthStateMachine
+ *
+ * Remove this once we've migrated the firefox-android and firefox-ios code to using FxaAuthStateMachine
+ * https:///bugzilla.mozilla.org/show_bug.cgi?id=1867793
+ */
 open class FxaStateMachineChecker:
     FxaStateMachineCheckerProtocol
 {
@@ -1008,15 +2137,77 @@ public func FfiConverterTypeFxaStateMachineChecker_lower(_ value: FxaStateMachin
     return FfiConverterTypeFxaStateMachineChecker.lower(value)
 }
 
+/**
+ * An OAuth access token, with its associated keys and metadata.
+ *
+ * This struct represents an FxA OAuth access token, which can be used to access a resource
+ * or service on behalf of the user. For example, accessing the user's data in Firefox Sync
+ * an access token for the scope `https:///identity.mozilla.com/apps/sync` along with the
+ * associated encryption key.
+
+ */
 public struct AccessTokenInfo {
+    /**
+     * The scope of access granted by token.
+     */
     public var scope: String
+    /**
+     * The access token itself.
+     *
+     * This is the value that should be included in the `Authorization` header when
+     * accessing an OAuth protected resource on behalf of the user.
+     */
     public var token: String
+    /**
+     * The client-side encryption key associated with this scope.
+     *
+     * **⚠️ Warning:** the value of this field should never be revealed outside of the
+     * application. For example, it should never to sent to a server or logged in a log file.
+     */
     public var key: ScopedKey?
+    /**
+     * The expiry time of the token, in seconds.
+     *
+     * This is the timestamp at which the token is set to expire, in seconds since
+     * unix epoch. Note that it is a signed integer, for compatibility with languages
+     * that do not have an unsigned integer type.
+     *
+     * This timestamp is for guidance only. Access tokens are not guaranteed to remain
+     * value for any particular lengthof time, and consumers should be prepared to handle
+     * auth failures even if the token has not yet expired.
+     */
     public var expiresAt: Int64
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(scope: String, token: String, key: ScopedKey?, expiresAt: Int64) {
+    public init(
+        /**
+         * The scope of access granted by token.
+         */ scope: String,
+        /**
+            * The access token itself.
+            *
+            * This is the value that should be included in the `Authorization` header when
+            * accessing an OAuth protected resource on behalf of the user.
+            */ token: String,
+        /**
+            * The client-side encryption key associated with this scope.
+            *
+            * **⚠️ Warning:** the value of this field should never be revealed outside of the
+            * application. For example, it should never to sent to a server or logged in a log file.
+            */ key: ScopedKey?,
+        /**
+            * The expiry time of the token, in seconds.
+            *
+            * This is the timestamp at which the token is set to expire, in seconds since
+            * unix epoch. Note that it is a signed integer, for compatibility with languages
+            * that do not have an unsigned integer type.
+            *
+            * This timestamp is for guidance only. Access tokens are not guaranteed to remain
+            * value for any particular lengthof time, and consumers should be prepared to handle
+            * auth failures even if the token has not yet expired.
+            */ expiresAt: Int64
+    ) {
         self.scope = scope
         self.token = token
         self.key = key
@@ -1076,6 +2267,19 @@ public func FfiConverterTypeAccessTokenInfo_lower(_ value: AccessTokenInfo) -> R
     return FfiConverterTypeAccessTokenInfo.lower(value)
 }
 
+/**
+ * A client connected to the user's account.
+ *
+ * This struct provides metadata about a client connected to the user's account.
+ * Unlike the [`Device`] struct, "clients" encompasses both client-side and server-side
+ * applications - basically anything where the user is able to sign in with their
+ * Firefox Account.
+ *
+ *
+ * This data would typically be used for targeted messaging purposes, catering the
+ * contents of the message to what other applications the user has on their account.
+
+ */
 public struct AttachedClient {
     public var clientId: String?
     public var deviceId: String?
@@ -1176,6 +2380,13 @@ public func FfiConverterTypeAttachedClient_lower(_ value: AttachedClient) -> Rus
     return FfiConverterTypeAttachedClient.lower(value)
 }
 
+/**
+ * Information about the authorization state of the application.
+ *
+ * This struct represents metadata about whether the application is currently
+ * connected to the user's account.
+
+ */
 public struct AuthorizationInfo {
     public var active: Bool
 
@@ -1220,6 +2431,14 @@ public func FfiConverterTypeAuthorizationInfo_lower(_ value: AuthorizationInfo) 
     return FfiConverterTypeAuthorizationInfo.lower(value)
 }
 
+/**
+ * Parameters provided in an incoming OAuth request.
+ *
+ * This struct represents parameters obtained from an incoming OAuth request - that is,
+ * the values that an OAuth client would append to the authorization URL when initiating
+ * an OAuth sign-in flow.
+
+ */
 public struct AuthorizationParameters {
     public var clientId: String
     public var scope: [String]
@@ -1314,6 +2533,7 @@ public func FfiConverterTypeAuthorizationParameters_lower(_ value: Authorization
 
 /**
  * The payload sent when invoking a "close tabs" command.
+
  */
 public struct CloseTabsPayload {
     /**
@@ -1366,6 +2586,14 @@ public func FfiConverterTypeCloseTabsPayload_lower(_ value: CloseTabsPayload) ->
     return FfiConverterTypeCloseTabsPayload.lower(value)
 }
 
+/**
+ * A device connected to the user's account.
+ *
+ * This struct provides metadata about a device connected to the user's account.
+ * This data would typically be used to display e.g. the list of candidate devices
+ * in a "send tab" menu.
+
+ */
 public struct Device {
     public var id: String
     public var displayName: String
@@ -1466,6 +2694,9 @@ public func FfiConverterTypeDevice_lower(_ value: Device) -> RustBuffer {
     return FfiConverterTypeDevice.lower(value)
 }
 
+/**
+ * Device configuration
+ */
 public struct DeviceConfig {
     public var name: String
     public var deviceType: DeviceType
@@ -1526,6 +2757,17 @@ public func FfiConverterTypeDeviceConfig_lower(_ value: DeviceConfig) -> RustBuf
     return FfiConverterTypeDeviceConfig.lower(value)
 }
 
+/**
+ * Details of a web-push subscription endpoint.
+ *
+ * This struct encapsulates the details of a web-push subscription endpoint,
+ * including all the information necessary to send a notification to its owner.
+ * Devices attached to the user's account may register one of these in order
+ * to receive timely updates about account-related events.
+ *
+ * Managing a web-push subscription is outside of the scope of this component.
+
+ */
 public struct DevicePushSubscription {
     public var endpoint: String
     public var publicKey: String
@@ -1587,14 +2829,41 @@ public func FfiConverterTypeDevicePushSubscription_lower(_ value: DevicePushSubs
 }
 
 public struct FxaConfig {
+    /**
+     * FxaServer to connect with
+     */
     public var server: FxaServer
+    /**
+     * Registered OAuth client id of the application.
+     */
     public var clientId: String
+    /**
+     * `redirect_uri` - the registered OAuth redirect URI of the application.
+     */
     public var redirectUri: String
+    /**
+     * URL for the user's Sync Tokenserver. This can be used to support users who self-host their
+     * sync data. If `None` then it will default to the Mozilla-hosted Sync server.
+     */
     public var tokenServerUrlOverride: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(server: FxaServer, clientId: String, redirectUri: String, tokenServerUrlOverride: String? = nil) {
+    public init(
+        /**
+         * FxaServer to connect with
+         */ server: FxaServer,
+        /**
+            * Registered OAuth client id of the application.
+            */ clientId: String,
+        /**
+            * `redirect_uri` - the registered OAuth redirect URI of the application.
+            */ redirectUri: String,
+        /**
+            * URL for the user's Sync Tokenserver. This can be used to support users who self-host their
+            * sync data. If `None` then it will default to the Mozilla-hosted Sync server.
+            */ tokenServerUrlOverride: String? = nil
+    ) {
         self.server = server
         self.clientId = clientId
         self.redirectUri = redirectUri
@@ -1654,6 +2923,12 @@ public func FfiConverterTypeFxaConfig_lower(_ value: FxaConfig) -> RustBuffer {
     return FfiConverterTypeFxaConfig.lower(value)
 }
 
+/**
+ * Local device that's connecting to FxA
+ *
+ * This is returned by the device update methods and represents the server's view of the local
+ * device.
+ */
 public struct LocalDevice {
     public var id: String
     public var displayName: String
@@ -1738,16 +3013,69 @@ public func FfiConverterTypeLocalDevice_lower(_ value: LocalDevice) -> RustBuffe
     return FfiConverterTypeLocalDevice.lower(value)
 }
 
+/**
+ * Information about the user that controls a Firefox Account.
+ *
+ * This struct represents details about the user themselves, and would typically be
+ * used to customize account-related UI in the browser so that it is personalize
+ * for the current user.
+
+ */
 public struct Profile {
+    /**
+     * The user's account uid
+     *
+     * This is an opaque immutable unique identifier for their account.
+     */
     public var uid: String
+    /**
+     * The user's current primary email address.
+     *
+     * Note that unlike the `uid` field, the email address may change over time.
+     */
     public var email: String
+    /**
+     * The user's preferred textual display name.
+     */
     public var displayName: String?
+    /**
+     * The URL of a profile picture representing the user.
+     *
+     * All accounts have a corresponding profile picture. If the user has not
+     * provided one then a default image is used.
+     */
     public var avatar: String
+    /**
+     * Whether the `avatar` URL represents the default avatar image.
+     */
     public var isDefaultAvatar: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(uid: String, email: String, displayName: String?, avatar: String, isDefaultAvatar: Bool) {
+    public init(
+        /**
+         * The user's account uid
+         *
+         * This is an opaque immutable unique identifier for their account.
+         */ uid: String,
+        /**
+            * The user's current primary email address.
+            *
+            * Note that unlike the `uid` field, the email address may change over time.
+            */ email: String,
+        /**
+            * The user's preferred textual display name.
+            */ displayName: String?,
+        /**
+            * The URL of a profile picture representing the user.
+            *
+            * All accounts have a corresponding profile picture. If the user has not
+            * provided one then a default image is used.
+            */ avatar: String,
+        /**
+            * Whether the `avatar` URL represents the default avatar image.
+            */ isDefaultAvatar: Bool
+    ) {
         self.uid = uid
         self.email = email
         self.displayName = displayName
@@ -1814,15 +3142,64 @@ public func FfiConverterTypeProfile_lower(_ value: Profile) -> RustBuffer {
     return FfiConverterTypeProfile.lower(value)
 }
 
+/**
+ * A cryptographic key associated with an OAuth scope.
+ *
+ * Some OAuth scopes have a corresponding client-side encryption key that is required
+ * in order to access protected data. This struct represents such key material in a
+ * format compatible with the common "JWK" standard.
+
+ */
 public struct ScopedKey {
+    /**
+     * The type of key.
+     *
+     * In practice for FxA, this will always be string string "oct" (short for "octal")
+     * to represent a raw symmetric key.
+     */
     public var kty: String
+    /**
+     * The OAuth scope with which this key is associated.
+     */
     public var scope: String
+    /**
+     * The key material, as base64-url-encoded bytes.
+     *
+     * **⚠️ Warning:** the value of this field should never be revealed outside of the
+     * application. For example, it should never to sent to a server or logged in a log file.
+     */
     public var k: String
+    /**
+     * An opaque unique identifier for this key.
+     *
+     * Unlike the `k` field, this value is not secret and may be revealed to the server.
+     */
     public var kid: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(kty: String, scope: String, k: String, kid: String) {
+    public init(
+        /**
+         * The type of key.
+         *
+         * In practice for FxA, this will always be string string "oct" (short for "octal")
+         * to represent a raw symmetric key.
+         */ kty: String,
+        /**
+            * The OAuth scope with which this key is associated.
+            */ scope: String,
+        /**
+            * The key material, as base64-url-encoded bytes.
+            *
+            * **⚠️ Warning:** the value of this field should never be revealed outside of the
+            * application. For example, it should never to sent to a server or logged in a log file.
+            */ k: String,
+        /**
+            * An opaque unique identifier for this key.
+            *
+            * Unlike the `k` field, this value is not secret and may be revealed to the server.
+            */ kid: String
+    ) {
         self.kty = kty
         self.scope = scope
         self.k = k
@@ -1882,14 +3259,53 @@ public func FfiConverterTypeScopedKey_lower(_ value: ScopedKey) -> RustBuffer {
     return FfiConverterTypeScopedKey.lower(value)
 }
 
+/**
+ * The payload sent when invoking a "send tab" command.
+
+ */
 public struct SendTabPayload {
+    /**
+     * The navigation history of the sent tab.
+     *
+     * The last item in this list represents the page to be displayed,
+     * while earlier items may be included in the navigation history
+     * as a convenience to the user.
+     */
     public var entries: [TabHistoryEntry]
+    /**
+     * A unique identifier to be included in send-tab metrics.
+     *
+     * The application should treat this as opaque.
+     */
     public var flowId: String
+    /**
+     * A unique identifier to be included in send-tab metrics.
+     *
+     * The application should treat this as opaque.
+     */
     public var streamId: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(entries: [TabHistoryEntry], flowId: String = "", streamId: String = "") {
+    public init(
+        /**
+         * The navigation history of the sent tab.
+         *
+         * The last item in this list represents the page to be displayed,
+         * while earlier items may be included in the navigation history
+         * as a convenience to the user.
+         */ entries: [TabHistoryEntry],
+        /**
+            * A unique identifier to be included in send-tab metrics.
+            *
+            * The application should treat this as opaque.
+            */ flowId: String = "",
+        /**
+            * A unique identifier to be included in send-tab metrics.
+            *
+            * The application should treat this as opaque.
+            */ streamId: String = ""
+    ) {
         self.entries = entries
         self.flowId = flowId
         self.streamId = streamId
@@ -1942,6 +3358,10 @@ public func FfiConverterTypeSendTabPayload_lower(_ value: SendTabPayload) -> Rus
     return FfiConverterTypeSendTabPayload.lower(value)
 }
 
+/**
+ * An individual entry in the navigation history of a sent tab.
+
+ */
 public struct TabHistoryEntry {
     public var title: String
     public var url: String
@@ -2064,16 +3484,72 @@ public func FfiConverterTypeUserData_lower(_ value: UserData) -> RustBuffer {
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * An event that happened on the user's account.
+ *
+ * If the application has registered a [`DevicePushSubscription`] as part of its
+ * device record, then the Firefox Accounts server can send push notifications
+ * about important events that happen on the user's account. This enum represents
+ * the different kinds of event that can occur.
+
+ */
 
 public enum AccountEvent {
+    /**
+     * Sent when another device has invoked a command for this device to execute.
+     *
+     * When receiving this event, the application should inspect the contained
+     * command and react appropriately.
+     */
     case commandReceived(command: IncomingDeviceCommand
     )
+    /**
+     * Sent when the user has modified their account profile information.
+     *
+     * When receiving this event, the application should request fresh profile
+     * information by calling [`get_profile`](FirefoxAccount::get_profile) with
+     * `ignore_cache` set to true, and update any profile information displayed
+     * in its UI.
+
+     */
     case profileUpdated
+    /**
+     * Sent when when there has been a change in authorization status.
+     *
+     * When receiving this event, the application should check whether it is
+     * still connected to the user's account by calling [`check_authorization_status`](
+     * FirefoxAccount::check_authorization_status), and updating its UI as appropriate.
+
+     */
     case accountAuthStateChanged
+    /**
+     * Sent when the user deletes their Firefox Account.
+     *
+     * When receiving this event, the application should act as though the user had
+     * signed out, discarding any persisted account state.
+     */
     case accountDestroyed
+    /**
+     * Sent when a new device connects to the user's account.
+     *
+     * When receiving this event, the application may use it to trigger an update
+     * of any UI that shows the list of connected devices. It may also show the
+     * user an informational notice about the new device, as a security measure.
+     */
     case deviceConnected(deviceName: String
     )
+    /**
+     * Sent when a device disconnects from the user's account.
+     *
+     * When receiving this event, the application may use it to trigger an update
+     * of any UI that shows the list of connected devices.
+     */
     case deviceDisconnected(deviceId: String, isLocalDevice: Bool)
+    /**
+     * An unknown event, most likely an event the client doesn't support yet.
+     *
+     * When receiving this event, the application should gracefully ignore it.
+     */
     case unknown
 }
 
@@ -2216,6 +3692,16 @@ extension CloseTabsResult: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * A "capability" offered by a device.
+ *
+ * In the FxA ecosystem, connected devices may advertize their ability to respond
+ * to various "commands" that can be invoked by other devices. The details of
+ * executing these commands are encapsulated as part of the FxA Client component,
+ * so consumers simply need to select which ones they want to support, and can
+ * use the variants of this enum to do so.
+
+ */
 
 public enum DeviceCapability {
     case sendTab
@@ -2257,21 +3743,69 @@ public func FfiConverterTypeDeviceCapability_lower(_ value: DeviceCapability) ->
 
 extension DeviceCapability: Equatable, Hashable {}
 
+/**
+ * Generic error type thrown by many [`FirefoxAccount`] operations.
+ *
+ * Precise details of the error are hidden from consumers, mostly due to limitations of
+ * how we expose this API to other languages. The type of the error indicates how the
+ * calling code should respond.
+
+ */
 public enum FxaError {
+    /**
+     * Thrown when there was a problem with the authentication status of the account,
+     * such as an expired token. The application should [check its authorization status](
+     * FirefoxAccount::check_authorization_status) to see whether it has been disconnected,
+     * or retry the operation with a freshly-generated token.
+     */
     case Authentication(message: String)
 
+    /**
+     * Thrown if an operation fails due to network access problems.
+     * The application may retry at a later time once connectivity is restored.
+     */
     case Network(message: String)
 
+    /**
+     * Thrown if the application attempts to complete an OAuth flow when no OAuth flow has been initiated for that state.
+     * This may indicate a user who navigated directly to the OAuth `redirect_uri` for the application.
+     */
     case NoExistingAuthFlow(message: String)
 
+    /**
+     * Thrown if the application attempts to complete an OAuth flow, but the state
+     * tokens returned from the Firefox Account server do not match with the ones
+     * expected by the client.
+     * This may indicate a stale OAuth flow, or potentially an attempted hijacking
+     * of the flow by an attacker. The signin attempt cannot be completed.
+     *
+     * **Note:** This error is currently only thrown in the Swift language bindings.
+     */
     case WrongAuthFlow(message: String)
 
+    /**
+     * Origin mismatch when handling a pairing flow
+     *
+     * The most likely cause of this is that a user tried to pair together two firefox instances
+     * that are configured to use different servers.
+     */
     case OriginMismatch(message: String)
 
+    /**
+     * The sync scoped key was missing in the server response
+     */
     case SyncScopedKeyMissingInServerResponse(message: String)
 
+    /**
+     * Thrown if there is a panic in the underlying Rust code.
+     *
+     * **Note:** This error is currently only thrown in the Kotlin language bindings.
+     */
     case Panic(message: String)
 
+    /**
+     * A catch-all for other unspecified errors.
+     */
     case Other(message: String)
 }
 
@@ -2487,6 +4021,9 @@ extension FxaRustAuthState: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * FxA server to connect to
+ */
 
 public enum FxaServer {
     case release
@@ -2837,8 +4374,19 @@ extension FxaStateCheckerState: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * A command invoked by another device.
+ *
+ * This enum represents all possible commands that can be invoked on
+ * the device. It is the responsibility of the application to interpret
+ * each command.
+
+ */
 
 public enum IncomingDeviceCommand {
+    /**
+     * Indicates that a tab has been sent to this device.
+     */
     case tabReceived(sender: Device?, payload: SendTabPayload)
     /**
      * Indicates that the sender wants to close one or more tabs on this device.

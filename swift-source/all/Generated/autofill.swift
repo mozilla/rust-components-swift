@@ -660,6 +660,9 @@ public func FfiConverterTypeStore_lower(_ value: Store) -> UnsafeMutableRawPoint
     return FfiConverterTypeStore.lower(value)
 }
 
+/**
+ * What you get back as an address.
+ */
 public struct Address {
     public var guid: String
     public var name: String
@@ -816,6 +819,9 @@ public func FfiConverterTypeAddress_lower(_ value: Address) -> RustBuffer {
     return FfiConverterTypeAddress.lower(value)
 }
 
+/**
+ * What you get back as a credit-card.
+ */
 public struct CreditCard {
     public var guid: String
     public var ccName: String
@@ -940,6 +946,9 @@ public func FfiConverterTypeCreditCard_lower(_ value: CreditCard) -> RustBuffer 
     return FfiConverterTypeCreditCard.lower(value)
 }
 
+/**
+ * What you pass to create or update an address.
+ */
 public struct UpdatableAddressFields {
     public var name: String
     public var organization: String
@@ -1056,6 +1065,9 @@ public func FfiConverterTypeUpdatableAddressFields_lower(_ value: UpdatableAddre
     return FfiConverterTypeUpdatableAddressFields.lower(value)
 }
 
+/**
+ * What you pass to create or update a credit-card.
+ */
 public struct UpdatableCreditCardFields {
     public var ccName: String
     public var ccNumberEnc: String
@@ -1273,6 +1285,9 @@ private struct FfiConverterSequenceTypeCreditCard: FfiConverterRustBuffer {
     }
 }
 
+/**
+ * Create a new, random, encryption key.
+ */
 public func createAutofillKey() throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
         uniffi_autofill_fn_func_create_autofill_key($0
@@ -1280,6 +1295,10 @@ public func createAutofillKey() throws -> String {
     })
 }
 
+/**
+ * Decrypt an arbitrary string - `key` must have come from `create_key()`
+ * and `ciphertext` must have come from `encrypt_string()`
+ */
 public func decryptString(key: String, ciphertext: String) throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
         uniffi_autofill_fn_func_decrypt_string(
@@ -1289,6 +1308,9 @@ public func decryptString(key: String, ciphertext: String) throws -> String {
     })
 }
 
+/**
+ * Encrypt an arbitrary string - `key` must have come from `create_key()`
+ */
 public func encryptString(key: String, cleartext: String) throws -> String {
     return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeAutofillApiError.lift) {
         uniffi_autofill_fn_func_encrypt_string(
