@@ -651,7 +651,7 @@ open class SuggestStore:
     /**
      * Creates a Suggest store.
      */
-public convenience init(path: String, settingsConfig: RemoteSettingsConfig?)throws  {
+public convenience init(path: String, settingsConfig: RemoteSettingsConfig? = nil)throws  {
     let pointer =
         try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_constructor_suggeststore_new(
@@ -738,7 +738,7 @@ open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestInge
      * bar, to ensure that they see fresh suggestions as they type. This
      * method does not interrupt any ongoing ingests.
      */
-open func interrupt(kind: InterruptKind?) {try! rustCall() {
+open func interrupt(kind: InterruptKind? = nil) {try! rustCall() {
     uniffi_suggest_fn_method_suggeststore_interrupt(self.uniffiClonePointer(),
         FfiConverterOptionTypeInterruptKind.lower(kind),$0
     )
@@ -1199,11 +1199,11 @@ public struct SuggestIngestionConstraints {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(providers: [SuggestionProvider]?, providerConstraints: SuggestionProviderConstraints?, 
+    public init(providers: [SuggestionProvider]? = nil, providerConstraints: SuggestionProviderConstraints? = nil, 
         /**
          * Only run ingestion if the table `suggestions` is empty
 
-         */emptyOnly: Bool) {
+         */emptyOnly: Bool = false) {
         self.providers = providers
         self.providerConstraints = providerConstraints
         self.emptyOnly = emptyOnly
@@ -1354,7 +1354,7 @@ public struct SuggestionProviderConstraints {
          * `Exposure` provider - For each desired exposure suggestion type, this
          * should contain the value of the `suggestion_type` field of its remote
          * settings record(s).
-         */exposureSuggestionTypes: [String]?) {
+         */exposureSuggestionTypes: [String]? = nil) {
         self.exposureSuggestionTypes = exposureSuggestionTypes
     }
 }
@@ -1409,7 +1409,7 @@ public struct SuggestionQuery {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(keyword: String, providers: [SuggestionProvider], providerConstraints: SuggestionProviderConstraints?, limit: Int32?) {
+    public init(keyword: String, providers: [SuggestionProvider], providerConstraints: SuggestionProviderConstraints? = nil, limit: Int32? = nil) {
         self.keyword = keyword
         self.providers = providers
         self.providerConstraints = providerConstraints
@@ -2313,7 +2313,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststore_ingest() != 35498) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 39926) {
+    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 26986) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_query() != 856) {
@@ -2340,7 +2340,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_server() != 19990) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 1459) {
+    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 9768) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_constructor_suggeststorebuilder_new() != 1218) {
