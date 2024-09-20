@@ -381,19 +381,6 @@ fileprivate class UniffiHandleMap<T> {
 // Public interface members begin here.
 
 
-fileprivate struct FfiConverterUInt8: FfiConverterPrimitive {
-    typealias FfiType = UInt8
-    typealias SwiftType = UInt8
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt8 {
-        return try lift(readInt(&buf))
-    }
-
-    public static func write(_ value: UInt8, into buf: inout [UInt8]) {
-        writeInt(&buf, lower(value))
-    }
-}
-
 fileprivate struct FfiConverterInt32: FfiConverterPrimitive {
     typealias FfiType = Int32
     typealias SwiftType = Int32
@@ -505,36 +492,134 @@ fileprivate struct FfiConverterString: FfiConverter {
     }
 }
 
+fileprivate struct FfiConverterData: FfiConverterRustBuffer {
+    typealias SwiftType = Data
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Data {
+        let len: Int32 = try readInt(&buf)
+        return Data(try readBytes(&buf, count: Int(len)))
+    }
+
+    public static func write(_ value: Data, into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        writeBytes(&buf, value)
+    }
+}
 
 
 
+
+/**
+ * The store is the entry point to the Suggest component. It incrementally
+ * downloads suggestions from the Remote Settings service, stores them in a
+ * local database, and returns them in response to user queries.
+ *
+ * Your application should create a single store, and manage it as a singleton.
+ * The store is thread-safe, and supports concurrent queries and ingests. We
+ * expect that your application will call [`SuggestStore::query()`] to show
+ * suggestions as the user types into the address bar, and periodically call
+ * [`SuggestStore::ingest()`] in the background to update the database with
+ * new suggestions from Remote Settings.
+ *
+ * For responsiveness, we recommend always calling `query()` on a worker
+ * thread. When the user types new input into the address bar, call
+ * [`SuggestStore::interrupt()`] on the main thread to cancel the query
+ * for the old input, and unblock the worker thread for the new query.
+ *
+ * The store keeps track of the state needed to support incremental ingestion,
+ * but doesn't schedule the ingestion work itself, or decide how many
+ * suggestions to ingest at once. This is for two reasons:
+ *
+ * 1. The primitives for scheduling background work vary between platforms, and
+ * aren't available to the lower-level Rust layer. You might use an idle
+ * timer on Desktop, `WorkManager` on Android, or `BGTaskScheduler` on iOS.
+ * 2. Ingestion constraints can change, depending on the platform and the needs
+ * of your application. A mobile device on a metered connection might want
+ * to request a small subset of the Suggest data and download the rest
+ * later, while a desktop on a fast link might download the entire dataset
+ * on the first launch.
+ */
 public protocol SuggestStoreProtocol : AnyObject {
     
+    /**
+     * Removes all content from the database.
+     */
     func clear() throws 
     
+    /**
+     * Clear dismissed suggestions
+     */
     func clearDismissedSuggestions() throws 
     
-    func dismissSuggestion(rawSuggestionUrl: String) throws 
+    /**
+     * Dismiss a suggestion
+     *
+     * Dismissed suggestions will not be returned again
+     *
+     * In the case of AMP suggestions this should be the raw URL.
+     */
+    func dismissSuggestion(suggestionUrl: String) throws 
     
     func fetchGlobalConfig() throws  -> SuggestGlobalConfig
     
     func fetchProviderConfig(provider: SuggestionProvider) throws  -> SuggestProviderConfig?
     
+    /**
+     * Ingests new suggestions from Remote Settings.
+     */
     func ingest(constraints: SuggestIngestionConstraints) throws  -> SuggestIngestionMetrics
     
     /**
-     * Interrupt operations
+     * Interrupts any ongoing queries.
      *
-     * This is optional for backwards compatibility, but this is deprecated.  Consumers should
-     * update their code to pass in a InterruptKind value.
+     * This should be called when the user types new input into the address
+     * bar, to ensure that they see fresh suggestions as they type. This
+     * method does not interrupt any ongoing ingests.
      */
     func interrupt(kind: InterruptKind?) 
     
+    /**
+     * Queries the database for suggestions.
+     */
     func query(query: SuggestionQuery) throws  -> [Suggestion]
     
+    /**
+     * Queries the database for suggestions.
+     */
     func queryWithMetrics(query: SuggestionQuery) throws  -> QueryWithMetricsResult
     
 }
+/**
+ * The store is the entry point to the Suggest component. It incrementally
+ * downloads suggestions from the Remote Settings service, stores them in a
+ * local database, and returns them in response to user queries.
+ *
+ * Your application should create a single store, and manage it as a singleton.
+ * The store is thread-safe, and supports concurrent queries and ingests. We
+ * expect that your application will call [`SuggestStore::query()`] to show
+ * suggestions as the user types into the address bar, and periodically call
+ * [`SuggestStore::ingest()`] in the background to update the database with
+ * new suggestions from Remote Settings.
+ *
+ * For responsiveness, we recommend always calling `query()` on a worker
+ * thread. When the user types new input into the address bar, call
+ * [`SuggestStore::interrupt()`] on the main thread to cancel the query
+ * for the old input, and unblock the worker thread for the new query.
+ *
+ * The store keeps track of the state needed to support incremental ingestion,
+ * but doesn't schedule the ingestion work itself, or decide how many
+ * suggestions to ingest at once. This is for two reasons:
+ *
+ * 1. The primitives for scheduling background work vary between platforms, and
+ * aren't available to the lower-level Rust layer. You might use an idle
+ * timer on Desktop, `WorkManager` on Android, or `BGTaskScheduler` on iOS.
+ * 2. Ingestion constraints can change, depending on the platform and the needs
+ * of your application. A mobile device on a metered connection might want
+ * to request a small subset of the Suggest data and download the rest
+ * later, while a desktop on a fast link might download the entire dataset
+ * on the first launch.
+ */
 open class SuggestStore:
     SuggestStoreProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -563,7 +648,10 @@ open class SuggestStore:
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_suggest_fn_clone_suggeststore(self.pointer, $0) }
     }
-public convenience init(path: String, settingsConfig: RemoteSettingsConfig? = nil)throws  {
+    /**
+     * Creates a Suggest store.
+     */
+public convenience init(path: String, settingsConfig: RemoteSettingsConfig?)throws  {
     let pointer =
         try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_constructor_suggeststore_new(
@@ -585,21 +673,34 @@ public convenience init(path: String, settingsConfig: RemoteSettingsConfig? = ni
     
 
     
+    /**
+     * Removes all content from the database.
+     */
 open func clear()throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_clear(self.uniffiClonePointer(),$0
     )
 }
 }
     
+    /**
+     * Clear dismissed suggestions
+     */
 open func clearDismissedSuggestions()throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_clear_dismissed_suggestions(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func dismissSuggestion(rawSuggestionUrl: String)throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    /**
+     * Dismiss a suggestion
+     *
+     * Dismissed suggestions will not be returned again
+     *
+     * In the case of AMP suggestions this should be the raw URL.
+     */
+open func dismissSuggestion(suggestionUrl: String)throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_dismiss_suggestion(self.uniffiClonePointer(),
-        FfiConverterString.lower(rawSuggestionUrl),$0
+        FfiConverterString.lower(suggestionUrl),$0
     )
 }
 }
@@ -619,6 +720,9 @@ open func fetchProviderConfig(provider: SuggestionProvider)throws  -> SuggestPro
 })
 }
     
+    /**
+     * Ingests new suggestions from Remote Settings.
+     */
 open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestIngestionMetrics {
     return try  FfiConverterTypeSuggestIngestionMetrics.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_ingest(self.uniffiClonePointer(),
@@ -628,18 +732,22 @@ open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestInge
 }
     
     /**
-     * Interrupt operations
+     * Interrupts any ongoing queries.
      *
-     * This is optional for backwards compatibility, but this is deprecated.  Consumers should
-     * update their code to pass in a InterruptKind value.
+     * This should be called when the user types new input into the address
+     * bar, to ensure that they see fresh suggestions as they type. This
+     * method does not interrupt any ongoing ingests.
      */
-open func interrupt(kind: InterruptKind? = nil) {try! rustCall() {
+open func interrupt(kind: InterruptKind?) {try! rustCall() {
     uniffi_suggest_fn_method_suggeststore_interrupt(self.uniffiClonePointer(),
         FfiConverterOptionTypeInterruptKind.lower(kind),$0
     )
 }
 }
     
+    /**
+     * Queries the database for suggestions.
+     */
 open func query(query: SuggestionQuery)throws  -> [Suggestion] {
     return try  FfiConverterSequenceTypeSuggestion.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_query(self.uniffiClonePointer(),
@@ -648,6 +756,9 @@ open func query(query: SuggestionQuery)throws  -> [Suggestion] {
 })
 }
     
+    /**
+     * Queries the database for suggestions.
+     */
 open func queryWithMetrics(query: SuggestionQuery)throws  -> QueryWithMetricsResult {
     return try  FfiConverterTypeQueryWithMetricsResult.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_query_with_metrics(self.uniffiClonePointer(),
@@ -704,6 +815,12 @@ public func FfiConverterTypeSuggestStore_lower(_ value: SuggestStore) -> UnsafeM
 
 
 
+/**
+ * Builder for [SuggestStore]
+ *
+ * Using a builder is preferred to calling the constructor directly since it's harder to confuse
+ * the data_path and cache_path strings.
+ */
 public protocol SuggestStoreBuilderProtocol : AnyObject {
     
     func build() throws  -> SuggestStore
@@ -722,13 +839,19 @@ public protocol SuggestStoreBuilderProtocol : AnyObject {
      * entrypoint should be the entry point, for example `sqlite3_fts5_init`.  If `null` (the default)
      * entry point will be used (see https://sqlite.org/loadext.html for details).
      */
-    func loadExtension(libraryName: String, entrypoint: String?)  -> SuggestStoreBuilder
+    func loadExtension(library: String, entryPoint: String?)  -> SuggestStoreBuilder
     
     func remoteSettingsBucketName(bucketName: String)  -> SuggestStoreBuilder
     
     func remoteSettingsServer(server: RemoteSettingsServer)  -> SuggestStoreBuilder
     
 }
+/**
+ * Builder for [SuggestStore]
+ *
+ * Using a builder is preferred to calling the constructor directly since it's harder to confuse
+ * the data_path and cache_path strings.
+ */
 open class SuggestStoreBuilder:
     SuggestStoreBuilderProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
@@ -810,11 +933,11 @@ open func dataPath(path: String) -> SuggestStoreBuilder {
      * entrypoint should be the entry point, for example `sqlite3_fts5_init`.  If `null` (the default)
      * entry point will be used (see https://sqlite.org/loadext.html for details).
      */
-open func loadExtension(libraryName: String, entrypoint: String?) -> SuggestStoreBuilder {
+open func loadExtension(library: String, entryPoint: String?) -> SuggestStoreBuilder {
     return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_load_extension(self.uniffiClonePointer(),
-        FfiConverterString.lower(libraryName),
-        FfiConverterOptionString.lower(entrypoint),$0
+        FfiConverterString.lower(library),
+        FfiConverterOptionString.lower(entryPoint),$0
     )
 })
 }
@@ -882,7 +1005,7 @@ public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuild
 
 
 /**
- * / A single sample for a labeled timing distribution metric
+ * Single sample for a Glean labeled_timing_distribution
  */
 public struct LabeledTimingSample {
     public var label: String
@@ -1010,6 +1133,9 @@ public func FfiConverterTypeQueryWithMetricsResult_lower(_ value: QueryWithMetri
 }
 
 
+/**
+ * Global Suggest configuration data.
+ */
 public struct SuggestGlobalConfig {
     public var showLessFrequentlyCap: Int32
 
@@ -1059,32 +1185,25 @@ public func FfiConverterTypeSuggestGlobalConfig_lower(_ value: SuggestGlobalConf
 }
 
 
+/**
+ * Constraints limit which suggestions to ingest from Remote Settings.
+ */
 public struct SuggestIngestionConstraints {
     public var providers: [SuggestionProvider]?
     public var providerConstraints: SuggestionProviderConstraints?
     /**
-     * Only ingest if the table `suggestions` is empty.
-     *
-     * This is indented to handle periodic updates.  Consumers can schedule an ingest with
-     * `empty_only=true` on startup and a regular ingest with `empty_only=false` to run on a long periodic schedule (maybe
-     * once a day). This allows ingestion to normally be run at a slow, periodic rate.  However, if
-     * there is a schema upgrade that causes the database to be thrown away, then the
-     * `empty_only=true` ingestion that runs on startup will repopulate it.
+     * Only run ingestion if the table `suggestions` is empty
+
      */
     public var emptyOnly: Bool
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(providers: [SuggestionProvider]? = nil, providerConstraints: SuggestionProviderConstraints? = nil, 
+    public init(providers: [SuggestionProvider]?, providerConstraints: SuggestionProviderConstraints?, 
         /**
-         * Only ingest if the table `suggestions` is empty.
-         *
-         * This is indented to handle periodic updates.  Consumers can schedule an ingest with
-         * `empty_only=true` on startup and a regular ingest with `empty_only=false` to run on a long periodic schedule (maybe
-         * once a day). This allows ingestion to normally be run at a slow, periodic rate.  However, if
-         * there is a schema upgrade that causes the database to be thrown away, then the
-         * `empty_only=true` ingestion that runs on startup will repopulate it.
-         */emptyOnly: Bool = false) {
+         * Only run ingestion if the table `suggestions` is empty
+
+         */emptyOnly: Bool) {
         self.providers = providers
         self.providerConstraints = providerConstraints
         self.emptyOnly = emptyOnly
@@ -1142,6 +1261,11 @@ public func FfiConverterTypeSuggestIngestionConstraints_lower(_ value: SuggestIn
 }
 
 
+/**
+ * Ingestion metrics
+ *
+ * These are recorded during [crate::Store::ingest] and returned to the consumer to record.
+ */
 public struct SuggestIngestionMetrics {
     /**
      * Samples for the `suggest.ingestion_time` metric
@@ -1230,7 +1354,7 @@ public struct SuggestionProviderConstraints {
          * `Exposure` provider - For each desired exposure suggestion type, this
          * should contain the value of the `suggestion_type` field of its remote
          * settings record(s).
-         */exposureSuggestionTypes: [String]? = nil) {
+         */exposureSuggestionTypes: [String]?) {
         self.exposureSuggestionTypes = exposureSuggestionTypes
     }
 }
@@ -1274,6 +1398,9 @@ public func FfiConverterTypeSuggestionProviderConstraints_lower(_ value: Suggest
 }
 
 
+/**
+ * A query for suggestions to show in the address bar.
+ */
 public struct SuggestionQuery {
     public var keyword: String
     public var providers: [SuggestionProvider]
@@ -1282,7 +1409,7 @@ public struct SuggestionQuery {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(keyword: String, providers: [SuggestionProvider], providerConstraints: SuggestionProviderConstraints? = nil, limit: Int32? = nil) {
+    public init(keyword: String, providers: [SuggestionProvider], providerConstraints: SuggestionProviderConstraints?, limit: Int32?) {
         self.keyword = keyword
         self.providers = providers
         self.providerConstraints = providerConstraints
@@ -1348,11 +1475,24 @@ public func FfiConverterTypeSuggestionQuery_lower(_ value: SuggestionQuery) -> R
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * What should be interrupted when [SuggestStore::interrupt] is called?
+ */
 
 public enum InterruptKind {
     
+    /**
+     * Interrupt read operations like [SuggestStore::query]
+     */
     case read
+    /**
+     * Interrupt write operations.  This mostly means [SuggestStore::ingest], but
+     * [SuggestStore::dismiss_suggestion] may also be interrupted.
+     */
     case write
+    /**
+     * Interrupt both read and write operations,
+     */
     case readWrite
 }
 
@@ -1409,21 +1549,25 @@ extension InterruptKind: Equatable, Hashable {}
 
 
 
+/**
+ * The error type for all Suggest component operations. These errors are
+ * exposed to your application, which should handle them as needed.
+ */
 public enum SuggestApiError {
 
     
     
-    /**
-     * An operation was interrupted by calling `SuggestStore.interrupt()`
-     */
-    case Interrupted
+    case Network(reason: String
+    )
     /**
      * The server requested a backoff after too many requests
      */
     case Backoff(seconds: UInt64
     )
-    case Network(reason: String
-    )
+    /**
+     * An operation was interrupted by calling `SuggestStore.interrupt()`
+     */
+    case Interrupted
     case Other(reason: String
     )
 }
@@ -1439,13 +1583,13 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
         
 
         
-        case 1: return .Interrupted
+        case 1: return .Network(
+            reason: try FfiConverterString.read(from: &buf)
+            )
         case 2: return .Backoff(
             seconds: try FfiConverterUInt64.read(from: &buf)
             )
-        case 3: return .Network(
-            reason: try FfiConverterString.read(from: &buf)
-            )
+        case 3: return .Interrupted
         case 4: return .Other(
             reason: try FfiConverterString.read(from: &buf)
             )
@@ -1461,19 +1605,19 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
 
         
         
-        case .Interrupted:
+        case let .Network(reason):
             writeInt(&buf, Int32(1))
-        
+            FfiConverterString.write(reason, into: &buf)
+            
         
         case let .Backoff(seconds):
             writeInt(&buf, Int32(2))
             FfiConverterUInt64.write(seconds, into: &buf)
             
         
-        case let .Network(reason):
+        case .Interrupted:
             writeInt(&buf, Int32(3))
-            FfiConverterString.write(reason, into: &buf)
-            
+        
         
         case let .Other(reason):
             writeInt(&buf, Int32(4))
@@ -1494,6 +1638,9 @@ extension SuggestApiError: Foundation.LocalizedError {
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Per-provider configuration data.
+ */
 
 public enum SuggestProviderConfig {
     
@@ -1545,24 +1692,27 @@ extension SuggestProviderConfig: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * A suggestion from the database to show in the address bar.
+ */
 
 public enum Suggestion {
     
-    case amp(title: String, url: String, rawUrl: String, icon: [UInt8]?, iconMimetype: String?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double
+    case amp(title: String, url: String, rawUrl: String, icon: Data?, iconMimetype: String?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double
     )
     case pocket(title: String, url: String, score: Double, isTopPick: Bool
     )
-    case wikipedia(title: String, url: String, icon: [UInt8]?, iconMimetype: String?, fullKeyword: String
+    case wikipedia(title: String, url: String, icon: Data?, iconMimetype: String?, fullKeyword: String
     )
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double
     )
-    case yelp(url: String, title: String, icon: [UInt8]?, iconMimetype: String?, score: Double, hasLocationSign: Bool, subjectExactMatch: Bool, locationParam: String
+    case yelp(url: String, title: String, icon: Data?, iconMimetype: String?, score: Double, hasLocationSign: Bool, subjectExactMatch: Bool, locationParam: String
     )
     case mdn(title: String, url: String, description: String, score: Double
     )
     case weather(score: Double
     )
-    case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: [UInt8]?, iconMimetype: String?, score: Double
+    case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: Data?, iconMimetype: String?, score: Double
     )
     case exposure(suggestionType: String, score: Double
     )
@@ -1576,19 +1726,19 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .amp(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), rawUrl: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf), blockId: try FfiConverterInt64.read(from: &buf), advertiser: try FfiConverterString.read(from: &buf), iabCategory: try FfiConverterString.read(from: &buf), impressionUrl: try FfiConverterString.read(from: &buf), clickUrl: try FfiConverterString.read(from: &buf), rawClickUrl: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 1: return .amp(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), rawUrl: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf), blockId: try FfiConverterInt64.read(from: &buf), advertiser: try FfiConverterString.read(from: &buf), iabCategory: try FfiConverterString.read(from: &buf), impressionUrl: try FfiConverterString.read(from: &buf), clickUrl: try FfiConverterString.read(from: &buf), rawClickUrl: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
         case 2: return .pocket(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), isTopPick: try FfiConverterBool.read(from: &buf)
         )
         
-        case 3: return .wikipedia(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf)
+        case 3: return .wikipedia(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf)
         )
         
         case 4: return .amo(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), iconUrl: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), rating: try FfiConverterOptionString.read(from: &buf), numberOfRatings: try FfiConverterInt64.read(from: &buf), guid: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 5: return .yelp(url: try FfiConverterString.read(from: &buf), title: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), hasLocationSign: try FfiConverterBool.read(from: &buf), subjectExactMatch: try FfiConverterBool.read(from: &buf), locationParam: try FfiConverterString.read(from: &buf)
+        case 5: return .yelp(url: try FfiConverterString.read(from: &buf), title: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), hasLocationSign: try FfiConverterBool.read(from: &buf), subjectExactMatch: try FfiConverterBool.read(from: &buf), locationParam: try FfiConverterString.read(from: &buf)
         )
         
         case 6: return .mdn(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
@@ -1597,7 +1747,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 7: return .weather(score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionSequenceUInt8.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
         case 9: return .exposure(suggestionType: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
@@ -1616,7 +1766,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(rawUrl, into: &buf)
-            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionData.write(icon, into: &buf)
             FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterString.write(fullKeyword, into: &buf)
             FfiConverterInt64.write(blockId, into: &buf)
@@ -1640,7 +1790,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             writeInt(&buf, Int32(3))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
-            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionData.write(icon, into: &buf)
             FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterString.write(fullKeyword, into: &buf)
             
@@ -1661,7 +1811,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             writeInt(&buf, Int32(5))
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
-            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionData.write(icon, into: &buf)
             FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             FfiConverterBool.write(hasLocationSign, into: &buf)
@@ -1690,7 +1840,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(title, into: &buf)
             FfiConverterInt64.write(totalReviews, into: &buf)
             FfiConverterString.write(url, into: &buf)
-            FfiConverterOptionSequenceUInt8.write(icon, into: &buf)
+            FfiConverterOptionData.write(icon, into: &buf)
             FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             
@@ -1721,19 +1871,22 @@ extension Suggestion: Equatable, Hashable {}
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * A provider is a source of search suggestions.
+ */
 
-public enum SuggestionProvider {
+public enum SuggestionProvider : UInt8 {
     
-    case amp
-    case pocket
-    case wikipedia
-    case amo
-    case yelp
-    case mdn
-    case weather
-    case ampMobile
-    case fakespot
-    case exposure
+    case amp = 1
+    case wikipedia = 2
+    case amo = 3
+    case pocket = 4
+    case yelp = 5
+    case mdn = 6
+    case weather = 7
+    case ampMobile = 8
+    case fakespot = 9
+    case exposure = 10
 }
 
 
@@ -1746,11 +1899,11 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case 1: return .amp
         
-        case 2: return .pocket
+        case 2: return .wikipedia
         
-        case 3: return .wikipedia
+        case 3: return .amo
         
-        case 4: return .amo
+        case 4: return .pocket
         
         case 5: return .yelp
         
@@ -1776,15 +1929,15 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
             writeInt(&buf, Int32(1))
         
         
-        case .pocket:
+        case .wikipedia:
             writeInt(&buf, Int32(2))
         
         
-        case .wikipedia:
+        case .amo:
             writeInt(&buf, Int32(3))
         
         
-        case .amo:
+        case .pocket:
             writeInt(&buf, Int32(4))
         
         
@@ -1872,6 +2025,27 @@ fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
+fileprivate struct FfiConverterOptionData: FfiConverterRustBuffer {
+    typealias SwiftType = Data?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterData.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterData.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
 fileprivate struct FfiConverterOptionTypeSuggestionProviderConstraints: FfiConverterRustBuffer {
     typealias SwiftType = SuggestionProviderConstraints?
 
@@ -1930,27 +2104,6 @@ fileprivate struct FfiConverterOptionTypeSuggestProviderConfig: FfiConverterRust
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeSuggestProviderConfig.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-fileprivate struct FfiConverterOptionSequenceUInt8: FfiConverterRustBuffer {
-    typealias SwiftType = [UInt8]?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterSequenceUInt8.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterSequenceUInt8.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -2016,28 +2169,6 @@ fileprivate struct FfiConverterOptionTypeRemoteSettingsConfig: FfiConverterRustB
         case 1: return try FfiConverterTypeRemoteSettingsConfig.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
-    }
-}
-
-fileprivate struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
-    typealias SwiftType = [UInt8]
-
-    public static func write(_ value: [UInt8], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterUInt8.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [UInt8] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [UInt8]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            seq.append(try FfiConverterUInt8.read(from: &buf))
-        }
-        return seq
     }
 }
 
@@ -2132,11 +2263,16 @@ fileprivate struct FfiConverterSequenceTypeSuggestionProvider: FfiConverterRustB
 
 
 
-public func rawSuggestionUrlMatches(rawUrl: String, url: String) -> Bool {
+/**
+ * Determines whether a "raw" sponsored suggestion URL is equivalent to a
+ * "cooked" URL. The two URLs are equivalent if they are identical except for
+ * their replaced template parameters, which can be different.
+ */
+public func rawSuggestionUrlMatches(rawUrl: String, cookedUrl: String) -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_suggest_fn_func_raw_suggestion_url_matches(
         FfiConverterString.lower(rawUrl),
-        FfiConverterString.lower(url),$0
+        FfiConverterString.lower(cookedUrl),$0
     )
 })
 }
@@ -2156,58 +2292,58 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_suggest_checksum_func_raw_suggestion_url_matches() != 43507) {
+    if (uniffi_suggest_checksum_func_raw_suggestion_url_matches() != 23311) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_clear() != 13979) {
+    if (uniffi_suggest_checksum_method_suggeststore_clear() != 24590) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_clear_dismissed_suggestions() != 21145) {
+    if (uniffi_suggest_checksum_method_suggeststore_clear_dismissed_suggestions() != 39430) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion() != 28358) {
+    if (uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion() != 43014) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_fetch_global_config() != 41044) {
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_global_config() != 10773) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_fetch_provider_config() != 5906) {
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_provider_config() != 8150) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_ingest() != 27906) {
+    if (uniffi_suggest_checksum_method_suggeststore_ingest() != 35498) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 17785) {
+    if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 39926) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_query() != 12875) {
+    if (uniffi_suggest_checksum_method_suggeststore_query() != 856) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_query_with_metrics() != 29421) {
+    if (uniffi_suggest_checksum_method_suggeststore_query_with_metrics() != 14851) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 28243) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 42072) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_cache_path() != 30962) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_cache_path() != 55168) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_data_path() != 50155) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_data_path() != 48491) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_load_extension() != 3315) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_load_extension() != 7246) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_bucket_name() != 18802) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_bucket_name() != 41780) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_server() != 22023) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_server() != 19990) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 37533) {
+    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 1459) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_constructor_suggeststorebuilder_new() != 60163) {
+    if (uniffi_suggest_checksum_constructor_suggeststorebuilder_new() != 1218) {
         return InitializationResult.apiChecksumMismatch
     }
 

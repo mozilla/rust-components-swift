@@ -278,7 +278,7 @@ void uniffi_suggest_fn_method_suggeststore_clear_dismissed_suggestions(void*_Non
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_DISMISS_SUGGESTION
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_DISMISS_SUGGESTION
-void uniffi_suggest_fn_method_suggeststore_dismiss_suggestion(void*_Nonnull ptr, RustBuffer raw_suggestion_url, RustCallStatus *_Nonnull out_status
+void uniffi_suggest_fn_method_suggeststore_dismiss_suggestion(void*_Nonnull ptr, RustBuffer suggestion_url, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_FETCH_GLOBAL_CONFIG
@@ -334,7 +334,7 @@ void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_build(void*_Nonnull p
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_CACHE_PATH
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_CACHE_PATH
-void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_cache_path(void*_Nonnull ptr, RustBuffer path, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_cache_path(void*_Nonnull ptr, RustBuffer _path, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_DATA_PATH
@@ -344,7 +344,7 @@ void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_data_path(void*_Nonnu
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_LOAD_EXTENSION
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_LOAD_EXTENSION
-void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_load_extension(void*_Nonnull ptr, RustBuffer library_name, RustBuffer entrypoint, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_load_extension(void*_Nonnull ptr, RustBuffer library, RustBuffer entry_point, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_REMOTE_SETTINGS_BUCKET_NAME
@@ -359,7 +359,7 @@ void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_serve
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_FUNC_RAW_SUGGESTION_URL_MATCHES
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_FUNC_RAW_SUGGESTION_URL_MATCHES
-int8_t uniffi_suggest_fn_func_raw_suggestion_url_matches(RustBuffer raw_url, RustBuffer url, RustCallStatus *_Nonnull out_status
+int8_t uniffi_suggest_fn_func_raw_suggestion_url_matches(RustBuffer raw_url, RustBuffer cooked_url, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_SUGGEST_RUSTBUFFER_ALLOC
