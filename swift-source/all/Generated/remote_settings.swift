@@ -864,21 +864,12 @@ public func FfiConverterTypeRemoteSettingsResponse_lower(_ value: RemoteSettings
 }
 
 public enum RemoteSettingsError {
-    case JsonError(message: String)
-
-    case FileError(message: String)
-
-    case RequestError(message: String)
-
-    case UrlParsingError(message: String)
-
-    case BackoffError(message: String)
-
-    case ResponseError(message: String)
-
-    case AttachmentsUnsupportedError(message: String)
-
-    case ConfigError(message: String)
+    case Network(reason: String
+    )
+    case Backoff(seconds: UInt64
+    )
+    case Other(reason: String
+    )
 }
 
 public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
@@ -887,36 +878,14 @@ public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .JsonError(
-                message: FfiConverterString.read(from: &buf)
+        case 1: return try .Network(
+                reason: FfiConverterString.read(from: &buf)
             )
-
-        case 2: return try .FileError(
-                message: FfiConverterString.read(from: &buf)
+        case 2: return try .Backoff(
+                seconds: FfiConverterUInt64.read(from: &buf)
             )
-
-        case 3: return try .RequestError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 4: return try .UrlParsingError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 5: return try .BackoffError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 6: return try .ResponseError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 7: return try .AttachmentsUnsupportedError(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 8: return try .ConfigError(
-                message: FfiConverterString.read(from: &buf)
+        case 3: return try .Other(
+                reason: FfiConverterString.read(from: &buf)
             )
 
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -925,22 +894,17 @@ public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
 
     public static func write(_ value: RemoteSettingsError, into buf: inout [UInt8]) {
         switch value {
-        case .JsonError(_ /* message is ignored*/ ):
+        case let .Network(reason):
             writeInt(&buf, Int32(1))
-        case .FileError(_ /* message is ignored*/ ):
+            FfiConverterString.write(reason, into: &buf)
+
+        case let .Backoff(seconds):
             writeInt(&buf, Int32(2))
-        case .RequestError(_ /* message is ignored*/ ):
+            FfiConverterUInt64.write(seconds, into: &buf)
+
+        case let .Other(reason):
             writeInt(&buf, Int32(3))
-        case .UrlParsingError(_ /* message is ignored*/ ):
-            writeInt(&buf, Int32(4))
-        case .BackoffError(_ /* message is ignored*/ ):
-            writeInt(&buf, Int32(5))
-        case .ResponseError(_ /* message is ignored*/ ):
-            writeInt(&buf, Int32(6))
-        case .AttachmentsUnsupportedError(_ /* message is ignored*/ ):
-            writeInt(&buf, Int32(7))
-        case .ConfigError(_ /* message is ignored*/ ):
-            writeInt(&buf, Int32(8))
+            FfiConverterString.write(reason, into: &buf)
         }
     }
 }
