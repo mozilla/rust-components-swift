@@ -43,10 +43,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-    import MozillaRustComponents
+import MozillaRustComponents
 #endif
 
-private extension RustBuffer {
+fileprivate extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -56,7 +56,7 @@ private extension RustBuffer {
     }
 
     static func empty() -> RustBuffer {
-        RustBuffer(capacity: 0, len: 0, data: nil)
+        RustBuffer(capacity: 0, len:0, data: nil)
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
@@ -70,7 +70,7 @@ private extension RustBuffer {
     }
 }
 
-private extension ForeignBytes {
+fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -83,11 +83,13 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
+fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
-        // TODO: This copies the buffer. Can we read directly from a
-        // Rust buffer?
-        self.init(bytes: rustBuffer.data!, count: Int(rustBuffer.len))
+        self.init(
+            bytesNoCopy: rustBuffer.data!,
+            count: Int(rustBuffer.len),
+            deallocator: .none
+        )
     }
 }
 
@@ -105,15 +107,15 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -123,38 +125,38 @@ private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: 
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-    let range = reader.offset ..< (reader.offset + count)
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer { buffer in
+    value.withUnsafeMutableBufferPointer({ buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    }
+    })
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -162,11 +164,11 @@ private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
+fileprivate func createWriter() -> [UInt8] {
     return []
 }
 
-private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -174,22 +176,22 @@ private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Seque
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous to the Rust trait of the same name.
-private protocol FfiConverter {
+fileprivate protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -200,13 +202,19 @@ private protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ value: FfiType) throws -> SwiftType {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> FfiType {
         return value
     }
@@ -214,9 +222,12 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
         var reader = createReader(data: Data(rustBuffer: buf))
         let value = try read(from: &reader)
@@ -227,16 +238,18 @@ extension FfiConverterRustBuffer {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> RustBuffer {
-        var writer = createWriter()
-        write(value, into: &writer)
-        return RustBuffer(bytes: writer)
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
     }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
+fileprivate enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -262,24 +275,24 @@ private enum UniffiInternalError: LocalizedError {
     }
 }
 
-private extension NSLock {
+fileprivate extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
-        lock()
+        self.lock()
         defer { self.unlock() }
         return try f()
     }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_UNEXPECTED_ERROR: Int8 = 2
-private let CALL_CANCELLED: Int8 = 3
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_UNEXPECTED_ERROR: Int8 = 2
+fileprivate let CALL_CANCELLED: Int8 = 3
 
-private extension RustCallStatus {
+fileprivate extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer(
+            errorBuf: RustBuffer.init(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -295,8 +308,7 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 
 private func rustCallWithError<T, E: Swift.Error>(
     _ errorHandler: @escaping (RustBuffer) throws -> E,
-    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
-) throws -> T {
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
     try makeRustCall(callback, errorHandler: errorHandler)
 }
 
@@ -305,7 +317,7 @@ private func makeRustCall<T, E: Swift.Error>(
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
     uniffiEnsureInitialized()
-    var callStatus = RustCallStatus()
+    var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
     return returnedVal
@@ -316,44 +328,44 @@ private func uniffiCheckCallStatus<E: Swift.Error>(
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws {
     switch callStatus.code {
-    case CALL_SUCCESS:
-        return
+        case CALL_SUCCESS:
+            return
 
-    case CALL_ERROR:
-        if let errorHandler = errorHandler {
-            throw try errorHandler(callStatus.errorBuf)
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.unexpectedRustCallError
-        }
+        case CALL_ERROR:
+            if let errorHandler = errorHandler {
+                throw try errorHandler(callStatus.errorBuf)
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.unexpectedRustCallError
+            }
 
-    case CALL_UNEXPECTED_ERROR:
-        // When the rust code sees a panic, it tries to construct a RustBuffer
-        // with the message.  But if that code panics, then it just sends back
-        // an empty buffer.
-        if callStatus.errorBuf.len > 0 {
-            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.rustPanic("Rust panic")
-        }
+        case CALL_UNEXPECTED_ERROR:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
 
-    case CALL_CANCELLED:
-        fatalError("Cancellation not supported yet")
+        case CALL_CANCELLED:
+            fatalError("Cancellation not supported yet")
 
-    default:
-        throw UniffiInternalError.unexpectedRustCallStatusCode
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 private func uniffiTraitInterfaceCall<T>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void
+    writeReturn: (T) -> ()
 ) {
     do {
         try writeReturn(makeCall())
-    } catch {
+    } catch let error {
         callStatus.pointee.code = CALL_UNEXPECTED_ERROR
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
@@ -362,7 +374,7 @@ private func uniffiTraitInterfaceCall<T>(
 private func uniffiTraitInterfaceCallWithError<T, E>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void,
+    writeReturn: (T) -> (),
     lowerError: (E) -> RustBuffer
 ) {
     do {
@@ -375,8 +387,7 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-
-private class UniffiHandleMap<T> {
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
     private let lock = NSLock()
     private var currentHandle: UInt64 = 1
@@ -390,7 +401,7 @@ private class UniffiHandleMap<T> {
         }
     }
 
-    func get(handle: UInt64) throws -> T {
+     func get(handle: UInt64) throws -> T {
         try lock.withLock {
             guard let obj = map[handle] else {
                 throw UniffiInternalError.unexpectedStaleHandle
@@ -410,13 +421,19 @@ private class UniffiHandleMap<T> {
     }
 
     var count: Int {
-        map.count
+        get {
+            map.count
+        }
     }
 }
 
 // Public interface members begin here.
 
-private struct FfiConverterInt64: FfiConverterPrimitive {
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
     typealias FfiType = Int64
     typealias SwiftType = Int64
 
@@ -429,7 +446,10 @@ private struct FfiConverterInt64: FfiConverterPrimitive {
     }
 }
 
-private struct FfiConverterBool: FfiConverter {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
@@ -450,7 +470,10 @@ private struct FfiConverterBool: FfiConverter {
     }
 }
 
-private struct FfiConverterString: FfiConverter {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -478,7 +501,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -487,6 +510,9 @@ private struct FfiConverterString: FfiConverter {
         writeBytes(&buf, value.utf8)
     }
 }
+
+
+
 
 /**
  * Object representing the signed-in state of an application.
@@ -497,7 +523,8 @@ private struct FfiConverterString: FfiConverter {
  * account and accessing other services on behalf of the user.
 
  */
-public protocol FirefoxAccountProtocol: AnyObject {
+public protocol FirefoxAccountProtocol : AnyObject {
+    
     /**
      * Create a new OAuth authorization code using the stored session token.
      *
@@ -512,8 +539,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *    - `params` - the OAuth parameters from the incoming authorization request
 
      */
-    func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws -> String
-
+    func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws  -> String
+    
     /**
      * Initiate a web-based OAuth sign-in flow.
      *
@@ -539,8 +566,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *       - These will be included as query parameters in the resulting URL.
 
      */
-    func beginOauthFlow(scopes: [String], entrypoint: String) throws -> String
-
+    func beginOauthFlow(scopes: [String], entrypoint: String) throws  -> String
+    
     /**
      * Initiate a device-pairing sign-in flow.
      *
@@ -567,8 +594,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *       - These will be included as query parameters in the resulting URL.
 
      */
-    func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String) throws -> String
-
+    func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String) throws  -> String
+    
     /**
      * Check authorization status for this application.
      *
@@ -579,8 +606,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * with details about whether the tokens are still active.
 
      */
-    func checkAuthorizationStatus() throws -> AuthorizationInfo
-
+    func checkAuthorizationStatus() throws  -> AuthorizationInfo
+    
     /**
      * Clear the access token cache in response to an auth failure.
      *
@@ -591,8 +618,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * It ensures that the expired token is removed and a fresh one generated.
 
      */
-    func clearAccessTokenCache()
-
+    func clearAccessTokenCache() 
+    
     /**
      * Clear any custom display name used for this application instance.
      *
@@ -608,8 +635,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func clearDeviceName() throws
-
+    func clearDeviceName() throws 
+    
     /**
      * Use device commands to close one or more tabs on another device.
      *
@@ -618,8 +645,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * If a device on the account has registered the [`CloseTabs`](DeviceCapability::CloseTabs)
      * capability, this method can be used to close its tabs.
      */
-    func closeTabs(targetDeviceId: String, urls: [String]) throws -> CloseTabsResult
-
+    func closeTabs(targetDeviceId: String, urls: [String]) throws  -> CloseTabsResult
+    
     /**
      * Complete an OAuth flow.
      *
@@ -636,8 +663,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *   - `state` - the OAuth state parameter obtained from the redirect URI.
 
      */
-    func completeOauthFlow(code: String, state: String) throws
-
+    func completeOauthFlow(code: String, state: String) throws 
+    
     /**
      * Disconnect from the user's account.
      *
@@ -653,8 +680,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * is not desired then the application should discard the persisted account state.
 
      */
-    func disconnect()
-
+    func disconnect() 
+    
     /**
      * Ensure that the device record has a specific set of capabilities.
      *
@@ -679,8 +706,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func ensureCapabilities(supportedCapabilities: [DeviceCapability]) throws -> LocalDevice
-
+    func ensureCapabilities(supportedCapabilities: [DeviceCapability]) throws  -> LocalDevice
+    
     /**
      * Collect and return telemetry about incoming and outgoing device commands.
      *
@@ -693,8 +720,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * a sync ping, you'll know what to do with the contents of the JSON string.
 
      */
-    func gatherTelemetry() throws -> String
-
+    func gatherTelemetry() throws  -> String
+    
     /**
      * Get a short-lived OAuth access token for the user's account.
      *
@@ -721,8 +748,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      before requesting a fresh token.
 
      */
-    func getAccessToken(scope: String, ttl: Int64?) throws -> AccessTokenInfo
-
+    func getAccessToken(scope: String, ttl: Int64?) throws  -> AccessTokenInfo
+    
     /**
      * Get the list of all client applications attached to the user's account.
      *
@@ -740,15 +767,15 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func getAttachedClients() throws -> [AttachedClient]
-
+    func getAttachedClients() throws  -> [AttachedClient]
+    
     /**
      * Get the high-level authentication state of the client
      *
      * Deprecated: Use get_state() instead
      */
-    func getAuthState() -> FxaRustAuthState
-
+    func getAuthState()  -> FxaRustAuthState
+    
     /**
      * Get a URL which shows a "successfully connceted!" message.
      *
@@ -759,8 +786,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * implement their own native success UI.
 
      */
-    func getConnectionSuccessUrl() throws -> String
-
+    func getConnectionSuccessUrl() throws  -> String
+    
     /**
      * Get the device id registered for this application.
      *
@@ -773,8 +800,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func getCurrentDeviceId() throws -> String
-
+    func getCurrentDeviceId() throws  -> String
+    
     /**
      * Get the list of devices registered on the user's account.
      *
@@ -795,8 +822,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func getDevices(ignoreCache: Bool) throws -> [Device]
-
+    func getDevices(ignoreCache: Bool) throws  -> [Device]
+    
     /**
      * Get a URL at which the user can manage their account and profile data.
      *
@@ -812,8 +839,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *         UX entrypoint from which the user followed the link.
 
      */
-    func getManageAccountUrl(entrypoint: String) throws -> String
-
+    func getManageAccountUrl(entrypoint: String) throws  -> String
+    
     /**
      * Get a URL at which the user can manage the devices connected to their account.
      *
@@ -830,8 +857,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *         UX entrypoint from which the user followed the link.
 
      */
-    func getManageDevicesUrl(entrypoint: String) throws -> String
-
+    func getManageDevicesUrl(entrypoint: String) throws  -> String
+    
     /**
      * Get the URL at which to begin a device-pairing signin flow.
      *
@@ -841,8 +868,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * from said QR code can be passed to [`begin_pairing_flow`](FirefoxAccount::begin_pairing_flow).
 
      */
-    func getPairingAuthorityUrl() throws -> String
-
+    func getPairingAuthorityUrl() throws  -> String
+    
     /**
      * Get profile information for the signed-in user, if any.
      *
@@ -866,8 +893,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      [`Authentication`](FxaError::Authentication) error.
 
      */
-    func getProfile(ignoreCache: Bool) throws -> Profile
-
+    func getProfile(ignoreCache: Bool) throws  -> Profile
+    
     /**
      * Get the session token for the user's account, if one is available.
      *
@@ -886,21 +913,21 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      `https:///identity.mozilla.com/tokens/session` scope.
 
      */
-    func getSessionToken() throws -> String
-
+    func getSessionToken() throws  -> String
+    
     /**
      * Get the current state
      */
-    func getState() -> FxaState
-
+    func getState()  -> FxaState
+    
     /**
      * Get the URL at which to access the user's sync data.
      *
      * **💾 This method alters the persisted account state.**
 
      */
-    func getTokenServerEndpointUrl() throws -> String
-
+    func getTokenServerEndpointUrl() throws  -> String
+    
     /**
      * Process and respond to a server-delivered account update message
      *
@@ -916,8 +943,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * [`FirefoxAccount::poll_device_commands`]
 
      */
-    func handlePushMessage(payload: String) throws -> AccountEvent
-
+    func handlePushMessage(payload: String) throws  -> AccountEvent
+    
     /**
      * Update the stored session token for the user's account.
      *
@@ -933,8 +960,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *    - `session_token` - the new session token value provided from web content.
 
      */
-    func handleSessionTokenChange(sessionToken: String) throws
-
+    func handleSessionTokenChange(sessionToken: String) throws 
+    
     /**
      * Create a new device record for this application.
      *
@@ -961,8 +988,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws -> LocalDevice
-
+    func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws  -> LocalDevice
+    
     /**
      * Update the state based on authentication issues.
      *
@@ -971,8 +998,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * Call this if you know there's an authentication / authorization issue that requires the
      * user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
      */
-    func onAuthIssues()
-
+    func onAuthIssues() 
+    
     /**
      * Poll the server for any pending device commands.
      *
@@ -991,16 +1018,16 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func pollDeviceCommands() throws -> [IncomingDeviceCommand]
-
+    func pollDeviceCommands() throws  -> [IncomingDeviceCommand]
+    
     /**
      * Process an event (login, logout, etc).
      *
      * On success, update the current state and return it.
      * On error, the current state will remain the same.
      */
-    func processEvent(event: FxaEvent) throws -> FxaState
-
+    func processEvent(event: FxaEvent) throws  -> FxaState
+    
     /**
      * Use device commands to send a single tab to another device.
      *
@@ -1020,8 +1047,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func sendSingleTab(targetDeviceId: String, title: String, url: String) throws
-
+    func sendSingleTab(targetDeviceId: String, title: String, url: String) throws 
+    
     /**
      * Update the display name used for this application instance.
      *
@@ -1040,8 +1067,8 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func setDeviceName(displayName: String) throws -> LocalDevice
-
+    func setDeviceName(displayName: String) throws  -> LocalDevice
+    
     /**
      * Set or update a push subscription endpoint for this device.
      *
@@ -1063,31 +1090,31 @@ public protocol FirefoxAccountProtocol: AnyObject {
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    func setPushSubscription(subscription: DevicePushSubscription) throws -> LocalDevice
-
+    func setPushSubscription(subscription: DevicePushSubscription) throws  -> LocalDevice
+    
     /**
      * Sets the users information based on the web content's login information
      * This is intended to only be used by user agents (eg: Firefox) to set the users
      * session token and tie it to the refresh token that will be issued at the end of the
      * oauth flow.
      */
-    func setUserData(userData: UserData)
-
+    func setUserData(userData: UserData) 
+    
     /**
      * Used by the application to test auth token issues
      */
-    func simulateNetworkError()
-
+    func simulateNetworkError() 
+    
     /**
      * Used by the application to test auth token issues
      */
-    func simulatePermanentAuthTokenIssue()
-
+    func simulatePermanentAuthTokenIssue() 
+    
     /**
      * Used by the application to test auth token issues
      */
-    func simulateTemporaryAuthTokenIssue()
-
+    func simulateTemporaryAuthTokenIssue() 
+    
     /**
      * Save current state to a JSON string.
      *
@@ -1102,9 +1129,9 @@ public protocol FirefoxAccountProtocol: AnyObject {
      * data in a secure fashion, as appropriate for their target platform.
 
      */
-    func toJson() throws -> String
+    func toJson() throws  -> String
+    
 }
-
 /**
  * Object representing the signed-in state of an application.
  *
@@ -1115,11 +1142,13 @@ public protocol FirefoxAccountProtocol: AnyObject {
 
  */
 open class FirefoxAccount:
-    FirefoxAccountProtocol
-{
+    FirefoxAccountProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -1127,23 +1156,28 @@ open class FirefoxAccount:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_fxa_client_fn_clone_firefoxaccount(self.pointer, $0) }
     }
-
     /**
      * Create a new [`FirefoxAccount`] instance, not connected to any account.
      *
@@ -1152,15 +1186,15 @@ open class FirefoxAccount:
      * This method constructs as new [`FirefoxAccount`] instance configured to connect
      * the application to a user's account.
      */
-    public convenience init(config: FxaConfig) {
-        let pointer =
-            try! rustCall {
-                uniffi_fxa_client_fn_constructor_firefoxaccount_new(
-                    FfiConverterTypeFxaConfig.lower(config), $0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
+public convenience init(config: FxaConfig) {
+    let pointer =
+        try! rustCall() {
+    uniffi_fxa_client_fn_constructor_firefoxaccount_new(
+        FfiConverterTypeFxaConfig.lower(config),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
 
     deinit {
         guard let pointer = pointer else {
@@ -1170,6 +1204,7 @@ open class FirefoxAccount:
         try! rustCall { uniffi_fxa_client_fn_free_firefoxaccount(pointer, $0) }
     }
 
+    
     /**
      * Restore a [`FirefoxAccount`] instance from serialized state.
      *
@@ -1182,14 +1217,16 @@ open class FirefoxAccount:
      * produce unexpected behaviour.
 
      */
-    public static func fromJson(data: String) throws -> FirefoxAccount {
-        return try FfiConverterTypeFirefoxAccount.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_constructor_firefoxaccount_from_json(
-                FfiConverterString.lower(data), $0
-            )
-        })
-    }
+public static func fromJson(data: String)throws  -> FirefoxAccount {
+    return try  FfiConverterTypeFirefoxAccount.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_constructor_firefoxaccount_from_json(
+        FfiConverterString.lower(data),$0
+    )
+})
+}
+    
 
+    
     /**
      * Create a new OAuth authorization code using the stored session token.
      *
@@ -1204,13 +1241,14 @@ open class FirefoxAccount:
      *    - `params` - the OAuth parameters from the incoming authorization request
 
      */
-    open func authorizeCodeUsingSessionToken(params: AuthorizationParameters) throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_authorize_code_using_session_token(self.uniffiClonePointer(),
-                                                                                          FfiConverterTypeAuthorizationParameters.lower(params), $0)
-        })
-    }
-
+open func authorizeCodeUsingSessionToken(params: AuthorizationParameters)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_authorize_code_using_session_token(self.uniffiClonePointer(),
+        FfiConverterTypeAuthorizationParameters.lower(params),$0
+    )
+})
+}
+    
     /**
      * Initiate a web-based OAuth sign-in flow.
      *
@@ -1236,14 +1274,15 @@ open class FirefoxAccount:
      *       - These will be included as query parameters in the resulting URL.
 
      */
-    open func beginOauthFlow(scopes: [String], entrypoint: String) throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(self.uniffiClonePointer(),
-                                                                        FfiConverterSequenceString.lower(scopes),
-                                                                        FfiConverterString.lower(entrypoint), $0)
-        })
-    }
-
+open func beginOauthFlow(scopes: [String], entrypoint: String)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_begin_oauth_flow(self.uniffiClonePointer(),
+        FfiConverterSequenceString.lower(scopes),
+        FfiConverterString.lower(entrypoint),$0
+    )
+})
+}
+    
     /**
      * Initiate a device-pairing sign-in flow.
      *
@@ -1270,15 +1309,16 @@ open class FirefoxAccount:
      *       - These will be included as query parameters in the resulting URL.
 
      */
-    open func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String) throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(self.uniffiClonePointer(),
-                                                                          FfiConverterString.lower(pairingUrl),
-                                                                          FfiConverterSequenceString.lower(scopes),
-                                                                          FfiConverterString.lower(entrypoint), $0)
-        })
-    }
-
+open func beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_begin_pairing_flow(self.uniffiClonePointer(),
+        FfiConverterString.lower(pairingUrl),
+        FfiConverterSequenceString.lower(scopes),
+        FfiConverterString.lower(entrypoint),$0
+    )
+})
+}
+    
     /**
      * Check authorization status for this application.
      *
@@ -1289,12 +1329,13 @@ open class FirefoxAccount:
      * with details about whether the tokens are still active.
 
      */
-    open func checkAuthorizationStatus() throws -> AuthorizationInfo {
-        return try FfiConverterTypeAuthorizationInfo.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_check_authorization_status(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func checkAuthorizationStatus()throws  -> AuthorizationInfo {
+    return try  FfiConverterTypeAuthorizationInfo.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_check_authorization_status(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Clear the access token cache in response to an auth failure.
      *
@@ -1305,11 +1346,12 @@ open class FirefoxAccount:
      * It ensures that the expired token is removed and a fresh one generated.
 
      */
-    open func clearAccessTokenCache() { try! rustCall {
-        uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(self.uniffiClonePointer(), $0)
-    }
-    }
-
+open func clearAccessTokenCache() {try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_clear_access_token_cache(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
     /**
      * Clear any custom display name used for this application instance.
      *
@@ -1325,11 +1367,12 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func clearDeviceName() throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
-        uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(self.uniffiClonePointer(), $0)
-    }
-    }
-
+open func clearDeviceName()throws  {try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_clear_device_name(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
     /**
      * Use device commands to close one or more tabs on another device.
      *
@@ -1338,14 +1381,15 @@ open class FirefoxAccount:
      * If a device on the account has registered the [`CloseTabs`](DeviceCapability::CloseTabs)
      * capability, this method can be used to close its tabs.
      */
-    open func closeTabs(targetDeviceId: String, urls: [String]) throws -> CloseTabsResult {
-        return try FfiConverterTypeCloseTabsResult.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(self.uniffiClonePointer(),
-                                                                  FfiConverterString.lower(targetDeviceId),
-                                                                  FfiConverterSequenceString.lower(urls), $0)
-        })
-    }
-
+open func closeTabs(targetDeviceId: String, urls: [String])throws  -> CloseTabsResult {
+    return try  FfiConverterTypeCloseTabsResult.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_close_tabs(self.uniffiClonePointer(),
+        FfiConverterString.lower(targetDeviceId),
+        FfiConverterSequenceString.lower(urls),$0
+    )
+})
+}
+    
     /**
      * Complete an OAuth flow.
      *
@@ -1362,13 +1406,14 @@ open class FirefoxAccount:
      *   - `state` - the OAuth state parameter obtained from the redirect URI.
 
      */
-    open func completeOauthFlow(code: String, state: String) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
-        uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(self.uniffiClonePointer(),
-                                                                       FfiConverterString.lower(code),
-                                                                       FfiConverterString.lower(state), $0)
-    }
-    }
-
+open func completeOauthFlow(code: String, state: String)throws  {try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_complete_oauth_flow(self.uniffiClonePointer(),
+        FfiConverterString.lower(code),
+        FfiConverterString.lower(state),$0
+    )
+}
+}
+    
     /**
      * Disconnect from the user's account.
      *
@@ -1384,11 +1429,12 @@ open class FirefoxAccount:
      * is not desired then the application should discard the persisted account state.
 
      */
-    open func disconnect() { try! rustCall {
-        uniffi_fxa_client_fn_method_firefoxaccount_disconnect(self.uniffiClonePointer(), $0)
-    }
-    }
-
+open func disconnect() {try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_disconnect(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
     /**
      * Ensure that the device record has a specific set of capabilities.
      *
@@ -1413,13 +1459,14 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func ensureCapabilities(supportedCapabilities: [DeviceCapability]) throws -> LocalDevice {
-        return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(self.uniffiClonePointer(),
-                                                                           FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
-        })
-    }
-
+open func ensureCapabilities(supportedCapabilities: [DeviceCapability])throws  -> LocalDevice {
+    return try  FfiConverterTypeLocalDevice.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_ensure_capabilities(self.uniffiClonePointer(),
+        FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities),$0
+    )
+})
+}
+    
     /**
      * Collect and return telemetry about incoming and outgoing device commands.
      *
@@ -1432,12 +1479,13 @@ open class FirefoxAccount:
      * a sync ping, you'll know what to do with the contents of the JSON string.
 
      */
-    open func gatherTelemetry() throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_gather_telemetry(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func gatherTelemetry()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_gather_telemetry(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get a short-lived OAuth access token for the user's account.
      *
@@ -1464,14 +1512,15 @@ open class FirefoxAccount:
      *      before requesting a fresh token.
 
      */
-    open func getAccessToken(scope: String, ttl: Int64? = nil) throws -> AccessTokenInfo {
-        return try FfiConverterTypeAccessTokenInfo.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_access_token(self.uniffiClonePointer(),
-                                                                        FfiConverterString.lower(scope),
-                                                                        FfiConverterOptionInt64.lower(ttl), $0)
-        })
-    }
-
+open func getAccessToken(scope: String, ttl: Int64? = nil)throws  -> AccessTokenInfo {
+    return try  FfiConverterTypeAccessTokenInfo.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_access_token(self.uniffiClonePointer(),
+        FfiConverterString.lower(scope),
+        FfiConverterOptionInt64.lower(ttl),$0
+    )
+})
+}
+    
     /**
      * Get the list of all client applications attached to the user's account.
      *
@@ -1489,23 +1538,25 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func getAttachedClients() throws -> [AttachedClient] {
-        return try FfiConverterSequenceTypeAttachedClient.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_attached_clients(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getAttachedClients()throws  -> [AttachedClient] {
+    return try  FfiConverterSequenceTypeAttachedClient.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_attached_clients(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get the high-level authentication state of the client
      *
      * Deprecated: Use get_state() instead
      */
-    open func getAuthState() -> FxaRustAuthState {
-        return try! FfiConverterTypeFxaRustAuthState.lift(try! rustCall {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_auth_state(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getAuthState() -> FxaRustAuthState {
+    return try!  FfiConverterTypeFxaRustAuthState.lift(try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_auth_state(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get a URL which shows a "successfully connceted!" message.
      *
@@ -1516,12 +1567,13 @@ open class FirefoxAccount:
      * implement their own native success UI.
 
      */
-    open func getConnectionSuccessUrl() throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_connection_success_url(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getConnectionSuccessUrl()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_connection_success_url(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get the device id registered for this application.
      *
@@ -1534,12 +1586,13 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func getCurrentDeviceId() throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_current_device_id(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getCurrentDeviceId()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_current_device_id(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get the list of devices registered on the user's account.
      *
@@ -1560,13 +1613,14 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func getDevices(ignoreCache: Bool) throws -> [Device] {
-        return try FfiConverterSequenceTypeDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_devices(self.uniffiClonePointer(),
-                                                                   FfiConverterBool.lower(ignoreCache), $0)
-        })
-    }
-
+open func getDevices(ignoreCache: Bool)throws  -> [Device] {
+    return try  FfiConverterSequenceTypeDevice.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_devices(self.uniffiClonePointer(),
+        FfiConverterBool.lower(ignoreCache),$0
+    )
+})
+}
+    
     /**
      * Get a URL at which the user can manage their account and profile data.
      *
@@ -1582,13 +1636,14 @@ open class FirefoxAccount:
      *         UX entrypoint from which the user followed the link.
 
      */
-    open func getManageAccountUrl(entrypoint: String) throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_manage_account_url(self.uniffiClonePointer(),
-                                                                              FfiConverterString.lower(entrypoint), $0)
-        })
-    }
-
+open func getManageAccountUrl(entrypoint: String)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_manage_account_url(self.uniffiClonePointer(),
+        FfiConverterString.lower(entrypoint),$0
+    )
+})
+}
+    
     /**
      * Get a URL at which the user can manage the devices connected to their account.
      *
@@ -1605,13 +1660,14 @@ open class FirefoxAccount:
      *         UX entrypoint from which the user followed the link.
 
      */
-    open func getManageDevicesUrl(entrypoint: String) throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_manage_devices_url(self.uniffiClonePointer(),
-                                                                              FfiConverterString.lower(entrypoint), $0)
-        })
-    }
-
+open func getManageDevicesUrl(entrypoint: String)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_manage_devices_url(self.uniffiClonePointer(),
+        FfiConverterString.lower(entrypoint),$0
+    )
+})
+}
+    
     /**
      * Get the URL at which to begin a device-pairing signin flow.
      *
@@ -1621,12 +1677,13 @@ open class FirefoxAccount:
      * from said QR code can be passed to [`begin_pairing_flow`](FirefoxAccount::begin_pairing_flow).
 
      */
-    open func getPairingAuthorityUrl() throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getPairingAuthorityUrl()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_pairing_authority_url(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get profile information for the signed-in user, if any.
      *
@@ -1650,13 +1707,14 @@ open class FirefoxAccount:
      *      [`Authentication`](FxaError::Authentication) error.
 
      */
-    open func getProfile(ignoreCache: Bool) throws -> Profile {
-        return try FfiConverterTypeProfile.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_profile(self.uniffiClonePointer(),
-                                                                   FfiConverterBool.lower(ignoreCache), $0)
-        })
-    }
-
+open func getProfile(ignoreCache: Bool)throws  -> Profile {
+    return try  FfiConverterTypeProfile.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_profile(self.uniffiClonePointer(),
+        FfiConverterBool.lower(ignoreCache),$0
+    )
+})
+}
+    
     /**
      * Get the session token for the user's account, if one is available.
      *
@@ -1675,33 +1733,36 @@ open class FirefoxAccount:
      *      `https:///identity.mozilla.com/tokens/session` scope.
 
      */
-    open func getSessionToken() throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_session_token(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getSessionToken()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_session_token(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get the current state
      */
-    open func getState() -> FxaState {
-        return try! FfiConverterTypeFxaState.lift(try! rustCall {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_state(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getState() -> FxaState {
+    return try!  FfiConverterTypeFxaState.lift(try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_state(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Get the URL at which to access the user's sync data.
      *
      * **💾 This method alters the persisted account state.**
 
      */
-    open func getTokenServerEndpointUrl() throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_get_token_server_endpoint_url(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getTokenServerEndpointUrl()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_get_token_server_endpoint_url(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Process and respond to a server-delivered account update message
      *
@@ -1717,13 +1778,14 @@ open class FirefoxAccount:
      * [`FirefoxAccount::poll_device_commands`]
 
      */
-    open func handlePushMessage(payload: String) throws -> AccountEvent {
-        return try FfiConverterTypeAccountEvent.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_handle_push_message(self.uniffiClonePointer(),
-                                                                           FfiConverterString.lower(payload), $0)
-        })
-    }
-
+open func handlePushMessage(payload: String)throws  -> AccountEvent {
+    return try  FfiConverterTypeAccountEvent.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_handle_push_message(self.uniffiClonePointer(),
+        FfiConverterString.lower(payload),$0
+    )
+})
+}
+    
     /**
      * Update the stored session token for the user's account.
      *
@@ -1739,12 +1801,13 @@ open class FirefoxAccount:
      *    - `session_token` - the new session token value provided from web content.
 
      */
-    open func handleSessionTokenChange(sessionToken: String) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
-        uniffi_fxa_client_fn_method_firefoxaccount_handle_session_token_change(self.uniffiClonePointer(),
-                                                                               FfiConverterString.lower(sessionToken), $0)
-    }
-    }
-
+open func handleSessionTokenChange(sessionToken: String)throws  {try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_handle_session_token_change(self.uniffiClonePointer(),
+        FfiConverterString.lower(sessionToken),$0
+    )
+}
+}
+    
     /**
      * Create a new device record for this application.
      *
@@ -1771,15 +1834,16 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability]) throws -> LocalDevice {
-        return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(self.uniffiClonePointer(),
-                                                                         FfiConverterString.lower(name),
-                                                                         FfiConverterTypeDeviceType_lower(deviceType),
-                                                                         FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities), $0)
-        })
-    }
-
+open func initializeDevice(name: String, deviceType: DeviceType, supportedCapabilities: [DeviceCapability])throws  -> LocalDevice {
+    return try  FfiConverterTypeLocalDevice.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_initialize_device(self.uniffiClonePointer(),
+        FfiConverterString.lower(name),
+        FfiConverterTypeDeviceType_lower(deviceType),
+        FfiConverterSequenceTypeDeviceCapability.lower(supportedCapabilities),$0
+    )
+})
+}
+    
     /**
      * Update the state based on authentication issues.
      *
@@ -1788,11 +1852,12 @@ open class FirefoxAccount:
      * Call this if you know there's an authentication / authorization issue that requires the
      * user to re-authenticated.  It transitions the user to the [FxaRustAuthState.AuthIssues] state.
      */
-    open func onAuthIssues() { try! rustCall {
-        uniffi_fxa_client_fn_method_firefoxaccount_on_auth_issues(self.uniffiClonePointer(), $0)
-    }
-    }
-
+open func onAuthIssues() {try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_on_auth_issues(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
     /**
      * Poll the server for any pending device commands.
      *
@@ -1811,25 +1876,27 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func pollDeviceCommands() throws -> [IncomingDeviceCommand] {
-        return try FfiConverterSequenceTypeIncomingDeviceCommand.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_poll_device_commands(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func pollDeviceCommands()throws  -> [IncomingDeviceCommand] {
+    return try  FfiConverterSequenceTypeIncomingDeviceCommand.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_poll_device_commands(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Process an event (login, logout, etc).
      *
      * On success, update the current state and return it.
      * On error, the current state will remain the same.
      */
-    open func processEvent(event: FxaEvent) throws -> FxaState {
-        return try FfiConverterTypeFxaState.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_process_event(self.uniffiClonePointer(),
-                                                                     FfiConverterTypeFxaEvent.lower(event), $0)
-        })
-    }
-
+open func processEvent(event: FxaEvent)throws  -> FxaState {
+    return try  FfiConverterTypeFxaState.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_process_event(self.uniffiClonePointer(),
+        FfiConverterTypeFxaEvent.lower(event),$0
+    )
+})
+}
+    
     /**
      * Use device commands to send a single tab to another device.
      *
@@ -1849,14 +1916,15 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func sendSingleTab(targetDeviceId: String, title: String, url: String) throws { try rustCallWithError(FfiConverterTypeFxaError.lift) {
-        uniffi_fxa_client_fn_method_firefoxaccount_send_single_tab(self.uniffiClonePointer(),
-                                                                   FfiConverterString.lower(targetDeviceId),
-                                                                   FfiConverterString.lower(title),
-                                                                   FfiConverterString.lower(url), $0)
-    }
-    }
-
+open func sendSingleTab(targetDeviceId: String, title: String, url: String)throws  {try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_send_single_tab(self.uniffiClonePointer(),
+        FfiConverterString.lower(targetDeviceId),
+        FfiConverterString.lower(title),
+        FfiConverterString.lower(url),$0
+    )
+}
+}
+    
     /**
      * Update the display name used for this application instance.
      *
@@ -1875,13 +1943,14 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func setDeviceName(displayName: String) throws -> LocalDevice {
-        return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(self.uniffiClonePointer(),
-                                                                       FfiConverterString.lower(displayName), $0)
-        })
-    }
-
+open func setDeviceName(displayName: String)throws  -> LocalDevice {
+    return try  FfiConverterTypeLocalDevice.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_set_device_name(self.uniffiClonePointer(),
+        FfiConverterString.lower(displayName),$0
+    )
+})
+}
+    
     /**
      * Set or update a push subscription endpoint for this device.
      *
@@ -1903,49 +1972,54 @@ open class FirefoxAccount:
      *      granted the `https:///identity.mozilla.com/apps/oldsync` scope.
 
      */
-    open func setPushSubscription(subscription: DevicePushSubscription) throws -> LocalDevice {
-        return try FfiConverterTypeLocalDevice.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(self.uniffiClonePointer(),
-                                                                             FfiConverterTypeDevicePushSubscription.lower(subscription), $0)
-        })
-    }
-
+open func setPushSubscription(subscription: DevicePushSubscription)throws  -> LocalDevice {
+    return try  FfiConverterTypeLocalDevice.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_set_push_subscription(self.uniffiClonePointer(),
+        FfiConverterTypeDevicePushSubscription.lower(subscription),$0
+    )
+})
+}
+    
     /**
      * Sets the users information based on the web content's login information
      * This is intended to only be used by user agents (eg: Firefox) to set the users
      * session token and tie it to the refresh token that will be issued at the end of the
      * oauth flow.
      */
-    open func setUserData(userData: UserData) { try! rustCall {
-        uniffi_fxa_client_fn_method_firefoxaccount_set_user_data(self.uniffiClonePointer(),
-                                                                 FfiConverterTypeUserData.lower(userData), $0)
-    }
-    }
-
+open func setUserData(userData: UserData) {try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_set_user_data(self.uniffiClonePointer(),
+        FfiConverterTypeUserData.lower(userData),$0
+    )
+}
+}
+    
     /**
      * Used by the application to test auth token issues
      */
-    open func simulateNetworkError() { try! rustCall {
-        uniffi_fxa_client_fn_method_firefoxaccount_simulate_network_error(self.uniffiClonePointer(), $0)
-    }
-    }
-
+open func simulateNetworkError() {try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_simulate_network_error(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
     /**
      * Used by the application to test auth token issues
      */
-    open func simulatePermanentAuthTokenIssue() { try! rustCall {
-        uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_issue(self.uniffiClonePointer(), $0)
-    }
-    }
-
+open func simulatePermanentAuthTokenIssue() {try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_simulate_permanent_auth_token_issue(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
     /**
      * Used by the application to test auth token issues
      */
-    open func simulateTemporaryAuthTokenIssue() { try! rustCall {
-        uniffi_fxa_client_fn_method_firefoxaccount_simulate_temporary_auth_token_issue(self.uniffiClonePointer(), $0)
-    }
-    }
-
+open func simulateTemporaryAuthTokenIssue() {try! rustCall() {
+    uniffi_fxa_client_fn_method_firefoxaccount_simulate_temporary_auth_token_issue(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
     /**
      * Save current state to a JSON string.
      *
@@ -1960,14 +2034,21 @@ open class FirefoxAccount:
      * data in a secure fashion, as appropriate for their target platform.
 
      */
-    open func toJson() throws -> String {
-        return try FfiConverterString.lift(rustCallWithError(FfiConverterTypeFxaError.lift) {
-            uniffi_fxa_client_fn_method_firefoxaccount_to_json(self.uniffiClonePointer(), $0)
-        })
-    }
+open func toJson()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeFxaError.lift) {
+    uniffi_fxa_client_fn_method_firefoxaccount_to_json(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFirefoxAccount: FfiConverter {
+
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = FirefoxAccount
 
@@ -1984,7 +2065,7 @@ public struct FfiConverterTypeFirefoxAccount: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
+        if (ptr == nil) {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -1997,13 +2078,25 @@ public struct FfiConverterTypeFirefoxAccount: FfiConverter {
     }
 }
 
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFirefoxAccount_lift(_ pointer: UnsafeMutableRawPointer) throws -> FirefoxAccount {
     return try FfiConverterTypeFirefoxAccount.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFirefoxAccount_lower(_ value: FirefoxAccount) -> UnsafeMutableRawPointer {
     return FfiConverterTypeFirefoxAccount.lower(value)
 }
+
+
+
 
 /**
  * Machinery for dry-run testing of FxaAuthStateMachine
@@ -2011,16 +2104,17 @@ public func FfiConverterTypeFirefoxAccount_lower(_ value: FirefoxAccount) -> Uns
  * Remove this once we've migrated the firefox-android and firefox-ios code to using FxaAuthStateMachine
  * https:///bugzilla.mozilla.org/show_bug.cgi?id=1867793
  */
-public protocol FxaStateMachineCheckerProtocol: AnyObject {
-    func checkInternalState(state: FxaStateCheckerState)
-
-    func checkPublicState(state: FxaState)
-
-    func handleInternalEvent(event: FxaStateCheckerEvent)
-
-    func handlePublicEvent(event: FxaEvent)
+public protocol FxaStateMachineCheckerProtocol : AnyObject {
+    
+    func checkInternalState(state: FxaStateCheckerState) 
+    
+    func checkPublicState(state: FxaState) 
+    
+    func handleInternalEvent(event: FxaStateCheckerEvent) 
+    
+    func handlePublicEvent(event: FxaEvent) 
+    
 }
-
 /**
  * Machinery for dry-run testing of FxaAuthStateMachine
  *
@@ -2028,11 +2122,13 @@ public protocol FxaStateMachineCheckerProtocol: AnyObject {
  * https:///bugzilla.mozilla.org/show_bug.cgi?id=1867793
  */
 open class FxaStateMachineChecker:
-    FxaStateMachineCheckerProtocol
-{
+    FxaStateMachineCheckerProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -2040,31 +2136,36 @@ open class FxaStateMachineChecker:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_fxa_client_fn_clone_fxastatemachinechecker(self.pointer, $0) }
     }
-
-    public convenience init() {
-        let pointer =
-            try! rustCall {
-                uniffi_fxa_client_fn_constructor_fxastatemachinechecker_new($0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
+public convenience init() {
+    let pointer =
+        try! rustCall() {
+    uniffi_fxa_client_fn_constructor_fxastatemachinechecker_new($0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
 
     deinit {
         guard let pointer = pointer else {
@@ -2074,32 +2175,45 @@ open class FxaStateMachineChecker:
         try! rustCall { uniffi_fxa_client_fn_free_fxastatemachinechecker(pointer, $0) }
     }
 
-    open func checkInternalState(state: FxaStateCheckerState) { try! rustCall {
-        uniffi_fxa_client_fn_method_fxastatemachinechecker_check_internal_state(self.uniffiClonePointer(),
-                                                                                FfiConverterTypeFxaStateCheckerState.lower(state), $0)
-    }
-    }
+    
 
-    open func checkPublicState(state: FxaState) { try! rustCall {
-        uniffi_fxa_client_fn_method_fxastatemachinechecker_check_public_state(self.uniffiClonePointer(),
-                                                                              FfiConverterTypeFxaState.lower(state), $0)
-    }
-    }
+    
+open func checkInternalState(state: FxaStateCheckerState) {try! rustCall() {
+    uniffi_fxa_client_fn_method_fxastatemachinechecker_check_internal_state(self.uniffiClonePointer(),
+        FfiConverterTypeFxaStateCheckerState.lower(state),$0
+    )
+}
+}
+    
+open func checkPublicState(state: FxaState) {try! rustCall() {
+    uniffi_fxa_client_fn_method_fxastatemachinechecker_check_public_state(self.uniffiClonePointer(),
+        FfiConverterTypeFxaState.lower(state),$0
+    )
+}
+}
+    
+open func handleInternalEvent(event: FxaStateCheckerEvent) {try! rustCall() {
+    uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_internal_event(self.uniffiClonePointer(),
+        FfiConverterTypeFxaStateCheckerEvent.lower(event),$0
+    )
+}
+}
+    
+open func handlePublicEvent(event: FxaEvent) {try! rustCall() {
+    uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_public_event(self.uniffiClonePointer(),
+        FfiConverterTypeFxaEvent.lower(event),$0
+    )
+}
+}
+    
 
-    open func handleInternalEvent(event: FxaStateCheckerEvent) { try! rustCall {
-        uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_internal_event(self.uniffiClonePointer(),
-                                                                                 FfiConverterTypeFxaStateCheckerEvent.lower(event), $0)
-    }
-    }
-
-    open func handlePublicEvent(event: FxaEvent) { try! rustCall {
-        uniffi_fxa_client_fn_method_fxastatemachinechecker_handle_public_event(self.uniffiClonePointer(),
-                                                                               FfiConverterTypeFxaEvent.lower(event), $0)
-    }
-    }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaStateMachineChecker: FfiConverter {
+
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = FxaStateMachineChecker
 
@@ -2116,7 +2230,7 @@ public struct FfiConverterTypeFxaStateMachineChecker: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
+        if (ptr == nil) {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -2129,13 +2243,23 @@ public struct FfiConverterTypeFxaStateMachineChecker: FfiConverter {
     }
 }
 
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaStateMachineChecker_lift(_ pointer: UnsafeMutableRawPointer) throws -> FxaStateMachineChecker {
     return try FfiConverterTypeFxaStateMachineChecker.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaStateMachineChecker_lower(_ value: FxaStateMachineChecker) -> UnsafeMutableRawPointer {
     return FfiConverterTypeFxaStateMachineChecker.lower(value)
 }
+
 
 /**
  * An OAuth access token, with its associated keys and metadata.
@@ -2183,31 +2307,30 @@ public struct AccessTokenInfo {
     public init(
         /**
          * The scope of access granted by token.
-         */ scope: String,
+         */scope: String, 
         /**
-            * The access token itself.
-            *
-            * This is the value that should be included in the `Authorization` header when
-            * accessing an OAuth protected resource on behalf of the user.
-            */ token: String,
+         * The access token itself.
+         *
+         * This is the value that should be included in the `Authorization` header when
+         * accessing an OAuth protected resource on behalf of the user.
+         */token: String, 
         /**
-            * The client-side encryption key associated with this scope.
-            *
-            * **⚠️ Warning:** the value of this field should never be revealed outside of the
-            * application. For example, it should never to sent to a server or logged in a log file.
-            */ key: ScopedKey?,
+         * The client-side encryption key associated with this scope.
+         *
+         * **⚠️ Warning:** the value of this field should never be revealed outside of the
+         * application. For example, it should never to sent to a server or logged in a log file.
+         */key: ScopedKey?, 
         /**
-            * The expiry time of the token, in seconds.
-            *
-            * This is the timestamp at which the token is set to expire, in seconds since
-            * unix epoch. Note that it is a signed integer, for compatibility with languages
-            * that do not have an unsigned integer type.
-            *
-            * This timestamp is for guidance only. Access tokens are not guaranteed to remain
-            * value for any particular lengthof time, and consumers should be prepared to handle
-            * auth failures even if the token has not yet expired.
-            */ expiresAt: Int64
-    ) {
+         * The expiry time of the token, in seconds.
+         *
+         * This is the timestamp at which the token is set to expire, in seconds since
+         * unix epoch. Note that it is a signed integer, for compatibility with languages
+         * that do not have an unsigned integer type.
+         *
+         * This timestamp is for guidance only. Access tokens are not guaranteed to remain
+         * value for any particular lengthof time, and consumers should be prepared to handle
+         * auth failures even if the token has not yet expired.
+         */expiresAt: Int64) {
         self.scope = scope
         self.token = token
         self.key = key
@@ -2215,8 +2338,10 @@ public struct AccessTokenInfo {
     }
 }
 
+
+
 extension AccessTokenInfo: Equatable, Hashable {
-    public static func == (lhs: AccessTokenInfo, rhs: AccessTokenInfo) -> Bool {
+    public static func ==(lhs: AccessTokenInfo, rhs: AccessTokenInfo) -> Bool {
         if lhs.scope != rhs.scope {
             return false
         }
@@ -2240,15 +2365,19 @@ extension AccessTokenInfo: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAccessTokenInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccessTokenInfo {
         return
             try AccessTokenInfo(
-                scope: FfiConverterString.read(from: &buf),
-                token: FfiConverterString.read(from: &buf),
-                key: FfiConverterOptionTypeScopedKey.read(from: &buf),
+                scope: FfiConverterString.read(from: &buf), 
+                token: FfiConverterString.read(from: &buf), 
+                key: FfiConverterOptionTypeScopedKey.read(from: &buf), 
                 expiresAt: FfiConverterInt64.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: AccessTokenInfo, into buf: inout [UInt8]) {
@@ -2259,13 +2388,21 @@ public struct FfiConverterTypeAccessTokenInfo: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAccessTokenInfo_lift(_ buf: RustBuffer) throws -> AccessTokenInfo {
     return try FfiConverterTypeAccessTokenInfo.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAccessTokenInfo_lower(_ value: AccessTokenInfo) -> RustBuffer {
     return FfiConverterTypeAccessTokenInfo.lower(value)
 }
+
 
 /**
  * A client connected to the user's account.
@@ -2304,8 +2441,10 @@ public struct AttachedClient {
     }
 }
 
+
+
 extension AttachedClient: Equatable, Hashable {
-    public static func == (lhs: AttachedClient, rhs: AttachedClient) -> Bool {
+    public static func ==(lhs: AttachedClient, rhs: AttachedClient) -> Bool {
         if lhs.clientId != rhs.clientId {
             return false
         }
@@ -2345,19 +2484,23 @@ extension AttachedClient: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAttachedClient: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AttachedClient {
         return
             try AttachedClient(
-                clientId: FfiConverterOptionString.read(from: &buf),
-                deviceId: FfiConverterOptionString.read(from: &buf),
-                deviceType: FfiConverterTypeDeviceType.read(from: &buf),
-                isCurrentSession: FfiConverterBool.read(from: &buf),
-                name: FfiConverterOptionString.read(from: &buf),
-                createdTime: FfiConverterOptionInt64.read(from: &buf),
-                lastAccessTime: FfiConverterOptionInt64.read(from: &buf),
+                clientId: FfiConverterOptionString.read(from: &buf), 
+                deviceId: FfiConverterOptionString.read(from: &buf), 
+                deviceType: FfiConverterTypeDeviceType.read(from: &buf), 
+                isCurrentSession: FfiConverterBool.read(from: &buf), 
+                name: FfiConverterOptionString.read(from: &buf), 
+                createdTime: FfiConverterOptionInt64.read(from: &buf), 
+                lastAccessTime: FfiConverterOptionInt64.read(from: &buf), 
                 scope: FfiConverterOptionSequenceString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: AttachedClient, into buf: inout [UInt8]) {
@@ -2372,13 +2515,21 @@ public struct FfiConverterTypeAttachedClient: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAttachedClient_lift(_ buf: RustBuffer) throws -> AttachedClient {
     return try FfiConverterTypeAttachedClient.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAttachedClient_lower(_ value: AttachedClient) -> RustBuffer {
     return FfiConverterTypeAttachedClient.lower(value)
 }
+
 
 /**
  * Information about the authorization state of the application.
@@ -2397,8 +2548,10 @@ public struct AuthorizationInfo {
     }
 }
 
+
+
 extension AuthorizationInfo: Equatable, Hashable {
-    public static func == (lhs: AuthorizationInfo, rhs: AuthorizationInfo) -> Bool {
+    public static func ==(lhs: AuthorizationInfo, rhs: AuthorizationInfo) -> Bool {
         if lhs.active != rhs.active {
             return false
         }
@@ -2410,12 +2563,16 @@ extension AuthorizationInfo: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAuthorizationInfo: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AuthorizationInfo {
         return
             try AuthorizationInfo(
                 active: FfiConverterBool.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: AuthorizationInfo, into buf: inout [UInt8]) {
@@ -2423,13 +2580,21 @@ public struct FfiConverterTypeAuthorizationInfo: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAuthorizationInfo_lift(_ buf: RustBuffer) throws -> AuthorizationInfo {
     return try FfiConverterTypeAuthorizationInfo.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAuthorizationInfo_lower(_ value: AuthorizationInfo) -> RustBuffer {
     return FfiConverterTypeAuthorizationInfo.lower(value)
 }
+
 
 /**
  * Parameters provided in an incoming OAuth request.
@@ -2461,8 +2626,10 @@ public struct AuthorizationParameters {
     }
 }
 
+
+
 extension AuthorizationParameters: Equatable, Hashable {
-    public static func == (lhs: AuthorizationParameters, rhs: AuthorizationParameters) -> Bool {
+    public static func ==(lhs: AuthorizationParameters, rhs: AuthorizationParameters) -> Bool {
         if lhs.clientId != rhs.clientId {
             return false
         }
@@ -2498,18 +2665,22 @@ extension AuthorizationParameters: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAuthorizationParameters: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AuthorizationParameters {
         return
             try AuthorizationParameters(
-                clientId: FfiConverterString.read(from: &buf),
-                scope: FfiConverterSequenceString.read(from: &buf),
-                state: FfiConverterString.read(from: &buf),
-                accessType: FfiConverterString.read(from: &buf),
-                codeChallenge: FfiConverterOptionString.read(from: &buf),
-                codeChallengeMethod: FfiConverterOptionString.read(from: &buf),
+                clientId: FfiConverterString.read(from: &buf), 
+                scope: FfiConverterSequenceString.read(from: &buf), 
+                state: FfiConverterString.read(from: &buf), 
+                accessType: FfiConverterString.read(from: &buf), 
+                codeChallenge: FfiConverterOptionString.read(from: &buf), 
+                codeChallengeMethod: FfiConverterOptionString.read(from: &buf), 
                 keysJwk: FfiConverterOptionString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: AuthorizationParameters, into buf: inout [UInt8]) {
@@ -2523,13 +2694,21 @@ public struct FfiConverterTypeAuthorizationParameters: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAuthorizationParameters_lift(_ buf: RustBuffer) throws -> AuthorizationParameters {
     return try FfiConverterTypeAuthorizationParameters.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAuthorizationParameters_lower(_ value: AuthorizationParameters) -> RustBuffer {
     return FfiConverterTypeAuthorizationParameters.lower(value)
 }
+
 
 /**
  * The payload sent when invoking a "close tabs" command.
@@ -2546,14 +2725,15 @@ public struct CloseTabsPayload {
     public init(
         /**
          * The URLs of the tabs to close.
-         */ urls: [String]
-    ) {
+         */urls: [String]) {
         self.urls = urls
     }
 }
 
+
+
 extension CloseTabsPayload: Equatable, Hashable {
-    public static func == (lhs: CloseTabsPayload, rhs: CloseTabsPayload) -> Bool {
+    public static func ==(lhs: CloseTabsPayload, rhs: CloseTabsPayload) -> Bool {
         if lhs.urls != rhs.urls {
             return false
         }
@@ -2565,12 +2745,16 @@ extension CloseTabsPayload: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeCloseTabsPayload: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloseTabsPayload {
         return
             try CloseTabsPayload(
                 urls: FfiConverterSequenceString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: CloseTabsPayload, into buf: inout [UInt8]) {
@@ -2578,13 +2762,21 @@ public struct FfiConverterTypeCloseTabsPayload: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCloseTabsPayload_lift(_ buf: RustBuffer) throws -> CloseTabsPayload {
     return try FfiConverterTypeCloseTabsPayload.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCloseTabsPayload_lower(_ value: CloseTabsPayload) -> RustBuffer {
     return FfiConverterTypeCloseTabsPayload.lower(value)
 }
+
 
 /**
  * A device connected to the user's account.
@@ -2618,8 +2810,10 @@ public struct Device {
     }
 }
 
+
+
 extension Device: Equatable, Hashable {
-    public static func == (lhs: Device, rhs: Device) -> Bool {
+    public static func ==(lhs: Device, rhs: Device) -> Bool {
         if lhs.id != rhs.id {
             return false
         }
@@ -2659,19 +2853,23 @@ extension Device: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeDevice: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Device {
         return
             try Device(
-                id: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                deviceType: FfiConverterTypeDeviceType.read(from: &buf),
-                capabilities: FfiConverterSequenceTypeDeviceCapability.read(from: &buf),
-                pushSubscription: FfiConverterOptionTypeDevicePushSubscription.read(from: &buf),
-                pushEndpointExpired: FfiConverterBool.read(from: &buf),
-                isCurrentDevice: FfiConverterBool.read(from: &buf),
+                id: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                deviceType: FfiConverterTypeDeviceType.read(from: &buf), 
+                capabilities: FfiConverterSequenceTypeDeviceCapability.read(from: &buf), 
+                pushSubscription: FfiConverterOptionTypeDevicePushSubscription.read(from: &buf), 
+                pushEndpointExpired: FfiConverterBool.read(from: &buf), 
+                isCurrentDevice: FfiConverterBool.read(from: &buf), 
                 lastAccessTime: FfiConverterOptionInt64.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: Device, into buf: inout [UInt8]) {
@@ -2686,13 +2884,21 @@ public struct FfiConverterTypeDevice: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDevice_lift(_ buf: RustBuffer) throws -> Device {
     return try FfiConverterTypeDevice.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDevice_lower(_ value: Device) -> RustBuffer {
     return FfiConverterTypeDevice.lower(value)
 }
+
 
 /**
  * Device configuration
@@ -2711,8 +2917,10 @@ public struct DeviceConfig {
     }
 }
 
+
+
 extension DeviceConfig: Equatable, Hashable {
-    public static func == (lhs: DeviceConfig, rhs: DeviceConfig) -> Bool {
+    public static func ==(lhs: DeviceConfig, rhs: DeviceConfig) -> Bool {
         if lhs.name != rhs.name {
             return false
         }
@@ -2732,14 +2940,18 @@ extension DeviceConfig: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeDeviceConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DeviceConfig {
         return
             try DeviceConfig(
-                name: FfiConverterString.read(from: &buf),
-                deviceType: FfiConverterTypeDeviceType.read(from: &buf),
+                name: FfiConverterString.read(from: &buf), 
+                deviceType: FfiConverterTypeDeviceType.read(from: &buf), 
                 capabilities: FfiConverterSequenceTypeDeviceCapability.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: DeviceConfig, into buf: inout [UInt8]) {
@@ -2749,13 +2961,21 @@ public struct FfiConverterTypeDeviceConfig: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDeviceConfig_lift(_ buf: RustBuffer) throws -> DeviceConfig {
     return try FfiConverterTypeDeviceConfig.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDeviceConfig_lower(_ value: DeviceConfig) -> RustBuffer {
     return FfiConverterTypeDeviceConfig.lower(value)
 }
+
 
 /**
  * Details of a web-push subscription endpoint.
@@ -2782,8 +3002,10 @@ public struct DevicePushSubscription {
     }
 }
 
+
+
 extension DevicePushSubscription: Equatable, Hashable {
-    public static func == (lhs: DevicePushSubscription, rhs: DevicePushSubscription) -> Bool {
+    public static func ==(lhs: DevicePushSubscription, rhs: DevicePushSubscription) -> Bool {
         if lhs.endpoint != rhs.endpoint {
             return false
         }
@@ -2803,14 +3025,18 @@ extension DevicePushSubscription: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeDevicePushSubscription: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DevicePushSubscription {
         return
             try DevicePushSubscription(
-                endpoint: FfiConverterString.read(from: &buf),
-                publicKey: FfiConverterString.read(from: &buf),
+                endpoint: FfiConverterString.read(from: &buf), 
+                publicKey: FfiConverterString.read(from: &buf), 
                 authKey: FfiConverterString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: DevicePushSubscription, into buf: inout [UInt8]) {
@@ -2820,13 +3046,21 @@ public struct FfiConverterTypeDevicePushSubscription: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDevicePushSubscription_lift(_ buf: RustBuffer) throws -> DevicePushSubscription {
     return try FfiConverterTypeDevicePushSubscription.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDevicePushSubscription_lower(_ value: DevicePushSubscription) -> RustBuffer {
     return FfiConverterTypeDevicePushSubscription.lower(value)
 }
+
 
 public struct FxaConfig {
     /**
@@ -2852,18 +3086,17 @@ public struct FxaConfig {
     public init(
         /**
          * FxaServer to connect with
-         */ server: FxaServer,
+         */server: FxaServer, 
         /**
-            * Registered OAuth client id of the application.
-            */ clientId: String,
+         * Registered OAuth client id of the application.
+         */clientId: String, 
         /**
-            * `redirect_uri` - the registered OAuth redirect URI of the application.
-            */ redirectUri: String,
+         * `redirect_uri` - the registered OAuth redirect URI of the application.
+         */redirectUri: String, 
         /**
-            * URL for the user's Sync Tokenserver. This can be used to support users who self-host their
-            * sync data. If `None` then it will default to the Mozilla-hosted Sync server.
-            */ tokenServerUrlOverride: String? = nil
-    ) {
+         * URL for the user's Sync Tokenserver. This can be used to support users who self-host their
+         * sync data. If `None` then it will default to the Mozilla-hosted Sync server.
+         */tokenServerUrlOverride: String? = nil) {
         self.server = server
         self.clientId = clientId
         self.redirectUri = redirectUri
@@ -2871,8 +3104,10 @@ public struct FxaConfig {
     }
 }
 
+
+
 extension FxaConfig: Equatable, Hashable {
-    public static func == (lhs: FxaConfig, rhs: FxaConfig) -> Bool {
+    public static func ==(lhs: FxaConfig, rhs: FxaConfig) -> Bool {
         if lhs.server != rhs.server {
             return false
         }
@@ -2896,15 +3131,19 @@ extension FxaConfig: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaConfig {
         return
             try FxaConfig(
-                server: FfiConverterTypeFxaServer.read(from: &buf),
-                clientId: FfiConverterString.read(from: &buf),
-                redirectUri: FfiConverterString.read(from: &buf),
+                server: FfiConverterTypeFxaServer.read(from: &buf), 
+                clientId: FfiConverterString.read(from: &buf), 
+                redirectUri: FfiConverterString.read(from: &buf), 
                 tokenServerUrlOverride: FfiConverterOptionString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: FxaConfig, into buf: inout [UInt8]) {
@@ -2915,13 +3154,21 @@ public struct FfiConverterTypeFxaConfig: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaConfig_lift(_ buf: RustBuffer) throws -> FxaConfig {
     return try FfiConverterTypeFxaConfig.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaConfig_lower(_ value: FxaConfig) -> RustBuffer {
     return FfiConverterTypeFxaConfig.lower(value)
 }
+
 
 /**
  * Local device that's connecting to FxA
@@ -2949,8 +3196,10 @@ public struct LocalDevice {
     }
 }
 
+
+
 extension LocalDevice: Equatable, Hashable {
-    public static func == (lhs: LocalDevice, rhs: LocalDevice) -> Bool {
+    public static func ==(lhs: LocalDevice, rhs: LocalDevice) -> Bool {
         if lhs.id != rhs.id {
             return false
         }
@@ -2982,17 +3231,21 @@ extension LocalDevice: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeLocalDevice: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LocalDevice {
         return
             try LocalDevice(
-                id: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterString.read(from: &buf),
-                deviceType: FfiConverterTypeDeviceType.read(from: &buf),
-                capabilities: FfiConverterSequenceTypeDeviceCapability.read(from: &buf),
-                pushSubscription: FfiConverterOptionTypeDevicePushSubscription.read(from: &buf),
+                id: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterString.read(from: &buf), 
+                deviceType: FfiConverterTypeDeviceType.read(from: &buf), 
+                capabilities: FfiConverterSequenceTypeDeviceCapability.read(from: &buf), 
+                pushSubscription: FfiConverterOptionTypeDevicePushSubscription.read(from: &buf), 
                 pushEndpointExpired: FfiConverterBool.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: LocalDevice, into buf: inout [UInt8]) {
@@ -3005,13 +3258,21 @@ public struct FfiConverterTypeLocalDevice: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLocalDevice_lift(_ buf: RustBuffer) throws -> LocalDevice {
     return try FfiConverterTypeLocalDevice.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeLocalDevice_lower(_ value: LocalDevice) -> RustBuffer {
     return FfiConverterTypeLocalDevice.lower(value)
 }
+
 
 /**
  * Information about the user that controls a Firefox Account.
@@ -3057,25 +3318,24 @@ public struct Profile {
          * The user's account uid
          *
          * This is an opaque immutable unique identifier for their account.
-         */ uid: String,
+         */uid: String, 
         /**
-            * The user's current primary email address.
-            *
-            * Note that unlike the `uid` field, the email address may change over time.
-            */ email: String,
+         * The user's current primary email address.
+         *
+         * Note that unlike the `uid` field, the email address may change over time.
+         */email: String, 
         /**
-            * The user's preferred textual display name.
-            */ displayName: String?,
+         * The user's preferred textual display name.
+         */displayName: String?, 
         /**
-            * The URL of a profile picture representing the user.
-            *
-            * All accounts have a corresponding profile picture. If the user has not
-            * provided one then a default image is used.
-            */ avatar: String,
+         * The URL of a profile picture representing the user.
+         *
+         * All accounts have a corresponding profile picture. If the user has not
+         * provided one then a default image is used.
+         */avatar: String, 
         /**
-            * Whether the `avatar` URL represents the default avatar image.
-            */ isDefaultAvatar: Bool
-    ) {
+         * Whether the `avatar` URL represents the default avatar image.
+         */isDefaultAvatar: Bool) {
         self.uid = uid
         self.email = email
         self.displayName = displayName
@@ -3084,8 +3344,10 @@ public struct Profile {
     }
 }
 
+
+
 extension Profile: Equatable, Hashable {
-    public static func == (lhs: Profile, rhs: Profile) -> Bool {
+    public static func ==(lhs: Profile, rhs: Profile) -> Bool {
         if lhs.uid != rhs.uid {
             return false
         }
@@ -3113,16 +3375,20 @@ extension Profile: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeProfile: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Profile {
         return
             try Profile(
-                uid: FfiConverterString.read(from: &buf),
-                email: FfiConverterString.read(from: &buf),
-                displayName: FfiConverterOptionString.read(from: &buf),
-                avatar: FfiConverterString.read(from: &buf),
+                uid: FfiConverterString.read(from: &buf), 
+                email: FfiConverterString.read(from: &buf), 
+                displayName: FfiConverterOptionString.read(from: &buf), 
+                avatar: FfiConverterString.read(from: &buf), 
                 isDefaultAvatar: FfiConverterBool.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: Profile, into buf: inout [UInt8]) {
@@ -3134,13 +3400,21 @@ public struct FfiConverterTypeProfile: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeProfile_lift(_ buf: RustBuffer) throws -> Profile {
     return try FfiConverterTypeProfile.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeProfile_lower(_ value: Profile) -> RustBuffer {
     return FfiConverterTypeProfile.lower(value)
 }
+
 
 /**
  * A cryptographic key associated with an OAuth scope.
@@ -3184,22 +3458,21 @@ public struct ScopedKey {
          *
          * In practice for FxA, this will always be string string "oct" (short for "octal")
          * to represent a raw symmetric key.
-         */ kty: String,
+         */kty: String, 
         /**
-            * The OAuth scope with which this key is associated.
-            */ scope: String,
+         * The OAuth scope with which this key is associated.
+         */scope: String, 
         /**
-            * The key material, as base64-url-encoded bytes.
-            *
-            * **⚠️ Warning:** the value of this field should never be revealed outside of the
-            * application. For example, it should never to sent to a server or logged in a log file.
-            */ k: String,
+         * The key material, as base64-url-encoded bytes.
+         *
+         * **⚠️ Warning:** the value of this field should never be revealed outside of the
+         * application. For example, it should never to sent to a server or logged in a log file.
+         */k: String, 
         /**
-            * An opaque unique identifier for this key.
-            *
-            * Unlike the `k` field, this value is not secret and may be revealed to the server.
-            */ kid: String
-    ) {
+         * An opaque unique identifier for this key.
+         *
+         * Unlike the `k` field, this value is not secret and may be revealed to the server.
+         */kid: String) {
         self.kty = kty
         self.scope = scope
         self.k = k
@@ -3207,8 +3480,10 @@ public struct ScopedKey {
     }
 }
 
+
+
 extension ScopedKey: Equatable, Hashable {
-    public static func == (lhs: ScopedKey, rhs: ScopedKey) -> Bool {
+    public static func ==(lhs: ScopedKey, rhs: ScopedKey) -> Bool {
         if lhs.kty != rhs.kty {
             return false
         }
@@ -3232,15 +3507,19 @@ extension ScopedKey: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeScopedKey: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ScopedKey {
         return
             try ScopedKey(
-                kty: FfiConverterString.read(from: &buf),
-                scope: FfiConverterString.read(from: &buf),
-                k: FfiConverterString.read(from: &buf),
+                kty: FfiConverterString.read(from: &buf), 
+                scope: FfiConverterString.read(from: &buf), 
+                k: FfiConverterString.read(from: &buf), 
                 kid: FfiConverterString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: ScopedKey, into buf: inout [UInt8]) {
@@ -3251,13 +3530,21 @@ public struct FfiConverterTypeScopedKey: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeScopedKey_lift(_ buf: RustBuffer) throws -> ScopedKey {
     return try FfiConverterTypeScopedKey.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeScopedKey_lower(_ value: ScopedKey) -> RustBuffer {
     return FfiConverterTypeScopedKey.lower(value)
 }
+
 
 /**
  * The payload sent when invoking a "send tab" command.
@@ -3294,26 +3581,27 @@ public struct SendTabPayload {
          * The last item in this list represents the page to be displayed,
          * while earlier items may be included in the navigation history
          * as a convenience to the user.
-         */ entries: [TabHistoryEntry],
+         */entries: [TabHistoryEntry], 
         /**
-            * A unique identifier to be included in send-tab metrics.
-            *
-            * The application should treat this as opaque.
-            */ flowId: String = "",
+         * A unique identifier to be included in send-tab metrics.
+         *
+         * The application should treat this as opaque.
+         */flowId: String = "", 
         /**
-            * A unique identifier to be included in send-tab metrics.
-            *
-            * The application should treat this as opaque.
-            */ streamId: String = ""
-    ) {
+         * A unique identifier to be included in send-tab metrics.
+         *
+         * The application should treat this as opaque.
+         */streamId: String = "") {
         self.entries = entries
         self.flowId = flowId
         self.streamId = streamId
     }
 }
 
+
+
 extension SendTabPayload: Equatable, Hashable {
-    public static func == (lhs: SendTabPayload, rhs: SendTabPayload) -> Bool {
+    public static func ==(lhs: SendTabPayload, rhs: SendTabPayload) -> Bool {
         if lhs.entries != rhs.entries {
             return false
         }
@@ -3333,14 +3621,18 @@ extension SendTabPayload: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeSendTabPayload: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SendTabPayload {
         return
             try SendTabPayload(
-                entries: FfiConverterSequenceTypeTabHistoryEntry.read(from: &buf),
-                flowId: FfiConverterString.read(from: &buf),
+                entries: FfiConverterSequenceTypeTabHistoryEntry.read(from: &buf), 
+                flowId: FfiConverterString.read(from: &buf), 
                 streamId: FfiConverterString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: SendTabPayload, into buf: inout [UInt8]) {
@@ -3350,13 +3642,21 @@ public struct FfiConverterTypeSendTabPayload: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSendTabPayload_lift(_ buf: RustBuffer) throws -> SendTabPayload {
     return try FfiConverterTypeSendTabPayload.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeSendTabPayload_lower(_ value: SendTabPayload) -> RustBuffer {
     return FfiConverterTypeSendTabPayload.lower(value)
 }
+
 
 /**
  * An individual entry in the navigation history of a sent tab.
@@ -3374,8 +3674,10 @@ public struct TabHistoryEntry {
     }
 }
 
+
+
 extension TabHistoryEntry: Equatable, Hashable {
-    public static func == (lhs: TabHistoryEntry, rhs: TabHistoryEntry) -> Bool {
+    public static func ==(lhs: TabHistoryEntry, rhs: TabHistoryEntry) -> Bool {
         if lhs.title != rhs.title {
             return false
         }
@@ -3391,13 +3693,17 @@ extension TabHistoryEntry: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTabHistoryEntry: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TabHistoryEntry {
         return
             try TabHistoryEntry(
-                title: FfiConverterString.read(from: &buf),
+                title: FfiConverterString.read(from: &buf), 
                 url: FfiConverterString.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: TabHistoryEntry, into buf: inout [UInt8]) {
@@ -3406,13 +3712,21 @@ public struct FfiConverterTypeTabHistoryEntry: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTabHistoryEntry_lift(_ buf: RustBuffer) throws -> TabHistoryEntry {
     return try FfiConverterTypeTabHistoryEntry.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTabHistoryEntry_lower(_ value: TabHistoryEntry) -> RustBuffer {
     return FfiConverterTypeTabHistoryEntry.lower(value)
 }
+
 
 public struct UserData {
     public var sessionToken: String
@@ -3430,8 +3744,10 @@ public struct UserData {
     }
 }
 
+
+
 extension UserData: Equatable, Hashable {
-    public static func == (lhs: UserData, rhs: UserData) -> Bool {
+    public static func ==(lhs: UserData, rhs: UserData) -> Bool {
         if lhs.sessionToken != rhs.sessionToken {
             return false
         }
@@ -3455,15 +3771,19 @@ extension UserData: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeUserData: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UserData {
         return
             try UserData(
-                sessionToken: FfiConverterString.read(from: &buf),
-                uid: FfiConverterString.read(from: &buf),
-                email: FfiConverterString.read(from: &buf),
+                sessionToken: FfiConverterString.read(from: &buf), 
+                uid: FfiConverterString.read(from: &buf), 
+                email: FfiConverterString.read(from: &buf), 
                 verified: FfiConverterBool.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: UserData, into buf: inout [UInt8]) {
@@ -3474,10 +3794,17 @@ public struct FfiConverterTypeUserData: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUserData_lift(_ buf: RustBuffer) throws -> UserData {
     return try FfiConverterTypeUserData.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeUserData_lower(_ value: UserData) -> RustBuffer {
     return FfiConverterTypeUserData.lower(value)
 }
@@ -3495,6 +3822,7 @@ public func FfiConverterTypeUserData_lower(_ value: UserData) -> RustBuffer {
  */
 
 public enum AccountEvent {
+    
     /**
      * Sent when another device has invoked a command for this device to execute.
      *
@@ -3544,7 +3872,8 @@ public enum AccountEvent {
      * When receiving this event, the application may use it to trigger an update
      * of any UI that shows the list of connected devices.
      */
-    case deviceDisconnected(deviceId: String, isLocalDevice: Bool)
+    case deviceDisconnected(deviceId: String, isLocalDevice: Bool
+    )
     /**
      * An unknown event, most likely an event the client doesn't support yet.
      *
@@ -3553,71 +3882,97 @@ public enum AccountEvent {
     case unknown
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAccountEvent: FfiConverterRustBuffer {
     typealias SwiftType = AccountEvent
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AccountEvent {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .commandReceived(command: FfiConverterTypeIncomingDeviceCommand.read(from: &buf)
-            )
-
+        
+        case 1: return .commandReceived(command: try FfiConverterTypeIncomingDeviceCommand.read(from: &buf)
+        )
+        
         case 2: return .profileUpdated
-
+        
         case 3: return .accountAuthStateChanged
-
+        
         case 4: return .accountDestroyed
-
-        case 5: return try .deviceConnected(deviceName: FfiConverterString.read(from: &buf)
-            )
-
-        case 6: return try .deviceDisconnected(deviceId: FfiConverterString.read(from: &buf), isLocalDevice: FfiConverterBool.read(from: &buf))
-
+        
+        case 5: return .deviceConnected(deviceName: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 6: return .deviceDisconnected(deviceId: try FfiConverterString.read(from: &buf), isLocalDevice: try FfiConverterBool.read(from: &buf)
+        )
+        
         case 7: return .unknown
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: AccountEvent, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case let .commandReceived(command):
             writeInt(&buf, Int32(1))
             FfiConverterTypeIncomingDeviceCommand.write(command, into: &buf)
-
+            
+        
         case .profileUpdated:
             writeInt(&buf, Int32(2))
-
+        
+        
         case .accountAuthStateChanged:
             writeInt(&buf, Int32(3))
-
+        
+        
         case .accountDestroyed:
             writeInt(&buf, Int32(4))
-
+        
+        
         case let .deviceConnected(deviceName):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(deviceName, into: &buf)
-
-        case let .deviceDisconnected(deviceId, isLocalDevice):
+            
+        
+        case let .deviceDisconnected(deviceId,isLocalDevice):
             writeInt(&buf, Int32(6))
             FfiConverterString.write(deviceId, into: &buf)
             FfiConverterBool.write(isLocalDevice, into: &buf)
-
+            
+        
         case .unknown:
             writeInt(&buf, Int32(7))
+        
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAccountEvent_lift(_ buf: RustBuffer) throws -> AccountEvent {
     return try FfiConverterTypeAccountEvent.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAccountEvent_lower(_ value: AccountEvent) -> RustBuffer {
     return FfiConverterTypeAccountEvent.lower(value)
 }
 
+
+
 extension AccountEvent: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -3635,6 +3990,7 @@ extension AccountEvent: Equatable, Hashable {}
  */
 
 public enum CloseTabsResult {
+    
     /**
      * All URLs passed to [`FirefoxAccount::close_tabs`] were chunked and sent
      * in one or more device commands.
@@ -3653,42 +4009,62 @@ public enum CloseTabsResult {
     )
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeCloseTabsResult: FfiConverterRustBuffer {
     typealias SwiftType = CloseTabsResult
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CloseTabsResult {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .ok
-
-        case 2: return try .tabsNotClosed(urls: FfiConverterSequenceString.read(from: &buf)
-            )
-
+        
+        case 2: return .tabsNotClosed(urls: try FfiConverterSequenceString.read(from: &buf)
+        )
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: CloseTabsResult, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .ok:
             writeInt(&buf, Int32(1))
-
+        
+        
         case let .tabsNotClosed(urls):
             writeInt(&buf, Int32(2))
             FfiConverterSequenceString.write(urls, into: &buf)
+            
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCloseTabsResult_lift(_ buf: RustBuffer) throws -> CloseTabsResult {
     return try FfiConverterTypeCloseTabsResult.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeCloseTabsResult_lower(_ value: CloseTabsResult) -> RustBuffer {
     return FfiConverterTypeCloseTabsResult.lower(value)
 }
 
+
+
 extension CloseTabsResult: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -3704,44 +4080,66 @@ extension CloseTabsResult: Equatable, Hashable {}
  */
 
 public enum DeviceCapability {
+    
     case sendTab
     case closeTabs
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeDeviceCapability: FfiConverterRustBuffer {
     typealias SwiftType = DeviceCapability
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DeviceCapability {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .sendTab
-
+        
         case 2: return .closeTabs
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: DeviceCapability, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .sendTab:
             writeInt(&buf, Int32(1))
-
+        
+        
         case .closeTabs:
             writeInt(&buf, Int32(2))
+        
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDeviceCapability_lift(_ buf: RustBuffer) throws -> DeviceCapability {
     return try FfiConverterTypeDeviceCapability.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeDeviceCapability_lower(_ value: DeviceCapability) -> RustBuffer {
     return FfiConverterTypeDeviceCapability.lower(value)
 }
 
+
+
 extension DeviceCapability: Equatable, Hashable {}
+
+
+
 
 /**
  * Generic error type thrown by many [`FirefoxAccount`] operations.
@@ -3752,6 +4150,9 @@ extension DeviceCapability: Equatable, Hashable {}
 
  */
 public enum FxaError {
+
+    
+    
     /**
      * Thrown when there was a problem with the authentication status of the account,
      * such as an expired token. The application should [check its authorization status](
@@ -3759,19 +4160,19 @@ public enum FxaError {
      * or retry the operation with a freshly-generated token.
      */
     case Authentication(message: String)
-
+    
     /**
      * Thrown if an operation fails due to network access problems.
      * The application may retry at a later time once connectivity is restored.
      */
     case Network(message: String)
-
+    
     /**
      * Thrown if the application attempts to complete an OAuth flow when no OAuth flow has been initiated for that state.
      * This may indicate a user who navigated directly to the OAuth `redirect_uri` for the application.
      */
     case NoExistingAuthFlow(message: String)
-
+    
     /**
      * Thrown if the application attempts to complete an OAuth flow, but the state
      * tokens returned from the Firefox Account server do not match with the ones
@@ -3782,7 +4183,7 @@ public enum FxaError {
      * **Note:** This error is currently only thrown in the Swift language bindings.
      */
     case WrongAuthFlow(message: String)
-
+    
     /**
      * Origin mismatch when handling a pairing flow
      *
@@ -3790,62 +4191,72 @@ public enum FxaError {
      * that are configured to use different servers.
      */
     case OriginMismatch(message: String)
-
+    
     /**
      * The sync scoped key was missing in the server response
      */
     case SyncScopedKeyMissingInServerResponse(message: String)
-
+    
     /**
      * Thrown if there is a panic in the underlying Rust code.
      *
      * **Note:** This error is currently only thrown in the Kotlin language bindings.
      */
     case Panic(message: String)
-
+    
     /**
      * A catch-all for other unspecified errors.
      */
     case Other(message: String)
+    
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
     typealias SwiftType = FxaError
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .Authentication(
-                message: FfiConverterString.read(from: &buf)
-            )
 
-        case 2: return try .Network(
-                message: FfiConverterString.read(from: &buf)
-            )
+        
 
-        case 3: return try .NoExistingAuthFlow(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 4: return try .WrongAuthFlow(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 5: return try .OriginMismatch(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 6: return try .SyncScopedKeyMissingInServerResponse(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 7: return try .Panic(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 8: return try .Other(
-                message: FfiConverterString.read(from: &buf)
-            )
+        
+        case 1: return .Authentication(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .Network(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .NoExistingAuthFlow(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 4: return .WrongAuthFlow(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 5: return .OriginMismatch(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 6: return .SyncScopedKeyMissingInServerResponse(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 7: return .Panic(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 8: return .Other(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -3853,25 +4264,32 @@ public struct FfiConverterTypeFxaError: FfiConverterRustBuffer {
 
     public static func write(_ value: FxaError, into buf: inout [UInt8]) {
         switch value {
-        case .Authentication(_ /* message is ignored*/ ):
+
+        
+
+        
+        case .Authentication(_ /* message is ignored*/):
             writeInt(&buf, Int32(1))
-        case .Network(_ /* message is ignored*/ ):
+        case .Network(_ /* message is ignored*/):
             writeInt(&buf, Int32(2))
-        case .NoExistingAuthFlow(_ /* message is ignored*/ ):
+        case .NoExistingAuthFlow(_ /* message is ignored*/):
             writeInt(&buf, Int32(3))
-        case .WrongAuthFlow(_ /* message is ignored*/ ):
+        case .WrongAuthFlow(_ /* message is ignored*/):
             writeInt(&buf, Int32(4))
-        case .OriginMismatch(_ /* message is ignored*/ ):
+        case .OriginMismatch(_ /* message is ignored*/):
             writeInt(&buf, Int32(5))
-        case .SyncScopedKeyMissingInServerResponse(_ /* message is ignored*/ ):
+        case .SyncScopedKeyMissingInServerResponse(_ /* message is ignored*/):
             writeInt(&buf, Int32(6))
-        case .Panic(_ /* message is ignored*/ ):
+        case .Panic(_ /* message is ignored*/):
             writeInt(&buf, Int32(7))
-        case .Other(_ /* message is ignored*/ ):
+        case .Other(_ /* message is ignored*/):
             writeInt(&buf, Int32(8))
+
+        
         }
     }
 }
+
 
 extension FxaError: Equatable, Hashable {}
 
@@ -3885,139 +4303,194 @@ extension FxaError: Foundation.LocalizedError {
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum FxaEvent {
+    
     case initialize(deviceConfig: DeviceConfig
     )
-    case beginOAuthFlow(scopes: [String], entrypoint: String)
-    case beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String)
-    case completeOAuthFlow(code: String, state: String)
+    case beginOAuthFlow(scopes: [String], entrypoint: String
+    )
+    case beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String
+    )
+    case completeOAuthFlow(code: String, state: String
+    )
     case cancelOAuthFlow
     case checkAuthorizationStatus
     case disconnect
     case callGetProfile
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaEvent: FfiConverterRustBuffer {
     typealias SwiftType = FxaEvent
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaEvent {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .initialize(deviceConfig: FfiConverterTypeDeviceConfig.read(from: &buf)
-            )
-
-        case 2: return try .beginOAuthFlow(scopes: FfiConverterSequenceString.read(from: &buf), entrypoint: FfiConverterString.read(from: &buf))
-
-        case 3: return try .beginPairingFlow(pairingUrl: FfiConverterString.read(from: &buf), scopes: FfiConverterSequenceString.read(from: &buf), entrypoint: FfiConverterString.read(from: &buf))
-
-        case 4: return try .completeOAuthFlow(code: FfiConverterString.read(from: &buf), state: FfiConverterString.read(from: &buf))
-
+        
+        case 1: return .initialize(deviceConfig: try FfiConverterTypeDeviceConfig.read(from: &buf)
+        )
+        
+        case 2: return .beginOAuthFlow(scopes: try FfiConverterSequenceString.read(from: &buf), entrypoint: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .beginPairingFlow(pairingUrl: try FfiConverterString.read(from: &buf), scopes: try FfiConverterSequenceString.read(from: &buf), entrypoint: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 4: return .completeOAuthFlow(code: try FfiConverterString.read(from: &buf), state: try FfiConverterString.read(from: &buf)
+        )
+        
         case 5: return .cancelOAuthFlow
-
+        
         case 6: return .checkAuthorizationStatus
-
+        
         case 7: return .disconnect
-
+        
         case 8: return .callGetProfile
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FxaEvent, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case let .initialize(deviceConfig):
             writeInt(&buf, Int32(1))
             FfiConverterTypeDeviceConfig.write(deviceConfig, into: &buf)
-
-        case let .beginOAuthFlow(scopes, entrypoint):
+            
+        
+        case let .beginOAuthFlow(scopes,entrypoint):
             writeInt(&buf, Int32(2))
             FfiConverterSequenceString.write(scopes, into: &buf)
             FfiConverterString.write(entrypoint, into: &buf)
-
-        case let .beginPairingFlow(pairingUrl, scopes, entrypoint):
+            
+        
+        case let .beginPairingFlow(pairingUrl,scopes,entrypoint):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(pairingUrl, into: &buf)
             FfiConverterSequenceString.write(scopes, into: &buf)
             FfiConverterString.write(entrypoint, into: &buf)
-
-        case let .completeOAuthFlow(code, state):
+            
+        
+        case let .completeOAuthFlow(code,state):
             writeInt(&buf, Int32(4))
             FfiConverterString.write(code, into: &buf)
             FfiConverterString.write(state, into: &buf)
-
+            
+        
         case .cancelOAuthFlow:
             writeInt(&buf, Int32(5))
-
+        
+        
         case .checkAuthorizationStatus:
             writeInt(&buf, Int32(6))
-
+        
+        
         case .disconnect:
             writeInt(&buf, Int32(7))
-
+        
+        
         case .callGetProfile:
             writeInt(&buf, Int32(8))
+        
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaEvent_lift(_ buf: RustBuffer) throws -> FxaEvent {
     return try FfiConverterTypeFxaEvent.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaEvent_lower(_ value: FxaEvent) -> RustBuffer {
     return FfiConverterTypeFxaEvent.lower(value)
 }
 
+
+
 extension FxaEvent: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum FxaRustAuthState {
+    
     case disconnected
     case connected
     case authIssues
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaRustAuthState: FfiConverterRustBuffer {
     typealias SwiftType = FxaRustAuthState
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaRustAuthState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .disconnected
-
+        
         case 2: return .connected
-
+        
         case 3: return .authIssues
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FxaRustAuthState, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .disconnected:
             writeInt(&buf, Int32(1))
-
+        
+        
         case .connected:
             writeInt(&buf, Int32(2))
-
+        
+        
         case .authIssues:
             writeInt(&buf, Int32(3))
+        
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaRustAuthState_lift(_ buf: RustBuffer) throws -> FxaRustAuthState {
     return try FfiConverterTypeFxaRustAuthState.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaRustAuthState_lower(_ value: FxaRustAuthState) -> RustBuffer {
     return FfiConverterTypeFxaRustAuthState.lower(value)
 }
 
+
+
 extension FxaRustAuthState: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -4026,6 +4499,7 @@ extension FxaRustAuthState: Equatable, Hashable {}
  */
 
 public enum FxaServer {
+    
     case release
     case stable
     case stage
@@ -4035,67 +4509,92 @@ public enum FxaServer {
     )
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaServer: FfiConverterRustBuffer {
     typealias SwiftType = FxaServer
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaServer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .release
-
+        
         case 2: return .stable
-
+        
         case 3: return .stage
-
+        
         case 4: return .china
-
+        
         case 5: return .localDev
-
-        case 6: return try .custom(url: FfiConverterString.read(from: &buf)
-            )
-
+        
+        case 6: return .custom(url: try FfiConverterString.read(from: &buf)
+        )
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FxaServer, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .release:
             writeInt(&buf, Int32(1))
-
+        
+        
         case .stable:
             writeInt(&buf, Int32(2))
-
+        
+        
         case .stage:
             writeInt(&buf, Int32(3))
-
+        
+        
         case .china:
             writeInt(&buf, Int32(4))
-
+        
+        
         case .localDev:
             writeInt(&buf, Int32(5))
-
+        
+        
         case let .custom(url):
             writeInt(&buf, Int32(6))
             FfiConverterString.write(url, into: &buf)
+            
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaServer_lift(_ buf: RustBuffer) throws -> FxaServer {
     return try FfiConverterTypeFxaServer.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaServer_lower(_ value: FxaServer) -> RustBuffer {
     return FfiConverterTypeFxaServer.lower(value)
 }
 
+
+
 extension FxaServer: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum FxaState {
+    
     case uninitialized
     case disconnected
     case authenticating(oauthUrl: String
@@ -4104,62 +4603,86 @@ public enum FxaState {
     case authIssues
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaState: FfiConverterRustBuffer {
     typealias SwiftType = FxaState
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .uninitialized
-
+        
         case 2: return .disconnected
-
-        case 3: return try .authenticating(oauthUrl: FfiConverterString.read(from: &buf)
-            )
-
+        
+        case 3: return .authenticating(oauthUrl: try FfiConverterString.read(from: &buf)
+        )
+        
         case 4: return .connected
-
+        
         case 5: return .authIssues
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FxaState, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .uninitialized:
             writeInt(&buf, Int32(1))
-
+        
+        
         case .disconnected:
             writeInt(&buf, Int32(2))
-
+        
+        
         case let .authenticating(oauthUrl):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(oauthUrl, into: &buf)
-
+            
+        
         case .connected:
             writeInt(&buf, Int32(4))
-
+        
+        
         case .authIssues:
             writeInt(&buf, Int32(5))
+        
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaState_lift(_ buf: RustBuffer) throws -> FxaState {
     return try FfiConverterTypeFxaState.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaState_lower(_ value: FxaState) -> RustBuffer {
     return FfiConverterTypeFxaState.lower(value)
 }
 
+
+
 extension FxaState: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum FxaStateCheckerEvent {
+    
     case getAuthStateSuccess(authState: FxaRustAuthState
     )
     case beginOAuthFlowSuccess(oauthUrl: String
@@ -4177,102 +4700,135 @@ public enum FxaStateCheckerEvent {
     case ensureCapabilitiesAuthError
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaStateCheckerEvent: FfiConverterRustBuffer {
     typealias SwiftType = FxaStateCheckerEvent
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaStateCheckerEvent {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .getAuthStateSuccess(authState: FfiConverterTypeFxaRustAuthState.read(from: &buf)
-            )
-
-        case 2: return try .beginOAuthFlowSuccess(oauthUrl: FfiConverterString.read(from: &buf)
-            )
-
-        case 3: return try .beginPairingFlowSuccess(oauthUrl: FfiConverterString.read(from: &buf)
-            )
-
+        
+        case 1: return .getAuthStateSuccess(authState: try FfiConverterTypeFxaRustAuthState.read(from: &buf)
+        )
+        
+        case 2: return .beginOAuthFlowSuccess(oauthUrl: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .beginPairingFlowSuccess(oauthUrl: try FfiConverterString.read(from: &buf)
+        )
+        
         case 4: return .completeOAuthFlowSuccess
-
+        
         case 5: return .initializeDeviceSuccess
-
+        
         case 6: return .ensureDeviceCapabilitiesSuccess
-
-        case 7: return try .checkAuthorizationStatusSuccess(active: FfiConverterBool.read(from: &buf)
-            )
-
+        
+        case 7: return .checkAuthorizationStatusSuccess(active: try FfiConverterBool.read(from: &buf)
+        )
+        
         case 8: return .disconnectSuccess
-
+        
         case 9: return .getProfileSuccess
-
+        
         case 10: return .callError
-
+        
         case 11: return .ensureCapabilitiesAuthError
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FxaStateCheckerEvent, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case let .getAuthStateSuccess(authState):
             writeInt(&buf, Int32(1))
             FfiConverterTypeFxaRustAuthState.write(authState, into: &buf)
-
+            
+        
         case let .beginOAuthFlowSuccess(oauthUrl):
             writeInt(&buf, Int32(2))
             FfiConverterString.write(oauthUrl, into: &buf)
-
+            
+        
         case let .beginPairingFlowSuccess(oauthUrl):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(oauthUrl, into: &buf)
-
+            
+        
         case .completeOAuthFlowSuccess:
             writeInt(&buf, Int32(4))
-
+        
+        
         case .initializeDeviceSuccess:
             writeInt(&buf, Int32(5))
-
+        
+        
         case .ensureDeviceCapabilitiesSuccess:
             writeInt(&buf, Int32(6))
-
+        
+        
         case let .checkAuthorizationStatusSuccess(active):
             writeInt(&buf, Int32(7))
             FfiConverterBool.write(active, into: &buf)
-
+            
+        
         case .disconnectSuccess:
             writeInt(&buf, Int32(8))
-
+        
+        
         case .getProfileSuccess:
             writeInt(&buf, Int32(9))
-
+        
+        
         case .callError:
             writeInt(&buf, Int32(10))
-
+        
+        
         case .ensureCapabilitiesAuthError:
             writeInt(&buf, Int32(11))
+        
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaStateCheckerEvent_lift(_ buf: RustBuffer) throws -> FxaStateCheckerEvent {
     return try FfiConverterTypeFxaStateCheckerEvent.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaStateCheckerEvent_lower(_ value: FxaStateCheckerEvent) -> RustBuffer {
     return FfiConverterTypeFxaStateCheckerEvent.lower(value)
 }
 
+
+
 extension FxaStateCheckerEvent: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum FxaStateCheckerState {
+    
     case getAuthState
-    case beginOAuthFlow(scopes: [String], entrypoint: String)
-    case beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String)
-    case completeOAuthFlow(code: String, state: String)
+    case beginOAuthFlow(scopes: [String], entrypoint: String
+    )
+    case beginPairingFlow(pairingUrl: String, scopes: [String], entrypoint: String
+    )
+    case completeOAuthFlow(code: String, state: String
+    )
     case initializeDevice
     case ensureDeviceCapabilities
     case checkAuthorizationStatus
@@ -4283,94 +4839,126 @@ public enum FxaStateCheckerState {
     case cancel
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeFxaStateCheckerState: FfiConverterRustBuffer {
     typealias SwiftType = FxaStateCheckerState
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FxaStateCheckerState {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .getAuthState
-
-        case 2: return try .beginOAuthFlow(scopes: FfiConverterSequenceString.read(from: &buf), entrypoint: FfiConverterString.read(from: &buf))
-
-        case 3: return try .beginPairingFlow(pairingUrl: FfiConverterString.read(from: &buf), scopes: FfiConverterSequenceString.read(from: &buf), entrypoint: FfiConverterString.read(from: &buf))
-
-        case 4: return try .completeOAuthFlow(code: FfiConverterString.read(from: &buf), state: FfiConverterString.read(from: &buf))
-
+        
+        case 2: return .beginOAuthFlow(scopes: try FfiConverterSequenceString.read(from: &buf), entrypoint: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .beginPairingFlow(pairingUrl: try FfiConverterString.read(from: &buf), scopes: try FfiConverterSequenceString.read(from: &buf), entrypoint: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 4: return .completeOAuthFlow(code: try FfiConverterString.read(from: &buf), state: try FfiConverterString.read(from: &buf)
+        )
+        
         case 5: return .initializeDevice
-
+        
         case 6: return .ensureDeviceCapabilities
-
+        
         case 7: return .checkAuthorizationStatus
-
+        
         case 8: return .disconnect
-
+        
         case 9: return .getProfile
-
-        case 10: return try .complete(newState: FfiConverterTypeFxaState.read(from: &buf)
-            )
-
+        
+        case 10: return .complete(newState: try FfiConverterTypeFxaState.read(from: &buf)
+        )
+        
         case 11: return .cancel
-
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: FxaStateCheckerState, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .getAuthState:
             writeInt(&buf, Int32(1))
-
-        case let .beginOAuthFlow(scopes, entrypoint):
+        
+        
+        case let .beginOAuthFlow(scopes,entrypoint):
             writeInt(&buf, Int32(2))
             FfiConverterSequenceString.write(scopes, into: &buf)
             FfiConverterString.write(entrypoint, into: &buf)
-
-        case let .beginPairingFlow(pairingUrl, scopes, entrypoint):
+            
+        
+        case let .beginPairingFlow(pairingUrl,scopes,entrypoint):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(pairingUrl, into: &buf)
             FfiConverterSequenceString.write(scopes, into: &buf)
             FfiConverterString.write(entrypoint, into: &buf)
-
-        case let .completeOAuthFlow(code, state):
+            
+        
+        case let .completeOAuthFlow(code,state):
             writeInt(&buf, Int32(4))
             FfiConverterString.write(code, into: &buf)
             FfiConverterString.write(state, into: &buf)
-
+            
+        
         case .initializeDevice:
             writeInt(&buf, Int32(5))
-
+        
+        
         case .ensureDeviceCapabilities:
             writeInt(&buf, Int32(6))
-
+        
+        
         case .checkAuthorizationStatus:
             writeInt(&buf, Int32(7))
-
+        
+        
         case .disconnect:
             writeInt(&buf, Int32(8))
-
+        
+        
         case .getProfile:
             writeInt(&buf, Int32(9))
-
+        
+        
         case let .complete(newState):
             writeInt(&buf, Int32(10))
             FfiConverterTypeFxaState.write(newState, into: &buf)
-
+            
+        
         case .cancel:
             writeInt(&buf, Int32(11))
+        
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaStateCheckerState_lift(_ buf: RustBuffer) throws -> FxaStateCheckerState {
     return try FfiConverterTypeFxaStateCheckerState.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeFxaStateCheckerState_lower(_ value: FxaStateCheckerState) -> RustBuffer {
     return FfiConverterTypeFxaStateCheckerState.lower(value)
 }
 
+
+
 extension FxaStateCheckerState: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -4384,56 +4972,84 @@ extension FxaStateCheckerState: Equatable, Hashable {}
  */
 
 public enum IncomingDeviceCommand {
+    
     /**
      * Indicates that a tab has been sent to this device.
      */
-    case tabReceived(sender: Device?, payload: SendTabPayload)
+    case tabReceived(sender: Device?, payload: SendTabPayload
+    )
     /**
      * Indicates that the sender wants to close one or more tabs on this device.
      */
-    case tabsClosed(sender: Device?, payload: CloseTabsPayload)
+    case tabsClosed(sender: Device?, payload: CloseTabsPayload
+    )
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeIncomingDeviceCommand: FfiConverterRustBuffer {
     typealias SwiftType = IncomingDeviceCommand
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> IncomingDeviceCommand {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .tabReceived(sender: FfiConverterOptionTypeDevice.read(from: &buf), payload: FfiConverterTypeSendTabPayload.read(from: &buf))
-
-        case 2: return try .tabsClosed(sender: FfiConverterOptionTypeDevice.read(from: &buf), payload: FfiConverterTypeCloseTabsPayload.read(from: &buf))
-
+        
+        case 1: return .tabReceived(sender: try FfiConverterOptionTypeDevice.read(from: &buf), payload: try FfiConverterTypeSendTabPayload.read(from: &buf)
+        )
+        
+        case 2: return .tabsClosed(sender: try FfiConverterOptionTypeDevice.read(from: &buf), payload: try FfiConverterTypeCloseTabsPayload.read(from: &buf)
+        )
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: IncomingDeviceCommand, into buf: inout [UInt8]) {
         switch value {
-        case let .tabReceived(sender, payload):
+        
+        
+        case let .tabReceived(sender,payload):
             writeInt(&buf, Int32(1))
             FfiConverterOptionTypeDevice.write(sender, into: &buf)
             FfiConverterTypeSendTabPayload.write(payload, into: &buf)
-
-        case let .tabsClosed(sender, payload):
+            
+        
+        case let .tabsClosed(sender,payload):
             writeInt(&buf, Int32(2))
             FfiConverterOptionTypeDevice.write(sender, into: &buf)
             FfiConverterTypeCloseTabsPayload.write(payload, into: &buf)
+            
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIncomingDeviceCommand_lift(_ buf: RustBuffer) throws -> IncomingDeviceCommand {
     return try FfiConverterTypeIncomingDeviceCommand.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeIncomingDeviceCommand_lower(_ value: IncomingDeviceCommand) -> RustBuffer {
     return FfiConverterTypeIncomingDeviceCommand.lower(value)
 }
 
+
+
 extension IncomingDeviceCommand: Equatable, Hashable {}
 
-private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -4454,7 +5070,10 @@ private struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionString: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -4475,7 +5094,10 @@ private struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionTypeDevice: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeDevice: FfiConverterRustBuffer {
     typealias SwiftType = Device?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -4496,7 +5118,10 @@ private struct FfiConverterOptionTypeDevice: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionTypeDevicePushSubscription: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeDevicePushSubscription: FfiConverterRustBuffer {
     typealias SwiftType = DevicePushSubscription?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -4517,7 +5142,10 @@ private struct FfiConverterOptionTypeDevicePushSubscription: FfiConverterRustBuf
     }
 }
 
-private struct FfiConverterOptionTypeScopedKey: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeScopedKey: FfiConverterRustBuffer {
     typealias SwiftType = ScopedKey?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -4538,7 +5166,10 @@ private struct FfiConverterOptionTypeScopedKey: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -4559,7 +5190,10 @@ private struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterSequenceString: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
     public static func write(_ value: [String], into buf: inout [UInt8]) {
@@ -4575,13 +5209,16 @@ private struct FfiConverterSequenceString: FfiConverterRustBuffer {
         var seq = [String]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterString.read(from: &buf))
+            seq.append(try FfiConverterString.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterSequenceTypeAttachedClient: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeAttachedClient: FfiConverterRustBuffer {
     typealias SwiftType = [AttachedClient]
 
     public static func write(_ value: [AttachedClient], into buf: inout [UInt8]) {
@@ -4597,13 +5234,16 @@ private struct FfiConverterSequenceTypeAttachedClient: FfiConverterRustBuffer {
         var seq = [AttachedClient]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeAttachedClient.read(from: &buf))
+            seq.append(try FfiConverterTypeAttachedClient.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterSequenceTypeDevice: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeDevice: FfiConverterRustBuffer {
     typealias SwiftType = [Device]
 
     public static func write(_ value: [Device], into buf: inout [UInt8]) {
@@ -4619,13 +5259,16 @@ private struct FfiConverterSequenceTypeDevice: FfiConverterRustBuffer {
         var seq = [Device]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeDevice.read(from: &buf))
+            seq.append(try FfiConverterTypeDevice.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterSequenceTypeTabHistoryEntry: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeTabHistoryEntry: FfiConverterRustBuffer {
     typealias SwiftType = [TabHistoryEntry]
 
     public static func write(_ value: [TabHistoryEntry], into buf: inout [UInt8]) {
@@ -4641,13 +5284,16 @@ private struct FfiConverterSequenceTypeTabHistoryEntry: FfiConverterRustBuffer {
         var seq = [TabHistoryEntry]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeTabHistoryEntry.read(from: &buf))
+            seq.append(try FfiConverterTypeTabHistoryEntry.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterSequenceTypeDeviceCapability: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeDeviceCapability: FfiConverterRustBuffer {
     typealias SwiftType = [DeviceCapability]
 
     public static func write(_ value: [DeviceCapability], into buf: inout [UInt8]) {
@@ -4663,13 +5309,16 @@ private struct FfiConverterSequenceTypeDeviceCapability: FfiConverterRustBuffer 
         var seq = [DeviceCapability]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeDeviceCapability.read(from: &buf))
+            seq.append(try FfiConverterTypeDeviceCapability.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterSequenceTypeIncomingDeviceCommand: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeIncomingDeviceCommand: FfiConverterRustBuffer {
     typealias SwiftType = [IncomingDeviceCommand]
 
     public static func write(_ value: [IncomingDeviceCommand], into buf: inout [UInt8]) {
@@ -4685,18 +5334,19 @@ private struct FfiConverterSequenceTypeIncomingDeviceCommand: FfiConverterRustBu
         var seq = [IncomingDeviceCommand]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeIncomingDeviceCommand.read(from: &buf))
+            seq.append(try FfiConverterTypeIncomingDeviceCommand.read(from: &buf))
         }
         return seq
     }
 }
+
+
 
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
     case apiChecksumMismatch
 }
-
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
 private var initializationResult: InitializationResult = {
@@ -4707,139 +5357,139 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_authorize_code_using_session_token() != 17083 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_authorize_code_using_session_token() != 17083) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_oauth_flow() != 2998 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_begin_oauth_flow() != 2998) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_begin_pairing_flow() != 21843 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_begin_pairing_flow() != 21843) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_check_authorization_status() != 52519 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_check_authorization_status() != 52519) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_clear_access_token_cache() != 36203 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_clear_access_token_cache() != 36203) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name() != 42324 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_clear_device_name() != 42324) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_close_tabs() != 55044 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_close_tabs() != 55044) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow() != 41338 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_complete_oauth_flow() != 41338) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_disconnect() != 807 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_disconnect() != 807) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_ensure_capabilities() != 807 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_ensure_capabilities() != 807) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_gather_telemetry() != 61296 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_gather_telemetry() != 61296) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_access_token() != 23448 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_access_token() != 23448) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_attached_clients() != 14470 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_attached_clients() != 14470) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_auth_state() != 38375 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_auth_state() != 38375) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_connection_success_url() != 7413 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_connection_success_url() != 7413) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_current_device_id() != 45188 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_current_device_id() != 45188) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_devices() != 41982 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_devices() != 41982) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_account_url() != 29173 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_account_url() != 29173) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_devices_url() != 42582 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_manage_devices_url() != 42582) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_pairing_authority_url() != 50743 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_pairing_authority_url() != 50743) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_profile() != 26069 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_profile() != 26069) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_session_token() != 45648 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_session_token() != 45648) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_state() != 37802 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_state() != 37802) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_get_token_server_endpoint_url() != 42568 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_get_token_server_endpoint_url() != 42568) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_handle_push_message() != 41561 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_handle_push_message() != 41561) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_handle_session_token_change() != 23593 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_handle_session_token_change() != 23593) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_initialize_device() != 14026 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_initialize_device() != 14026) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_on_auth_issues() != 21675 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_on_auth_issues() != 21675) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_poll_device_commands() != 37725 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_poll_device_commands() != 37725) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_process_event() != 31348 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_process_event() != 31348) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_send_single_tab() != 46148 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_send_single_tab() != 46148) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_set_device_name() != 49257 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_set_device_name() != 49257) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription() != 65018 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_set_push_subscription() != 65018) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_set_user_data() != 1025 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_set_user_data() != 1025) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_simulate_network_error() != 61828 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_simulate_network_error() != 61828) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_simulate_permanent_auth_token_issue() != 25986 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_simulate_permanent_auth_token_issue() != 25986) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_simulate_temporary_auth_token_issue() != 32382 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_simulate_temporary_auth_token_issue() != 32382) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_firefoxaccount_to_json() != 27972 {
+    if (uniffi_fxa_client_checksum_method_firefoxaccount_to_json() != 27972) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_internal_state() != 47586 {
+    if (uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_internal_state() != 47586) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_public_state() != 35267 {
+    if (uniffi_fxa_client_checksum_method_fxastatemachinechecker_check_public_state() != 35267) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_internal_event() != 54231 {
+    if (uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_internal_event() != 54231) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_public_event() != 63696 {
+    if (uniffi_fxa_client_checksum_method_fxastatemachinechecker_handle_public_event() != 63696) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_constructor_firefoxaccount_from_json() != 42320 {
+    if (uniffi_fxa_client_checksum_constructor_firefoxaccount_from_json() != 42320) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_constructor_firefoxaccount_new() != 34333 {
+    if (uniffi_fxa_client_checksum_constructor_firefoxaccount_new() != 34333) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_fxa_client_checksum_constructor_fxastatemachinechecker_new() != 5002 {
+    if (uniffi_fxa_client_checksum_constructor_fxastatemachinechecker_new() != 5002) {
         return InitializationResult.apiChecksumMismatch
     }
 

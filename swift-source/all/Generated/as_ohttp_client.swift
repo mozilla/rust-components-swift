@@ -8,10 +8,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-    import MozillaRustComponents
+import MozillaRustComponents
 #endif
 
-private extension RustBuffer {
+fileprivate extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -21,7 +21,7 @@ private extension RustBuffer {
     }
 
     static func empty() -> RustBuffer {
-        RustBuffer(capacity: 0, len: 0, data: nil)
+        RustBuffer(capacity: 0, len:0, data: nil)
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
@@ -35,7 +35,7 @@ private extension RustBuffer {
     }
 }
 
-private extension ForeignBytes {
+fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -48,11 +48,13 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
+fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
-        // TODO: This copies the buffer. Can we read directly from a
-        // Rust buffer?
-        self.init(bytes: rustBuffer.data!, count: Int(rustBuffer.len))
+        self.init(
+            bytesNoCopy: rustBuffer.data!,
+            count: Int(rustBuffer.len),
+            deallocator: .none
+        )
     }
 }
 
@@ -70,15 +72,15 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -88,38 +90,38 @@ private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: 
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-    let range = reader.offset ..< (reader.offset + count)
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer { buffer in
+    value.withUnsafeMutableBufferPointer({ buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    }
+    })
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -127,11 +129,11 @@ private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
+fileprivate func createWriter() -> [UInt8] {
     return []
 }
 
-private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -139,22 +141,22 @@ private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Seque
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous to the Rust trait of the same name.
-private protocol FfiConverter {
+fileprivate protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -165,13 +167,19 @@ private protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ value: FfiType) throws -> SwiftType {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> FfiType {
         return value
     }
@@ -179,9 +187,12 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
         var reader = createReader(data: Data(rustBuffer: buf))
         let value = try read(from: &reader)
@@ -192,16 +203,18 @@ extension FfiConverterRustBuffer {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> RustBuffer {
-        var writer = createWriter()
-        write(value, into: &writer)
-        return RustBuffer(bytes: writer)
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
     }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
+fileprivate enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -227,24 +240,24 @@ private enum UniffiInternalError: LocalizedError {
     }
 }
 
-private extension NSLock {
+fileprivate extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
-        lock()
+        self.lock()
         defer { self.unlock() }
         return try f()
     }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_UNEXPECTED_ERROR: Int8 = 2
-private let CALL_CANCELLED: Int8 = 3
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_UNEXPECTED_ERROR: Int8 = 2
+fileprivate let CALL_CANCELLED: Int8 = 3
 
-private extension RustCallStatus {
+fileprivate extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer(
+            errorBuf: RustBuffer.init(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -260,8 +273,7 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 
 private func rustCallWithError<T, E: Swift.Error>(
     _ errorHandler: @escaping (RustBuffer) throws -> E,
-    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
-) throws -> T {
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
     try makeRustCall(callback, errorHandler: errorHandler)
 }
 
@@ -270,7 +282,7 @@ private func makeRustCall<T, E: Swift.Error>(
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
     uniffiEnsureInitialized()
-    var callStatus = RustCallStatus()
+    var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
     return returnedVal
@@ -281,44 +293,44 @@ private func uniffiCheckCallStatus<E: Swift.Error>(
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws {
     switch callStatus.code {
-    case CALL_SUCCESS:
-        return
+        case CALL_SUCCESS:
+            return
 
-    case CALL_ERROR:
-        if let errorHandler = errorHandler {
-            throw try errorHandler(callStatus.errorBuf)
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.unexpectedRustCallError
-        }
+        case CALL_ERROR:
+            if let errorHandler = errorHandler {
+                throw try errorHandler(callStatus.errorBuf)
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.unexpectedRustCallError
+            }
 
-    case CALL_UNEXPECTED_ERROR:
-        // When the rust code sees a panic, it tries to construct a RustBuffer
-        // with the message.  But if that code panics, then it just sends back
-        // an empty buffer.
-        if callStatus.errorBuf.len > 0 {
-            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.rustPanic("Rust panic")
-        }
+        case CALL_UNEXPECTED_ERROR:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
 
-    case CALL_CANCELLED:
-        fatalError("Cancellation not supported yet")
+        case CALL_CANCELLED:
+            fatalError("Cancellation not supported yet")
 
-    default:
-        throw UniffiInternalError.unexpectedRustCallStatusCode
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 private func uniffiTraitInterfaceCall<T>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void
+    writeReturn: (T) -> ()
 ) {
     do {
         try writeReturn(makeCall())
-    } catch {
+    } catch let error {
         callStatus.pointee.code = CALL_UNEXPECTED_ERROR
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
@@ -327,7 +339,7 @@ private func uniffiTraitInterfaceCall<T>(
 private func uniffiTraitInterfaceCallWithError<T, E>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void,
+    writeReturn: (T) -> (),
     lowerError: (E) -> RustBuffer
 ) {
     do {
@@ -340,8 +352,7 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-
-private class UniffiHandleMap<T> {
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
     private let lock = NSLock()
     private var currentHandle: UInt64 = 1
@@ -355,7 +366,7 @@ private class UniffiHandleMap<T> {
         }
     }
 
-    func get(handle: UInt64) throws -> T {
+     func get(handle: UInt64) throws -> T {
         try lock.withLock {
             guard let obj = map[handle] else {
                 throw UniffiInternalError.unexpectedStaleHandle
@@ -375,13 +386,19 @@ private class UniffiHandleMap<T> {
     }
 
     var count: Int {
-        map.count
+        get {
+            map.count
+        }
     }
 }
 
 // Public interface members begin here.
 
-private struct FfiConverterUInt8: FfiConverterPrimitive {
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterUInt8: FfiConverterPrimitive {
     typealias FfiType = UInt8
     typealias SwiftType = UInt8
 
@@ -394,7 +411,10 @@ private struct FfiConverterUInt8: FfiConverterPrimitive {
     }
 }
 
-private struct FfiConverterUInt16: FfiConverterPrimitive {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterUInt16: FfiConverterPrimitive {
     typealias FfiType = UInt16
     typealias SwiftType = UInt16
 
@@ -407,7 +427,10 @@ private struct FfiConverterUInt16: FfiConverterPrimitive {
     }
 }
 
-private struct FfiConverterString: FfiConverter {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -435,7 +458,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -445,36 +468,42 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
+
+
+
 /**
  * Each OHTTP request-reply exchange needs to create an OhttpSession
  * object to manage encryption state.
  */
-public protocol OhttpSessionProtocol: AnyObject {
+public protocol OhttpSessionProtocol : AnyObject {
+    
     /**
      * Decypt and unpack the response from the Relay for the previously
      * encapsulated request. You must use the same OhttpSession that
      * generated the request message.
      */
-    func decapsulate(encoded: [UInt8]) throws -> OhttpResponse
-
+    func decapsulate(encoded: [UInt8]) throws  -> OhttpResponse
+    
     /**
      * Encapsulate an HTTP request as Binary HTTP and then encrypt that
      * payload using HPKE. The caller is responsible for sending the
      * resulting message to the Relay.
      */
-    func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws -> [UInt8]
+    func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws  -> [UInt8]
+    
 }
-
 /**
  * Each OHTTP request-reply exchange needs to create an OhttpSession
  * object to manage encryption state.
  */
 open class OhttpSession:
-    OhttpSessionProtocol
-{
+    OhttpSessionProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -482,35 +511,40 @@ open class OhttpSession:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_as_ohttp_client_fn_clone_ohttpsession(self.pointer, $0) }
     }
-
     /**
      * Initialize encryption state based on specific Gateway key config
      */
-    public convenience init(config: [UInt8]) throws {
-        let pointer =
-            try rustCallWithError(FfiConverterTypeOhttpError.lift) {
-                uniffi_as_ohttp_client_fn_constructor_ohttpsession_new(
-                    FfiConverterSequenceUInt8.lower(config), $0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
+public convenience init(config: [UInt8])throws  {
+    let pointer =
+        try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+    uniffi_as_ohttp_client_fn_constructor_ohttpsession_new(
+        FfiConverterSequenceUInt8.lower(config),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
 
     deinit {
         guard let pointer = pointer else {
@@ -520,37 +554,48 @@ open class OhttpSession:
         try! rustCall { uniffi_as_ohttp_client_fn_free_ohttpsession(pointer, $0) }
     }
 
+    
+
+    
     /**
      * Decypt and unpack the response from the Relay for the previously
      * encapsulated request. You must use the same OhttpSession that
      * generated the request message.
      */
-    open func decapsulate(encoded: [UInt8]) throws -> OhttpResponse {
-        return try FfiConverterTypeOhttpResponse.lift(rustCallWithError(FfiConverterTypeOhttpError.lift) {
-            uniffi_as_ohttp_client_fn_method_ohttpsession_decapsulate(self.uniffiClonePointer(),
-                                                                      FfiConverterSequenceUInt8.lower(encoded), $0)
-        })
-    }
-
+open func decapsulate(encoded: [UInt8])throws  -> OhttpResponse {
+    return try  FfiConverterTypeOhttpResponse.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+    uniffi_as_ohttp_client_fn_method_ohttpsession_decapsulate(self.uniffiClonePointer(),
+        FfiConverterSequenceUInt8.lower(encoded),$0
+    )
+})
+}
+    
     /**
      * Encapsulate an HTTP request as Binary HTTP and then encrypt that
      * payload using HPKE. The caller is responsible for sending the
      * resulting message to the Relay.
      */
-    open func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8]) throws -> [UInt8] {
-        return try FfiConverterSequenceUInt8.lift(rustCallWithError(FfiConverterTypeOhttpError.lift) {
-            uniffi_as_ohttp_client_fn_method_ohttpsession_encapsulate(self.uniffiClonePointer(),
-                                                                      FfiConverterString.lower(method),
-                                                                      FfiConverterString.lower(scheme),
-                                                                      FfiConverterString.lower(server),
-                                                                      FfiConverterString.lower(endpoint),
-                                                                      FfiConverterDictionaryStringString.lower(headers),
-                                                                      FfiConverterSequenceUInt8.lower(payload), $0)
-        })
-    }
+open func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8])throws  -> [UInt8] {
+    return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+    uniffi_as_ohttp_client_fn_method_ohttpsession_encapsulate(self.uniffiClonePointer(),
+        FfiConverterString.lower(method),
+        FfiConverterString.lower(scheme),
+        FfiConverterString.lower(server),
+        FfiConverterString.lower(endpoint),
+        FfiConverterDictionaryStringString.lower(headers),
+        FfiConverterSequenceUInt8.lower(payload),$0
+    )
+})
+}
+    
+
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeOhttpSession: FfiConverter {
+
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = OhttpSession
 
@@ -567,7 +612,7 @@ public struct FfiConverterTypeOhttpSession: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
+        if (ptr == nil) {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -580,39 +625,54 @@ public struct FfiConverterTypeOhttpSession: FfiConverter {
     }
 }
 
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOhttpSession_lift(_ pointer: UnsafeMutableRawPointer) throws -> OhttpSession {
     return try FfiConverterTypeOhttpSession.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOhttpSession_lower(_ value: OhttpSession) -> UnsafeMutableRawPointer {
     return FfiConverterTypeOhttpSession.lower(value)
 }
+
+
+
 
 /**
  * A testing interface for decrypting and responding to OHTTP messages. This
  * should only be used for testing.
  */
-public protocol OhttpTestServerProtocol: AnyObject {
+public protocol OhttpTestServerProtocol : AnyObject {
+    
     /**
      * Return the unique encryption key config for this instance of test server.
      */
-    func getConfig() -> [UInt8]
-
-    func receive(message: [UInt8]) throws -> TestServerRequest
-
-    func respond(response: OhttpResponse) throws -> [UInt8]
+    func getConfig()  -> [UInt8]
+    
+    func receive(message: [UInt8]) throws  -> TestServerRequest
+    
+    func respond(response: OhttpResponse) throws  -> [UInt8]
+    
 }
-
 /**
  * A testing interface for decrypting and responding to OHTTP messages. This
  * should only be used for testing.
  */
 open class OhttpTestServer:
-    OhttpTestServerProtocol
-{
+    OhttpTestServerProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -620,31 +680,36 @@ open class OhttpTestServer:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_as_ohttp_client_fn_clone_ohttptestserver(self.pointer, $0) }
     }
-
-    public convenience init() {
-        let pointer =
-            try! rustCall {
-                uniffi_as_ohttp_client_fn_constructor_ohttptestserver_new($0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
+public convenience init() {
+    let pointer =
+        try! rustCall() {
+    uniffi_as_ohttp_client_fn_constructor_ohttptestserver_new($0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
 
     deinit {
         guard let pointer = pointer else {
@@ -654,31 +719,43 @@ open class OhttpTestServer:
         try! rustCall { uniffi_as_ohttp_client_fn_free_ohttptestserver(pointer, $0) }
     }
 
+    
+
+    
     /**
      * Return the unique encryption key config for this instance of test server.
      */
-    open func getConfig() -> [UInt8] {
-        return try! FfiConverterSequenceUInt8.lift(try! rustCall {
-            uniffi_as_ohttp_client_fn_method_ohttptestserver_get_config(self.uniffiClonePointer(), $0)
-        })
-    }
+open func getConfig() -> [UInt8] {
+    return try!  FfiConverterSequenceUInt8.lift(try! rustCall() {
+    uniffi_as_ohttp_client_fn_method_ohttptestserver_get_config(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func receive(message: [UInt8])throws  -> TestServerRequest {
+    return try  FfiConverterTypeTestServerRequest.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+    uniffi_as_ohttp_client_fn_method_ohttptestserver_receive(self.uniffiClonePointer(),
+        FfiConverterSequenceUInt8.lower(message),$0
+    )
+})
+}
+    
+open func respond(response: OhttpResponse)throws  -> [UInt8] {
+    return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+    uniffi_as_ohttp_client_fn_method_ohttptestserver_respond(self.uniffiClonePointer(),
+        FfiConverterTypeOhttpResponse.lower(response),$0
+    )
+})
+}
+    
 
-    open func receive(message: [UInt8]) throws -> TestServerRequest {
-        return try FfiConverterTypeTestServerRequest.lift(rustCallWithError(FfiConverterTypeOhttpError.lift) {
-            uniffi_as_ohttp_client_fn_method_ohttptestserver_receive(self.uniffiClonePointer(),
-                                                                     FfiConverterSequenceUInt8.lower(message), $0)
-        })
-    }
-
-    open func respond(response: OhttpResponse) throws -> [UInt8] {
-        return try FfiConverterSequenceUInt8.lift(rustCallWithError(FfiConverterTypeOhttpError.lift) {
-            uniffi_as_ohttp_client_fn_method_ohttptestserver_respond(self.uniffiClonePointer(),
-                                                                     FfiConverterTypeOhttpResponse.lower(response), $0)
-        })
-    }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeOhttpTestServer: FfiConverter {
+
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = OhttpTestServer
 
@@ -695,7 +772,7 @@ public struct FfiConverterTypeOhttpTestServer: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
+        if (ptr == nil) {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -708,13 +785,23 @@ public struct FfiConverterTypeOhttpTestServer: FfiConverter {
     }
 }
 
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOhttpTestServer_lift(_ pointer: UnsafeMutableRawPointer) throws -> OhttpTestServer {
     return try FfiConverterTypeOhttpTestServer.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOhttpTestServer_lower(_ value: OhttpTestServer) -> UnsafeMutableRawPointer {
     return FfiConverterTypeOhttpTestServer.lower(value)
 }
+
 
 /**
  * The decrypted response from the Gateway/Target
@@ -733,8 +820,10 @@ public struct OhttpResponse {
     }
 }
 
+
+
 extension OhttpResponse: Equatable, Hashable {
-    public static func == (lhs: OhttpResponse, rhs: OhttpResponse) -> Bool {
+    public static func ==(lhs: OhttpResponse, rhs: OhttpResponse) -> Bool {
         if lhs.statusCode != rhs.statusCode {
             return false
         }
@@ -754,14 +843,18 @@ extension OhttpResponse: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeOhttpResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OhttpResponse {
         return
             try OhttpResponse(
-                statusCode: FfiConverterUInt16.read(from: &buf),
-                headers: FfiConverterDictionaryStringString.read(from: &buf),
+                statusCode: FfiConverterUInt16.read(from: &buf), 
+                headers: FfiConverterDictionaryStringString.read(from: &buf), 
                 payload: FfiConverterSequenceUInt8.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: OhttpResponse, into buf: inout [UInt8]) {
@@ -771,13 +864,21 @@ public struct FfiConverterTypeOhttpResponse: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOhttpResponse_lift(_ buf: RustBuffer) throws -> OhttpResponse {
     return try FfiConverterTypeOhttpResponse.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeOhttpResponse_lower(_ value: OhttpResponse) -> RustBuffer {
     return FfiConverterTypeOhttpResponse.lower(value)
 }
+
 
 public struct TestServerRequest {
     public var method: String
@@ -799,8 +900,10 @@ public struct TestServerRequest {
     }
 }
 
+
+
 extension TestServerRequest: Equatable, Hashable {
-    public static func == (lhs: TestServerRequest, rhs: TestServerRequest) -> Bool {
+    public static func ==(lhs: TestServerRequest, rhs: TestServerRequest) -> Bool {
         if lhs.method != rhs.method {
             return false
         }
@@ -832,17 +935,21 @@ extension TestServerRequest: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeTestServerRequest: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> TestServerRequest {
         return
             try TestServerRequest(
-                method: FfiConverterString.read(from: &buf),
-                scheme: FfiConverterString.read(from: &buf),
-                server: FfiConverterString.read(from: &buf),
-                endpoint: FfiConverterString.read(from: &buf),
-                headers: FfiConverterDictionaryStringString.read(from: &buf),
+                method: FfiConverterString.read(from: &buf), 
+                scheme: FfiConverterString.read(from: &buf), 
+                server: FfiConverterString.read(from: &buf), 
+                endpoint: FfiConverterString.read(from: &buf), 
+                headers: FfiConverterDictionaryStringString.read(from: &buf), 
                 payload: FfiConverterSequenceUInt8.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: TestServerRequest, into buf: inout [UInt8]) {
@@ -855,69 +962,90 @@ public struct FfiConverterTypeTestServerRequest: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTestServerRequest_lift(_ buf: RustBuffer) throws -> TestServerRequest {
     return try FfiConverterTypeTestServerRequest.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeTestServerRequest_lower(_ value: TestServerRequest) -> RustBuffer {
     return FfiConverterTypeTestServerRequest.lower(value)
 }
 
+
 public enum OhttpError {
+
+    
+    
     case KeyFetchFailed(message: String)
-
+    
     case MalformedKeyConfig(message: String)
-
+    
     case UnsupportedKeyConfig(message: String)
-
+    
     case InvalidSession(message: String)
-
+    
     case RelayFailed(message: String)
-
+    
     case CannotEncodeMessage(message: String)
-
+    
     case MalformedMessage(message: String)
-
+    
     case DuplicateHeaders(message: String)
+    
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeOhttpError: FfiConverterRustBuffer {
     typealias SwiftType = OhttpError
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> OhttpError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .KeyFetchFailed(
-                message: FfiConverterString.read(from: &buf)
-            )
 
-        case 2: return try .MalformedKeyConfig(
-                message: FfiConverterString.read(from: &buf)
-            )
+        
 
-        case 3: return try .UnsupportedKeyConfig(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 4: return try .InvalidSession(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 5: return try .RelayFailed(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 6: return try .CannotEncodeMessage(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 7: return try .MalformedMessage(
-                message: FfiConverterString.read(from: &buf)
-            )
-
-        case 8: return try .DuplicateHeaders(
-                message: FfiConverterString.read(from: &buf)
-            )
+        
+        case 1: return .KeyFetchFailed(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 2: return .MalformedKeyConfig(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 3: return .UnsupportedKeyConfig(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 4: return .InvalidSession(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 5: return .RelayFailed(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 6: return .CannotEncodeMessage(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 7: return .MalformedMessage(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+        case 8: return .DuplicateHeaders(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -925,25 +1053,32 @@ public struct FfiConverterTypeOhttpError: FfiConverterRustBuffer {
 
     public static func write(_ value: OhttpError, into buf: inout [UInt8]) {
         switch value {
-        case .KeyFetchFailed(_ /* message is ignored*/ ):
+
+        
+
+        
+        case .KeyFetchFailed(_ /* message is ignored*/):
             writeInt(&buf, Int32(1))
-        case .MalformedKeyConfig(_ /* message is ignored*/ ):
+        case .MalformedKeyConfig(_ /* message is ignored*/):
             writeInt(&buf, Int32(2))
-        case .UnsupportedKeyConfig(_ /* message is ignored*/ ):
+        case .UnsupportedKeyConfig(_ /* message is ignored*/):
             writeInt(&buf, Int32(3))
-        case .InvalidSession(_ /* message is ignored*/ ):
+        case .InvalidSession(_ /* message is ignored*/):
             writeInt(&buf, Int32(4))
-        case .RelayFailed(_ /* message is ignored*/ ):
+        case .RelayFailed(_ /* message is ignored*/):
             writeInt(&buf, Int32(5))
-        case .CannotEncodeMessage(_ /* message is ignored*/ ):
+        case .CannotEncodeMessage(_ /* message is ignored*/):
             writeInt(&buf, Int32(6))
-        case .MalformedMessage(_ /* message is ignored*/ ):
+        case .MalformedMessage(_ /* message is ignored*/):
             writeInt(&buf, Int32(7))
-        case .DuplicateHeaders(_ /* message is ignored*/ ):
+        case .DuplicateHeaders(_ /* message is ignored*/):
             writeInt(&buf, Int32(8))
+
+        
         }
     }
 }
+
 
 extension OhttpError: Equatable, Hashable {}
 
@@ -953,7 +1088,10 @@ extension OhttpError: Foundation.LocalizedError {
     }
 }
 
-private struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
     typealias SwiftType = [UInt8]
 
     public static func write(_ value: [UInt8], into buf: inout [UInt8]) {
@@ -969,13 +1107,16 @@ private struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
         var seq = [UInt8]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterUInt8.read(from: &buf))
+            seq.append(try FfiConverterUInt8.read(from: &buf))
         }
         return seq
     }
 }
 
-private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
     public static func write(_ value: [String: String], into buf: inout [UInt8]) {
         let len = Int32(value.count)
         writeInt(&buf, len)
@@ -989,7 +1130,7 @@ private struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
         let len: Int32 = try readInt(&buf)
         var dict = [String: String]()
         dict.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
+        for _ in 0..<len {
             let key = try FfiConverterString.read(from: &buf)
             let value = try FfiConverterString.read(from: &buf)
             dict[key] = value
@@ -1003,7 +1144,6 @@ private enum InitializationResult {
     case contractVersionMismatch
     case apiChecksumMismatch
 }
-
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
 private var initializationResult: InitializationResult = {
@@ -1014,25 +1154,25 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttpsession_decapsulate() != 16642 {
+    if (uniffi_as_ohttp_client_checksum_method_ohttpsession_decapsulate() != 16642) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttpsession_encapsulate() != 33112 {
+    if (uniffi_as_ohttp_client_checksum_method_ohttpsession_encapsulate() != 33112) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_get_config() != 41388 {
+    if (uniffi_as_ohttp_client_checksum_method_ohttptestserver_get_config() != 41388) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_receive() != 56163 {
+    if (uniffi_as_ohttp_client_checksum_method_ohttptestserver_receive() != 56163) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_method_ohttptestserver_respond() != 21845 {
+    if (uniffi_as_ohttp_client_checksum_method_ohttptestserver_respond() != 21845) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_constructor_ohttpsession_new() != 63666 {
+    if (uniffi_as_ohttp_client_checksum_constructor_ohttpsession_new() != 63666) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_as_ohttp_client_checksum_constructor_ohttptestserver_new() != 42944 {
+    if (uniffi_as_ohttp_client_checksum_constructor_ohttptestserver_new() != 42944) {
         return InitializationResult.apiChecksumMismatch
     }
 

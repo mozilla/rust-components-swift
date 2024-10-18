@@ -8,10 +8,10 @@ import Foundation
 // might be in a separate module, or it might be compiled inline into
 // this module. This is a bit of light hackery to work with both.
 #if canImport(MozillaRustComponents)
-    import MozillaRustComponents
+import MozillaRustComponents
 #endif
 
-private extension RustBuffer {
+fileprivate extension RustBuffer {
     // Allocate a new buffer, copying the contents of a `UInt8` array.
     init(bytes: [UInt8]) {
         let rbuf = bytes.withUnsafeBufferPointer { ptr in
@@ -21,7 +21,7 @@ private extension RustBuffer {
     }
 
     static func empty() -> RustBuffer {
-        RustBuffer(capacity: 0, len: 0, data: nil)
+        RustBuffer(capacity: 0, len:0, data: nil)
     }
 
     static func from(_ ptr: UnsafeBufferPointer<UInt8>) -> RustBuffer {
@@ -35,7 +35,7 @@ private extension RustBuffer {
     }
 }
 
-private extension ForeignBytes {
+fileprivate extension ForeignBytes {
     init(bufferPointer: UnsafeBufferPointer<UInt8>) {
         self.init(len: Int32(bufferPointer.count), data: bufferPointer.baseAddress)
     }
@@ -48,11 +48,13 @@ private extension ForeignBytes {
 // Helper classes/extensions that don't change.
 // Someday, this will be in a library of its own.
 
-private extension Data {
+fileprivate extension Data {
     init(rustBuffer: RustBuffer) {
-        // TODO: This copies the buffer. Can we read directly from a
-        // Rust buffer?
-        self.init(bytes: rustBuffer.data!, count: Int(rustBuffer.len))
+        self.init(
+            bytesNoCopy: rustBuffer.data!,
+            count: Int(rustBuffer.len),
+            deallocator: .none
+        )
     }
 }
 
@@ -70,15 +72,15 @@ private extension Data {
 //
 // Instead, the read() method and these helper functions input a tuple of data
 
-private func createReader(data: Data) -> (data: Data, offset: Data.Index) {
+fileprivate func createReader(data: Data) -> (data: Data, offset: Data.Index) {
     (data: data, offset: 0)
 }
 
 // Reads an integer at the current offset, in big-endian order, and advances
 // the offset on success. Throws if reading the integer would move the
 // offset past the end of the buffer.
-private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
-    let range = reader.offset ..< reader.offset + MemoryLayout<T>.size
+fileprivate func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: Data.Index)) throws -> T {
+    let range = reader.offset..<reader.offset + MemoryLayout<T>.size
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
@@ -88,38 +90,38 @@ private func readInt<T: FixedWidthInteger>(_ reader: inout (data: Data, offset: 
         return value as! T
     }
     var value: T = 0
-    let _ = withUnsafeMutableBytes(of: &value) { reader.data.copyBytes(to: $0, from: range) }
+    let _ = withUnsafeMutableBytes(of: &value, { reader.data.copyBytes(to: $0, from: range)})
     reader.offset = range.upperBound
     return value.bigEndian
 }
 
 // Reads an arbitrary number of bytes, to be used to read
 // raw bytes, this is useful when lifting strings
-private func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> [UInt8] {
-    let range = reader.offset ..< (reader.offset + count)
+fileprivate func readBytes(_ reader: inout (data: Data, offset: Data.Index), count: Int) throws -> Array<UInt8> {
+    let range = reader.offset..<(reader.offset+count)
     guard reader.data.count >= range.upperBound else {
         throw UniffiInternalError.bufferOverflow
     }
     var value = [UInt8](repeating: 0, count: count)
-    value.withUnsafeMutableBufferPointer { buffer in
+    value.withUnsafeMutableBufferPointer({ buffer in
         reader.data.copyBytes(to: buffer, from: range)
-    }
+    })
     reader.offset = range.upperBound
     return value
 }
 
 // Reads a float at the current offset.
-private func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
-    return try Float(bitPattern: readInt(&reader))
+fileprivate func readFloat(_ reader: inout (data: Data, offset: Data.Index)) throws -> Float {
+    return Float(bitPattern: try readInt(&reader))
 }
 
 // Reads a float at the current offset.
-private func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
-    return try Double(bitPattern: readInt(&reader))
+fileprivate func readDouble(_ reader: inout (data: Data, offset: Data.Index)) throws -> Double {
+    return Double(bitPattern: try readInt(&reader))
 }
 
 // Indicates if the offset has reached the end of the buffer.
-private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
+fileprivate func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
     return reader.offset < reader.data.count
 }
 
@@ -127,11 +129,11 @@ private func hasRemaining(_ reader: (data: Data, offset: Data.Index)) -> Bool {
 // struct, but we use standalone functions instead in order to make external
 // types work.  See the above discussion on Readers for details.
 
-private func createWriter() -> [UInt8] {
+fileprivate func createWriter() -> [UInt8] {
     return []
 }
 
-private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
+fileprivate func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Sequence, S.Element == UInt8 {
     writer.append(contentsOf: byteArr)
 }
 
@@ -139,22 +141,22 @@ private func writeBytes<S>(_ writer: inout [UInt8], _ byteArr: S) where S: Seque
 //
 // Warning: make sure what you are trying to write
 // is in the correct type!
-private func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
+fileprivate func writeInt<T: FixedWidthInteger>(_ writer: inout [UInt8], _ value: T) {
     var value = value.bigEndian
     withUnsafeBytes(of: &value) { writer.append(contentsOf: $0) }
 }
 
-private func writeFloat(_ writer: inout [UInt8], _ value: Float) {
+fileprivate func writeFloat(_ writer: inout [UInt8], _ value: Float) {
     writeInt(&writer, value.bitPattern)
 }
 
-private func writeDouble(_ writer: inout [UInt8], _ value: Double) {
+fileprivate func writeDouble(_ writer: inout [UInt8], _ value: Double) {
     writeInt(&writer, value.bitPattern)
 }
 
 // Protocol for types that transfer other types across the FFI. This is
 // analogous to the Rust trait of the same name.
-private protocol FfiConverter {
+fileprivate protocol FfiConverter {
     associatedtype FfiType
     associatedtype SwiftType
 
@@ -165,13 +167,19 @@ private protocol FfiConverter {
 }
 
 // Types conforming to `Primitive` pass themselves directly over the FFI.
-private protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType {}
+fileprivate protocol FfiConverterPrimitive: FfiConverter where FfiType == SwiftType { }
 
 extension FfiConverterPrimitive {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ value: FfiType) throws -> SwiftType {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> FfiType {
         return value
     }
@@ -179,9 +187,12 @@ extension FfiConverterPrimitive {
 
 // Types conforming to `FfiConverterRustBuffer` lift and lower into a `RustBuffer`.
 // Used for complex types where it's hard to write a custom lift/lower.
-private protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
+fileprivate protocol FfiConverterRustBuffer: FfiConverter where FfiType == RustBuffer {}
 
 extension FfiConverterRustBuffer {
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lift(_ buf: RustBuffer) throws -> SwiftType {
         var reader = createReader(data: Data(rustBuffer: buf))
         let value = try read(from: &reader)
@@ -192,16 +203,18 @@ extension FfiConverterRustBuffer {
         return value
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public static func lower(_ value: SwiftType) -> RustBuffer {
-        var writer = createWriter()
-        write(value, into: &writer)
-        return RustBuffer(bytes: writer)
+          var writer = createWriter()
+          write(value, into: &writer)
+          return RustBuffer(bytes: writer)
     }
 }
-
 // An error type for FFI errors. These errors occur at the UniFFI level, not
 // the library level.
-private enum UniffiInternalError: LocalizedError {
+fileprivate enum UniffiInternalError: LocalizedError {
     case bufferOverflow
     case incompleteData
     case unexpectedOptionalTag
@@ -227,24 +240,24 @@ private enum UniffiInternalError: LocalizedError {
     }
 }
 
-private extension NSLock {
+fileprivate extension NSLock {
     func withLock<T>(f: () throws -> T) rethrows -> T {
-        lock()
+        self.lock()
         defer { self.unlock() }
         return try f()
     }
 }
 
-private let CALL_SUCCESS: Int8 = 0
-private let CALL_ERROR: Int8 = 1
-private let CALL_UNEXPECTED_ERROR: Int8 = 2
-private let CALL_CANCELLED: Int8 = 3
+fileprivate let CALL_SUCCESS: Int8 = 0
+fileprivate let CALL_ERROR: Int8 = 1
+fileprivate let CALL_UNEXPECTED_ERROR: Int8 = 2
+fileprivate let CALL_CANCELLED: Int8 = 3
 
-private extension RustCallStatus {
+fileprivate extension RustCallStatus {
     init() {
         self.init(
             code: CALL_SUCCESS,
-            errorBuf: RustBuffer(
+            errorBuf: RustBuffer.init(
                 capacity: 0,
                 len: 0,
                 data: nil
@@ -260,8 +273,7 @@ private func rustCall<T>(_ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
 
 private func rustCallWithError<T, E: Swift.Error>(
     _ errorHandler: @escaping (RustBuffer) throws -> E,
-    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T
-) throws -> T {
+    _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T) throws -> T {
     try makeRustCall(callback, errorHandler: errorHandler)
 }
 
@@ -270,7 +282,7 @@ private func makeRustCall<T, E: Swift.Error>(
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
     uniffiEnsureInitialized()
-    var callStatus = RustCallStatus()
+    var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
     return returnedVal
@@ -281,44 +293,44 @@ private func uniffiCheckCallStatus<E: Swift.Error>(
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws {
     switch callStatus.code {
-    case CALL_SUCCESS:
-        return
+        case CALL_SUCCESS:
+            return
 
-    case CALL_ERROR:
-        if let errorHandler = errorHandler {
-            throw try errorHandler(callStatus.errorBuf)
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.unexpectedRustCallError
-        }
+        case CALL_ERROR:
+            if let errorHandler = errorHandler {
+                throw try errorHandler(callStatus.errorBuf)
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.unexpectedRustCallError
+            }
 
-    case CALL_UNEXPECTED_ERROR:
-        // When the rust code sees a panic, it tries to construct a RustBuffer
-        // with the message.  But if that code panics, then it just sends back
-        // an empty buffer.
-        if callStatus.errorBuf.len > 0 {
-            throw try UniffiInternalError.rustPanic(FfiConverterString.lift(callStatus.errorBuf))
-        } else {
-            callStatus.errorBuf.deallocate()
-            throw UniffiInternalError.rustPanic("Rust panic")
-        }
+        case CALL_UNEXPECTED_ERROR:
+            // When the rust code sees a panic, it tries to construct a RustBuffer
+            // with the message.  But if that code panics, then it just sends back
+            // an empty buffer.
+            if callStatus.errorBuf.len > 0 {
+                throw UniffiInternalError.rustPanic(try FfiConverterString.lift(callStatus.errorBuf))
+            } else {
+                callStatus.errorBuf.deallocate()
+                throw UniffiInternalError.rustPanic("Rust panic")
+            }
 
-    case CALL_CANCELLED:
-        fatalError("Cancellation not supported yet")
+        case CALL_CANCELLED:
+            fatalError("Cancellation not supported yet")
 
-    default:
-        throw UniffiInternalError.unexpectedRustCallStatusCode
+        default:
+            throw UniffiInternalError.unexpectedRustCallStatusCode
     }
 }
 
 private func uniffiTraitInterfaceCall<T>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void
+    writeReturn: (T) -> ()
 ) {
     do {
         try writeReturn(makeCall())
-    } catch {
+    } catch let error {
         callStatus.pointee.code = CALL_UNEXPECTED_ERROR
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
@@ -327,7 +339,7 @@ private func uniffiTraitInterfaceCall<T>(
 private func uniffiTraitInterfaceCallWithError<T, E>(
     callStatus: UnsafeMutablePointer<RustCallStatus>,
     makeCall: () throws -> T,
-    writeReturn: (T) -> Void,
+    writeReturn: (T) -> (),
     lowerError: (E) -> RustBuffer
 ) {
     do {
@@ -340,8 +352,7 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-
-private class UniffiHandleMap<T> {
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
     private let lock = NSLock()
     private var currentHandle: UInt64 = 1
@@ -355,7 +366,7 @@ private class UniffiHandleMap<T> {
         }
     }
 
-    func get(handle: UInt64) throws -> T {
+     func get(handle: UInt64) throws -> T {
         try lock.withLock {
             guard let obj = map[handle] else {
                 throw UniffiInternalError.unexpectedStaleHandle
@@ -375,13 +386,19 @@ private class UniffiHandleMap<T> {
     }
 
     var count: Int {
-        map.count
+        get {
+            map.count
+        }
     }
 }
 
 // Public interface members begin here.
 
-private struct FfiConverterUInt64: FfiConverterPrimitive {
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
 
@@ -394,7 +411,10 @@ private struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 }
 
-private struct FfiConverterBool: FfiConverter {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
 
@@ -415,7 +435,10 @@ private struct FfiConverterBool: FfiConverter {
     }
 }
 
-private struct FfiConverterString: FfiConverter {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
 
@@ -443,7 +466,7 @@ private struct FfiConverterString: FfiConverter {
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> String {
         let len: Int32 = try readInt(&buf)
-        return try String(bytes: readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
+        return String(bytes: try readBytes(&buf, count: Int(len)), encoding: String.Encoding.utf8)!
     }
 
     public static func write(_ value: String, into buf: inout [UInt8]) {
@@ -453,30 +476,36 @@ private struct FfiConverterString: FfiConverter {
     }
 }
 
-public protocol RemoteSettingsProtocol: AnyObject {
+
+
+
+public protocol RemoteSettingsProtocol : AnyObject {
+    
     /**
      * Download an attachment with the provided id to the provided path.
      */
-    func downloadAttachmentToPath(attachmentId: String, path: String) throws
-
+    func downloadAttachmentToPath(attachmentId: String, path: String) throws 
+    
     /**
      * Fetch all records for the configuration this client was initialized with.
      */
-    func getRecords() throws -> RemoteSettingsResponse
-
+    func getRecords() throws  -> RemoteSettingsResponse
+    
     /**
      * Fetch all records added to the server since the provided timestamp,
      * using the configuration this client was initialized with.
      */
-    func getRecordsSince(timestamp: UInt64) throws -> RemoteSettingsResponse
+    func getRecordsSince(timestamp: UInt64) throws  -> RemoteSettingsResponse
+    
 }
-
 open class RemoteSettings:
-    RemoteSettingsProtocol
-{
+    RemoteSettingsProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public struct NoPointer {
         public init() {}
     }
@@ -484,35 +513,40 @@ open class RemoteSettings:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-    public required init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
+    required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
 
-    /// This constructor can be used to instantiate a fake object.
-    /// - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
-    ///
-    /// - Warning:
-    ///     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
-    public init(noPointer _: NoPointer) {
-        pointer = nil
+    // This constructor can be used to instantiate a fake object.
+    // - Parameter noPointer: Placeholder value so we can have a constructor separate from the default empty one that may be implemented for classes extending [FFIObject].
+    //
+    // - Warning:
+    //     Any object instantiated with this constructor cannot be passed to an actual Rust-backed object. Since there isn't a backing [Pointer] the FFI lower functions will crash.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
+    public init(noPointer: NoPointer) {
+        self.pointer = nil
     }
 
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_remote_settings_fn_clone_remotesettings(self.pointer, $0) }
     }
-
     /**
      * Construct a new Remote Settings client with the given configuration.
      */
-    public convenience init(remoteSettingsConfig: RemoteSettingsConfig) throws {
-        let pointer =
-            try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
-                uniffi_remote_settings_fn_constructor_remotesettings_new(
-                    FfiConverterTypeRemoteSettingsConfig.lower(remoteSettingsConfig), $0
-                )
-            }
-        self.init(unsafeFromRawPointer: pointer)
-    }
+public convenience init(remoteSettingsConfig: RemoteSettingsConfig)throws  {
+    let pointer =
+        try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+    uniffi_remote_settings_fn_constructor_remotesettings_new(
+        FfiConverterTypeRemoteSettingsConfig.lower(remoteSettingsConfig),$0
+    )
+}
+    self.init(unsafeFromRawPointer: pointer)
+}
 
     deinit {
         guard let pointer = pointer else {
@@ -522,38 +556,50 @@ open class RemoteSettings:
         try! rustCall { uniffi_remote_settings_fn_free_remotesettings(pointer, $0) }
     }
 
+    
+
+    
     /**
      * Download an attachment with the provided id to the provided path.
      */
-    open func downloadAttachmentToPath(attachmentId: String, path: String) throws { try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
-        uniffi_remote_settings_fn_method_remotesettings_download_attachment_to_path(self.uniffiClonePointer(),
-                                                                                    FfiConverterString.lower(attachmentId),
-                                                                                    FfiConverterString.lower(path), $0)
-    }
-    }
-
+open func downloadAttachmentToPath(attachmentId: String, path: String)throws  {try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+    uniffi_remote_settings_fn_method_remotesettings_download_attachment_to_path(self.uniffiClonePointer(),
+        FfiConverterString.lower(attachmentId),
+        FfiConverterString.lower(path),$0
+    )
+}
+}
+    
     /**
      * Fetch all records for the configuration this client was initialized with.
      */
-    open func getRecords() throws -> RemoteSettingsResponse {
-        return try FfiConverterTypeRemoteSettingsResponse.lift(rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
-            uniffi_remote_settings_fn_method_remotesettings_get_records(self.uniffiClonePointer(), $0)
-        })
-    }
-
+open func getRecords()throws  -> RemoteSettingsResponse {
+    return try  FfiConverterTypeRemoteSettingsResponse.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+    uniffi_remote_settings_fn_method_remotesettings_get_records(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
     /**
      * Fetch all records added to the server since the provided timestamp,
      * using the configuration this client was initialized with.
      */
-    open func getRecordsSince(timestamp: UInt64) throws -> RemoteSettingsResponse {
-        return try FfiConverterTypeRemoteSettingsResponse.lift(rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
-            uniffi_remote_settings_fn_method_remotesettings_get_records_since(self.uniffiClonePointer(),
-                                                                              FfiConverterUInt64.lower(timestamp), $0)
-        })
-    }
+open func getRecordsSince(timestamp: UInt64)throws  -> RemoteSettingsResponse {
+    return try  FfiConverterTypeRemoteSettingsResponse.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+    uniffi_remote_settings_fn_method_remotesettings_get_records_since(self.uniffiClonePointer(),
+        FfiConverterUInt64.lower(timestamp),$0
+    )
+})
+}
+    
+
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeRemoteSettings: FfiConverter {
+
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = RemoteSettings
 
@@ -570,7 +616,7 @@ public struct FfiConverterTypeRemoteSettings: FfiConverter {
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
         let ptr = UnsafeMutableRawPointer(bitPattern: UInt(truncatingIfNeeded: v))
-        if ptr == nil {
+        if (ptr == nil) {
             throw UniffiInternalError.unexpectedNullPointer
         }
         return try lift(ptr!)
@@ -583,13 +629,23 @@ public struct FfiConverterTypeRemoteSettings: FfiConverter {
     }
 }
 
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettings_lift(_ pointer: UnsafeMutableRawPointer) throws -> RemoteSettings {
     return try FfiConverterTypeRemoteSettings.lift(pointer)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettings_lower(_ value: RemoteSettings) -> UnsafeMutableRawPointer {
     return FfiConverterTypeRemoteSettings.lower(value)
 }
+
 
 public struct Attachment {
     public var filename: String
@@ -609,8 +665,10 @@ public struct Attachment {
     }
 }
 
+
+
 extension Attachment: Equatable, Hashable {
-    public static func == (lhs: Attachment, rhs: Attachment) -> Bool {
+    public static func ==(lhs: Attachment, rhs: Attachment) -> Bool {
         if lhs.filename != rhs.filename {
             return false
         }
@@ -638,16 +696,20 @@ extension Attachment: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeAttachment: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Attachment {
         return
             try Attachment(
-                filename: FfiConverterString.read(from: &buf),
-                mimetype: FfiConverterString.read(from: &buf),
-                location: FfiConverterString.read(from: &buf),
-                hash: FfiConverterString.read(from: &buf),
+                filename: FfiConverterString.read(from: &buf), 
+                mimetype: FfiConverterString.read(from: &buf), 
+                location: FfiConverterString.read(from: &buf), 
+                hash: FfiConverterString.read(from: &buf), 
                 size: FfiConverterUInt64.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: Attachment, into buf: inout [UInt8]) {
@@ -659,13 +721,21 @@ public struct FfiConverterTypeAttachment: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAttachment_lift(_ buf: RustBuffer) throws -> Attachment {
     return try FfiConverterTypeAttachment.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeAttachment_lower(_ value: Attachment) -> RustBuffer {
     return FfiConverterTypeAttachment.lower(value)
 }
+
 
 public struct RemoteSettingsConfig {
     public var collectionName: String
@@ -683,8 +753,10 @@ public struct RemoteSettingsConfig {
     }
 }
 
+
+
 extension RemoteSettingsConfig: Equatable, Hashable {
-    public static func == (lhs: RemoteSettingsConfig, rhs: RemoteSettingsConfig) -> Bool {
+    public static func ==(lhs: RemoteSettingsConfig, rhs: RemoteSettingsConfig) -> Bool {
         if lhs.collectionName != rhs.collectionName {
             return false
         }
@@ -708,15 +780,19 @@ extension RemoteSettingsConfig: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeRemoteSettingsConfig: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsConfig {
         return
             try RemoteSettingsConfig(
-                collectionName: FfiConverterString.read(from: &buf),
-                bucketName: FfiConverterOptionString.read(from: &buf),
-                serverUrl: FfiConverterOptionString.read(from: &buf),
+                collectionName: FfiConverterString.read(from: &buf), 
+                bucketName: FfiConverterOptionString.read(from: &buf), 
+                serverUrl: FfiConverterOptionString.read(from: &buf), 
                 server: FfiConverterOptionTypeRemoteSettingsServer.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: RemoteSettingsConfig, into buf: inout [UInt8]) {
@@ -727,13 +803,21 @@ public struct FfiConverterTypeRemoteSettingsConfig: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsConfig_lift(_ buf: RustBuffer) throws -> RemoteSettingsConfig {
     return try FfiConverterTypeRemoteSettingsConfig.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsConfig_lower(_ value: RemoteSettingsConfig) -> RustBuffer {
     return FfiConverterTypeRemoteSettingsConfig.lower(value)
 }
+
 
 public struct RemoteSettingsRecord {
     public var id: String
@@ -753,8 +837,10 @@ public struct RemoteSettingsRecord {
     }
 }
 
+
+
 extension RemoteSettingsRecord: Equatable, Hashable {
-    public static func == (lhs: RemoteSettingsRecord, rhs: RemoteSettingsRecord) -> Bool {
+    public static func ==(lhs: RemoteSettingsRecord, rhs: RemoteSettingsRecord) -> Bool {
         if lhs.id != rhs.id {
             return false
         }
@@ -782,16 +868,20 @@ extension RemoteSettingsRecord: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeRemoteSettingsRecord: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsRecord {
         return
             try RemoteSettingsRecord(
-                id: FfiConverterString.read(from: &buf),
-                lastModified: FfiConverterUInt64.read(from: &buf),
-                deleted: FfiConverterBool.read(from: &buf),
-                attachment: FfiConverterOptionTypeAttachment.read(from: &buf),
+                id: FfiConverterString.read(from: &buf), 
+                lastModified: FfiConverterUInt64.read(from: &buf), 
+                deleted: FfiConverterBool.read(from: &buf), 
+                attachment: FfiConverterOptionTypeAttachment.read(from: &buf), 
                 fields: FfiConverterTypeRsJsonObject.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: RemoteSettingsRecord, into buf: inout [UInt8]) {
@@ -803,13 +893,21 @@ public struct FfiConverterTypeRemoteSettingsRecord: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsRecord_lift(_ buf: RustBuffer) throws -> RemoteSettingsRecord {
     return try FfiConverterTypeRemoteSettingsRecord.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsRecord_lower(_ value: RemoteSettingsRecord) -> RustBuffer {
     return FfiConverterTypeRemoteSettingsRecord.lower(value)
 }
+
 
 public struct RemoteSettingsResponse {
     public var records: [RemoteSettingsRecord]
@@ -823,8 +921,10 @@ public struct RemoteSettingsResponse {
     }
 }
 
+
+
 extension RemoteSettingsResponse: Equatable, Hashable {
-    public static func == (lhs: RemoteSettingsResponse, rhs: RemoteSettingsResponse) -> Bool {
+    public static func ==(lhs: RemoteSettingsResponse, rhs: RemoteSettingsResponse) -> Bool {
         if lhs.records != rhs.records {
             return false
         }
@@ -840,13 +940,17 @@ extension RemoteSettingsResponse: Equatable, Hashable {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeRemoteSettingsResponse: FfiConverterRustBuffer {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsResponse {
         return
             try RemoteSettingsResponse(
-                records: FfiConverterSequenceTypeRemoteSettingsRecord.read(from: &buf),
+                records: FfiConverterSequenceTypeRemoteSettingsRecord.read(from: &buf), 
                 lastModified: FfiConverterUInt64.read(from: &buf)
-            )
+        )
     }
 
     public static func write(_ value: RemoteSettingsResponse, into buf: inout [UInt8]) {
@@ -855,15 +959,26 @@ public struct FfiConverterTypeRemoteSettingsResponse: FfiConverterRustBuffer {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsResponse_lift(_ buf: RustBuffer) throws -> RemoteSettingsResponse {
     return try FfiConverterTypeRemoteSettingsResponse.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsResponse_lower(_ value: RemoteSettingsResponse) -> RustBuffer {
     return FfiConverterTypeRemoteSettingsResponse.lower(value)
 }
 
+
 public enum RemoteSettingsError {
+
+    
+    
     case Network(reason: String
     )
     case Backoff(seconds: UInt64
@@ -872,42 +987,59 @@ public enum RemoteSettingsError {
     )
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
     typealias SwiftType = RemoteSettingsError
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsError {
         let variant: Int32 = try readInt(&buf)
         switch variant {
-        case 1: return try .Network(
-                reason: FfiConverterString.read(from: &buf)
+
+        
+
+        
+        case 1: return .Network(
+            reason: try FfiConverterString.read(from: &buf)
             )
-        case 2: return try .Backoff(
-                seconds: FfiConverterUInt64.read(from: &buf)
+        case 2: return .Backoff(
+            seconds: try FfiConverterUInt64.read(from: &buf)
             )
-        case 3: return try .Other(
-                reason: FfiConverterString.read(from: &buf)
+        case 3: return .Other(
+            reason: try FfiConverterString.read(from: &buf)
             )
 
-        default: throw UniffiInternalError.unexpectedEnumCase
+         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RemoteSettingsError, into buf: inout [UInt8]) {
         switch value {
+
+        
+
+        
+        
         case let .Network(reason):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(reason, into: &buf)
-
+            
+        
         case let .Backoff(seconds):
             writeInt(&buf, Int32(2))
             FfiConverterUInt64.write(seconds, into: &buf)
-
+            
+        
         case let .Other(reason):
             writeInt(&buf, Int32(3))
             FfiConverterString.write(reason, into: &buf)
+            
         }
     }
 }
+
 
 extension RemoteSettingsError: Equatable, Hashable {}
 
@@ -921,6 +1053,7 @@ extension RemoteSettingsError: Foundation.LocalizedError {
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
 public enum RemoteSettingsServer {
+    
     case prod
     case stage
     case dev
@@ -928,54 +1061,79 @@ public enum RemoteSettingsServer {
     )
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeRemoteSettingsServer: FfiConverterRustBuffer {
     typealias SwiftType = RemoteSettingsServer
 
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RemoteSettingsServer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
+        
         case 1: return .prod
-
+        
         case 2: return .stage
-
+        
         case 3: return .dev
-
-        case 4: return try .custom(url: FfiConverterString.read(from: &buf)
-            )
-
+        
+        case 4: return .custom(url: try FfiConverterString.read(from: &buf)
+        )
+        
         default: throw UniffiInternalError.unexpectedEnumCase
         }
     }
 
     public static func write(_ value: RemoteSettingsServer, into buf: inout [UInt8]) {
         switch value {
+        
+        
         case .prod:
             writeInt(&buf, Int32(1))
-
+        
+        
         case .stage:
             writeInt(&buf, Int32(2))
-
+        
+        
         case .dev:
             writeInt(&buf, Int32(3))
-
+        
+        
         case let .custom(url):
             writeInt(&buf, Int32(4))
             FfiConverterString.write(url, into: &buf)
+            
         }
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsServer_lift(_ buf: RustBuffer) throws -> RemoteSettingsServer {
     return try FfiConverterTypeRemoteSettingsServer.lift(buf)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRemoteSettingsServer_lower(_ value: RemoteSettingsServer) -> RustBuffer {
     return FfiConverterTypeRemoteSettingsServer.lower(value)
 }
 
+
+
 extension RemoteSettingsServer: Equatable, Hashable {}
 
-private struct FfiConverterOptionString: FfiConverterRustBuffer {
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -996,7 +1154,10 @@ private struct FfiConverterOptionString: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionTypeAttachment: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeAttachment: FfiConverterRustBuffer {
     typealias SwiftType = Attachment?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1017,7 +1178,10 @@ private struct FfiConverterOptionTypeAttachment: FfiConverterRustBuffer {
     }
 }
 
-private struct FfiConverterOptionTypeRemoteSettingsServer: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeRemoteSettingsServer: FfiConverterRustBuffer {
     typealias SwiftType = RemoteSettingsServer?
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
@@ -1038,7 +1202,10 @@ private struct FfiConverterOptionTypeRemoteSettingsServer: FfiConverterRustBuffe
     }
 }
 
-private struct FfiConverterSequenceTypeRemoteSettingsRecord: FfiConverterRustBuffer {
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeRemoteSettingsRecord: FfiConverterRustBuffer {
     typealias SwiftType = [RemoteSettingsRecord]
 
     public static func write(_ value: [RemoteSettingsRecord], into buf: inout [UInt8]) {
@@ -1054,17 +1221,22 @@ private struct FfiConverterSequenceTypeRemoteSettingsRecord: FfiConverterRustBuf
         var seq = [RemoteSettingsRecord]()
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
-            try seq.append(FfiConverterTypeRemoteSettingsRecord.read(from: &buf))
+            seq.append(try FfiConverterTypeRemoteSettingsRecord.read(from: &buf))
         }
         return seq
     }
 }
+
 
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
  */
 public typealias RsJsonObject = String
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public struct FfiConverterTypeRsJsonObject: FfiConverter {
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> RsJsonObject {
         return try FfiConverterString.read(from: &buf)
@@ -1083,10 +1255,17 @@ public struct FfiConverterTypeRsJsonObject: FfiConverter {
     }
 }
 
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRsJsonObject_lift(_ value: RustBuffer) throws -> RsJsonObject {
     return try FfiConverterTypeRsJsonObject.lift(value)
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 public func FfiConverterTypeRsJsonObject_lower(_ value: RsJsonObject) -> RustBuffer {
     return FfiConverterTypeRsJsonObject.lower(value)
 }
@@ -1096,7 +1275,6 @@ private enum InitializationResult {
     case contractVersionMismatch
     case apiChecksumMismatch
 }
-
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
 private var initializationResult: InitializationResult = {
@@ -1107,16 +1285,16 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if uniffi_remote_settings_checksum_method_remotesettings_download_attachment_to_path() != 45318 {
+    if (uniffi_remote_settings_checksum_method_remotesettings_download_attachment_to_path() != 45318) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_remote_settings_checksum_method_remotesettings_get_records() != 14513 {
+    if (uniffi_remote_settings_checksum_method_remotesettings_get_records() != 14513) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_remote_settings_checksum_method_remotesettings_get_records_since() != 31407 {
+    if (uniffi_remote_settings_checksum_method_remotesettings_get_records_since() != 31407) {
         return InitializationResult.apiChecksumMismatch
     }
-    if uniffi_remote_settings_checksum_constructor_remotesettings_new() != 54895 {
+    if (uniffi_remote_settings_checksum_constructor_remotesettings_new() != 54895) {
         return InitializationResult.apiChecksumMismatch
     }
 
