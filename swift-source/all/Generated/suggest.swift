@@ -1790,7 +1790,18 @@ extension SuggestApiError: Foundation.LocalizedError {
 
 public enum SuggestProviderConfig {
     
-    case weather(minKeywordLength: Int32
+    case weather(
+        /**
+         * Weather suggestion score.
+         */score: Double, 
+        /**
+         * Threshold for weather keyword prefix matching when a weather keyword
+         * is the first term in a query. Zero means prefix matching is disabled
+         * and weather keywords must be typed in full when they are first in
+         * the query. (Ideally this would be an `Option` and `None` would mean
+         * full keywords are required, but it's probably not worth the breaking
+         * API change.) This threshold does not apply to city and region names.
+         */minKeywordLength: Int32
     )
 }
 
@@ -1805,7 +1816,7 @@ public struct FfiConverterTypeSuggestProviderConfig: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .weather(minKeywordLength: try FfiConverterInt32.read(from: &buf)
+        case 1: return .weather(score: try FfiConverterDouble.read(from: &buf), minKeywordLength: try FfiConverterInt32.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -1816,8 +1827,9 @@ public struct FfiConverterTypeSuggestProviderConfig: FfiConverterRustBuffer {
         switch value {
         
         
-        case let .weather(minKeywordLength):
+        case let .weather(score,minKeywordLength):
             writeInt(&buf, Int32(1))
+            FfiConverterDouble.write(score, into: &buf)
             FfiConverterInt32.write(minKeywordLength, into: &buf)
             
         }
@@ -1865,7 +1877,7 @@ public enum Suggestion {
     )
     case mdn(title: String, url: String, description: String, score: Double
     )
-    case weather(score: Double
+    case weather(city: String?, region: String?, score: Double
     )
     case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: Data?, iconMimetype: String?, score: Double
     )
@@ -1902,7 +1914,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 6: return .mdn(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 7: return .weather(score: try FfiConverterDouble.read(from: &buf)
+        case 7: return .weather(city: try FfiConverterOptionString.read(from: &buf), region: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
         case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
@@ -1985,8 +1997,10 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .weather(score):
+        case let .weather(city,region,score):
             writeInt(&buf, Int32(7))
+            FfiConverterOptionString.write(city, into: &buf)
+            FfiConverterOptionString.write(region, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             
         
