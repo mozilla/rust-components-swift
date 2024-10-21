@@ -3273,7 +3273,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_nimbus_checksum_method_recordedcontext_to_json() != 530) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nimbus_checksum_constructor_nimbusclient_new() != 54745) {
+    if (uniffi_nimbus_checksum_constructor_nimbusclient_new() != 8866) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nimbus_checksum_method_metricshandler_record_enrollment_statuses() != 22229) {

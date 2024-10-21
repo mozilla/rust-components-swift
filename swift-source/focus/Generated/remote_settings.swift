@@ -647,6 +647,10 @@ public func FfiConverterTypeRemoteSettings_lower(_ value: RemoteSettings) -> Uns
 }
 
 
+/**
+ * Attachment metadata that can be optionally attached to a [Record]. The [location] should
+ * included in calls to [Client::get_attachment].
+ */
 public struct Attachment {
     public var filename: String
     public var mimetype: String
@@ -737,6 +741,14 @@ public func FfiConverterTypeAttachment_lower(_ value: Attachment) -> RustBuffer 
 }
 
 
+/**
+ * Custom configuration for the client.
+ * Currently includes the following:
+ * - `server`: The Remote Settings server to use. If not specified, defaults to the production server (`RemoteSettingsServer::Prod`).
+ * - `server_url`: An optional custom Remote Settings server URL. Deprecated; please use `server` instead.
+ * - `bucket_name`: The optional name of the bucket containing the collection on the server. If not specified, the standard bucket will be used.
+ * - `collection_name`: The name of the collection for the settings server.
+ */
 public struct RemoteSettingsConfig {
     public var collectionName: String
     public var bucketName: String?
@@ -819,6 +831,10 @@ public func FfiConverterTypeRemoteSettingsConfig_lower(_ value: RemoteSettingsCo
 }
 
 
+/**
+ * A parsed Remote Settings record. Records can contain arbitrary fields, so clients
+ * are required to further extract expected values from the [fields] member.
+ */
 public struct RemoteSettingsRecord {
     public var id: String
     public var lastModified: UInt64
@@ -909,6 +925,10 @@ public func FfiConverterTypeRemoteSettingsRecord_lower(_ value: RemoteSettingsRe
 }
 
 
+/**
+ * Data structure representing the top-level response from the Remote Settings.
+ * [last_modified] will be extracted from the etag header of the response.
+ */
 public struct RemoteSettingsResponse {
     public var records: [RemoteSettingsRecord]
     public var lastModified: UInt64
@@ -975,12 +995,21 @@ public func FfiConverterTypeRemoteSettingsResponse_lower(_ value: RemoteSettings
 }
 
 
+/**
+ * Public error class, this is what we return to consumers
+ */
 public enum RemoteSettingsError {
 
     
     
+    /**
+     * Network error while making a remote settings request
+     */
     case Network(reason: String
     )
+    /**
+     * The server has asked the client to backoff.
+     */
     case Backoff(seconds: UInt64
     )
     case Other(reason: String
@@ -1051,6 +1080,9 @@ extension RemoteSettingsError: Foundation.LocalizedError {
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The Remote Settings server that the client should use.
+ */
 
 public enum RemoteSettingsServer {
     
@@ -1285,16 +1317,16 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettings_download_attachment_to_path() != 45318) {
+    if (uniffi_remote_settings_checksum_method_remotesettings_download_attachment_to_path() != 34938) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettings_get_records() != 14513) {
+    if (uniffi_remote_settings_checksum_method_remotesettings_get_records() != 41444) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettings_get_records_since() != 31407) {
+    if (uniffi_remote_settings_checksum_method_remotesettings_get_records_since() != 58960) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_constructor_remotesettings_new() != 54895) {
+    if (uniffi_remote_settings_checksum_constructor_remotesettings_new() != 52961) {
         return InitializationResult.apiChecksumMismatch
     }
 
