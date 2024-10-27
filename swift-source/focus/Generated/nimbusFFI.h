@@ -281,28 +281,14 @@ typedef void (*UniffiCallbackInterfaceMetricsHandlerMethod3)(uint64_t, RustBuffe
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD0
-typedef void (*UniffiCallbackInterfaceRecordedContextMethod0)(uint64_t, RustBuffer* _Nonnull, 
+typedef void (*UniffiCallbackInterfaceRecordedContextMethod0)(uint64_t, void* _Nonnull, 
         RustCallStatus *_Nonnull uniffiCallStatus
     );
 
 #endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD1
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD1
-typedef void (*UniffiCallbackInterfaceRecordedContextMethod1)(uint64_t, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD2
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD2
-typedef void (*UniffiCallbackInterfaceRecordedContextMethod2)(uint64_t, RustBuffer, void* _Nonnull, 
-        RustCallStatus *_Nonnull uniffiCallStatus
-    );
-
-#endif
-#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD3
-#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_RECORDED_CONTEXT_METHOD3
-typedef void (*UniffiCallbackInterfaceRecordedContextMethod3)(uint64_t, RustBuffer* _Nonnull, 
+typedef void (*UniffiCallbackInterfaceRecordedContextMethod1)(uint64_t, RustBuffer* _Nonnull, 
         RustCallStatus *_Nonnull uniffiCallStatus
     );
 
@@ -321,10 +307,8 @@ typedef struct UniffiVTableCallbackInterfaceMetricsHandler {
 #ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_RECORDED_CONTEXT
 #define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_RECORDED_CONTEXT
 typedef struct UniffiVTableCallbackInterfaceRecordedContext {
-    UniffiCallbackInterfaceRecordedContextMethod0 _Nonnull getEventQueries;
-    UniffiCallbackInterfaceRecordedContextMethod1 _Nonnull record;
-    UniffiCallbackInterfaceRecordedContextMethod2 _Nonnull setEventQueryValues;
-    UniffiCallbackInterfaceRecordedContextMethod3 _Nonnull toJson;
+    UniffiCallbackInterfaceRecordedContextMethod0 _Nonnull record;
+    UniffiCallbackInterfaceRecordedContextMethod1 _Nonnull toJson;
     UniffiCallbackInterfaceFree _Nonnull uniffiFree;
 } UniffiVTableCallbackInterfaceRecordedContext;
 
@@ -524,19 +508,9 @@ void uniffi_nimbus_fn_free_recordedcontext(void*_Nonnull ptr, RustCallStatus *_N
 void uniffi_nimbus_fn_init_callback_vtable_recordedcontext(UniffiVTableCallbackInterfaceRecordedContext* _Nonnull vtable
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_GET_EVENT_QUERIES
-#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_GET_EVENT_QUERIES
-RustBuffer uniffi_nimbus_fn_method_recordedcontext_get_event_queries(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_RECORD
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_RECORD
 void uniffi_nimbus_fn_method_recordedcontext_record(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_SET_EVENT_QUERY_VALUES
-#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_SET_EVENT_QUERY_VALUES
-void uniffi_nimbus_fn_method_recordedcontext_set_event_query_values(void*_Nonnull ptr, RustBuffer event_query_values, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_TO_JSON
@@ -547,11 +521,6 @@ RustBuffer uniffi_nimbus_fn_method_recordedcontext_to_json(void*_Nonnull ptr, Ru
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_METRICSHANDLER
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_METRICSHANDLER
 void uniffi_nimbus_fn_init_callback_vtable_metricshandler(UniffiVTableCallbackInterfaceMetricsHandler* _Nonnull vtable
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FUNC_VALIDATE_EVENT_QUERIES
-#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FUNC_VALIDATE_EVENT_QUERIES
-void uniffi_nimbus_fn_func_validate_event_queries(void*_Nonnull recorded_context, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUSTBUFFER_ALLOC
@@ -834,12 +803,6 @@ void ffi_nimbus_rust_future_free_void(uint64_t handle
 void ffi_nimbus_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_FUNC_VALIDATE_EVENT_QUERIES
-#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_FUNC_VALIDATE_EVENT_QUERIES
-uint16_t uniffi_nimbus_checksum_func_validate_event_queries(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
 uint16_t uniffi_nimbus_checksum_method_nimbusclient_advance_event_time(void
@@ -1014,21 +977,9 @@ uint16_t uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_GET_EVENT_QUERIES
-#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_GET_EVENT_QUERIES
-uint16_t uniffi_nimbus_checksum_method_recordedcontext_get_event_queries(void
-    
-);
-#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_RECORD
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_RECORD
 uint16_t uniffi_nimbus_checksum_method_recordedcontext_record(void
-    
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_SET_EVENT_QUERY_VALUES
-#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_RECORDEDCONTEXT_SET_EVENT_QUERY_VALUES
-uint16_t uniffi_nimbus_checksum_method_recordedcontext_set_event_query_values(void
     
 );
 #endif
