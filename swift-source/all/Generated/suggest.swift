@@ -1877,7 +1877,7 @@ public enum Suggestion {
     )
     case mdn(title: String, url: String, description: String, score: Double
     )
-    case weather(city: String?, region: String?, country: String?, score: Double
+    case weather(city: String?, region: String?, country: String?, latitude: Double?, longitude: Double?, score: Double
     )
     case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: Data?, iconMimetype: String?, score: Double
     )
@@ -1914,7 +1914,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 6: return .mdn(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 7: return .weather(city: try FfiConverterOptionString.read(from: &buf), region: try FfiConverterOptionString.read(from: &buf), country: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 7: return .weather(city: try FfiConverterOptionString.read(from: &buf), region: try FfiConverterOptionString.read(from: &buf), country: try FfiConverterOptionString.read(from: &buf), latitude: try FfiConverterOptionDouble.read(from: &buf), longitude: try FfiConverterOptionDouble.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
         case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
@@ -1997,11 +1997,13 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .weather(city,region,country,score):
+        case let .weather(city,region,country,latitude,longitude,score):
             writeInt(&buf, Int32(7))
             FfiConverterOptionString.write(city, into: &buf)
             FfiConverterOptionString.write(region, into: &buf)
             FfiConverterOptionString.write(country, into: &buf)
+            FfiConverterOptionDouble.write(latitude, into: &buf)
+            FfiConverterOptionDouble.write(longitude, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             
         
@@ -2190,6 +2192,30 @@ fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
+    typealias SwiftType = Double?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterDouble.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterDouble.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
