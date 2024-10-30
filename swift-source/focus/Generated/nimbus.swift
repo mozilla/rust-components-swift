@@ -430,6 +430,22 @@ fileprivate struct FfiConverterInt64: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
+    typealias FfiType = Double
+    typealias SwiftType = Double
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Double {
+        return try lift(readDouble(&buf))
+    }
+
+    public static func write(_ value: Double, into buf: inout [UInt8]) {
+        writeDouble(&buf, lower(value))
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterBool : FfiConverter {
     typealias FfiType = Int8
     typealias SwiftType = Bool
@@ -1382,7 +1398,11 @@ public func FfiConverterTypeNimbusTargetingHelper_lower(_ value: NimbusTargeting
 
 public protocol RecordedContext : AnyObject {
     
+    func getEventQueries()  -> [String: String]
+    
     func record() 
+    
+    func setEventQueryValues(eventQueryValues: [String: Double]) 
     
     func toJson()  -> JsonObject
     
@@ -1437,8 +1457,22 @@ open class RecordedContextImpl:
     
 
     
+open func getEventQueries() -> [String: String] {
+    return try!  FfiConverterDictionaryStringString.lift(try! rustCall() {
+    uniffi_nimbus_fn_method_recordedcontext_get_event_queries(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func record() {try! rustCall() {
     uniffi_nimbus_fn_method_recordedcontext_record(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+open func setEventQueryValues(eventQueryValues: [String: Double]) {try! rustCall() {
+    uniffi_nimbus_fn_method_recordedcontext_set_event_query_values(self.uniffiClonePointer(),
+        FfiConverterDictionaryStringDouble.lower(eventQueryValues),$0
     )
 }
 }
@@ -1466,6 +1500,28 @@ fileprivate struct UniffiCallbackInterfaceRecordedContext {
     // Create the VTable using a series of closures.
     // Swift automatically converts these into C callback functions.
     static var vtable: UniffiVTableCallbackInterfaceRecordedContext = UniffiVTableCallbackInterfaceRecordedContext(
+        getEventQueries: { (
+            uniffiHandle: UInt64,
+            uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> [String: String] in
+                guard let uniffiObj = try? FfiConverterTypeRecordedContext.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.getEventQueries(
+                )
+            }
+
+            
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterDictionaryStringString.lower($0) }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
         record: { (
             uniffiHandle: UInt64,
             uniffiOutReturn: UnsafeMutableRawPointer,
@@ -1477,6 +1533,30 @@ fileprivate struct UniffiCallbackInterfaceRecordedContext {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
                 return uniffiObj.record(
+                )
+            }
+
+            
+            let writeReturn = { () }
+            uniffiTraitInterfaceCall(
+                callStatus: uniffiCallStatus,
+                makeCall: makeCall,
+                writeReturn: writeReturn
+            )
+        },
+        setEventQueryValues: { (
+            uniffiHandle: UInt64,
+            eventQueryValues: RustBuffer,
+            uniffiOutReturn: UnsafeMutableRawPointer,
+            uniffiCallStatus: UnsafeMutablePointer<RustCallStatus>
+        ) in
+            let makeCall = {
+                () throws -> () in
+                guard let uniffiObj = try? FfiConverterTypeRecordedContext.handleMap.get(handle: uniffiHandle) else {
+                    throw UniffiInternalError.unexpectedStaleHandle
+                }
+                return uniffiObj.setEventQueryValues(
+                     eventQueryValues: try FfiConverterDictionaryStringDouble.lift(eventQueryValues)
                 )
             }
 
@@ -2478,6 +2558,8 @@ public enum NimbusError {
     
     case UniFfiCallbackError(message: String)
     
+    case RegexError(message: String)
+    
 }
 
 
@@ -2594,6 +2676,10 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
             message: try FfiConverterString.read(from: &buf)
         )
         
+        case 26: return .RegexError(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
 
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2655,6 +2741,8 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
             writeInt(&buf, Int32(24))
         case .UniFfiCallbackError(_ /* message is ignored*/):
             writeInt(&buf, Int32(25))
+        case .RegexError(_ /* message is ignored*/):
+            writeInt(&buf, Int32(26))
 
         
         }
@@ -3120,6 +3208,58 @@ fileprivate struct FfiConverterSequenceTypeExperimentBranch: FfiConverterRustBuf
     }
 }
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringDouble: FfiConverterRustBuffer {
+    public static func write(_ value: [String: Double], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterDouble.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: Double] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: Double]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterDouble.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
+    public static func write(_ value: [String: String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterString.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: String] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: String]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterString.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
 
 
 
@@ -3164,6 +3304,17 @@ public func FfiConverterTypeJsonObject_lift(_ value: RustBuffer) throws -> JsonO
 public func FfiConverterTypeJsonObject_lower(_ value: JsonObject) -> RustBuffer {
     return FfiConverterTypeJsonObject.lower(value)
 }
+/**
+ * A test utility used to validate event queries against the jexl evaluator.
+ *
+ * This method should only be used in tests.
+ */
+public func validateEventQueries(recordedContext: RecordedContext)throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+    uniffi_nimbus_fn_func_validate_event_queries(
+        FfiConverterTypeRecordedContext.lower(recordedContext),$0
+    )
+}
+}
 
 private enum InitializationResult {
     case ok
@@ -3179,6 +3330,9 @@ private var initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_nimbus_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_nimbus_checksum_func_validate_event_queries() != 42746) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nimbus_checksum_method_nimbusclient_advance_event_time() != 40755) {
         return InitializationResult.apiChecksumMismatch
@@ -3267,7 +3421,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_nimbus_checksum_method_nimbustargetinghelper_eval_jexl() != 42395) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_nimbus_checksum_method_recordedcontext_get_event_queries() != 28844) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_nimbus_checksum_method_recordedcontext_record() != 5916) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_nimbus_checksum_method_recordedcontext_set_event_query_values() != 40199) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nimbus_checksum_method_recordedcontext_to_json() != 530) {
