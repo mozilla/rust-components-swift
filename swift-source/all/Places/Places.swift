@@ -299,6 +299,37 @@ public class PlacesReadConnection {
         }
     }
 
+    /**
+     * Counts the number of bookmark items in the bookmark trees under the specified GUIDs.
+     * Empty folders, non-existing GUIDs and non-folder guids will return zero.
+     *
+     * - Parameter folderGuids: The guids of folders to query.
+     * - Returns: Count of all bookmark items (ie, not folders or separators) in all specified folders recursively.
+     * - Throws:
+     *     - `PlacesApiError.databaseInterrupted`: If a call is made to
+     *                                             `interrupt()` on this object
+     *                                             from another thread.
+     *     - `PlacesConnectionError.connUseAfterAPIClosed`: If the PlacesAPI that returned
+     *                                                      this connection object has
+     *                                                      been closed. This indicates
+     *                                                      API misuse.
+     *     - `PlacesApiError.databaseBusy`: If this query times out with a
+     *                                      SQLITE_BUSY error.
+     *     - `PlacesApiError.unexpected`: When an error that has not specifically
+     *                                    been exposed to Swift is encountered (for
+     *                                    example IO errors from the database code,
+     *                                    etc).
+     *     - `PlacesApiError.panic`: If the rust code panics while completing this
+     *                               operation. (If this occurs, please let us
+     *                               know).
+     */
+    open func countBookmarksInTrees(folderGuids: [Guid]) throws -> Int {
+        return try queue.sync {
+            try self.checkApi()
+            return try Int(self.conn.bookmarksCountBookmarksInTrees(folderGuids: folderGuids))
+        }
+    }
+
     open func getLatestHistoryMetadataForUrl(url: Url) throws -> HistoryMetadata? {
         return try queue.sync {
             try self.checkApi()
@@ -700,44 +731,57 @@ public class PlacesWriteConnection: PlacesReadConnection {
     // MARK: History metadata write APIs
 
     open func noteHistoryMetadataObservation(
-        observation: HistoryMetadataObservation
+        observation: HistoryMetadataObservation,
+        _ options: NoteHistoryMetadataObservationOptions = NoteHistoryMetadataObservationOptions()
     ) throws {
         try queue.sync {
             try self.checkApi()
-            try self.conn.noteHistoryMetadataObservation(data: observation)
+            try self.conn.noteHistoryMetadataObservation(data: observation, options: options)
         }
     }
 
     // Keeping these three functions inline with what Kotlin (PlacesConnection.kt)
     // to make future work more symmetrical
-    open func noteHistoryMetadataObservationViewTime(key: HistoryMetadataKey, viewTime: Int32?) throws {
+    open func noteHistoryMetadataObservationViewTime(
+        key: HistoryMetadataKey,
+        viewTime: Int32?,
+        _ options: NoteHistoryMetadataObservationOptions = NoteHistoryMetadataObservationOptions()
+    ) throws {
         let obs = HistoryMetadataObservation(
             url: key.url,
             referrerUrl: key.referrerUrl,
             searchTerm: key.searchTerm,
             viewTime: viewTime
         )
-        try noteHistoryMetadataObservation(observation: obs)
+        try noteHistoryMetadataObservation(observation: obs, options)
     }
 
-    open func noteHistoryMetadataObservationDocumentType(key: HistoryMetadataKey, documentType: DocumentType) throws {
+    open func noteHistoryMetadataObservationDocumentType(
+        key: HistoryMetadataKey,
+        documentType: DocumentType,
+        _ options: NoteHistoryMetadataObservationOptions = NoteHistoryMetadataObservationOptions()
+    ) throws {
         let obs = HistoryMetadataObservation(
             url: key.url,
             referrerUrl: key.referrerUrl,
             searchTerm: key.searchTerm,
             documentType: documentType
         )
-        try noteHistoryMetadataObservation(observation: obs)
+        try noteHistoryMetadataObservation(observation: obs, options)
     }
 
-    open func noteHistoryMetadataObservationTitle(key: HistoryMetadataKey, title: String) throws {
+    open func noteHistoryMetadataObservationTitle(
+        key: HistoryMetadataKey,
+        title: String,
+        _ options: NoteHistoryMetadataObservationOptions = NoteHistoryMetadataObservationOptions()
+    ) throws {
         let obs = HistoryMetadataObservation(
             url: key.url,
             referrerUrl: key.referrerUrl,
             searchTerm: key.searchTerm,
             title: title
         )
-        try noteHistoryMetadataObservation(observation: obs)
+        try noteHistoryMetadataObservation(observation: obs, options)
     }
 
     open func deleteHistoryMetadataOlderThan(olderThan: Int64) throws {

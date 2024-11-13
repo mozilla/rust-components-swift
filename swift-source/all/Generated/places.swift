@@ -789,7 +789,7 @@ public protocol PlacesConnectionProtocol : AnyObject {
     
     func newInterruptHandle()  -> SqlInterruptHandle
     
-    func noteHistoryMetadataObservation(data: HistoryMetadataObservation) throws 
+    func noteHistoryMetadataObservation(data: HistoryMetadataObservation, options: NoteHistoryMetadataObservationOptions) throws 
     
     func placesHistoryImportFromIos(dbPath: String, lastSyncTimestamp: Int64) throws  -> HistoryMigrationResult
     
@@ -1165,9 +1165,10 @@ open func newInterruptHandle() -> SqlInterruptHandle {
 })
 }
     
-open func noteHistoryMetadataObservation(data: HistoryMetadataObservation)throws  {try rustCallWithError(FfiConverterTypePlacesApiError.lift) {
+open func noteHistoryMetadataObservation(data: HistoryMetadataObservation, options: NoteHistoryMetadataObservationOptions)throws  {try rustCallWithError(FfiConverterTypePlacesApiError.lift) {
     uniffi_places_fn_method_placesconnection_note_history_metadata_observation(self.uniffiClonePointer(),
-        FfiConverterTypeHistoryMetadataObservation.lower(data),$0
+        FfiConverterTypeHistoryMetadataObservation.lower(data),
+        FfiConverterTypeNoteHistoryMetadataObservationOptions.lower(options),$0
     )
 }
 }
@@ -2843,6 +2844,67 @@ public func FfiConverterTypeInsertableBookmarkSeparator_lower(_ value: Insertabl
 }
 
 
+/**
+ * Options for recording history metadata observations.
+ */
+public struct NoteHistoryMetadataObservationOptions {
+    public var ifPageMissing: HistoryMetadataPageMissingBehavior
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(ifPageMissing: HistoryMetadataPageMissingBehavior = .ignoreObservation) {
+        self.ifPageMissing = ifPageMissing
+    }
+}
+
+
+
+extension NoteHistoryMetadataObservationOptions: Equatable, Hashable {
+    public static func ==(lhs: NoteHistoryMetadataObservationOptions, rhs: NoteHistoryMetadataObservationOptions) -> Bool {
+        if lhs.ifPageMissing != rhs.ifPageMissing {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(ifPageMissing)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeNoteHistoryMetadataObservationOptions: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> NoteHistoryMetadataObservationOptions {
+        return
+            try NoteHistoryMetadataObservationOptions(
+                ifPageMissing: FfiConverterTypeHistoryMetadataPageMissingBehavior.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: NoteHistoryMetadataObservationOptions, into buf: inout [UInt8]) {
+        FfiConverterTypeHistoryMetadataPageMissingBehavior.write(value.ifPageMissing, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNoteHistoryMetadataObservationOptions_lift(_ buf: RustBuffer) throws -> NoteHistoryMetadataObservationOptions {
+    return try FfiConverterTypeNoteHistoryMetadataObservationOptions.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNoteHistoryMetadataObservationOptions_lower(_ value: NoteHistoryMetadataObservationOptions) -> RustBuffer {
+    return FfiConverterTypeNoteHistoryMetadataObservationOptions.lower(value)
+}
+
+
 public struct RunMaintenanceMetrics {
     public var prunedVisits: Bool
     public var dbSizeBefore: UInt32
@@ -3552,6 +3614,80 @@ public func FfiConverterTypeFrecencyThresholdOption_lower(_ value: FrecencyThres
 
 
 extension FrecencyThresholdOption: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The action to take when recording a history metadata observation for
+ * a page that doesn't have an entry in the history database.
+ */
+
+public enum HistoryMetadataPageMissingBehavior {
+    
+    /**
+     * Insert an entry for the page into the history database.
+     */
+    case insertPage
+    /**
+     * Ignore and discard the observation. This is the default behavior.
+     */
+    case ignoreObservation
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHistoryMetadataPageMissingBehavior: FfiConverterRustBuffer {
+    typealias SwiftType = HistoryMetadataPageMissingBehavior
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HistoryMetadataPageMissingBehavior {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .insertPage
+        
+        case 2: return .ignoreObservation
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: HistoryMetadataPageMissingBehavior, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .insertPage:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .ignoreObservation:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHistoryMetadataPageMissingBehavior_lift(_ buf: RustBuffer) throws -> HistoryMetadataPageMissingBehavior {
+    return try FfiConverterTypeHistoryMetadataPageMissingBehavior.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHistoryMetadataPageMissingBehavior_lower(_ value: HistoryMetadataPageMissingBehavior) -> RustBuffer {
+    return FfiConverterTypeHistoryMetadataPageMissingBehavior.lower(value)
+}
+
+
+
+extension HistoryMetadataPageMissingBehavior: Equatable, Hashable {}
 
 
 
@@ -4792,7 +4928,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_places_checksum_method_placesconnection_new_interrupt_handle() != 5418) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_places_checksum_method_placesconnection_note_history_metadata_observation() != 12555) {
+    if (uniffi_places_checksum_method_placesconnection_note_history_metadata_observation() != 31493) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_places_checksum_method_placesconnection_places_history_import_from_ios() != 596) {
