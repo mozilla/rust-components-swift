@@ -596,8 +596,39 @@ public protocol SuggestStoreProtocol : AnyObject {
      */
     func dismissSuggestion(suggestionUrl: String) throws 
     
+    /**
+     * Fetches geonames stored in the database. A geoname represents a
+     * geographic place.
+     *
+     * `query` is a string that will be matched directly against geoname names.
+     * It is not a query string in the usual Suggest sense. `match_name_prefix`
+     * determines whether prefix matching is performed on names excluding
+     * abbreviations and airport codes. When `true`, names that start with
+     * `query` will match. When false, names that equal `query` will match.
+     *
+     * `geoname_type` restricts returned geonames to a [`GeonameType`].
+     *
+     * `filter` restricts returned geonames to certain cities or regions.
+     * Cities can be restricted to regions by including the regions in
+     * `filter`, and regions can be restricted to those containing certain
+     * cities by including the cities in `filter`. This is especially useful
+     * since city and region names are not unique. `filter` is disjunctive: If
+     * any item in `filter` matches a geoname, the geoname will be filtered in.
+     *
+     * The query can match a geoname in more than one way, for example both a
+     * full name and an abbreviation. The returned vec of [`GeonameMatch`]
+     * values will include all matches for a geoname, one match per geoname.
+     */
+    func fetchGeonames(query: String, matchNamePrefix: Bool, geonameType: GeonameType?, filter: [Geoname]?) throws  -> [GeonameMatch]
+    
+    /**
+     * Returns global Suggest configuration data.
+     */
     func fetchGlobalConfig() throws  -> SuggestGlobalConfig
     
+    /**
+     * Returns per-provider Suggest configuration data.
+     */
     func fetchProviderConfig(provider: SuggestionProvider) throws  -> SuggestProviderConfig?
     
     /**
@@ -749,6 +780,43 @@ open func dismissSuggestion(suggestionUrl: String)throws  {try rustCallWithError
 }
 }
     
+    /**
+     * Fetches geonames stored in the database. A geoname represents a
+     * geographic place.
+     *
+     * `query` is a string that will be matched directly against geoname names.
+     * It is not a query string in the usual Suggest sense. `match_name_prefix`
+     * determines whether prefix matching is performed on names excluding
+     * abbreviations and airport codes. When `true`, names that start with
+     * `query` will match. When false, names that equal `query` will match.
+     *
+     * `geoname_type` restricts returned geonames to a [`GeonameType`].
+     *
+     * `filter` restricts returned geonames to certain cities or regions.
+     * Cities can be restricted to regions by including the regions in
+     * `filter`, and regions can be restricted to those containing certain
+     * cities by including the cities in `filter`. This is especially useful
+     * since city and region names are not unique. `filter` is disjunctive: If
+     * any item in `filter` matches a geoname, the geoname will be filtered in.
+     *
+     * The query can match a geoname in more than one way, for example both a
+     * full name and an abbreviation. The returned vec of [`GeonameMatch`]
+     * values will include all matches for a geoname, one match per geoname.
+     */
+open func fetchGeonames(query: String, matchNamePrefix: Bool, geonameType: GeonameType?, filter: [Geoname]?)throws  -> [GeonameMatch] {
+    return try  FfiConverterSequenceTypeGeonameMatch.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
+    uniffi_suggest_fn_method_suggeststore_fetch_geonames(self.uniffiClonePointer(),
+        FfiConverterString.lower(query),
+        FfiConverterBool.lower(matchNamePrefix),
+        FfiConverterOptionTypeGeonameType.lower(geonameType),
+        FfiConverterOptionSequenceTypeGeoname.lower(filter),$0
+    )
+})
+}
+    
+    /**
+     * Returns global Suggest configuration data.
+     */
 open func fetchGlobalConfig()throws  -> SuggestGlobalConfig {
     return try  FfiConverterTypeSuggestGlobalConfig.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_fetch_global_config(self.uniffiClonePointer(),$0
@@ -756,6 +824,9 @@ open func fetchGlobalConfig()throws  -> SuggestGlobalConfig {
 })
 }
     
+    /**
+     * Returns per-provider Suggest configuration data.
+     */
 open func fetchProviderConfig(provider: SuggestionProvider)throws  -> SuggestProviderConfig? {
     return try  FfiConverterOptionTypeSuggestProviderConfig.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_fetch_provider_config(self.uniffiClonePointer(),
@@ -1072,6 +1143,269 @@ public func FfiConverterTypeSuggestStoreBuilder_lift(_ pointer: UnsafeMutableRaw
 #endif
 public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuilder) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSuggestStoreBuilder.lower(value)
+}
+
+
+/**
+ * A single geographic place.
+ *
+ * This corresponds to a single row in the main "geoname" table described in
+ * the GeoNames documentation [1]. We exclude fields we don't need.
+ *
+ * [1]: https://download.geonames.org/export/dump/readme.txt
+ */
+public struct Geoname {
+    /**
+     * The `geonameid` straight from the geoname table.
+     */
+    public var geonameId: Int64
+    /**
+     * This is pretty much the place's canonical name. Usually there will be a
+     * row in the alternates table with the same name, but not always. When
+     * there is such a row, it doesn't always have `is_preferred_name` set, and
+     * in fact fact there may be another row with a different name with
+     * `is_preferred_name` set.
+     */
+    public var name: String
+    /**
+     * Latitude in decimal degrees.
+     */
+    public var latitude: Double
+    /**
+     * Longitude in decimal degrees.
+     */
+    public var longitude: Double
+    /**
+     * ISO-3166 two-letter uppercase country code, e.g., "US".
+     */
+    public var countryCode: String
+    /**
+     * The top-level administrative region for the place within its country,
+     * like a state or province. For the U.S., the two-letter uppercase state
+     * abbreviation.
+     */
+    public var admin1Code: String
+    /**
+     * Population size.
+     */
+    public var population: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The `geonameid` straight from the geoname table.
+         */geonameId: Int64, 
+        /**
+         * This is pretty much the place's canonical name. Usually there will be a
+         * row in the alternates table with the same name, but not always. When
+         * there is such a row, it doesn't always have `is_preferred_name` set, and
+         * in fact fact there may be another row with a different name with
+         * `is_preferred_name` set.
+         */name: String, 
+        /**
+         * Latitude in decimal degrees.
+         */latitude: Double, 
+        /**
+         * Longitude in decimal degrees.
+         */longitude: Double, 
+        /**
+         * ISO-3166 two-letter uppercase country code, e.g., "US".
+         */countryCode: String, 
+        /**
+         * The top-level administrative region for the place within its country,
+         * like a state or province. For the U.S., the two-letter uppercase state
+         * abbreviation.
+         */admin1Code: String, 
+        /**
+         * Population size.
+         */population: UInt64) {
+        self.geonameId = geonameId
+        self.name = name
+        self.latitude = latitude
+        self.longitude = longitude
+        self.countryCode = countryCode
+        self.admin1Code = admin1Code
+        self.population = population
+    }
+}
+
+
+
+extension Geoname: Equatable, Hashable {
+    public static func ==(lhs: Geoname, rhs: Geoname) -> Bool {
+        if lhs.geonameId != rhs.geonameId {
+            return false
+        }
+        if lhs.name != rhs.name {
+            return false
+        }
+        if lhs.latitude != rhs.latitude {
+            return false
+        }
+        if lhs.longitude != rhs.longitude {
+            return false
+        }
+        if lhs.countryCode != rhs.countryCode {
+            return false
+        }
+        if lhs.admin1Code != rhs.admin1Code {
+            return false
+        }
+        if lhs.population != rhs.population {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(geonameId)
+        hasher.combine(name)
+        hasher.combine(latitude)
+        hasher.combine(longitude)
+        hasher.combine(countryCode)
+        hasher.combine(admin1Code)
+        hasher.combine(population)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGeoname: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Geoname {
+        return
+            try Geoname(
+                geonameId: FfiConverterInt64.read(from: &buf), 
+                name: FfiConverterString.read(from: &buf), 
+                latitude: FfiConverterDouble.read(from: &buf), 
+                longitude: FfiConverterDouble.read(from: &buf), 
+                countryCode: FfiConverterString.read(from: &buf), 
+                admin1Code: FfiConverterString.read(from: &buf), 
+                population: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: Geoname, into buf: inout [UInt8]) {
+        FfiConverterInt64.write(value.geonameId, into: &buf)
+        FfiConverterString.write(value.name, into: &buf)
+        FfiConverterDouble.write(value.latitude, into: &buf)
+        FfiConverterDouble.write(value.longitude, into: &buf)
+        FfiConverterString.write(value.countryCode, into: &buf)
+        FfiConverterString.write(value.admin1Code, into: &buf)
+        FfiConverterUInt64.write(value.population, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeoname_lift(_ buf: RustBuffer) throws -> Geoname {
+    return try FfiConverterTypeGeoname.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeoname_lower(_ value: Geoname) -> RustBuffer {
+    return FfiConverterTypeGeoname.lower(value)
+}
+
+
+/**
+ * A fetched geoname with info on how it was matched.
+ */
+public struct GeonameMatch {
+    /**
+     * The geoname that was matched.
+     */
+    public var geoname: Geoname
+    /**
+     * The type of name that was matched.
+     */
+    public var matchType: GeonameMatchType
+    /**
+     * Whether the name was matched by prefix.
+     */
+    public var prefix: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * The geoname that was matched.
+         */geoname: Geoname, 
+        /**
+         * The type of name that was matched.
+         */matchType: GeonameMatchType, 
+        /**
+         * Whether the name was matched by prefix.
+         */prefix: Bool) {
+        self.geoname = geoname
+        self.matchType = matchType
+        self.prefix = prefix
+    }
+}
+
+
+
+extension GeonameMatch: Equatable, Hashable {
+    public static func ==(lhs: GeonameMatch, rhs: GeonameMatch) -> Bool {
+        if lhs.geoname != rhs.geoname {
+            return false
+        }
+        if lhs.matchType != rhs.matchType {
+            return false
+        }
+        if lhs.prefix != rhs.prefix {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(geoname)
+        hasher.combine(matchType)
+        hasher.combine(prefix)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGeonameMatch: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GeonameMatch {
+        return
+            try GeonameMatch(
+                geoname: FfiConverterTypeGeoname.read(from: &buf), 
+                matchType: FfiConverterTypeGeonameMatchType.read(from: &buf), 
+                prefix: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: GeonameMatch, into buf: inout [UInt8]) {
+        FfiConverterTypeGeoname.write(value.geoname, into: &buf)
+        FfiConverterTypeGeonameMatchType.write(value.matchType, into: &buf)
+        FfiConverterBool.write(value.prefix, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeonameMatch_lift(_ buf: RustBuffer) throws -> GeonameMatch {
+    return try FfiConverterTypeGeonameMatch.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeonameMatch_lower(_ value: GeonameMatch) -> RustBuffer {
+    return FfiConverterTypeGeonameMatch.lower(value)
 }
 
 
@@ -1606,6 +1940,150 @@ public func FfiConverterTypeSuggestionQuery_lift(_ buf: RustBuffer) throws -> Su
 public func FfiConverterTypeSuggestionQuery_lower(_ value: SuggestionQuery) -> RustBuffer {
     return FfiConverterTypeSuggestionQuery.lower(value)
 }
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum GeonameMatchType {
+    
+    /**
+     * For U.S. states, abbreviations are the usual two-letter codes ("CA").
+     */
+    case abbreviation
+    case airportCode
+    /**
+     * This includes any names that aren't abbreviations or airport codes.
+     */
+    case name
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGeonameMatchType: FfiConverterRustBuffer {
+    typealias SwiftType = GeonameMatchType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GeonameMatchType {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .abbreviation
+        
+        case 2: return .airportCode
+        
+        case 3: return .name
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: GeonameMatchType, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .abbreviation:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .airportCode:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .name:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeonameMatchType_lift(_ buf: RustBuffer) throws -> GeonameMatchType {
+    return try FfiConverterTypeGeonameMatchType.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeonameMatchType_lower(_ value: GeonameMatchType) -> RustBuffer {
+    return FfiConverterTypeGeonameMatchType.lower(value)
+}
+
+
+
+extension GeonameMatchType: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * The type of a geoname.
+ */
+
+public enum GeonameType {
+    
+    case city
+    case region
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeGeonameType: FfiConverterRustBuffer {
+    typealias SwiftType = GeonameType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> GeonameType {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .city
+        
+        case 2: return .region
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: GeonameType, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .city:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .region:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeonameType_lift(_ buf: RustBuffer) throws -> GeonameType {
+    return try FfiConverterTypeGeonameType.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeGeonameType_lower(_ value: GeonameType) -> RustBuffer {
+    return FfiConverterTypeGeonameType.lower(value)
+}
+
+
+
+extension GeonameType: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -2296,6 +2774,30 @@ fileprivate struct FfiConverterOptionTypeSuggestionProviderConstraints: FfiConve
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeGeonameType: FfiConverterRustBuffer {
+    typealias SwiftType = GeonameType?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeGeonameType.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeGeonameType.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeInterruptKind: FfiConverterRustBuffer {
     typealias SwiftType = InterruptKind?
 
@@ -2360,6 +2862,30 @@ fileprivate struct FfiConverterOptionSequenceString: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterSequenceString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionSequenceTypeGeoname: FfiConverterRustBuffer {
+    typealias SwiftType = [Geoname]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterSequenceTypeGeoname.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterSequenceTypeGeoname.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
@@ -2433,6 +2959,56 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGeoname: FfiConverterRustBuffer {
+    typealias SwiftType = [Geoname]
+
+    public static func write(_ value: [Geoname], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGeoname.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Geoname] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Geoname]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGeoname.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeGeonameMatch: FfiConverterRustBuffer {
+    typealias SwiftType = [GeonameMatch]
+
+    public static func write(_ value: [GeonameMatch], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeGeonameMatch.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [GeonameMatch] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [GeonameMatch]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeGeonameMatch.read(from: &buf))
         }
         return seq
     }
@@ -2557,10 +3133,13 @@ private var initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion() != 43014) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_fetch_global_config() != 10773) {
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_geonames() != 53694) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_fetch_provider_config() != 8150) {
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_global_config() != 45439) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_provider_config() != 15656) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_ingest() != 35498) {
