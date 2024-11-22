@@ -615,9 +615,11 @@ public protocol SuggestStoreProtocol : AnyObject {
      * since city and region names are not unique. `filter` is disjunctive: If
      * any item in `filter` matches a geoname, the geoname will be filtered in.
      *
-     * The query can match a geoname in more than one way, for example both a
-     * full name and an abbreviation. The returned vec of [`GeonameMatch`]
-     * values will include all matches for a geoname, one match per geoname.
+     * The query can match a single geoname in more than one way. For example,
+     * it can match both a full name and an abbreviation. The returned vec of
+     * [`GeonameMatch`] values will include all matches for a geoname, one
+     * match per `match_type` per geoname. In other words, a matched geoname
+     * can map to more than one `GeonameMatch`.
      */
     func fetchGeonames(query: String, matchNamePrefix: Bool, geonameType: GeonameType?, filter: [Geoname]?) throws  -> [GeonameMatch]
     
@@ -799,9 +801,11 @@ open func dismissSuggestion(suggestionUrl: String)throws  {try rustCallWithError
      * since city and region names are not unique. `filter` is disjunctive: If
      * any item in `filter` matches a geoname, the geoname will be filtered in.
      *
-     * The query can match a geoname in more than one way, for example both a
-     * full name and an abbreviation. The returned vec of [`GeonameMatch`]
-     * values will include all matches for a geoname, one match per geoname.
+     * The query can match a single geoname in more than one way. For example,
+     * it can match both a full name and an abbreviation. The returned vec of
+     * [`GeonameMatch`] values will include all matches for a geoname, one
+     * match per `match_type` per geoname. In other words, a matched geoname
+     * can map to more than one `GeonameMatch`.
      */
 open func fetchGeonames(query: String, matchNamePrefix: Bool, geonameType: GeonameType?, filter: [Geoname]?)throws  -> [GeonameMatch] {
     return try  FfiConverterSequenceTypeGeonameMatch.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
@@ -3133,7 +3137,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion() != 43014) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_fetch_geonames() != 53694) {
+    if (uniffi_suggest_checksum_method_suggeststore_fetch_geonames() != 22569) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_fetch_global_config() != 45439) {
