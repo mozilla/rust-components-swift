@@ -706,7 +706,7 @@ public protocol RemoteSettingsClientProtocol : AnyObject {
      * - This method will throw if there is a network or other error when fetching the
      * attachment data.
      */
-    func getAttachment(attachmentId: String) throws  -> Data
+    func getAttachment(attachmentLocation: String) throws  -> Data
     
     /**
      * Get the current set of records.
@@ -721,8 +721,6 @@ public protocol RemoteSettingsClientProtocol : AnyObject {
      * None will also be returned on disk IO errors or other unexpected errors.  The reason for
      * this is that there is not much an application can do in this situation other than fall back
      * to the same default handling as if records have not been synced.
-     *
-     * TODO(Bug 1919141):
      *
      * Application-services schedules regular dumps of the server data for specific collections.
      * For these collections, `get_records` will never return None.  If you would like to add your
@@ -815,10 +813,10 @@ open func collectionName() -> String {
      * - This method will throw if there is a network or other error when fetching the
      * attachment data.
      */
-open func getAttachment(attachmentId: String)throws  -> Data {
+open func getAttachment(attachmentLocation: String)throws  -> Data {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
     uniffi_remote_settings_fn_method_remotesettingsclient_get_attachment(self.uniffiClonePointer(),
-        FfiConverterString.lower(attachmentId),$0
+        FfiConverterString.lower(attachmentLocation),$0
     )
 })
 }
@@ -836,8 +834,6 @@ open func getAttachment(attachmentId: String)throws  -> Data {
      * None will also be returned on disk IO errors or other unexpected errors.  The reason for
      * this is that there is not much an application can do in this situation other than fall back
      * to the same default handling as if records have not been synced.
-     *
-     * TODO(Bug 1919141):
      *
      * Application-services schedules regular dumps of the server data for specific collections.
      * For these collections, `get_records` will never return None.  If you would like to add your
@@ -2336,10 +2332,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_collection_name() != 54184) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_attachment() != 50902) {
+    if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_attachment() != 40834) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_records() != 20713) {
+    if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_records() != 64865) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_records_map() != 32665) {
