@@ -549,6 +549,11 @@ RustBuffer uniffi_nimbus_fn_method_recordedcontext_to_json(void*_Nonnull ptr, Ru
 void uniffi_nimbus_fn_init_callback_vtable_metricshandler(UniffiVTableCallbackInterfaceMetricsHandler* _Nonnull vtable
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FUNC_GET_CALCULATED_ATTRIBUTES
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FUNC_GET_CALCULATED_ATTRIBUTES
+RustBuffer uniffi_nimbus_fn_func_get_calculated_attributes(RustBuffer installation_date, RustBuffer db_path, RustBuffer locale, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FUNC_VALIDATE_EVENT_QUERIES
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_FUNC_VALIDATE_EVENT_QUERIES
 void uniffi_nimbus_fn_func_validate_event_queries(void*_Nonnull recorded_context, RustCallStatus *_Nonnull out_status
@@ -832,6 +837,12 @@ void ffi_nimbus_rust_future_free_void(uint64_t handle
 #ifndef UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_VOID
 #define UNIFFI_FFIDEF_FFI_NIMBUS_RUST_FUTURE_COMPLETE_VOID
 void ffi_nimbus_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_FUNC_GET_CALCULATED_ATTRIBUTES
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_FUNC_GET_CALCULATED_ATTRIBUTES
+uint16_t uniffi_nimbus_checksum_func_get_calculated_attributes(void
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_FUNC_VALIDATE_EVENT_QUERIES

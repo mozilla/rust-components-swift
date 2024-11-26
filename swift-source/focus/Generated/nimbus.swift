@@ -1927,6 +1927,88 @@ public func FfiConverterTypeAvailableExperiment_lower(_ value: AvailableExperime
 }
 
 
+public struct CalculatedAttributes {
+    public var daysSinceInstall: Int32?
+    public var daysSinceUpdate: Int32?
+    public var language: String?
+    public var region: String?
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(daysSinceInstall: Int32?, daysSinceUpdate: Int32?, language: String?, region: String?) {
+        self.daysSinceInstall = daysSinceInstall
+        self.daysSinceUpdate = daysSinceUpdate
+        self.language = language
+        self.region = region
+    }
+}
+
+
+
+extension CalculatedAttributes: Equatable, Hashable {
+    public static func ==(lhs: CalculatedAttributes, rhs: CalculatedAttributes) -> Bool {
+        if lhs.daysSinceInstall != rhs.daysSinceInstall {
+            return false
+        }
+        if lhs.daysSinceUpdate != rhs.daysSinceUpdate {
+            return false
+        }
+        if lhs.language != rhs.language {
+            return false
+        }
+        if lhs.region != rhs.region {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(daysSinceInstall)
+        hasher.combine(daysSinceUpdate)
+        hasher.combine(language)
+        hasher.combine(region)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCalculatedAttributes: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CalculatedAttributes {
+        return
+            try CalculatedAttributes(
+                daysSinceInstall: FfiConverterOptionInt32.read(from: &buf), 
+                daysSinceUpdate: FfiConverterOptionInt32.read(from: &buf), 
+                language: FfiConverterOptionString.read(from: &buf), 
+                region: FfiConverterOptionString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CalculatedAttributes, into buf: inout [UInt8]) {
+        FfiConverterOptionInt32.write(value.daysSinceInstall, into: &buf)
+        FfiConverterOptionInt32.write(value.daysSinceUpdate, into: &buf)
+        FfiConverterOptionString.write(value.language, into: &buf)
+        FfiConverterOptionString.write(value.region, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCalculatedAttributes_lift(_ buf: RustBuffer) throws -> CalculatedAttributes {
+    return try FfiConverterTypeCalculatedAttributes.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCalculatedAttributes_lower(_ value: CalculatedAttributes) -> RustBuffer {
+    return FfiConverterTypeCalculatedAttributes.lower(value)
+}
+
+
 public struct EnrolledExperiment {
     public var featureIds: [String]
     public var slug: String
@@ -2941,6 +3023,30 @@ extension FfiConverterCallbackInterfaceMetricsHandler : FfiConverter {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionInt32: FfiConverterRustBuffer {
+    typealias SwiftType = Int32?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterInt32.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterInt32.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionInt64: FfiConverterRustBuffer {
     typealias SwiftType = Int64?
 
@@ -3305,6 +3411,18 @@ public func FfiConverterTypeJsonObject_lower(_ value: JsonObject) -> RustBuffer 
     return FfiConverterTypeJsonObject.lower(value)
 }
 /**
+
+ */
+public func getCalculatedAttributes(installationDate: Int64?, dbPath: String, locale: String)throws  -> CalculatedAttributes {
+    return try  FfiConverterTypeCalculatedAttributes.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+    uniffi_nimbus_fn_func_get_calculated_attributes(
+        FfiConverterOptionInt64.lower(installationDate),
+        FfiConverterString.lower(dbPath),
+        FfiConverterString.lower(locale),$0
+    )
+})
+}
+/**
  * A test utility used to validate event queries against the jexl evaluator.
  *
  * This method should only be used in tests.
@@ -3330,6 +3448,9 @@ private var initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_nimbus_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_nimbus_checksum_func_get_calculated_attributes() != 10534) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nimbus_checksum_func_validate_event_queries() != 42746) {
         return InitializationResult.apiChecksumMismatch
