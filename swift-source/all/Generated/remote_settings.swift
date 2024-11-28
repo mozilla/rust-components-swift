@@ -706,7 +706,7 @@ public protocol RemoteSettingsClientProtocol : AnyObject {
      * - This method will throw if there is a network or other error when fetching the
      * attachment data.
      */
-    func getAttachment(attachmentLocation: String) throws  -> Data
+    func getAttachment(record: RemoteSettingsRecord) throws  -> Data
     
     /**
      * Get the current set of records.
@@ -813,10 +813,10 @@ open func collectionName() -> String {
      * - This method will throw if there is a network or other error when fetching the
      * attachment data.
      */
-open func getAttachment(attachmentLocation: String)throws  -> Data {
+open func getAttachment(record: RemoteSettingsRecord)throws  -> Data {
     return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
     uniffi_remote_settings_fn_method_remotesettingsclient_get_attachment(self.uniffiClonePointer(),
-        FfiConverterString.lower(attachmentLocation),$0
+        FfiConverterTypeRemoteSettingsRecord.lower(record),$0
     )
 })
 }
@@ -2332,7 +2332,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_collection_name() != 54184) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_attachment() != 40834) {
+    if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_attachment() != 1009) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_records() != 64865) {
