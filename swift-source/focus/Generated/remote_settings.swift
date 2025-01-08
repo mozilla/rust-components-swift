@@ -1670,13 +1670,19 @@ public func FfiConverterTypeRemoteSettingsContext_lower(_ value: RemoteSettingsC
 public struct RemoteSettingsRecord {
     public var id: String
     public var lastModified: UInt64
+    /**
+     * Tombstone flag (see https://remote-settings.readthedocs.io/en/latest/client-specifications.html#local-state)
+     */
     public var deleted: Bool
     public var attachment: Attachment?
     public var fields: RsJsonObject
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(id: String, lastModified: UInt64, deleted: Bool, attachment: Attachment?, fields: RsJsonObject) {
+    public init(id: String, lastModified: UInt64, 
+        /**
+         * Tombstone flag (see https://remote-settings.readthedocs.io/en/latest/client-specifications.html#local-state)
+         */deleted: Bool, attachment: Attachment?, fields: RsJsonObject) {
         self.id = id
         self.lastModified = lastModified
         self.deleted = deleted

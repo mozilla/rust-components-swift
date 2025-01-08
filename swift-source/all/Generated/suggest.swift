@@ -1151,6 +1151,87 @@ public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuild
 
 
 /**
+ * Additional data about how an FTS match was made
+ */
+public struct FtsMatchInfo {
+    /**
+     * Was this a prefix match (`water b` matched against `water bottle`)
+     */
+    public var prefix: Bool
+    /**
+     * Did the match require stemming? (`run shoes` matched against `running shoes`)
+     */
+    public var stemming: Bool
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(
+        /**
+         * Was this a prefix match (`water b` matched against `water bottle`)
+         */prefix: Bool, 
+        /**
+         * Did the match require stemming? (`run shoes` matched against `running shoes`)
+         */stemming: Bool) {
+        self.prefix = prefix
+        self.stemming = stemming
+    }
+}
+
+
+
+extension FtsMatchInfo: Equatable, Hashable {
+    public static func ==(lhs: FtsMatchInfo, rhs: FtsMatchInfo) -> Bool {
+        if lhs.prefix != rhs.prefix {
+            return false
+        }
+        if lhs.stemming != rhs.stemming {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(prefix)
+        hasher.combine(stemming)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeFtsMatchInfo: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> FtsMatchInfo {
+        return
+            try FtsMatchInfo(
+                prefix: FfiConverterBool.read(from: &buf), 
+                stemming: FfiConverterBool.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: FtsMatchInfo, into buf: inout [UInt8]) {
+        FfiConverterBool.write(value.prefix, into: &buf)
+        FfiConverterBool.write(value.stemming, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFtsMatchInfo_lift(_ buf: RustBuffer) throws -> FtsMatchInfo {
+    return try FfiConverterTypeFtsMatchInfo.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeFtsMatchInfo_lower(_ value: FtsMatchInfo) -> RustBuffer {
+    return FfiConverterTypeFtsMatchInfo.lower(value)
+}
+
+
+/**
  * A single geographic place.
  *
  * This corresponds to a single row in the main "geoname" table described in
@@ -2361,7 +2442,7 @@ public enum Suggestion {
     )
     case weather(city: String?, region: String?, country: String?, latitude: Double?, longitude: Double?, score: Double
     )
-    case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: Data?, iconMimetype: String?, score: Double
+    case fakespot(fakespotGrade: String, productId: String, rating: Double, title: String, totalReviews: Int64, url: String, icon: Data?, iconMimetype: String?, score: Double, matchInfo: FtsMatchInfo?
     )
     case exposure(suggestionType: String, score: Double
     )
@@ -2399,7 +2480,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 7: return .weather(city: try FfiConverterOptionString.read(from: &buf), region: try FfiConverterOptionString.read(from: &buf), country: try FfiConverterOptionString.read(from: &buf), latitude: try FfiConverterOptionDouble.read(from: &buf), longitude: try FfiConverterOptionDouble.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), matchInfo: try FfiConverterOptionTypeFtsMatchInfo.read(from: &buf)
         )
         
         case 9: return .exposure(suggestionType: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
@@ -2489,7 +2570,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .fakespot(fakespotGrade,productId,rating,title,totalReviews,url,icon,iconMimetype,score):
+        case let .fakespot(fakespotGrade,productId,rating,title,totalReviews,url,icon,iconMimetype,score,matchInfo):
             writeInt(&buf, Int32(8))
             FfiConverterString.write(fakespotGrade, into: &buf)
             FfiConverterString.write(productId, into: &buf)
@@ -2500,6 +2581,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterOptionData.write(icon, into: &buf)
             FfiConverterOptionString.write(iconMimetype, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
+            FfiConverterOptionTypeFtsMatchInfo.write(matchInfo, into: &buf)
             
         
         case let .exposure(suggestionType,score):
@@ -2746,6 +2828,30 @@ fileprivate struct FfiConverterOptionData: FfiConverterRustBuffer {
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterData.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeFtsMatchInfo: FfiConverterRustBuffer {
+    typealias SwiftType = FtsMatchInfo?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeFtsMatchInfo.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeFtsMatchInfo.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
