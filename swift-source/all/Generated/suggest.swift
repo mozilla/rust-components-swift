@@ -1881,6 +1881,11 @@ public struct SuggestionProviderConstraints {
      * settings record(s).
      */
     public var exposureSuggestionTypes: [String]?
+    /**
+     * Which strategy should we use for the AMP queries?
+     * Use None for the default strategy.
+     */
+    public var ampAlternativeMatching: AmpMatchingStrategy?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1889,8 +1894,13 @@ public struct SuggestionProviderConstraints {
          * `Exposure` provider - For each desired exposure suggestion type, this
          * should contain the value of the `suggestion_type` field of its remote
          * settings record(s).
-         */exposureSuggestionTypes: [String]? = nil) {
+         */exposureSuggestionTypes: [String]? = nil, 
+        /**
+         * Which strategy should we use for the AMP queries?
+         * Use None for the default strategy.
+         */ampAlternativeMatching: AmpMatchingStrategy? = nil) {
         self.exposureSuggestionTypes = exposureSuggestionTypes
+        self.ampAlternativeMatching = ampAlternativeMatching
     }
 }
 
@@ -1901,11 +1911,15 @@ extension SuggestionProviderConstraints: Equatable, Hashable {
         if lhs.exposureSuggestionTypes != rhs.exposureSuggestionTypes {
             return false
         }
+        if lhs.ampAlternativeMatching != rhs.ampAlternativeMatching {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(exposureSuggestionTypes)
+        hasher.combine(ampAlternativeMatching)
     }
 }
 
@@ -1917,12 +1931,14 @@ public struct FfiConverterTypeSuggestionProviderConstraints: FfiConverterRustBuf
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SuggestionProviderConstraints {
         return
             try SuggestionProviderConstraints(
-                exposureSuggestionTypes: FfiConverterOptionSequenceString.read(from: &buf)
+                exposureSuggestionTypes: FfiConverterOptionSequenceString.read(from: &buf), 
+                ampAlternativeMatching: FfiConverterOptionTypeAmpMatchingStrategy.read(from: &buf)
         )
     }
 
     public static func write(_ value: SuggestionProviderConstraints, into buf: inout [UInt8]) {
         FfiConverterOptionSequenceString.write(value.exposureSuggestionTypes, into: &buf)
+        FfiConverterOptionTypeAmpMatchingStrategy.write(value.ampAlternativeMatching, into: &buf)
     }
 }
 
@@ -2025,6 +2041,88 @@ public func FfiConverterTypeSuggestionQuery_lift(_ buf: RustBuffer) throws -> Su
 public func FfiConverterTypeSuggestionQuery_lower(_ value: SuggestionQuery) -> RustBuffer {
     return FfiConverterTypeSuggestionQuery.lower(value)
 }
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum AmpMatchingStrategy {
+    
+    /**
+     * Disable keywords added via keyword expansion.
+     * This eliminates keywords that for terms related to the "real" keywords, for example
+     * misspellings like "underarmor" instead of "under armor"'.
+     */
+    case noKeywordExpansion
+    /**
+     * Use FTS matching against the full keywords, joined together.
+     */
+    case ftsAgainstFullKeywords
+    /**
+     * Use FTS matching against the title field
+     */
+    case ftsAgainstTitle
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeAmpMatchingStrategy: FfiConverterRustBuffer {
+    typealias SwiftType = AmpMatchingStrategy
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> AmpMatchingStrategy {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .noKeywordExpansion
+        
+        case 2: return .ftsAgainstFullKeywords
+        
+        case 3: return .ftsAgainstTitle
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: AmpMatchingStrategy, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .noKeywordExpansion:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .ftsAgainstFullKeywords:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .ftsAgainstTitle:
+            writeInt(&buf, Int32(3))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAmpMatchingStrategy_lift(_ buf: RustBuffer) throws -> AmpMatchingStrategy {
+    return try FfiConverterTypeAmpMatchingStrategy.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeAmpMatchingStrategy_lower(_ value: AmpMatchingStrategy) -> RustBuffer {
+    return FfiConverterTypeAmpMatchingStrategy.lower(value)
+}
+
+
+
+extension AmpMatchingStrategy: Equatable, Hashable {}
+
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -2876,6 +2974,30 @@ fileprivate struct FfiConverterOptionTypeSuggestionProviderConstraints: FfiConve
         switch try readInt(&buf) as Int8 {
         case 0: return nil
         case 1: return try FfiConverterTypeSuggestionProviderConstraints.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterOptionTypeAmpMatchingStrategy: FfiConverterRustBuffer {
+    typealias SwiftType = AmpMatchingStrategy?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeAmpMatchingStrategy.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeAmpMatchingStrategy.read(from: &buf)
         default: throw UniffiInternalError.unexpectedOptionalTag
         }
     }
