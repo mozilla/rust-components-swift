@@ -2526,7 +2526,7 @@ extension SuggestProviderConfig: Equatable, Hashable {}
 
 public enum Suggestion {
     
-    case amp(title: String, url: String, rawUrl: String, icon: Data?, iconMimetype: String?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double
+    case amp(title: String, url: String, rawUrl: String, icon: Data?, iconMimetype: String?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double, ftsMatchInfo: FtsMatchInfo?
     )
     case pocket(title: String, url: String, score: Double, isTopPick: Bool
     )
@@ -2557,7 +2557,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         let variant: Int32 = try readInt(&buf)
         switch variant {
         
-        case 1: return .amp(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), rawUrl: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf), blockId: try FfiConverterInt64.read(from: &buf), advertiser: try FfiConverterString.read(from: &buf), iabCategory: try FfiConverterString.read(from: &buf), impressionUrl: try FfiConverterString.read(from: &buf), clickUrl: try FfiConverterString.read(from: &buf), rawClickUrl: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 1: return .amp(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), rawUrl: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf), blockId: try FfiConverterInt64.read(from: &buf), advertiser: try FfiConverterString.read(from: &buf), iabCategory: try FfiConverterString.read(from: &buf), impressionUrl: try FfiConverterString.read(from: &buf), clickUrl: try FfiConverterString.read(from: &buf), rawClickUrl: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), ftsMatchInfo: try FfiConverterOptionTypeFtsMatchInfo.read(from: &buf)
         )
         
         case 2: return .pocket(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), isTopPick: try FfiConverterBool.read(from: &buf)
@@ -2592,7 +2592,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         switch value {
         
         
-        case let .amp(title,url,rawUrl,icon,iconMimetype,fullKeyword,blockId,advertiser,iabCategory,impressionUrl,clickUrl,rawClickUrl,score):
+        case let .amp(title,url,rawUrl,icon,iconMimetype,fullKeyword,blockId,advertiser,iabCategory,impressionUrl,clickUrl,rawClickUrl,score,ftsMatchInfo):
             writeInt(&buf, Int32(1))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
@@ -2607,6 +2607,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterString.write(clickUrl, into: &buf)
             FfiConverterString.write(rawClickUrl, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
+            FfiConverterOptionTypeFtsMatchInfo.write(ftsMatchInfo, into: &buf)
             
         
         case let .pocket(title,url,score,isTopPick):
