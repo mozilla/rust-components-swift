@@ -251,6 +251,89 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_ENCRYPTOR_DECRYPTOR_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_ENCRYPTOR_DECRYPTOR_METHOD0
+typedef void (*UniffiCallbackInterfaceEncryptorDecryptorMethod0)(uint64_t, RustBuffer, RustBuffer* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_ENCRYPTOR_DECRYPTOR_METHOD1
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_ENCRYPTOR_DECRYPTOR_METHOD1
+typedef void (*UniffiCallbackInterfaceEncryptorDecryptorMethod1)(uint64_t, RustBuffer, RustBuffer* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_KEY_MANAGER_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_KEY_MANAGER_METHOD0
+typedef void (*UniffiCallbackInterfaceKeyManagerMethod0)(uint64_t, RustBuffer* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_ENCRYPTOR_DECRYPTOR
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_ENCRYPTOR_DECRYPTOR
+typedef struct UniffiVTableCallbackInterfaceEncryptorDecryptor {
+    UniffiCallbackInterfaceEncryptorDecryptorMethod0 _Nonnull decrypt;
+    UniffiCallbackInterfaceEncryptorDecryptorMethod1 _Nonnull encrypt;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfaceEncryptorDecryptor;
+
+#endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_KEY_MANAGER
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_KEY_MANAGER
+typedef struct UniffiVTableCallbackInterfaceKeyManager {
+    UniffiCallbackInterfaceKeyManagerMethod0 _Nonnull getKey;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfaceKeyManager;
+
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_ENCRYPTORDECRYPTOR
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_ENCRYPTORDECRYPTOR
+void*_Nonnull uniffi_logins_fn_clone_encryptordecryptor(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_ENCRYPTORDECRYPTOR
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_ENCRYPTORDECRYPTOR
+void uniffi_logins_fn_free_encryptordecryptor(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_INIT_CALLBACK_VTABLE_ENCRYPTORDECRYPTOR
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_INIT_CALLBACK_VTABLE_ENCRYPTORDECRYPTOR
+void uniffi_logins_fn_init_callback_vtable_encryptordecryptor(UniffiVTableCallbackInterfaceEncryptorDecryptor* _Nonnull vtable
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_ENCRYPTORDECRYPTOR_DECRYPT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_ENCRYPTORDECRYPTOR_DECRYPT
+RustBuffer uniffi_logins_fn_method_encryptordecryptor_decrypt(void*_Nonnull ptr, RustBuffer ciphertext, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_ENCRYPTORDECRYPTOR_ENCRYPT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_ENCRYPTORDECRYPTOR_ENCRYPT
+RustBuffer uniffi_logins_fn_method_encryptordecryptor_encrypt(void*_Nonnull ptr, RustBuffer cleartext, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_KEYMANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_KEYMANAGER
+void*_Nonnull uniffi_logins_fn_clone_keymanager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_KEYMANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_KEYMANAGER
+void uniffi_logins_fn_free_keymanager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_INIT_CALLBACK_VTABLE_KEYMANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_INIT_CALLBACK_VTABLE_KEYMANAGER
+void uniffi_logins_fn_init_callback_vtable_keymanager(UniffiVTableCallbackInterfaceKeyManager* _Nonnull vtable
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_KEYMANAGER_GET_KEY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_KEYMANAGER_GET_KEY
+RustBuffer uniffi_logins_fn_method_keymanager_get_key(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_LOGINSTORE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_LOGINSTORE
 void*_Nonnull uniffi_logins_fn_clone_loginstore(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -263,17 +346,17 @@ void uniffi_logins_fn_free_loginstore(void*_Nonnull ptr, RustCallStatus *_Nonnul
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CONSTRUCTOR_LOGINSTORE_NEW
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CONSTRUCTOR_LOGINSTORE_NEW
-void*_Nonnull uniffi_logins_fn_constructor_loginstore_new(RustBuffer path, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_logins_fn_constructor_loginstore_new(RustBuffer path, void*_Nonnull encdec, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD
-RustBuffer uniffi_logins_fn_method_loginstore_add(void*_Nonnull ptr, RustBuffer login, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_logins_fn_method_loginstore_add(void*_Nonnull ptr, RustBuffer login, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_OR_UPDATE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_OR_UPDATE
-RustBuffer uniffi_logins_fn_method_loginstore_add_or_update(void*_Nonnull ptr, RustBuffer login, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_logins_fn_method_loginstore_add_or_update(void*_Nonnull ptr, RustBuffer login, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE
@@ -283,7 +366,7 @@ int8_t uniffi_logins_fn_method_loginstore_delete(void*_Nonnull ptr, RustBuffer i
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_FIND_LOGIN_TO_UPDATE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_FIND_LOGIN_TO_UPDATE
-RustBuffer uniffi_logins_fn_method_loginstore_find_login_to_update(void*_Nonnull ptr, RustBuffer look, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_logins_fn_method_loginstore_find_login_to_update(void*_Nonnull ptr, RustBuffer look, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_GET
@@ -294,6 +377,16 @@ RustBuffer uniffi_logins_fn_method_loginstore_get(void*_Nonnull ptr, RustBuffer 
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_GET_BY_BASE_DOMAIN
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_GET_BY_BASE_DOMAIN
 RustBuffer uniffi_logins_fn_method_loginstore_get_by_base_domain(void*_Nonnull ptr, RustBuffer base_domain, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
+int8_t uniffi_logins_fn_method_loginstore_has_logins_by_base_domain(void*_Nonnull ptr, RustBuffer base_domain, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_IS_EMPTY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_IS_EMPTY
+int8_t uniffi_logins_fn_method_loginstore_is_empty(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_LIST
@@ -318,12 +411,42 @@ void uniffi_logins_fn_method_loginstore_touch(void*_Nonnull ptr, RustBuffer id, 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_UPDATE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_UPDATE
-RustBuffer uniffi_logins_fn_method_loginstore_update(void*_Nonnull ptr, RustBuffer id, RustBuffer login, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_logins_fn_method_loginstore_update(void*_Nonnull ptr, RustBuffer id, RustBuffer login, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_WIPE_LOCAL
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_WIPE_LOCAL
 void uniffi_logins_fn_method_loginstore_wipe_local(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_MANAGEDENCRYPTORDECRYPTOR
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_MANAGEDENCRYPTORDECRYPTOR
+void*_Nonnull uniffi_logins_fn_clone_managedencryptordecryptor(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_MANAGEDENCRYPTORDECRYPTOR
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_MANAGEDENCRYPTORDECRYPTOR
+void uniffi_logins_fn_free_managedencryptordecryptor(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CONSTRUCTOR_MANAGEDENCRYPTORDECRYPTOR_NEW
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CONSTRUCTOR_MANAGEDENCRYPTORDECRYPTOR_NEW
+void*_Nonnull uniffi_logins_fn_constructor_managedencryptordecryptor_new(void*_Nonnull key_manager, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_STATICKEYMANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CLONE_STATICKEYMANAGER
+void*_Nonnull uniffi_logins_fn_clone_statickeymanager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_STATICKEYMANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FREE_STATICKEYMANAGER
+void uniffi_logins_fn_free_statickeymanager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CONSTRUCTOR_STATICKEYMANAGER_NEW
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_CONSTRUCTOR_STATICKEYMANAGER_NEW
+void*_Nonnull uniffi_logins_fn_constructor_statickeymanager_new(RustBuffer key, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CHECK_CANARY
@@ -342,24 +465,14 @@ RustBuffer uniffi_logins_fn_func_create_key(RustCallStatus *_Nonnull out_status
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_DECRYPT_FIELDS
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_DECRYPT_FIELDS
-RustBuffer uniffi_logins_fn_func_decrypt_fields(RustBuffer sec_fields, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_MANAGED_ENCDEC
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_MANAGED_ENCDEC
+void*_Nonnull uniffi_logins_fn_func_create_managed_encdec(void*_Nonnull key_manager, RustCallStatus *_Nonnull out_status
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_DECRYPT_LOGIN
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_DECRYPT_LOGIN
-RustBuffer uniffi_logins_fn_func_decrypt_login(RustBuffer login, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_ENCRYPT_FIELDS
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_ENCRYPT_FIELDS
-RustBuffer uniffi_logins_fn_func_encrypt_fields(RustBuffer sec_fields, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
-);
-#endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_ENCRYPT_LOGIN
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_ENCRYPT_LOGIN
-RustBuffer uniffi_logins_fn_func_encrypt_login(RustBuffer login, RustBuffer encryption_key, RustCallStatus *_Nonnull out_status
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_STATIC_KEY_MANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_STATIC_KEY_MANAGER
+void*_Nonnull uniffi_logins_fn_func_create_static_key_manager(RustBuffer key, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_LOGINS_RUSTBUFFER_ALLOC
@@ -660,27 +773,33 @@ uint16_t uniffi_logins_checksum_func_create_key(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_DECRYPT_FIELDS
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_DECRYPT_FIELDS
-uint16_t uniffi_logins_checksum_func_decrypt_fields(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_MANAGED_ENCDEC
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_MANAGED_ENCDEC
+uint16_t uniffi_logins_checksum_func_create_managed_encdec(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_DECRYPT_LOGIN
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_DECRYPT_LOGIN
-uint16_t uniffi_logins_checksum_func_decrypt_login(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_STATIC_KEY_MANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_STATIC_KEY_MANAGER
+uint16_t uniffi_logins_checksum_func_create_static_key_manager(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_ENCRYPT_FIELDS
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_ENCRYPT_FIELDS
-uint16_t uniffi_logins_checksum_func_encrypt_fields(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_ENCRYPTORDECRYPTOR_DECRYPT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_ENCRYPTORDECRYPTOR_DECRYPT
+uint16_t uniffi_logins_checksum_method_encryptordecryptor_decrypt(void
     
 );
 #endif
-#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_ENCRYPT_LOGIN
-#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_ENCRYPT_LOGIN
-uint16_t uniffi_logins_checksum_func_encrypt_login(void
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_ENCRYPTORDECRYPTOR_ENCRYPT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_ENCRYPTORDECRYPTOR_ENCRYPT
+uint16_t uniffi_logins_checksum_method_encryptordecryptor_encrypt(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_KEYMANAGER_GET_KEY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_KEYMANAGER_GET_KEY
+uint16_t uniffi_logins_checksum_method_keymanager_get_key(void
     
 );
 #endif
@@ -717,6 +836,18 @@ uint16_t uniffi_logins_checksum_method_loginstore_get(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_GET_BY_BASE_DOMAIN
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_GET_BY_BASE_DOMAIN
 uint16_t uniffi_logins_checksum_method_loginstore_get_by_base_domain(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
+uint16_t uniffi_logins_checksum_method_loginstore_has_logins_by_base_domain(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_IS_EMPTY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_IS_EMPTY
+uint16_t uniffi_logins_checksum_method_loginstore_is_empty(void
     
 );
 #endif
@@ -759,6 +890,18 @@ uint16_t uniffi_logins_checksum_method_loginstore_wipe_local(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_CONSTRUCTOR_LOGINSTORE_NEW
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_CONSTRUCTOR_LOGINSTORE_NEW
 uint16_t uniffi_logins_checksum_constructor_loginstore_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_CONSTRUCTOR_MANAGEDENCRYPTORDECRYPTOR_NEW
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_CONSTRUCTOR_MANAGEDENCRYPTORDECRYPTOR_NEW
+uint16_t uniffi_logins_checksum_constructor_managedencryptordecryptor_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_CONSTRUCTOR_STATICKEYMANAGER_NEW
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_CONSTRUCTOR_STATICKEYMANAGER_NEW
+uint16_t uniffi_logins_checksum_constructor_statickeymanager_new(void
     
 );
 #endif
