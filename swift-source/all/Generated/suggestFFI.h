@@ -334,7 +334,7 @@ void*_Nonnull uniffi_suggest_fn_constructor_suggeststorebuilder_new(RustCallStat
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_BUILD
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_BUILD
-void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_build(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_build(void*_Nonnull ptr, RustBuffer rs_service, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_CACHE_PATH

@@ -951,7 +951,7 @@ public func FfiConverterTypeSuggestStore_lower(_ value: SuggestStore) -> UnsafeM
  */
 public protocol SuggestStoreBuilderProtocol : AnyObject {
     
-    func build() throws  -> SuggestStore
+    func build(rsService: RemoteSettingsService?) throws  -> SuggestStore
     
     /**
      * Deprecated: this is no longer used by the suggest component.
@@ -1037,9 +1037,10 @@ public convenience init() {
     
 
     
-open func build()throws  -> SuggestStore {
+open func build(rsService: RemoteSettingsService? = nil)throws  -> SuggestStore {
     return try  FfiConverterTypeSuggestStore.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
-    uniffi_suggest_fn_method_suggeststorebuilder_build(self.uniffiClonePointer(),$0
+    uniffi_suggest_fn_method_suggeststorebuilder_build(self.uniffiClonePointer(),
+        FfiConverterOptionTypeRemoteSettingsService.lower(rsService),$0
     )
 })
 }
@@ -3175,6 +3176,30 @@ fileprivate struct FfiConverterOptionTypeRemoteSettingsConfig: FfiConverterRustB
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeRemoteSettingsService: FfiConverterRustBuffer {
+    typealias SwiftType = RemoteSettingsService?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeRemoteSettingsService.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeRemoteSettingsService.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -3325,6 +3350,8 @@ fileprivate struct FfiConverterSequenceTypeSuggestionProvider: FfiConverterRustB
 
 
 
+
+
 /**
  * Determines whether a "raw" sponsored suggestion URL is equivalent to a
  * "cooked" URL. The two URLs are equivalent if they are identical except for
@@ -3387,7 +3414,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststore_query_with_metrics() != 14851) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 42072) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 26843) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststorebuilder_cache_path() != 55168) {
