@@ -23,7 +23,7 @@ extension GleanMetrics {
             // Intentionally left private, no external user can instantiate a new global object.
         }
 
-        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2025, month: 2, day: 22, hour: 5, minute: 24, second: 59))
+        public static let info = BuildInfo(buildDate: DateComponents(calendar: Calendar.current, timeZone: TimeZone(abbreviation: "UTC"), year: 2025, month: 2, day: 25, hour: 5, minute: 31, second: 17))
     }
 
     enum NimbusEvents {
@@ -294,7 +294,7 @@ extension GleanMetrics {
                 name: "enrollment_status",
                 sendInPings: ["events"],
                 lifetime: .ping,
-                disabled: true
+                disabled: false
             )
             , ["branch", "conflict_slug", "error_string", "reason", "slug", "status"]
         )
