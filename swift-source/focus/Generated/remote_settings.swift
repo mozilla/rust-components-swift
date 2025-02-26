@@ -929,7 +929,7 @@ public protocol RemoteSettingsServiceProtocol : AnyObject {
     /**
      * Create a new Remote Settings client
      */
-    func makeClient(collectionName: String, appContext: RemoteSettingsContext?) throws  -> RemoteSettingsClient
+    func makeClient(collectionName: String) throws  -> RemoteSettingsClient
     
     /**
      * Sync collections for all active clients
@@ -1021,11 +1021,10 @@ public convenience init(storageDir: String, config: RemoteSettingsConfig2)throws
     /**
      * Create a new Remote Settings client
      */
-open func makeClient(collectionName: String, appContext: RemoteSettingsContext?)throws  -> RemoteSettingsClient {
+open func makeClient(collectionName: String)throws  -> RemoteSettingsClient {
     return try  FfiConverterTypeRemoteSettingsClient.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
     uniffi_remote_settings_fn_method_remotesettingsservice_make_client(self.uniffiClonePointer(),
-        FfiConverterString.lower(collectionName),
-        FfiConverterOptionTypeRemoteSettingsContext.lower(appContext),$0
+        FfiConverterString.lower(collectionName),$0
     )
 })
 }
@@ -1311,6 +1310,10 @@ public struct RemoteSettingsConfig2 {
      * Bucket name to use, defaults to "main".  Use "main-preview" for a preview bucket
      */
     public var bucketName: String?
+    /**
+     * App context to use for JEXL filtering (when the `jexl` feature is present).
+     */
+    public var appContext: RemoteSettingsContext?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1320,9 +1323,13 @@ public struct RemoteSettingsConfig2 {
          */server: RemoteSettingsServer? = nil, 
         /**
          * Bucket name to use, defaults to "main".  Use "main-preview" for a preview bucket
-         */bucketName: String? = nil) {
+         */bucketName: String? = nil, 
+        /**
+         * App context to use for JEXL filtering (when the `jexl` feature is present).
+         */appContext: RemoteSettingsContext? = nil) {
         self.server = server
         self.bucketName = bucketName
+        self.appContext = appContext
     }
 }
 
@@ -1336,12 +1343,16 @@ extension RemoteSettingsConfig2: Equatable, Hashable {
         if lhs.bucketName != rhs.bucketName {
             return false
         }
+        if lhs.appContext != rhs.appContext {
+            return false
+        }
         return true
     }
 
     public func hash(into hasher: inout Hasher) {
         hasher.combine(server)
         hasher.combine(bucketName)
+        hasher.combine(appContext)
     }
 }
 
@@ -1354,13 +1365,15 @@ public struct FfiConverterTypeRemoteSettingsConfig2: FfiConverterRustBuffer {
         return
             try RemoteSettingsConfig2(
                 server: FfiConverterOptionTypeRemoteSettingsServer.read(from: &buf), 
-                bucketName: FfiConverterOptionString.read(from: &buf)
+                bucketName: FfiConverterOptionString.read(from: &buf), 
+                appContext: FfiConverterOptionTypeRemoteSettingsContext.read(from: &buf)
         )
     }
 
     public static func write(_ value: RemoteSettingsConfig2, into buf: inout [UInt8]) {
         FfiConverterOptionTypeRemoteSettingsServer.write(value.server, into: &buf)
         FfiConverterOptionString.write(value.bucketName, into: &buf)
+        FfiConverterOptionTypeRemoteSettingsContext.write(value.appContext, into: &buf)
     }
 }
 
@@ -2347,7 +2360,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_records_map() != 32665) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettingsservice_make_client() != 41207) {
+    if (uniffi_remote_settings_checksum_method_remotesettingsservice_make_client() != 50814) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_remote_settings_checksum_method_remotesettingsservice_sync() != 61379) {

@@ -951,7 +951,7 @@ public func FfiConverterTypeSuggestStore_lower(_ value: SuggestStore) -> UnsafeM
  */
 public protocol SuggestStoreBuilderProtocol : AnyObject {
     
-    func build(rsService: RemoteSettingsService?) throws  -> SuggestStore
+    func build() throws  -> SuggestStore
     
     /**
      * Deprecated: this is no longer used by the suggest component.
@@ -972,6 +972,8 @@ public protocol SuggestStoreBuilderProtocol : AnyObject {
     func remoteSettingsBucketName(bucketName: String)  -> SuggestStoreBuilder
     
     func remoteSettingsServer(server: RemoteSettingsServer)  -> SuggestStoreBuilder
+    
+    func remoteSettingsService(rsService: RemoteSettingsService)  -> SuggestStoreBuilder
     
 }
 /**
@@ -1037,10 +1039,9 @@ public convenience init() {
     
 
     
-open func build(rsService: RemoteSettingsService? = nil)throws  -> SuggestStore {
+open func build()throws  -> SuggestStore {
     return try  FfiConverterTypeSuggestStore.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
-    uniffi_suggest_fn_method_suggeststorebuilder_build(self.uniffiClonePointer(),
-        FfiConverterOptionTypeRemoteSettingsService.lower(rsService),$0
+    uniffi_suggest_fn_method_suggeststorebuilder_build(self.uniffiClonePointer(),$0
     )
 })
 }
@@ -1092,6 +1093,14 @@ open func remoteSettingsServer(server: RemoteSettingsServer) -> SuggestStoreBuil
     return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_server(self.uniffiClonePointer(),
         FfiConverterTypeRemoteSettingsServer_lower(server),$0
+    )
+})
+}
+    
+open func remoteSettingsService(rsService: RemoteSettingsService) -> SuggestStoreBuilder {
+    return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
+    uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_service(self.uniffiClonePointer(),
+        FfiConverterTypeRemoteSettingsService_lower(rsService),$0
     )
 })
 }
@@ -3176,30 +3185,6 @@ fileprivate struct FfiConverterOptionTypeRemoteSettingsConfig: FfiConverterRustB
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-fileprivate struct FfiConverterOptionTypeRemoteSettingsService: FfiConverterRustBuffer {
-    typealias SwiftType = RemoteSettingsService?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeRemoteSettingsService.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeRemoteSettingsService.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -3414,7 +3399,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststore_query_with_metrics() != 14851) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 26843) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_build() != 42072) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststorebuilder_cache_path() != 55168) {
@@ -3430,6 +3415,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_server() != 19990) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_service() != 52699) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_constructor_suggeststore_new() != 9768) {
