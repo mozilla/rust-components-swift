@@ -4,6 +4,7 @@ module MozillaRustComponents {
     header "crashtestFFI.h"
     header "errorFFI.h"
     header "fxa_clientFFI.h"
+    header "init_rust_componentsFFI.h"
     header "loginsFFI.h"
     header "nimbusFFI.h"
     header "placesFFI.h"
