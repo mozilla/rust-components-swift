@@ -500,6 +500,8 @@ public protocol SearchEngineSelectorProtocol : AnyObject {
      */
     func filterEngineConfiguration(userEnvironment: SearchUserEnvironment) throws  -> RefinedSearchConfig
     
+    func setConfigOverrides(overrides: String) throws 
+    
     /**
      * Sets the search configuration from the given string. If the configuration
      * string is unchanged since the last update, the cached configuration is
@@ -608,6 +610,13 @@ open func filterEngineConfiguration(userEnvironment: SearchUserEnvironment)throw
         FfiConverterTypeSearchUserEnvironment.lower(userEnvironment),$0
     )
 })
+}
+    
+open func setConfigOverrides(overrides: String)throws  {try rustCallWithError(FfiConverterTypeSearchApiError.lift) {
+    uniffi_search_fn_method_searchengineselector_set_config_overrides(self.uniffiClonePointer(),
+        FfiConverterString.lower(overrides),$0
+    )
+}
 }
     
     /**
@@ -1118,6 +1127,10 @@ public struct SearchEngineDefinition {
      * upon (e.g. alphabetical).
      */
     public var orderHint: UInt32?
+    /**
+     * The url used for reporting clicks.
+     */
+    public var clickUrl: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1166,7 +1179,10 @@ public struct SearchEngineDefinition {
          * The higher the number, the nearer to the front it should be.
          * If the number is not specified, other methods of sorting may be relied
          * upon (e.g. alphabetical).
-         */orderHint: UInt32?) {
+         */orderHint: UInt32?, 
+        /**
+         * The url used for reporting clicks.
+         */clickUrl: String?) {
         self.aliases = aliases
         self.charset = charset
         self.classification = classification
@@ -1177,6 +1193,7 @@ public struct SearchEngineDefinition {
         self.telemetrySuffix = telemetrySuffix
         self.urls = urls
         self.orderHint = orderHint
+        self.clickUrl = clickUrl
     }
 }
 
@@ -1214,6 +1231,9 @@ extension SearchEngineDefinition: Equatable, Hashable {
         if lhs.orderHint != rhs.orderHint {
             return false
         }
+        if lhs.clickUrl != rhs.clickUrl {
+            return false
+        }
         return true
     }
 
@@ -1228,6 +1248,7 @@ extension SearchEngineDefinition: Equatable, Hashable {
         hasher.combine(telemetrySuffix)
         hasher.combine(urls)
         hasher.combine(orderHint)
+        hasher.combine(clickUrl)
     }
 }
 
@@ -1248,7 +1269,8 @@ public struct FfiConverterTypeSearchEngineDefinition: FfiConverterRustBuffer {
                 partnerCode: FfiConverterString.read(from: &buf), 
                 telemetrySuffix: FfiConverterString.read(from: &buf), 
                 urls: FfiConverterTypeSearchEngineUrls.read(from: &buf), 
-                orderHint: FfiConverterOptionUInt32.read(from: &buf)
+                orderHint: FfiConverterOptionUInt32.read(from: &buf), 
+                clickUrl: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -1263,6 +1285,7 @@ public struct FfiConverterTypeSearchEngineDefinition: FfiConverterRustBuffer {
         FfiConverterString.write(value.telemetrySuffix, into: &buf)
         FfiConverterTypeSearchEngineUrls.write(value.urls, into: &buf)
         FfiConverterOptionUInt32.write(value.orderHint, into: &buf)
+        FfiConverterOptionString.write(value.clickUrl, into: &buf)
     }
 }
 
@@ -2482,6 +2505,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_search_checksum_method_searchengineselector_filter_engine_configuration() != 58182) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_search_checksum_method_searchengineselector_set_config_overrides() != 22323) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_search_checksum_method_searchengineselector_set_search_config() != 35713) {
