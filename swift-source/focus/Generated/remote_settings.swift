@@ -736,6 +736,8 @@ public protocol RemoteSettingsClientProtocol : AnyObject {
      */
     func getRecordsMap(syncIfEmpty: Bool)  -> [String: RemoteSettingsRecord]?
     
+    func sync() throws 
+    
 }
 /**
  * Client for a single Remote Settings collection
@@ -859,6 +861,12 @@ open func getRecordsMap(syncIfEmpty: Bool = false) -> [String: RemoteSettingsRec
         FfiConverterBool.lower(syncIfEmpty),$0
     )
 })
+}
+    
+open func sync()throws  {try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+    uniffi_remote_settings_fn_method_remotesettingsclient_sync(self.uniffiClonePointer(),$0
+    )
+}
 }
     
 
@@ -2358,6 +2366,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_records_map() != 32665) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_remote_settings_checksum_method_remotesettingsclient_sync() != 29749) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_remote_settings_checksum_method_remotesettingsservice_make_client() != 50814) {

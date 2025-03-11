@@ -263,7 +263,7 @@ void uniffi_suggest_fn_free_suggeststore(void*_Nonnull ptr, RustCallStatus *_Non
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_CONSTRUCTOR_SUGGESTSTORE_NEW
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_CONSTRUCTOR_SUGGESTSTORE_NEW
-void*_Nonnull uniffi_suggest_fn_constructor_suggeststore_new(RustBuffer path, RustBuffer settings_config, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_suggest_fn_constructor_suggeststore_new(RustBuffer path, void*_Nonnull remote_settings_service, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_CLEAR
@@ -364,7 +364,7 @@ void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_serve
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_REMOTE_SETTINGS_SERVICE
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTOREBUILDER_REMOTE_SETTINGS_SERVICE
-void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_service(void*_Nonnull ptr, void*_Nonnull _rs_service, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_service(void*_Nonnull ptr, void*_Nonnull rs_service, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_FUNC_RAW_SUGGESTION_URL_MATCHES

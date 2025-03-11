@@ -728,12 +728,12 @@ open class SuggestStore:
     /**
      * Creates a Suggest store.
      */
-public convenience init(path: String, settingsConfig: RemoteSettingsConfig? = nil)throws  {
+public convenience init(path: String, remoteSettingsService: RemoteSettingsService)throws  {
     let pointer =
         try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_constructor_suggeststore_new(
         FfiConverterString.lower(path),
-        FfiConverterOptionTypeRemoteSettingsConfig.lower(settingsConfig),$0
+        FfiConverterTypeRemoteSettingsService_lower(remoteSettingsService),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -3161,30 +3161,6 @@ fileprivate struct FfiConverterOptionSequenceTypeSuggestionProvider: FfiConverte
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-fileprivate struct FfiConverterOptionTypeRemoteSettingsConfig: FfiConverterRustBuffer {
-    typealias SwiftType = RemoteSettingsConfig?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterTypeRemoteSettingsConfig.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterTypeRemoteSettingsConfig.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -3335,8 +3311,6 @@ fileprivate struct FfiConverterSequenceTypeSuggestionProvider: FfiConverterRustB
 
 
 
-
-
 /**
  * Determines whether a "raw" sponsored suggestion URL is equivalent to a
  * "cooked" URL. The two URLs are equivalent if they are identical except for
@@ -3417,10 +3391,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_server() != 19990) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_service() != 52699) {
+    if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_service() != 25201) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 9768) {
+    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 27588) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_constructor_suggeststorebuilder_new() != 1218) {
