@@ -2738,9 +2738,8 @@ public enum SuggestionProvider : UInt8 {
     case yelp = 5
     case mdn = 6
     case weather = 7
-    case ampMobile = 8
-    case fakespot = 9
-    case exposure = 10
+    case fakespot = 8
+    case exposure = 9
 }
 
 
@@ -2768,11 +2767,9 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case 7: return .weather
         
-        case 8: return .ampMobile
+        case 8: return .fakespot
         
-        case 9: return .fakespot
-        
-        case 10: return .exposure
+        case 9: return .exposure
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -2810,16 +2807,12 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
             writeInt(&buf, Int32(7))
         
         
-        case .ampMobile:
+        case .fakespot:
             writeInt(&buf, Int32(8))
         
         
-        case .fakespot:
-            writeInt(&buf, Int32(9))
-        
-        
         case .exposure:
-            writeInt(&buf, Int32(10))
+            writeInt(&buf, Int32(9))
         
         }
     }
