@@ -436,12 +436,7 @@ fileprivate struct FfiConverterString: FfiConverter {
     }
 }
 /**
- * Global initialization routines for Rust components. Must be called before any other calls to
- * Rust components.
- *
- * For adding additional initialization code: Note that this function is called very early in the
- * app lifetime and therefore affects the startup time. Only the most necessary things should be
- * done here.
+ * Initialization of the megazord crate. Must be called before any other calls to rust components.
  */
 public func initialize() {try! rustCall() {
     uniffi_init_rust_components_fn_func_initialize($0
@@ -464,7 +459,7 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_init_rust_components_checksum_func_initialize() != 63728) {
+    if (uniffi_init_rust_components_checksum_func_initialize() != 43335) {
         return InitializationResult.apiChecksumMismatch
     }
 
