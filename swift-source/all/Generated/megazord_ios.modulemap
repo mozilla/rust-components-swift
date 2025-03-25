@@ -6,6 +6,7 @@ module MozillaRustComponents {
     header "fxa_clientFFI.h"
     header "init_rust_componentsFFI.h"
     header "loginsFFI.h"
+    header "merinoFFI.h"
     header "nimbusFFI.h"
     header "placesFFI.h"
     header "pushFFI.h"
