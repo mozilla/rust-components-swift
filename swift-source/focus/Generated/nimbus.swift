@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureInitialized()
+    uniffiEnsureNimbusInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,9 +352,10 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate class UniffiHandleMap<T> {
-    private var map: [UInt64: T] = [:]
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
     private let lock = NSLock()
+    private var map: [UInt64: T] = [:]
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -391,6 +392,7 @@ fileprivate class UniffiHandleMap<T> {
         }
     }
 }
+
 
 // Public interface members begin here.
 
@@ -511,7 +513,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol NimbusClientProtocol : AnyObject {
+public protocol NimbusClientProtocol: AnyObject, Sendable {
     
     /**
      * Advances what the event store thinks is now.
@@ -688,8 +690,7 @@ public protocol NimbusClientProtocol : AnyObject {
     func setGlobalUserParticipation(optIn: Bool) throws  -> [EnrollmentChangeEvent]
     
 }
-open class NimbusClient:
-    NimbusClientProtocol {
+open class NimbusClient: NimbusClientProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -703,6 +704,9 @@ open class NimbusClient:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -727,14 +731,14 @@ open class NimbusClient:
     }
 public convenience init(appCtx: AppContext, recordedContext: RecordedContext?, coenrollingFeatureIds: [String], dbpath: String, remoteSettingsConfig: RemoteSettingsConfig?, metricsHandler: MetricsHandler)throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+        try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_constructor_nimbusclient_new(
-        FfiConverterTypeAppContext.lower(appCtx),
+        FfiConverterTypeAppContext_lower(appCtx),
         FfiConverterOptionTypeRecordedContext.lower(recordedContext),
         FfiConverterSequenceString.lower(coenrollingFeatureIds),
         FfiConverterString.lower(dbpath),
         FfiConverterOptionTypeRemoteSettingsConfig.lower(remoteSettingsConfig),
-        FfiConverterCallbackInterfaceMetricsHandler.lower(metricsHandler),$0
+        FfiConverterCallbackInterfaceMetricsHandler_lower(metricsHandler),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -756,7 +760,7 @@ public convenience init(appCtx: AppContext, recordedContext: RecordedContext?, c
      * This, and `record_past_event` are useful for testing.
      * `by_seconds` must be positive.
      */
-open func advanceEventTime(bySeconds: Int64)throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func advanceEventTime(bySeconds: Int64)throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_advance_event_time(self.uniffiClonePointer(),
         FfiConverterInt64.lower(bySeconds),$0
     )
@@ -768,14 +772,14 @@ open func advanceEventTime(bySeconds: Int64)throws  {try rustCallWithError(FfiCo
      * After calling this, the list of active experiments might change
      * (there might be new experiments, or old experiments might have expired).
      */
-open func applyPendingExperiments()throws  -> [EnrollmentChangeEvent] {
-    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func applyPendingExperiments()throws  -> [EnrollmentChangeEvent]  {
+    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_apply_pending_experiments(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func clearEvents()throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func clearEvents()throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_clear_events(self.uniffiClonePointer(),$0
     )
 }
@@ -785,8 +789,8 @@ open func clearEvents()throws  {try rustCallWithError(FfiConverterTypeNimbusErro
      * This provides a unified String interpolation library which exposes the application context.
      * It's first use is in the messaging helper, to add extra parameters to URLs.
      */
-open func createStringHelper(additionalContext: JsonObject? = nil)throws  -> NimbusStringHelper {
-    return try  FfiConverterTypeNimbusStringHelper.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func createStringHelper(additionalContext: JsonObject? = nil)throws  -> NimbusStringHelper  {
+    return try  FfiConverterTypeNimbusStringHelper_lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_create_string_helper(self.uniffiClonePointer(),
         FfiConverterOptionTypeJsonObject.lower(additionalContext),$0
     )
@@ -798,15 +802,15 @@ open func createStringHelper(additionalContext: JsonObject? = nil)throws  -> Nim
      * Additional parameters can be added via the optional JSON object. This allows for many JEXL expressions
      * to be run across the same context.
      */
-open func createTargetingHelper(additionalContext: JsonObject? = nil)throws  -> NimbusTargetingHelper {
-    return try  FfiConverterTypeNimbusTargetingHelper.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func createTargetingHelper(additionalContext: JsonObject? = nil)throws  -> NimbusTargetingHelper  {
+    return try  FfiConverterTypeNimbusTargetingHelper_lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_create_targeting_helper(self.uniffiClonePointer(),
         FfiConverterOptionTypeJsonObject.lower(additionalContext),$0
     )
 })
 }
     
-open func dumpStateToLog()throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func dumpStateToLog()throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_dump_state_to_log(self.uniffiClonePointer(),$0
     )
 }
@@ -817,7 +821,7 @@ open func dumpStateToLog()throws  {try rustCallWithError(FfiConverterTypeNimbusE
      * of active experiments or experiment enrolment.
      * Fetched experiments are not applied until `apply_pending_updates()` is called.
      */
-open func fetchExperiments()throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func fetchExperiments()throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_fetch_experiments(self.uniffiClonePointer(),$0
     )
 }
@@ -826,8 +830,8 @@ open func fetchExperiments()throws  {try rustCallWithError(FfiConverterTypeNimbu
     /**
      * Returns a list of experiments this user is enrolled in.
      */
-open func getActiveExperiments()throws  -> [EnrolledExperiment] {
-    return try  FfiConverterSequenceTypeEnrolledExperiment.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func getActiveExperiments()throws  -> [EnrolledExperiment]  {
+    return try  FfiConverterSequenceTypeEnrolledExperiment.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_get_active_experiments(self.uniffiClonePointer(),$0
     )
 })
@@ -837,8 +841,8 @@ open func getActiveExperiments()throws  -> [EnrolledExperiment] {
      * Returns a list of experiments for this `app_name`, as specified in the `AppContext`.
      * It is not intended to be used to be used for user facing applications.
      */
-open func getAvailableExperiments()throws  -> [AvailableExperiment] {
-    return try  FfiConverterSequenceTypeAvailableExperiment.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func getAvailableExperiments()throws  -> [AvailableExperiment]  {
+    return try  FfiConverterSequenceTypeAvailableExperiment.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_get_available_experiments(self.uniffiClonePointer(),$0
     )
 })
@@ -847,8 +851,8 @@ open func getAvailableExperiments()throws  -> [AvailableExperiment] {
     /**
      * Returns the branch allocated for a given slug or id.
      */
-open func getExperimentBranch(id: String)throws  -> String? {
-    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func getExperimentBranch(id: String)throws  -> String?  {
+    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_get_experiment_branch(self.uniffiClonePointer(),
         FfiConverterString.lower(id),$0
     )
@@ -858,16 +862,16 @@ open func getExperimentBranch(id: String)throws  -> String? {
     /**
      * Returns a list of experiment branches for a given experiment ID.
      */
-open func getExperimentBranches(experimentSlug: String)throws  -> [ExperimentBranch] {
-    return try  FfiConverterSequenceTypeExperimentBranch.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func getExperimentBranches(experimentSlug: String)throws  -> [ExperimentBranch]  {
+    return try  FfiConverterSequenceTypeExperimentBranch.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_get_experiment_branches(self.uniffiClonePointer(),
         FfiConverterString.lower(experimentSlug),$0
     )
 })
 }
     
-open func getFeatureConfigVariables(featureId: String)throws  -> String? {
-    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func getFeatureConfigVariables(featureId: String)throws  -> String?  {
+    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_get_feature_config_variables(self.uniffiClonePointer(),
         FfiConverterString.lower(featureId),$0
     )
@@ -880,8 +884,8 @@ open func getFeatureConfigVariables(featureId: String)throws  -> String? {
      * * `true`: the user will not enroll in new experiments, and opt out of all existing ones.
      * * `false`: experiments proceed as usual.
      */
-open func getGlobalUserParticipation()throws  -> Bool {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func getGlobalUserParticipation()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_get_global_user_participation(self.uniffiClonePointer(),$0
     )
 })
@@ -897,14 +901,14 @@ open func getGlobalUserParticipation()throws  -> Bool {
      * functions will return data instead of returning an error, and will do
      * the minimum amount of work to achieve that.
      */
-open func initialize()throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func initialize()throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_initialize(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func isFetchEnabled()throws  -> Bool {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func isFetchEnabled()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_is_fetch_enabled(self.uniffiClonePointer(),$0
     )
 })
@@ -914,8 +918,8 @@ open func isFetchEnabled()throws  -> Bool {
      * Opt in to a specific branch on a specific experiment. Useful for
      * developers to test their app's interaction with the experiment.
      */
-open func optInWithBranch(experimentSlug: String, branch: String)throws  -> [EnrollmentChangeEvent] {
-    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func optInWithBranch(experimentSlug: String, branch: String)throws  -> [EnrollmentChangeEvent]  {
+    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_opt_in_with_branch(self.uniffiClonePointer(),
         FfiConverterString.lower(experimentSlug),
         FfiConverterString.lower(branch),$0
@@ -926,8 +930,8 @@ open func optInWithBranch(experimentSlug: String, branch: String)throws  -> [Enr
     /**
      * Opt out of a specific experiment.
      */
-open func optOut(experimentSlug: String)throws  -> [EnrollmentChangeEvent] {
-    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func optOut(experimentSlug: String)throws  -> [EnrollmentChangeEvent]  {
+    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_opt_out(self.uniffiClonePointer(),
         FfiConverterString.lower(experimentSlug),$0
     )
@@ -939,7 +943,7 @@ open func optOut(experimentSlug: String)throws  -> [EnrollmentChangeEvent] {
      * This function is used to record and persist data used for the behavioral
      * targeting such as "core-active" user targeting.
      */
-open func recordEvent(eventId: String, count: Int64 = Int64(1))throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func recordEvent(eventId: String, count: Int64 = Int64(1))throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_record_event(self.uniffiClonePointer(),
         FfiConverterString.lower(eventId),
         FfiConverterInt64.lower(count),$0
@@ -958,7 +962,7 @@ open func recordEvent(eventId: String, count: Int64 = Int64(1))throws  {try rust
      * If the slug is specified, then use this as the experiment, and use it to look up
      * the branch. This is useful for coenrolling features.
      */
-open func recordFeatureExposure(featureId: String, slug: String?) {try! rustCall() {
+open func recordFeatureExposure(featureId: String, slug: String?)  {try! rustCall() {
     uniffi_nimbus_fn_method_nimbusclient_record_feature_exposure(self.uniffiClonePointer(),
         FfiConverterString.lower(featureId),
         FfiConverterOptionString.lower(slug),$0
@@ -974,7 +978,7 @@ open func recordFeatureExposure(featureId: String, slug: String?) {try! rustCall
      * vary depending on whether then feature is part of an experiment or rollout
      * or not.
      */
-open func recordMalformedFeatureConfig(featureId: String, partId: String) {try! rustCall() {
+open func recordMalformedFeatureConfig(featureId: String, partId: String)  {try! rustCall() {
     uniffi_nimbus_fn_method_nimbusclient_record_malformed_feature_config(self.uniffiClonePointer(),
         FfiConverterString.lower(featureId),
         FfiConverterString.lower(partId),$0
@@ -987,7 +991,7 @@ open func recordMalformedFeatureConfig(featureId: String, partId: String) {try! 
      * This, and `advance_event_time` are useful for testing.
      * `seconds_ago` must be positive.
      */
-open func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64 = Int64(1))throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64 = Int64(1))throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_record_past_event(self.uniffiClonePointer(),
         FfiConverterString.lower(eventId),
         FfiConverterInt64.lower(secondsAgo),
@@ -1001,7 +1005,7 @@ open func recordPastEvent(eventId: String, secondsAgo: Int64, count: Int64 = Int
      * users, as they mess with the "statistical requirements" of the SDK.
      * Reset the enrollments and experiments in the database to an empty state.
      */
-open func resetEnrollments()throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func resetEnrollments()throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_reset_enrollments(self.uniffiClonePointer(),$0
     )
 }
@@ -1023,8 +1027,8 @@ open func resetEnrollments()throws  {try rustCallWithError(FfiConverterTypeNimbu
      *      misleading incomplete data.
 
      */
-open func resetTelemetryIdentifiers()throws  -> [EnrollmentChangeEvent] {
-    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func resetTelemetryIdentifiers()throws  -> [EnrollmentChangeEvent]  {
+    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_reset_telemetry_identifiers(self.uniffiClonePointer(),$0
     )
 })
@@ -1036,7 +1040,7 @@ open func resetTelemetryIdentifiers()throws  -> [EnrollmentChangeEvent] {
      *
      * Experiments set with this method are not applied until `apply_pending_updates()` is called.
      */
-open func setExperimentsLocally(experimentsJson: String)throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func setExperimentsLocally(experimentsJson: String)throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_set_experiments_locally(self.uniffiClonePointer(),
         FfiConverterString.lower(experimentsJson),$0
     )
@@ -1049,15 +1053,15 @@ open func setExperimentsLocally(experimentsJson: String)throws  {try rustCallWit
      * This is only useful for QA, and should not be used in production: use
      * `set_global_user_participation` instead.
      */
-open func setFetchEnabled(flag: Bool)throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func setFetchEnabled(flag: Bool)throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_set_fetch_enabled(self.uniffiClonePointer(),
         FfiConverterBool.lower(flag),$0
     )
 }
 }
     
-open func setGlobalUserParticipation(optIn: Bool)throws  -> [EnrollmentChangeEvent] {
-    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func setGlobalUserParticipation(optIn: Bool)throws  -> [EnrollmentChangeEvent]  {
+    return try  FfiConverterSequenceTypeEnrollmentChangeEvent.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbusclient_set_global_user_participation(self.uniffiClonePointer(),
         FfiConverterBool.lower(optIn),$0
     )
@@ -1066,6 +1070,7 @@ open func setGlobalUserParticipation(optIn: Bool)throws  -> [EnrollmentChangeEve
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1102,8 +1107,6 @@ public struct FfiConverterTypeNimbusClient: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1121,7 +1124,9 @@ public func FfiConverterTypeNimbusClient_lower(_ value: NimbusClient) -> UnsafeM
 
 
 
-public protocol NimbusStringHelperProtocol : AnyObject {
+
+
+public protocol NimbusStringHelperProtocol: AnyObject, Sendable {
     
     /**
      * Generates an optional UUID to be passed into the `string_format` method.
@@ -1136,8 +1141,7 @@ public protocol NimbusStringHelperProtocol : AnyObject {
     func stringFormat(template: String, uuid: String?)  -> String
     
 }
-open class NimbusStringHelper:
-    NimbusStringHelperProtocol {
+open class NimbusStringHelper: NimbusStringHelperProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -1151,6 +1155,9 @@ open class NimbusStringHelper:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1190,7 +1197,7 @@ open class NimbusStringHelper:
      * Generates an optional UUID to be passed into the `string_format` method.
      * If the return is not null, then it should be recorded with Glean as a UuidMetricType.
      */
-open func getUuid(template: String) -> String? {
+open func getUuid(template: String) -> String?  {
     return try!  FfiConverterOptionString.lift(try! rustCall() {
     uniffi_nimbus_fn_method_nimbusstringhelper_get_uuid(self.uniffiClonePointer(),
         FfiConverterString.lower(template),$0
@@ -1202,7 +1209,7 @@ open func getUuid(template: String) -> String? {
      * Take the given template and find patterns that match the regular expression `{\w+}`.
      * Any matches are used as keys into the application context, the `additional_context` or the special case `uuid`.
      */
-open func stringFormat(template: String, uuid: String? = nil) -> String {
+open func stringFormat(template: String, uuid: String? = nil) -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_nimbus_fn_method_nimbusstringhelper_string_format(self.uniffiClonePointer(),
         FfiConverterString.lower(template),
@@ -1213,6 +1220,7 @@ open func stringFormat(template: String, uuid: String? = nil) -> String {
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1249,8 +1257,6 @@ public struct FfiConverterTypeNimbusStringHelper: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1268,7 +1274,9 @@ public func FfiConverterTypeNimbusStringHelper_lower(_ value: NimbusStringHelper
 
 
 
-public protocol NimbusTargetingHelperProtocol : AnyObject {
+
+
+public protocol NimbusTargetingHelperProtocol: AnyObject, Sendable {
     
     /**
      * Execute the given jexl expression and evaluate against the existing targeting parameters and context passed to
@@ -1277,8 +1285,7 @@ public protocol NimbusTargetingHelperProtocol : AnyObject {
     func evalJexl(expression: String) throws  -> Bool
     
 }
-open class NimbusTargetingHelper:
-    NimbusTargetingHelperProtocol {
+open class NimbusTargetingHelper: NimbusTargetingHelperProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -1292,6 +1299,9 @@ open class NimbusTargetingHelper:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1331,8 +1341,8 @@ open class NimbusTargetingHelper:
      * Execute the given jexl expression and evaluate against the existing targeting parameters and context passed to
      * the helper at construction.
      */
-open func evalJexl(expression: String)throws  -> Bool {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+open func evalJexl(expression: String)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_method_nimbustargetinghelper_eval_jexl(self.uniffiClonePointer(),
         FfiConverterString.lower(expression),$0
     )
@@ -1341,6 +1351,7 @@ open func evalJexl(expression: String)throws  -> Bool {
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1377,8 +1388,6 @@ public struct FfiConverterTypeNimbusTargetingHelper: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1396,7 +1405,9 @@ public func FfiConverterTypeNimbusTargetingHelper_lower(_ value: NimbusTargeting
 
 
 
-public protocol RecordedContext : AnyObject {
+
+
+public protocol RecordedContext: AnyObject, Sendable {
     
     func getEventQueries()  -> [String: String]
     
@@ -1407,8 +1418,7 @@ public protocol RecordedContext : AnyObject {
     func toJson()  -> JsonObject
     
 }
-open class RecordedContextImpl:
-    RecordedContext {
+open class RecordedContextImpl: RecordedContext, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -1422,6 +1432,9 @@ open class RecordedContextImpl:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1457,28 +1470,28 @@ open class RecordedContextImpl:
     
 
     
-open func getEventQueries() -> [String: String] {
+open func getEventQueries() -> [String: String]  {
     return try!  FfiConverterDictionaryStringString.lift(try! rustCall() {
     uniffi_nimbus_fn_method_recordedcontext_get_event_queries(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func record() {try! rustCall() {
+open func record()  {try! rustCall() {
     uniffi_nimbus_fn_method_recordedcontext_record(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func setEventQueryValues(eventQueryValues: [String: Double]) {try! rustCall() {
+open func setEventQueryValues(eventQueryValues: [String: Double])  {try! rustCall() {
     uniffi_nimbus_fn_method_recordedcontext_set_event_query_values(self.uniffiClonePointer(),
         FfiConverterDictionaryStringDouble.lower(eventQueryValues),$0
     )
 }
 }
     
-open func toJson() -> JsonObject {
-    return try!  FfiConverterTypeJsonObject.lift(try! rustCall() {
+open func toJson() -> JsonObject  {
+    return try!  FfiConverterTypeJsonObject_lift(try! rustCall() {
     uniffi_nimbus_fn_method_recordedcontext_to_json(self.uniffiClonePointer(),$0
     )
 })
@@ -1499,7 +1512,10 @@ fileprivate struct UniffiCallbackInterfaceRecordedContext {
 
     // Create the VTable using a series of closures.
     // Swift automatically converts these into C callback functions.
-    static var vtable: UniffiVTableCallbackInterfaceRecordedContext = UniffiVTableCallbackInterfaceRecordedContext(
+    //
+    // This creates 1-element array, since this seems to be the only way to construct a const
+    // pointer that we can pass to the Rust code.
+    static let vtable: [UniffiVTableCallbackInterfaceRecordedContext] = [UniffiVTableCallbackInterfaceRecordedContext(
         getEventQueries: { (
             uniffiHandle: UInt64,
             uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
@@ -1583,7 +1599,7 @@ fileprivate struct UniffiCallbackInterfaceRecordedContext {
             }
 
             
-            let writeReturn = { uniffiOutReturn.pointee = FfiConverterTypeJsonObject.lower($0) }
+            let writeReturn = { uniffiOutReturn.pointee = FfiConverterTypeJsonObject_lower($0) }
             uniffiTraitInterfaceCall(
                 callStatus: uniffiCallStatus,
                 makeCall: makeCall,
@@ -1596,18 +1612,19 @@ fileprivate struct UniffiCallbackInterfaceRecordedContext {
                 print("Uniffi callback interface RecordedContext: handle missing in uniffiFree")
             }
         }
-    )
+    )]
 }
 
 private func uniffiCallbackInitRecordedContext() {
-    uniffi_nimbus_fn_init_callback_vtable_recordedcontext(&UniffiCallbackInterfaceRecordedContext.vtable)
+    uniffi_nimbus_fn_init_callback_vtable_recordedcontext(UniffiCallbackInterfaceRecordedContext.vtable)
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeRecordedContext: FfiConverter {
-    fileprivate static var handleMap = UniffiHandleMap<RecordedContext>()
+    fileprivate static let handleMap = UniffiHandleMap<RecordedContext>()
 
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = RecordedContext
@@ -1642,8 +1659,6 @@ public struct FfiConverterTypeRecordedContext: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1657,6 +1672,8 @@ public func FfiConverterTypeRecordedContext_lift(_ pointer: UnsafeMutableRawPoin
 public func FfiConverterTypeRecordedContext_lower(_ value: RecordedContext) -> UnsafeMutableRawPointer {
     return FfiConverterTypeRecordedContext.lower(value)
 }
+
+
 
 
 public struct AppContext {
@@ -1699,6 +1716,9 @@ public struct AppContext {
     }
 }
 
+#if compiler(>=6)
+extension AppContext: Sendable {}
+#endif
 
 
 extension AppContext: Equatable, Hashable {
@@ -1773,6 +1793,7 @@ extension AppContext: Equatable, Hashable {
         hasher.combine(customTargetingAttributes)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1855,6 +1876,9 @@ public struct AvailableExperiment {
     }
 }
 
+#if compiler(>=6)
+extension AvailableExperiment: Sendable {}
+#endif
 
 
 extension AvailableExperiment: Equatable, Hashable {
@@ -1885,6 +1909,7 @@ extension AvailableExperiment: Equatable, Hashable {
         hasher.combine(referenceBranch)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1943,6 +1968,9 @@ public struct CalculatedAttributes {
     }
 }
 
+#if compiler(>=6)
+extension CalculatedAttributes: Sendable {}
+#endif
 
 
 extension CalculatedAttributes: Equatable, Hashable {
@@ -1969,6 +1997,7 @@ extension CalculatedAttributes: Equatable, Hashable {
         hasher.combine(region)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -2027,6 +2056,9 @@ public struct EnrolledExperiment {
     }
 }
 
+#if compiler(>=6)
+extension EnrolledExperiment: Sendable {}
+#endif
 
 
 extension EnrolledExperiment: Equatable, Hashable {
@@ -2057,6 +2089,7 @@ extension EnrolledExperiment: Equatable, Hashable {
         hasher.combine(branchSlug)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -2115,6 +2148,9 @@ public struct EnrollmentChangeEvent {
     }
 }
 
+#if compiler(>=6)
+extension EnrollmentChangeEvent: Sendable {}
+#endif
 
 
 extension EnrollmentChangeEvent: Equatable, Hashable {
@@ -2141,6 +2177,7 @@ extension EnrollmentChangeEvent: Equatable, Hashable {
         hasher.combine(change)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -2201,6 +2238,9 @@ public struct EnrollmentStatusExtraDef {
     }
 }
 
+#if compiler(>=6)
+extension EnrollmentStatusExtraDef: Sendable {}
+#endif
 
 
 extension EnrollmentStatusExtraDef: Equatable, Hashable {
@@ -2235,6 +2275,7 @@ extension EnrollmentStatusExtraDef: Equatable, Hashable {
         hasher.combine(status)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -2291,6 +2332,9 @@ public struct ExperimentBranch {
     }
 }
 
+#if compiler(>=6)
+extension ExperimentBranch: Sendable {}
+#endif
 
 
 extension ExperimentBranch: Equatable, Hashable {
@@ -2309,6 +2353,7 @@ extension ExperimentBranch: Equatable, Hashable {
         hasher.combine(ratio)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -2359,6 +2404,9 @@ public struct FeatureExposureExtraDef {
     }
 }
 
+#if compiler(>=6)
+extension FeatureExposureExtraDef: Sendable {}
+#endif
 
 
 extension FeatureExposureExtraDef: Equatable, Hashable {
@@ -2381,6 +2429,7 @@ extension FeatureExposureExtraDef: Equatable, Hashable {
         hasher.combine(featureId)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -2435,6 +2484,9 @@ public struct MalformedFeatureConfigExtraDef {
     }
 }
 
+#if compiler(>=6)
+extension MalformedFeatureConfigExtraDef: Sendable {}
+#endif
 
 
 extension MalformedFeatureConfigExtraDef: Equatable, Hashable {
@@ -2461,6 +2513,7 @@ extension MalformedFeatureConfigExtraDef: Equatable, Hashable {
         hasher.combine(part)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -2512,6 +2565,10 @@ public enum EnrollmentChangeEventType {
     case unenrollFailed
 }
 
+
+#if compiler(>=6)
+extension EnrollmentChangeEventType: Sendable {}
+#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2580,13 +2637,12 @@ public func FfiConverterTypeEnrollmentChangeEventType_lower(_ value: EnrollmentC
 }
 
 
-
 extension EnrollmentChangeEventType: Equatable, Hashable {}
 
 
 
 
-public enum NimbusError {
+public enum NimbusError: Swift.Error {
 
     
     
@@ -2832,7 +2888,24 @@ public struct FfiConverterTypeNimbusError: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNimbusError_lift(_ buf: RustBuffer) throws -> NimbusError {
+    return try FfiConverterTypeNimbusError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeNimbusError_lower(_ value: NimbusError) -> RustBuffer {
+    return FfiConverterTypeNimbusError.lower(value)
+}
+
+
 extension NimbusError: Equatable, Hashable {}
+
+
 
 extension NimbusError: Foundation.LocalizedError {
     public var errorDescription: String? {
@@ -2843,7 +2916,8 @@ extension NimbusError: Foundation.LocalizedError {
 
 
 
-public protocol MetricsHandler : AnyObject {
+
+public protocol MetricsHandler: AnyObject, Sendable {
     
     func recordEnrollmentStatuses(enrollmentStatusExtras: [EnrollmentStatusExtraDef]) 
     
@@ -2865,7 +2939,10 @@ fileprivate struct UniffiCallbackInterfaceMetricsHandler {
 
     // Create the VTable using a series of closures.
     // Swift automatically converts these into C callback functions.
-    static var vtable: UniffiVTableCallbackInterfaceMetricsHandler = UniffiVTableCallbackInterfaceMetricsHandler(
+    //
+    // This creates 1-element array, since this seems to be the only way to construct a const
+    // pointer that we can pass to the Rust code.
+    static let vtable: [UniffiVTableCallbackInterfaceMetricsHandler] = [UniffiVTableCallbackInterfaceMetricsHandler(
         recordEnrollmentStatuses: { (
             uniffiHandle: UInt64,
             enrollmentStatusExtras: RustBuffer,
@@ -2902,7 +2979,7 @@ fileprivate struct UniffiCallbackInterfaceMetricsHandler {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
                 return uniffiObj.recordFeatureActivation(
-                     event: try FfiConverterTypeFeatureExposureExtraDef.lift(event)
+                     event: try FfiConverterTypeFeatureExposureExtraDef_lift(event)
                 )
             }
 
@@ -2926,7 +3003,7 @@ fileprivate struct UniffiCallbackInterfaceMetricsHandler {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
                 return uniffiObj.recordFeatureExposure(
-                     event: try FfiConverterTypeFeatureExposureExtraDef.lift(event)
+                     event: try FfiConverterTypeFeatureExposureExtraDef_lift(event)
                 )
             }
 
@@ -2950,7 +3027,7 @@ fileprivate struct UniffiCallbackInterfaceMetricsHandler {
                     throw UniffiInternalError.unexpectedStaleHandle
                 }
                 return uniffiObj.recordMalformedFeatureConfig(
-                     event: try FfiConverterTypeMalformedFeatureConfigExtraDef.lift(event)
+                     event: try FfiConverterTypeMalformedFeatureConfigExtraDef_lift(event)
                 )
             }
 
@@ -2968,11 +3045,11 @@ fileprivate struct UniffiCallbackInterfaceMetricsHandler {
                 print("Uniffi callback interface MetricsHandler: handle missing in uniffiFree")
             }
         }
-    )
+    )]
 }
 
 private func uniffiCallbackInitMetricsHandler() {
-    uniffi_nimbus_fn_init_callback_vtable_metricshandler(&UniffiCallbackInterfaceMetricsHandler.vtable)
+    uniffi_nimbus_fn_init_callback_vtable_metricshandler(UniffiCallbackInterfaceMetricsHandler.vtable)
 }
 
 // FfiConverter protocol for callback interfaces
@@ -2980,7 +3057,7 @@ private func uniffiCallbackInitMetricsHandler() {
 @_documentation(visibility: private)
 #endif
 fileprivate struct FfiConverterCallbackInterfaceMetricsHandler {
-    fileprivate static var handleMap = UniffiHandleMap<MetricsHandler>()
+    fileprivate static let handleMap = UniffiHandleMap<MetricsHandler>()
 }
 
 #if swift(>=5.8)
@@ -3018,6 +3095,21 @@ extension FfiConverterCallbackInterfaceMetricsHandler : FfiConverter {
     public static func write(_ v: SwiftType, into buf: inout [UInt8]) {
         writeInt(&buf, lower(v))
     }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterCallbackInterfaceMetricsHandler_lift(_ handle: UInt64) throws -> MetricsHandler {
+    return try FfiConverterCallbackInterfaceMetricsHandler.lift(handle)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterCallbackInterfaceMetricsHandler_lower(_ v: MetricsHandler) -> UInt64 {
+    return FfiConverterCallbackInterfaceMetricsHandler.lower(v)
 }
 
 #if swift(>=5.8)
@@ -3367,8 +3459,6 @@ fileprivate struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
 }
 
 
-
-
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -3410,11 +3500,12 @@ public func FfiConverterTypeJsonObject_lift(_ value: RustBuffer) throws -> JsonO
 public func FfiConverterTypeJsonObject_lower(_ value: JsonObject) -> RustBuffer {
     return FfiConverterTypeJsonObject.lower(value)
 }
+
 /**
 
  */
-public func getCalculatedAttributes(installationDate: Int64?, dbPath: String, locale: String)throws  -> CalculatedAttributes {
-    return try  FfiConverterTypeCalculatedAttributes.lift(try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+public func getCalculatedAttributes(installationDate: Int64?, dbPath: String, locale: String)throws  -> CalculatedAttributes  {
+    return try  FfiConverterTypeCalculatedAttributes_lift(try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_func_get_calculated_attributes(
         FfiConverterOptionInt64.lower(installationDate),
         FfiConverterString.lower(dbPath),
@@ -3427,9 +3518,9 @@ public func getCalculatedAttributes(installationDate: Int64?, dbPath: String, lo
  *
  * This method should only be used in tests.
  */
-public func validateEventQueries(recordedContext: RecordedContext)throws  {try rustCallWithError(FfiConverterTypeNimbusError.lift) {
+public func validateEventQueries(recordedContext: RecordedContext)throws   {try rustCallWithError(FfiConverterTypeNimbusError_lift) {
     uniffi_nimbus_fn_func_validate_event_queries(
-        FfiConverterTypeRecordedContext.lower(recordedContext),$0
+        FfiConverterTypeRecordedContext_lower(recordedContext),$0
     )
 }
 }
@@ -3441,9 +3532,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private var initializationResult: InitializationResult = {
+private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 26
+    let bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_nimbus_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -3464,10 +3555,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_nimbus_checksum_method_nimbusclient_clear_events() != 38691) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nimbus_checksum_method_nimbusclient_create_string_helper() != 33335) {
+    if (uniffi_nimbus_checksum_method_nimbusclient_create_string_helper() != 48136) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nimbus_checksum_method_nimbusclient_create_targeting_helper() != 15785) {
+    if (uniffi_nimbus_checksum_method_nimbusclient_create_targeting_helper() != 37928) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nimbus_checksum_method_nimbusclient_dump_state_to_log() != 43374) {
@@ -3551,10 +3642,10 @@ private var initializationResult: InitializationResult = {
     if (uniffi_nimbus_checksum_method_recordedcontext_set_event_query_values() != 40199) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nimbus_checksum_method_recordedcontext_to_json() != 530) {
+    if (uniffi_nimbus_checksum_method_recordedcontext_to_json() != 46595) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_nimbus_checksum_constructor_nimbusclient_new() != 8866) {
+    if (uniffi_nimbus_checksum_constructor_nimbusclient_new() != 33958) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_nimbus_checksum_method_metricshandler_record_enrollment_statuses() != 22229) {
@@ -3572,10 +3663,13 @@ private var initializationResult: InitializationResult = {
 
     uniffiCallbackInitRecordedContext()
     uniffiCallbackInitMetricsHandler()
+    uniffiEnsureRemoteSettingsInitialized()
     return InitializationResult.ok
 }()
 
-private func uniffiEnsureInitialized() {
+// Make the ensure init function public so that other modules which have external type references to
+// our types can call it.
+public func uniffiEnsureNimbusInitialized() {
     switch initializationResult {
     case .ok:
         break

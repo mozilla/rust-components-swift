@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureInitialized()
+    uniffiEnsureAsOhttpClientInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,9 +352,10 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate class UniffiHandleMap<T> {
-    private var map: [UInt64: T] = [:]
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
     private let lock = NSLock()
+    private var map: [UInt64: T] = [:]
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -391,6 +392,7 @@ fileprivate class UniffiHandleMap<T> {
         }
     }
 }
+
 
 // Public interface members begin here.
 
@@ -475,7 +477,7 @@ fileprivate struct FfiConverterString: FfiConverter {
  * Each OHTTP request-reply exchange needs to create an OhttpSession
  * object to manage encryption state.
  */
-public protocol OhttpSessionProtocol : AnyObject {
+public protocol OhttpSessionProtocol: AnyObject, Sendable {
     
     /**
      * Decypt and unpack the response from the Relay for the previously
@@ -496,8 +498,7 @@ public protocol OhttpSessionProtocol : AnyObject {
  * Each OHTTP request-reply exchange needs to create an OhttpSession
  * object to manage encryption state.
  */
-open class OhttpSession:
-    OhttpSessionProtocol {
+open class OhttpSession: OhttpSessionProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -511,6 +512,9 @@ open class OhttpSession:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -538,7 +542,7 @@ open class OhttpSession:
      */
 public convenience init(config: [UInt8])throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+        try rustCallWithError(FfiConverterTypeOhttpError_lift) {
     uniffi_as_ohttp_client_fn_constructor_ohttpsession_new(
         FfiConverterSequenceUInt8.lower(config),$0
     )
@@ -562,8 +566,8 @@ public convenience init(config: [UInt8])throws  {
      * encapsulated request. You must use the same OhttpSession that
      * generated the request message.
      */
-open func decapsulate(encoded: [UInt8])throws  -> OhttpResponse {
-    return try  FfiConverterTypeOhttpResponse.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+open func decapsulate(encoded: [UInt8])throws  -> OhttpResponse  {
+    return try  FfiConverterTypeOhttpResponse_lift(try rustCallWithError(FfiConverterTypeOhttpError_lift) {
     uniffi_as_ohttp_client_fn_method_ohttpsession_decapsulate(self.uniffiClonePointer(),
         FfiConverterSequenceUInt8.lower(encoded),$0
     )
@@ -575,8 +579,8 @@ open func decapsulate(encoded: [UInt8])throws  -> OhttpResponse {
      * payload using HPKE. The caller is responsible for sending the
      * resulting message to the Relay.
      */
-open func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8])throws  -> [UInt8] {
-    return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+open func encapsulate(method: String, scheme: String, server: String, endpoint: String, headers: [String: String], payload: [UInt8])throws  -> [UInt8]  {
+    return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeOhttpError_lift) {
     uniffi_as_ohttp_client_fn_method_ohttpsession_encapsulate(self.uniffiClonePointer(),
         FfiConverterString.lower(method),
         FfiConverterString.lower(scheme),
@@ -590,6 +594,7 @@ open func encapsulate(method: String, scheme: String, server: String, endpoint: 
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -626,8 +631,6 @@ public struct FfiConverterTypeOhttpSession: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -645,11 +648,13 @@ public func FfiConverterTypeOhttpSession_lower(_ value: OhttpSession) -> UnsafeM
 
 
 
+
+
 /**
  * A testing interface for decrypting and responding to OHTTP messages. This
  * should only be used for testing.
  */
-public protocol OhttpTestServerProtocol : AnyObject {
+public protocol OhttpTestServerProtocol: AnyObject, Sendable {
     
     /**
      * Return the unique encryption key config for this instance of test server.
@@ -665,8 +670,7 @@ public protocol OhttpTestServerProtocol : AnyObject {
  * A testing interface for decrypting and responding to OHTTP messages. This
  * should only be used for testing.
  */
-open class OhttpTestServer:
-    OhttpTestServerProtocol {
+open class OhttpTestServer: OhttpTestServerProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -680,6 +684,9 @@ open class OhttpTestServer:
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
+#if swift(>=5.8)
+    @_documentation(visibility: private)
+#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -725,31 +732,32 @@ public convenience init() {
     /**
      * Return the unique encryption key config for this instance of test server.
      */
-open func getConfig() -> [UInt8] {
+open func getConfig() -> [UInt8]  {
     return try!  FfiConverterSequenceUInt8.lift(try! rustCall() {
     uniffi_as_ohttp_client_fn_method_ohttptestserver_get_config(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func receive(message: [UInt8])throws  -> TestServerRequest {
-    return try  FfiConverterTypeTestServerRequest.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+open func receive(message: [UInt8])throws  -> TestServerRequest  {
+    return try  FfiConverterTypeTestServerRequest_lift(try rustCallWithError(FfiConverterTypeOhttpError_lift) {
     uniffi_as_ohttp_client_fn_method_ohttptestserver_receive(self.uniffiClonePointer(),
         FfiConverterSequenceUInt8.lower(message),$0
     )
 })
 }
     
-open func respond(response: OhttpResponse)throws  -> [UInt8] {
-    return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeOhttpError.lift) {
+open func respond(response: OhttpResponse)throws  -> [UInt8]  {
+    return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeOhttpError_lift) {
     uniffi_as_ohttp_client_fn_method_ohttptestserver_respond(self.uniffiClonePointer(),
-        FfiConverterTypeOhttpResponse.lower(response),$0
+        FfiConverterTypeOhttpResponse_lower(response),$0
     )
 })
 }
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -786,8 +794,6 @@ public struct FfiConverterTypeOhttpTestServer: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -801,6 +807,8 @@ public func FfiConverterTypeOhttpTestServer_lift(_ pointer: UnsafeMutableRawPoin
 public func FfiConverterTypeOhttpTestServer_lower(_ value: OhttpTestServer) -> UnsafeMutableRawPointer {
     return FfiConverterTypeOhttpTestServer.lower(value)
 }
+
+
 
 
 /**
@@ -820,6 +828,9 @@ public struct OhttpResponse {
     }
 }
 
+#if compiler(>=6)
+extension OhttpResponse: Sendable {}
+#endif
 
 
 extension OhttpResponse: Equatable, Hashable {
@@ -842,6 +853,7 @@ extension OhttpResponse: Equatable, Hashable {
         hasher.combine(payload)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -900,6 +912,9 @@ public struct TestServerRequest {
     }
 }
 
+#if compiler(>=6)
+extension TestServerRequest: Sendable {}
+#endif
 
 
 extension TestServerRequest: Equatable, Hashable {
@@ -934,6 +949,7 @@ extension TestServerRequest: Equatable, Hashable {
         hasher.combine(payload)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -978,7 +994,7 @@ public func FfiConverterTypeTestServerRequest_lower(_ value: TestServerRequest) 
 }
 
 
-public enum OhttpError {
+public enum OhttpError: Swift.Error {
 
     
     
@@ -1080,13 +1096,31 @@ public struct FfiConverterTypeOhttpError: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOhttpError_lift(_ buf: RustBuffer) throws -> OhttpError {
+    return try FfiConverterTypeOhttpError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeOhttpError_lower(_ value: OhttpError) -> RustBuffer {
+    return FfiConverterTypeOhttpError.lower(value)
+}
+
+
 extension OhttpError: Equatable, Hashable {}
+
+
 
 extension OhttpError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1146,9 +1180,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private var initializationResult: InitializationResult = {
+private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 26
+    let bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_as_ohttp_client_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -1169,17 +1203,19 @@ private var initializationResult: InitializationResult = {
     if (uniffi_as_ohttp_client_checksum_method_ohttptestserver_respond() != 21845) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_as_ohttp_client_checksum_constructor_ohttpsession_new() != 63666) {
+    if (uniffi_as_ohttp_client_checksum_constructor_ohttpsession_new() != 12377) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_as_ohttp_client_checksum_constructor_ohttptestserver_new() != 42944) {
+    if (uniffi_as_ohttp_client_checksum_constructor_ohttptestserver_new() != 10284) {
         return InitializationResult.apiChecksumMismatch
     }
 
     return InitializationResult.ok
 }()
 
-private func uniffiEnsureInitialized() {
+// Make the ensure init function public so that other modules which have external type references to
+// our types can call it.
+public func uniffiEnsureAsOhttpClientInitialized() {
     switch initializationResult {
     case .ok:
         break
