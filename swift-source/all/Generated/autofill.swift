@@ -481,7 +481,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol StoreProtocol: AnyObject, Sendable {
+public protocol StoreProtocol: AnyObject {
     
     func addAddress(a: UpdatableAddressFields) throws  -> Address
     
@@ -526,9 +526,6 @@ open class Store: StoreProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1296,7 +1293,7 @@ public func FfiConverterTypeUpdatableCreditCardFields_lower(_ value: UpdatableCr
 }
 
 
-public enum AutofillApiError: Swift.Error {
+public enum AutofillApiError {
 
     
     

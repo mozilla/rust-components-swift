@@ -442,7 +442,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 /**
  * An error that can be returned from Rust code.
  */
-public enum CrashTestError: Swift.Error {
+public enum CrashTestError {
 
     
     

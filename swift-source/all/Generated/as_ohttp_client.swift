@@ -477,7 +477,7 @@ fileprivate struct FfiConverterString: FfiConverter {
  * Each OHTTP request-reply exchange needs to create an OhttpSession
  * object to manage encryption state.
  */
-public protocol OhttpSessionProtocol: AnyObject, Sendable {
+public protocol OhttpSessionProtocol: AnyObject {
     
     /**
      * Decypt and unpack the response from the Relay for the previously
@@ -512,9 +512,6 @@ open class OhttpSession: OhttpSessionProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -654,7 +651,7 @@ public func FfiConverterTypeOhttpSession_lower(_ value: OhttpSession) -> UnsafeM
  * A testing interface for decrypting and responding to OHTTP messages. This
  * should only be used for testing.
  */
-public protocol OhttpTestServerProtocol: AnyObject, Sendable {
+public protocol OhttpTestServerProtocol: AnyObject {
     
     /**
      * Return the unique encryption key config for this instance of test server.
@@ -684,9 +681,6 @@ open class OhttpTestServer: OhttpTestServerProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -994,7 +988,7 @@ public func FfiConverterTypeTestServerRequest_lower(_ value: TestServerRequest) 
 }
 
 
-public enum OhttpError: Swift.Error {
+public enum OhttpError {
 
     
     

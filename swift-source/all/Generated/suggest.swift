@@ -577,7 +577,7 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
  * later, while a desktop on a fast link might download the entire dataset
  * on the first launch.
  */
-public protocol SuggestStoreProtocol: AnyObject, Sendable {
+public protocol SuggestStoreProtocol: AnyObject {
     
     /**
      * Removes all content from the database.
@@ -704,9 +704,6 @@ open class SuggestStore: SuggestStoreProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -954,7 +951,7 @@ public func FfiConverterTypeSuggestStore_lower(_ value: SuggestStore) -> UnsafeM
  * Using a builder is preferred to calling the constructor directly since it's harder to confuse
  * the data_path and cache_path strings.
  */
-public protocol SuggestStoreBuilderProtocol: AnyObject, Sendable {
+public protocol SuggestStoreBuilderProtocol: AnyObject {
     
     func build() throws  -> SuggestStore
     
@@ -1001,9 +998,6 @@ open class SuggestStoreBuilder: SuggestStoreBuilderProtocol, @unchecked Sendable
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -2427,7 +2421,7 @@ extension InterruptKind: Equatable, Hashable {}
  * The error type for all Suggest component operations. These errors are
  * exposed to your application, which should handle them as needed.
  */
-public enum SuggestApiError: Swift.Error {
+public enum SuggestApiError {
 
     
     

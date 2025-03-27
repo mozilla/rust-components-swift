@@ -513,7 +513,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol CuratedRecommendationsClientProtocol: AnyObject, Sendable {
+public protocol CuratedRecommendationsClientProtocol: AnyObject {
     
     func getCuratedRecommendations(request: CuratedRecommendationsRequest) throws  -> CuratedRecommendationsResponse
     
@@ -532,9 +532,6 @@ open class CuratedRecommendationsClient: CuratedRecommendationsClientProtocol, @
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -714,7 +711,7 @@ public func FfiConverterTypeCuratedRecommendationsBucket_lower(_ value: CuratedR
 
 
 public struct CuratedRecommendationsRequest {
-    public var locale: Locale
+    public var locale: CuratedRecommendationLocale
     public var region: String?
     public var count: Int32?
     public var topics: [String]?
@@ -726,7 +723,7 @@ public struct CuratedRecommendationsRequest {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(locale: Locale, region: String? = nil, count: Int32? = 100, topics: [String]? = nil, feeds: [String]? = nil, sections: [SectionSettings]? = nil, experimentName: String? = nil, experimentBranch: String? = nil, enableInterestPicker: Bool = false) {
+    public init(locale: CuratedRecommendationLocale, region: String? = nil, count: Int32? = 100, topics: [String]? = nil, feeds: [String]? = nil, sections: [SectionSettings]? = nil, experimentName: String? = nil, experimentBranch: String? = nil, enableInterestPicker: Bool = false) {
         self.locale = locale
         self.region = region
         self.count = count
@@ -798,7 +795,7 @@ public struct FfiConverterTypeCuratedRecommendationsRequest: FfiConverterRustBuf
     public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CuratedRecommendationsRequest {
         return
             try CuratedRecommendationsRequest(
-                locale: FfiConverterTypeLocale.read(from: &buf), 
+                locale: FfiConverterTypeCuratedRecommendationLocale.read(from: &buf), 
                 region: FfiConverterOptionString.read(from: &buf), 
                 count: FfiConverterOptionInt32.read(from: &buf), 
                 topics: FfiConverterOptionSequenceString.read(from: &buf), 
@@ -811,7 +808,7 @@ public struct FfiConverterTypeCuratedRecommendationsRequest: FfiConverterRustBuf
     }
 
     public static func write(_ value: CuratedRecommendationsRequest, into buf: inout [UInt8]) {
-        FfiConverterTypeLocale.write(value.locale, into: &buf)
+        FfiConverterTypeCuratedRecommendationLocale.write(value.locale, into: &buf)
         FfiConverterOptionString.write(value.region, into: &buf)
         FfiConverterOptionInt32.write(value.count, into: &buf)
         FfiConverterOptionSequenceString.write(value.topics, into: &buf)
@@ -2100,8 +2097,159 @@ public func FfiConverterTypeTile_lower(_ value: Tile) -> RustBuffer {
     return FfiConverterTypeTile.lower(value)
 }
 
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
-public enum CuratedRecommendationsApiError: Swift.Error {
+public enum CuratedRecommendationLocale {
+    
+    case fr
+    case frFr
+    case es
+    case esEs
+    case it
+    case itIt
+    case en
+    case enCa
+    case enGb
+    case enUs
+    case de
+    case deDe
+    case deAt
+    case deCh
+}
+
+
+#if compiler(>=6)
+extension CuratedRecommendationLocale: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCuratedRecommendationLocale: FfiConverterRustBuffer {
+    typealias SwiftType = CuratedRecommendationLocale
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CuratedRecommendationLocale {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .fr
+        
+        case 2: return .frFr
+        
+        case 3: return .es
+        
+        case 4: return .esEs
+        
+        case 5: return .it
+        
+        case 6: return .itIt
+        
+        case 7: return .en
+        
+        case 8: return .enCa
+        
+        case 9: return .enGb
+        
+        case 10: return .enUs
+        
+        case 11: return .de
+        
+        case 12: return .deDe
+        
+        case 13: return .deAt
+        
+        case 14: return .deCh
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: CuratedRecommendationLocale, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .fr:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .frFr:
+            writeInt(&buf, Int32(2))
+        
+        
+        case .es:
+            writeInt(&buf, Int32(3))
+        
+        
+        case .esEs:
+            writeInt(&buf, Int32(4))
+        
+        
+        case .it:
+            writeInt(&buf, Int32(5))
+        
+        
+        case .itIt:
+            writeInt(&buf, Int32(6))
+        
+        
+        case .en:
+            writeInt(&buf, Int32(7))
+        
+        
+        case .enCa:
+            writeInt(&buf, Int32(8))
+        
+        
+        case .enGb:
+            writeInt(&buf, Int32(9))
+        
+        
+        case .enUs:
+            writeInt(&buf, Int32(10))
+        
+        
+        case .de:
+            writeInt(&buf, Int32(11))
+        
+        
+        case .deDe:
+            writeInt(&buf, Int32(12))
+        
+        
+        case .deAt:
+            writeInt(&buf, Int32(13))
+        
+        
+        case .deCh:
+            writeInt(&buf, Int32(14))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCuratedRecommendationLocale_lift(_ buf: RustBuffer) throws -> CuratedRecommendationLocale {
+    return try FfiConverterTypeCuratedRecommendationLocale.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCuratedRecommendationLocale_lower(_ value: CuratedRecommendationLocale) -> RustBuffer {
+    return FfiConverterTypeCuratedRecommendationLocale.lower(value)
+}
+
+
+extension CuratedRecommendationLocale: Equatable, Hashable {}
+
+
+
+
+public enum CuratedRecommendationsApiError {
 
     
     
@@ -2183,157 +2331,6 @@ extension CuratedRecommendationsApiError: Foundation.LocalizedError {
         String(reflecting: self)
     }
 }
-
-
-// Note that we don't yet support `indirect` for enums.
-// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
-
-public enum Locale {
-    
-    case fr
-    case frFr
-    case es
-    case esEs
-    case it
-    case itIt
-    case en
-    case enCa
-    case enGb
-    case enUs
-    case de
-    case deDe
-    case deAt
-    case deCh
-}
-
-
-#if compiler(>=6)
-extension Locale: Sendable {}
-#endif
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public struct FfiConverterTypeLocale: FfiConverterRustBuffer {
-    typealias SwiftType = Locale
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Locale {
-        let variant: Int32 = try readInt(&buf)
-        switch variant {
-        
-        case 1: return .fr
-        
-        case 2: return .frFr
-        
-        case 3: return .es
-        
-        case 4: return .esEs
-        
-        case 5: return .it
-        
-        case 6: return .itIt
-        
-        case 7: return .en
-        
-        case 8: return .enCa
-        
-        case 9: return .enGb
-        
-        case 10: return .enUs
-        
-        case 11: return .de
-        
-        case 12: return .deDe
-        
-        case 13: return .deAt
-        
-        case 14: return .deCh
-        
-        default: throw UniffiInternalError.unexpectedEnumCase
-        }
-    }
-
-    public static func write(_ value: Locale, into buf: inout [UInt8]) {
-        switch value {
-        
-        
-        case .fr:
-            writeInt(&buf, Int32(1))
-        
-        
-        case .frFr:
-            writeInt(&buf, Int32(2))
-        
-        
-        case .es:
-            writeInt(&buf, Int32(3))
-        
-        
-        case .esEs:
-            writeInt(&buf, Int32(4))
-        
-        
-        case .it:
-            writeInt(&buf, Int32(5))
-        
-        
-        case .itIt:
-            writeInt(&buf, Int32(6))
-        
-        
-        case .en:
-            writeInt(&buf, Int32(7))
-        
-        
-        case .enCa:
-            writeInt(&buf, Int32(8))
-        
-        
-        case .enGb:
-            writeInt(&buf, Int32(9))
-        
-        
-        case .enUs:
-            writeInt(&buf, Int32(10))
-        
-        
-        case .de:
-            writeInt(&buf, Int32(11))
-        
-        
-        case .deDe:
-            writeInt(&buf, Int32(12))
-        
-        
-        case .deAt:
-            writeInt(&buf, Int32(13))
-        
-        
-        case .deCh:
-            writeInt(&buf, Int32(14))
-        
-        }
-    }
-}
-
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLocale_lift(_ buf: RustBuffer) throws -> Locale {
-    return try FfiConverterTypeLocale.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLocale_lower(_ value: Locale) -> RustBuffer {
-    return FfiConverterTypeLocale.lower(value)
-}
-
-
-extension Locale: Equatable, Hashable {}
-
 
 
 #if swift(>=5.8)

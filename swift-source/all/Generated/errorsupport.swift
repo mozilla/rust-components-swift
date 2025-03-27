@@ -457,7 +457,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol ApplicationErrorReporter: AnyObject, Sendable {
+public protocol ApplicationErrorReporter: AnyObject {
     
     func reportError(typeName: String, message: String) 
     

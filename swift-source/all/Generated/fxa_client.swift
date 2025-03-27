@@ -525,7 +525,7 @@ fileprivate struct FfiConverterString: FfiConverter {
  * account and accessing other services on behalf of the user.
 
  */
-public protocol FirefoxAccountProtocol: AnyObject, Sendable {
+public protocol FirefoxAccountProtocol: AnyObject {
     
     /**
      * Create a new OAuth authorization code using the stored session token.
@@ -1157,9 +1157,6 @@ open class FirefoxAccount: FirefoxAccountProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -2109,7 +2106,7 @@ public func FfiConverterTypeFirefoxAccount_lower(_ value: FirefoxAccount) -> Uns
  * Remove this once we've migrated the firefox-android and firefox-ios code to using FxaAuthStateMachine
  * https:///bugzilla.mozilla.org/show_bug.cgi?id=1867793
  */
-public protocol FxaStateMachineCheckerProtocol: AnyObject, Sendable {
+public protocol FxaStateMachineCheckerProtocol: AnyObject {
     
     func checkInternalState(state: FxaStateCheckerState) 
     
@@ -2140,9 +2137,6 @@ open class FxaStateMachineChecker: FxaStateMachineCheckerProtocol, @unchecked Se
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -4226,7 +4220,7 @@ extension DeviceCapability: Equatable, Hashable {}
  * calling code should respond.
 
  */
-public enum FxaError: Swift.Error {
+public enum FxaError {
 
     
     

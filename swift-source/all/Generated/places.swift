@@ -545,7 +545,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol PlacesApiProtocol: AnyObject, Sendable {
+public protocol PlacesApiProtocol: AnyObject {
     
     func bookmarksReset() throws 
     
@@ -574,9 +574,6 @@ open class PlacesApi: PlacesApiProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -718,7 +715,7 @@ public func FfiConverterTypePlacesApi_lower(_ value: PlacesApi) -> UnsafeMutable
 
 
 
-public protocol PlacesConnectionProtocol: AnyObject, Sendable {
+public protocol PlacesConnectionProtocol: AnyObject {
     
     /**
      * `url` is a `string` and not a `URL` because `accept_result`
@@ -862,9 +859,6 @@ open class PlacesConnection: PlacesConnectionProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1329,7 +1323,7 @@ public func FfiConverterTypePlacesConnection_lower(_ value: PlacesConnection) ->
 
 
 
-public protocol SqlInterruptHandleProtocol: AnyObject, Sendable {
+public protocol SqlInterruptHandleProtocol: AnyObject {
     
     func interrupt() 
     
@@ -1348,9 +1342,6 @@ open class SqlInterruptHandle: SqlInterruptHandleProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -3884,7 +3875,7 @@ extension InsertableBookmarkItem: Equatable, Hashable {}
 
 
 
-public enum PlacesApiError: Swift.Error {
+public enum PlacesApiError {
 
     
     

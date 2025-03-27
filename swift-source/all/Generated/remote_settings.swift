@@ -515,7 +515,7 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
-public protocol RemoteSettingsProtocol: AnyObject, Sendable {
+public protocol RemoteSettingsProtocol: AnyObject {
     
     /**
      * Download an attachment with the provided id to the provided path.
@@ -548,9 +548,6 @@ open class RemoteSettings: RemoteSettingsProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -693,7 +690,7 @@ public func FfiConverterTypeRemoteSettings_lower(_ value: RemoteSettings) -> Uns
  *
  * Use [RemoteSettingsService::make_client] to create these.
  */
-public protocol RemoteSettingsClientProtocol: AnyObject, Sendable {
+public protocol RemoteSettingsClientProtocol: AnyObject {
     
     /**
      * Collection this client is for
@@ -763,9 +760,6 @@ open class RemoteSettingsClient: RemoteSettingsClientProtocol, @unchecked Sendab
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -940,7 +934,7 @@ public func FfiConverterTypeRemoteSettingsClient_lower(_ value: RemoteSettingsCl
  * This handles application-level operations, like syncing all the collections, and acts as a
  * factory for creating clients.
  */
-public protocol RemoteSettingsServiceProtocol: AnyObject, Sendable {
+public protocol RemoteSettingsServiceProtocol: AnyObject {
     
     /**
      * Create a new Remote Settings client
@@ -984,9 +978,6 @@ open class RemoteSettingsService: RemoteSettingsServiceProtocol, @unchecked Send
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1892,7 +1883,7 @@ public func FfiConverterTypeRemoteSettingsResponse_lower(_ value: RemoteSettings
 /**
  * Public error class, this is what we return to consumers
  */
-public enum RemoteSettingsError: Swift.Error {
+public enum RemoteSettingsError {
 
     
     

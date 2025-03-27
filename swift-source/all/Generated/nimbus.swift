@@ -513,7 +513,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol NimbusClientProtocol: AnyObject, Sendable {
+public protocol NimbusClientProtocol: AnyObject {
     
     /**
      * Advances what the event store thinks is now.
@@ -704,9 +704,6 @@ open class NimbusClient: NimbusClientProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1126,7 +1123,7 @@ public func FfiConverterTypeNimbusClient_lower(_ value: NimbusClient) -> UnsafeM
 
 
 
-public protocol NimbusStringHelperProtocol: AnyObject, Sendable {
+public protocol NimbusStringHelperProtocol: AnyObject {
     
     /**
      * Generates an optional UUID to be passed into the `string_format` method.
@@ -1155,9 +1152,6 @@ open class NimbusStringHelper: NimbusStringHelperProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1276,7 +1270,7 @@ public func FfiConverterTypeNimbusStringHelper_lower(_ value: NimbusStringHelper
 
 
 
-public protocol NimbusTargetingHelperProtocol: AnyObject, Sendable {
+public protocol NimbusTargetingHelperProtocol: AnyObject {
     
     /**
      * Execute the given jexl expression and evaluate against the existing targeting parameters and context passed to
@@ -1299,9 +1293,6 @@ open class NimbusTargetingHelper: NimbusTargetingHelperProtocol, @unchecked Send
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1407,7 +1398,7 @@ public func FfiConverterTypeNimbusTargetingHelper_lower(_ value: NimbusTargeting
 
 
 
-public protocol RecordedContext: AnyObject, Sendable {
+public protocol RecordedContext: AnyObject {
     
     func getEventQueries()  -> [String: String]
     
@@ -1432,9 +1423,6 @@ open class RecordedContextImpl: RecordedContext, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -2642,7 +2630,7 @@ extension EnrollmentChangeEventType: Equatable, Hashable {}
 
 
 
-public enum NimbusError: Swift.Error {
+public enum NimbusError {
 
     
     
@@ -2917,7 +2905,7 @@ extension NimbusError: Foundation.LocalizedError {
 
 
 
-public protocol MetricsHandler: AnyObject, Sendable {
+public protocol MetricsHandler: AnyObject {
     
     func recordEnrollmentStatuses(enrollmentStatusExtras: [EnrollmentStatusExtraDef]) 
     

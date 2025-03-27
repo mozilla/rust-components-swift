@@ -503,7 +503,7 @@ fileprivate struct FfiConverterTimestamp: FfiConverterRustBuffer {
 
 
 
-public protocol SyncManagerProtocol: AnyObject, Sendable {
+public protocol SyncManagerProtocol: AnyObject {
     
     /**
      * Disconnect engines from sync, deleting/resetting the sync-related data
@@ -535,9 +535,6 @@ open class SyncManager: SyncManagerProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1327,7 +1324,7 @@ extension SyncEngineSelection: Equatable, Hashable {}
 
 
 
-public enum SyncManagerError: Swift.Error {
+public enum SyncManagerError {
 
     
     

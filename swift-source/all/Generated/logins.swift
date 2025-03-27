@@ -499,7 +499,7 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
-public protocol EncryptorDecryptor: AnyObject, Sendable {
+public protocol EncryptorDecryptor: AnyObject {
     
     func decrypt(ciphertext: Data) throws  -> Data
     
@@ -520,9 +520,6 @@ open class EncryptorDecryptorImpl: EncryptorDecryptor, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -715,7 +712,7 @@ public func FfiConverterTypeEncryptorDecryptor_lower(_ value: EncryptorDecryptor
 
 
 
-public protocol KeyManager: AnyObject, Sendable {
+public protocol KeyManager: AnyObject {
     
     func getKey() throws  -> Data
     
@@ -734,9 +731,6 @@ open class KeyManagerImpl: KeyManager, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -887,7 +881,7 @@ public func FfiConverterTypeKeyManager_lower(_ value: KeyManager) -> UnsafeMutab
 
 
 
-public protocol LoginStoreProtocol: AnyObject, Sendable {
+public protocol LoginStoreProtocol: AnyObject {
     
     func add(login: LoginEntry) throws  -> Login
     
@@ -932,9 +926,6 @@ open class LoginStore: LoginStoreProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1141,7 +1132,7 @@ public func FfiConverterTypeLoginStore_lower(_ value: LoginStore) -> UnsafeMutab
 
 
 
-public protocol ManagedEncryptorDecryptorProtocol: AnyObject, Sendable {
+public protocol ManagedEncryptorDecryptorProtocol: AnyObject {
     
 }
 open class ManagedEncryptorDecryptor: ManagedEncryptorDecryptorProtocol, @unchecked Sendable {
@@ -1158,9 +1149,6 @@ open class ManagedEncryptorDecryptor: ManagedEncryptorDecryptorProtocol, @unchec
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1262,7 +1250,7 @@ public func FfiConverterTypeManagedEncryptorDecryptor_lower(_ value: ManagedEncr
 
 
 
-public protocol StaticKeyManagerProtocol: AnyObject, Sendable {
+public protocol StaticKeyManagerProtocol: AnyObject {
     
 }
 open class StaticKeyManager: StaticKeyManagerProtocol, @unchecked Sendable {
@@ -1279,9 +1267,6 @@ open class StaticKeyManager: StaticKeyManagerProtocol, @unchecked Sendable {
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1651,7 +1636,7 @@ public func FfiConverterTypeLoginEntry_lower(_ value: LoginEntry) -> RustBuffer 
 /**
  * These are the errors returned by our public API.
  */
-public enum LoginsApiError: Swift.Error {
+public enum LoginsApiError {
 
     
     

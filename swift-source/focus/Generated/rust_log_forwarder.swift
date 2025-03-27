@@ -613,7 +613,7 @@ extension Level: Equatable, Hashable {}
 
 
 
-public protocol AppServicesLogger: AnyObject, Sendable {
+public protocol AppServicesLogger: AnyObject {
     
     func log(record: Record) 
     

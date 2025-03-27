@@ -486,7 +486,7 @@ fileprivate struct FfiConverterString: FfiConverter {
  * search engines and returns the applicable engines depending
  * on their region + locale.
  */
-public protocol SearchEngineSelectorProtocol: AnyObject, Sendable {
+public protocol SearchEngineSelectorProtocol: AnyObject {
     
     /**
      * Clears the search configuration from memory if it is known that it is
@@ -547,9 +547,6 @@ open class SearchEngineSelector: SearchEngineSelectorProtocol, @unchecked Sendab
     // TODO: We'd like this to be `private` but for Swifty reasons,
     // we can't implement `FfiConverter` without making this `required` and we can't
     // make it `required` without making it `public`.
-#if swift(>=5.8)
-    @_documentation(visibility: private)
-#endif
     required public init(unsafeFromRawPointer pointer: UnsafeMutableRawPointer) {
         self.pointer = pointer
     }
@@ -1929,7 +1926,7 @@ extension JsonEngineMethod: Equatable, Hashable {}
 
 
 
-public enum SearchApiError: Swift.Error {
+public enum SearchApiError {
 
     
     
