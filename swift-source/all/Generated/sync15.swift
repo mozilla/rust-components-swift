@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureSync15Initialized()
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,10 +352,9 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
-    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-    private let lock = NSLock()
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
+    private let lock = NSLock()
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -392,7 +391,6 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
         }
     }
 }
-
 
 // Public interface members begin here.
 
@@ -459,10 +457,6 @@ public enum DeviceType {
     case unknown
 }
 
-
-#if compiler(>=6)
-extension DeviceType: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -537,6 +531,7 @@ public func FfiConverterTypeDeviceType_lower(_ value: DeviceType) -> RustBuffer 
 }
 
 
+
 extension DeviceType: Equatable, Hashable {}
 
 
@@ -548,9 +543,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private let initializationResult: InitializationResult = {
+private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 29
+    let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_sync15_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -560,9 +555,7 @@ private let initializationResult: InitializationResult = {
     return InitializationResult.ok
 }()
 
-// Make the ensure init function public so that other modules which have external type references to
-// our types can call it.
-public func uniffiEnsureSync15Initialized() {
+private func uniffiEnsureInitialized() {
     switch initializationResult {
     case .ok:
         break

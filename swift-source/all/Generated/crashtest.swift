@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureCrashtestInitialized()
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,10 +352,9 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
-    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-    private let lock = NSLock()
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
+    private let lock = NSLock()
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -392,7 +391,6 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
         }
     }
 }
-
 
 // Public interface members begin here.
 
@@ -488,31 +486,13 @@ public struct FfiConverterTypeCrashTestError: FfiConverterRustBuffer {
 }
 
 
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeCrashTestError_lift(_ buf: RustBuffer) throws -> CrashTestError {
-    return try FfiConverterTypeCrashTestError.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeCrashTestError_lower(_ value: CrashTestError) -> RustBuffer {
-    return FfiConverterTypeCrashTestError.lower(value)
-}
-
-
 extension CrashTestError: Equatable, Hashable {}
-
-
 
 extension CrashTestError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
-
 /**
  * Trigger a hard abort inside the Rust code.
  *
@@ -521,7 +501,7 @@ extension CrashTestError: Foundation.LocalizedError {
  * expect your application to be halted with e.g. a `SIGABRT` or similar.
 
  */
-public func triggerRustAbort()  {try! rustCall() {
+public func triggerRustAbort() {try! rustCall() {
     uniffi_crashtest_fn_func_trigger_rust_abort($0
     )
 }
@@ -534,7 +514,7 @@ public func triggerRustAbort()  {try! rustCall() {
  * foreign-language representation of the [`CrashTestError`] class.
 
  */
-public func triggerRustError()throws   {try rustCallWithError(FfiConverterTypeCrashTestError_lift) {
+public func triggerRustError()throws  {try rustCallWithError(FfiConverterTypeCrashTestError.lift) {
     uniffi_crashtest_fn_func_trigger_rust_error($0
     )
 }
@@ -552,7 +532,7 @@ public func triggerRustError()throws   {try rustCallWithError(FfiConverterTypeCr
  *  - In Swift, it will fail with a `try!` runtime error.
 
  */
-public func triggerRustPanic()  {try! rustCall() {
+public func triggerRustPanic() {try! rustCall() {
     uniffi_crashtest_fn_func_trigger_rust_panic($0
     )
 }
@@ -565,9 +545,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private let initializationResult: InitializationResult = {
+private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 29
+    let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_crashtest_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -586,9 +566,7 @@ private let initializationResult: InitializationResult = {
     return InitializationResult.ok
 }()
 
-// Make the ensure init function public so that other modules which have external type references to
-// our types can call it.
-public func uniffiEnsureCrashtestInitialized() {
+private func uniffiEnsureInitialized() {
     switch initializationResult {
     case .ok:
         break

@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureSuggestInitialized()
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,10 +352,9 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
-    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-    private let lock = NSLock()
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
+    private let lock = NSLock()
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -392,7 +391,6 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
         }
     }
 }
-
 
 // Public interface members begin here.
 
@@ -577,7 +575,7 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
  * later, while a desktop on a fast link might download the entire dataset
  * on the first launch.
  */
-public protocol SuggestStoreProtocol: AnyObject {
+public protocol SuggestStoreProtocol : AnyObject {
     
     /**
      * Removes all content from the database.
@@ -690,7 +688,8 @@ public protocol SuggestStoreProtocol: AnyObject {
  * later, while a desktop on a fast link might download the entire dataset
  * on the first launch.
  */
-open class SuggestStore: SuggestStoreProtocol, @unchecked Sendable {
+open class SuggestStore:
+    SuggestStoreProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -731,7 +730,7 @@ open class SuggestStore: SuggestStoreProtocol, @unchecked Sendable {
      */
 public convenience init(path: String, remoteSettingsService: RemoteSettingsService)throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+        try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_constructor_suggeststore_new(
         FfiConverterString.lower(path),
         FfiConverterTypeRemoteSettingsService_lower(remoteSettingsService),$0
@@ -754,7 +753,7 @@ public convenience init(path: String, remoteSettingsService: RemoteSettingsServi
     /**
      * Removes all content from the database.
      */
-open func clear()throws   {try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func clear()throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_clear(self.uniffiClonePointer(),$0
     )
 }
@@ -763,7 +762,7 @@ open func clear()throws   {try rustCallWithError(FfiConverterTypeSuggestApiError
     /**
      * Clear dismissed suggestions
      */
-open func clearDismissedSuggestions()throws   {try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func clearDismissedSuggestions()throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_clear_dismissed_suggestions(self.uniffiClonePointer(),$0
     )
 }
@@ -776,7 +775,7 @@ open func clearDismissedSuggestions()throws   {try rustCallWithError(FfiConverte
      *
      * In the case of AMP suggestions this should be the raw URL.
      */
-open func dismissSuggestion(suggestionUrl: String)throws   {try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func dismissSuggestion(suggestionUrl: String)throws  {try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_dismiss_suggestion(self.uniffiClonePointer(),
         FfiConverterString.lower(suggestionUrl),$0
     )
@@ -808,8 +807,8 @@ open func dismissSuggestion(suggestionUrl: String)throws   {try rustCallWithErro
      * match per `match_type` per geoname. In other words, a matched geoname
      * can map to more than one `GeonameMatch`.
      */
-open func fetchGeonames(query: String, matchNamePrefix: Bool, geonameType: GeonameType?, filter: [Geoname]?)throws  -> [GeonameMatch]  {
-    return try  FfiConverterSequenceTypeGeonameMatch.lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func fetchGeonames(query: String, matchNamePrefix: Bool, geonameType: GeonameType?, filter: [Geoname]?)throws  -> [GeonameMatch] {
+    return try  FfiConverterSequenceTypeGeonameMatch.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_fetch_geonames(self.uniffiClonePointer(),
         FfiConverterString.lower(query),
         FfiConverterBool.lower(matchNamePrefix),
@@ -822,8 +821,8 @@ open func fetchGeonames(query: String, matchNamePrefix: Bool, geonameType: Geona
     /**
      * Returns global Suggest configuration data.
      */
-open func fetchGlobalConfig()throws  -> SuggestGlobalConfig  {
-    return try  FfiConverterTypeSuggestGlobalConfig_lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func fetchGlobalConfig()throws  -> SuggestGlobalConfig {
+    return try  FfiConverterTypeSuggestGlobalConfig.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_fetch_global_config(self.uniffiClonePointer(),$0
     )
 })
@@ -832,10 +831,10 @@ open func fetchGlobalConfig()throws  -> SuggestGlobalConfig  {
     /**
      * Returns per-provider Suggest configuration data.
      */
-open func fetchProviderConfig(provider: SuggestionProvider)throws  -> SuggestProviderConfig?  {
-    return try  FfiConverterOptionTypeSuggestProviderConfig.lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func fetchProviderConfig(provider: SuggestionProvider)throws  -> SuggestProviderConfig? {
+    return try  FfiConverterOptionTypeSuggestProviderConfig.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_fetch_provider_config(self.uniffiClonePointer(),
-        FfiConverterTypeSuggestionProvider_lower(provider),$0
+        FfiConverterTypeSuggestionProvider.lower(provider),$0
     )
 })
 }
@@ -843,10 +842,10 @@ open func fetchProviderConfig(provider: SuggestionProvider)throws  -> SuggestPro
     /**
      * Ingests new suggestions from Remote Settings.
      */
-open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestIngestionMetrics  {
-    return try  FfiConverterTypeSuggestIngestionMetrics_lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestIngestionMetrics {
+    return try  FfiConverterTypeSuggestIngestionMetrics.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_ingest(self.uniffiClonePointer(),
-        FfiConverterTypeSuggestIngestionConstraints_lower(constraints),$0
+        FfiConverterTypeSuggestIngestionConstraints.lower(constraints),$0
     )
 })
 }
@@ -858,7 +857,7 @@ open func ingest(constraints: SuggestIngestionConstraints)throws  -> SuggestInge
      * bar, to ensure that they see fresh suggestions as they type. This
      * method does not interrupt any ongoing ingests.
      */
-open func interrupt(kind: InterruptKind? = nil)  {try! rustCall() {
+open func interrupt(kind: InterruptKind? = nil) {try! rustCall() {
     uniffi_suggest_fn_method_suggeststore_interrupt(self.uniffiClonePointer(),
         FfiConverterOptionTypeInterruptKind.lower(kind),$0
     )
@@ -868,10 +867,10 @@ open func interrupt(kind: InterruptKind? = nil)  {try! rustCall() {
     /**
      * Queries the database for suggestions.
      */
-open func query(query: SuggestionQuery)throws  -> [Suggestion]  {
-    return try  FfiConverterSequenceTypeSuggestion.lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func query(query: SuggestionQuery)throws  -> [Suggestion] {
+    return try  FfiConverterSequenceTypeSuggestion.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_query(self.uniffiClonePointer(),
-        FfiConverterTypeSuggestionQuery_lower(query),$0
+        FfiConverterTypeSuggestionQuery.lower(query),$0
     )
 })
 }
@@ -879,17 +878,16 @@ open func query(query: SuggestionQuery)throws  -> [Suggestion]  {
     /**
      * Queries the database for suggestions.
      */
-open func queryWithMetrics(query: SuggestionQuery)throws  -> QueryWithMetricsResult  {
-    return try  FfiConverterTypeQueryWithMetricsResult_lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func queryWithMetrics(query: SuggestionQuery)throws  -> QueryWithMetricsResult {
+    return try  FfiConverterTypeQueryWithMetricsResult.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststore_query_with_metrics(self.uniffiClonePointer(),
-        FfiConverterTypeSuggestionQuery_lower(query),$0
+        FfiConverterTypeSuggestionQuery.lower(query),$0
     )
 })
 }
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -926,6 +924,8 @@ public struct FfiConverterTypeSuggestStore: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -943,15 +943,13 @@ public func FfiConverterTypeSuggestStore_lower(_ value: SuggestStore) -> UnsafeM
 
 
 
-
-
 /**
  * Builder for [SuggestStore]
  *
  * Using a builder is preferred to calling the constructor directly since it's harder to confuse
  * the data_path and cache_path strings.
  */
-public protocol SuggestStoreBuilderProtocol: AnyObject {
+public protocol SuggestStoreBuilderProtocol : AnyObject {
     
     func build() throws  -> SuggestStore
     
@@ -984,7 +982,8 @@ public protocol SuggestStoreBuilderProtocol: AnyObject {
  * Using a builder is preferred to calling the constructor directly since it's harder to confuse
  * the data_path and cache_path strings.
  */
-open class SuggestStoreBuilder: SuggestStoreBuilderProtocol, @unchecked Sendable {
+open class SuggestStoreBuilder:
+    SuggestStoreBuilderProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -1040,8 +1039,8 @@ public convenience init() {
     
 
     
-open func build()throws  -> SuggestStore  {
-    return try  FfiConverterTypeSuggestStore_lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+open func build()throws  -> SuggestStore {
+    return try  FfiConverterTypeSuggestStore.lift(try rustCallWithError(FfiConverterTypeSuggestApiError.lift) {
     uniffi_suggest_fn_method_suggeststorebuilder_build(self.uniffiClonePointer(),$0
     )
 })
@@ -1050,16 +1049,16 @@ open func build()throws  -> SuggestStore  {
     /**
      * Deprecated: this is no longer used by the suggest component.
      */
-open func cachePath(path: String) -> SuggestStoreBuilder  {
-    return try!  FfiConverterTypeSuggestStoreBuilder_lift(try! rustCall() {
+open func cachePath(path: String) -> SuggestStoreBuilder {
+    return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_cache_path(self.uniffiClonePointer(),
         FfiConverterString.lower(path),$0
     )
 })
 }
     
-open func dataPath(path: String) -> SuggestStoreBuilder  {
-    return try!  FfiConverterTypeSuggestStoreBuilder_lift(try! rustCall() {
+open func dataPath(path: String) -> SuggestStoreBuilder {
+    return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_data_path(self.uniffiClonePointer(),
         FfiConverterString.lower(path),$0
     )
@@ -1073,8 +1072,8 @@ open func dataPath(path: String) -> SuggestStoreBuilder  {
      * entrypoint should be the entry point, for example `sqlite3_fts5_init`.  If `null` (the default)
      * entry point will be used (see https://sqlite.org/loadext.html for details).
      */
-open func loadExtension(library: String, entryPoint: String?) -> SuggestStoreBuilder  {
-    return try!  FfiConverterTypeSuggestStoreBuilder_lift(try! rustCall() {
+open func loadExtension(library: String, entryPoint: String?) -> SuggestStoreBuilder {
+    return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_load_extension(self.uniffiClonePointer(),
         FfiConverterString.lower(library),
         FfiConverterOptionString.lower(entryPoint),$0
@@ -1082,24 +1081,24 @@ open func loadExtension(library: String, entryPoint: String?) -> SuggestStoreBui
 })
 }
     
-open func remoteSettingsBucketName(bucketName: String) -> SuggestStoreBuilder  {
-    return try!  FfiConverterTypeSuggestStoreBuilder_lift(try! rustCall() {
+open func remoteSettingsBucketName(bucketName: String) -> SuggestStoreBuilder {
+    return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_bucket_name(self.uniffiClonePointer(),
         FfiConverterString.lower(bucketName),$0
     )
 })
 }
     
-open func remoteSettingsServer(server: RemoteSettingsServer) -> SuggestStoreBuilder  {
-    return try!  FfiConverterTypeSuggestStoreBuilder_lift(try! rustCall() {
+open func remoteSettingsServer(server: RemoteSettingsServer) -> SuggestStoreBuilder {
+    return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_server(self.uniffiClonePointer(),
         FfiConverterTypeRemoteSettingsServer_lower(server),$0
     )
 })
 }
     
-open func remoteSettingsService(rsService: RemoteSettingsService) -> SuggestStoreBuilder  {
-    return try!  FfiConverterTypeSuggestStoreBuilder_lift(try! rustCall() {
+open func remoteSettingsService(rsService: RemoteSettingsService) -> SuggestStoreBuilder {
+    return try!  FfiConverterTypeSuggestStoreBuilder.lift(try! rustCall() {
     uniffi_suggest_fn_method_suggeststorebuilder_remote_settings_service(self.uniffiClonePointer(),
         FfiConverterTypeRemoteSettingsService_lower(rsService),$0
     )
@@ -1108,7 +1107,6 @@ open func remoteSettingsService(rsService: RemoteSettingsService) -> SuggestStor
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1145,6 +1143,8 @@ public struct FfiConverterTypeSuggestStoreBuilder: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1158,8 +1158,6 @@ public func FfiConverterTypeSuggestStoreBuilder_lift(_ pointer: UnsafeMutableRaw
 public func FfiConverterTypeSuggestStoreBuilder_lower(_ value: SuggestStoreBuilder) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSuggestStoreBuilder.lower(value)
 }
-
-
 
 
 /**
@@ -1189,9 +1187,6 @@ public struct FtsMatchInfo {
     }
 }
 
-#if compiler(>=6)
-extension FtsMatchInfo: Sendable {}
-#endif
 
 
 extension FtsMatchInfo: Equatable, Hashable {
@@ -1210,7 +1205,6 @@ extension FtsMatchInfo: Equatable, Hashable {
         hasher.combine(stemming)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1331,9 +1325,6 @@ public struct Geoname {
     }
 }
 
-#if compiler(>=6)
-extension Geoname: Sendable {}
-#endif
 
 
 extension Geoname: Equatable, Hashable {
@@ -1372,7 +1363,6 @@ extension Geoname: Equatable, Hashable {
         hasher.combine(population)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1454,9 +1444,6 @@ public struct GeonameMatch {
     }
 }
 
-#if compiler(>=6)
-extension GeonameMatch: Sendable {}
-#endif
 
 
 extension GeonameMatch: Equatable, Hashable {
@@ -1479,7 +1466,6 @@ extension GeonameMatch: Equatable, Hashable {
         hasher.combine(prefix)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1539,9 +1525,6 @@ public struct LabeledTimingSample {
     }
 }
 
-#if compiler(>=6)
-extension LabeledTimingSample: Sendable {}
-#endif
 
 
 extension LabeledTimingSample: Equatable, Hashable {
@@ -1560,7 +1543,6 @@ extension LabeledTimingSample: Equatable, Hashable {
         hasher.combine(value)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1615,9 +1597,6 @@ public struct QueryWithMetricsResult {
     }
 }
 
-#if compiler(>=6)
-extension QueryWithMetricsResult: Sendable {}
-#endif
 
 
 extension QueryWithMetricsResult: Equatable, Hashable {
@@ -1636,7 +1615,6 @@ extension QueryWithMetricsResult: Equatable, Hashable {
         hasher.combine(queryTimes)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1686,9 +1664,6 @@ public struct SuggestGlobalConfig {
     }
 }
 
-#if compiler(>=6)
-extension SuggestGlobalConfig: Sendable {}
-#endif
 
 
 extension SuggestGlobalConfig: Equatable, Hashable {
@@ -1703,7 +1678,6 @@ extension SuggestGlobalConfig: Equatable, Hashable {
         hasher.combine(showLessFrequentlyCap)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1763,9 +1737,6 @@ public struct SuggestIngestionConstraints {
     }
 }
 
-#if compiler(>=6)
-extension SuggestIngestionConstraints: Sendable {}
-#endif
 
 
 extension SuggestIngestionConstraints: Equatable, Hashable {
@@ -1788,7 +1759,6 @@ extension SuggestIngestionConstraints: Equatable, Hashable {
         hasher.combine(emptyOnly)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1856,9 +1826,6 @@ public struct SuggestIngestionMetrics {
     }
 }
 
-#if compiler(>=6)
-extension SuggestIngestionMetrics: Sendable {}
-#endif
 
 
 extension SuggestIngestionMetrics: Equatable, Hashable {
@@ -1877,7 +1844,6 @@ extension SuggestIngestionMetrics: Equatable, Hashable {
         hasher.combine(downloadTimes)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1948,9 +1914,6 @@ public struct SuggestionProviderConstraints {
     }
 }
 
-#if compiler(>=6)
-extension SuggestionProviderConstraints: Sendable {}
-#endif
 
 
 extension SuggestionProviderConstraints: Equatable, Hashable {
@@ -1969,7 +1932,6 @@ extension SuggestionProviderConstraints: Equatable, Hashable {
         hasher.combine(ampAlternativeMatching)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -2025,9 +1987,6 @@ public struct SuggestionQuery {
     }
 }
 
-#if compiler(>=6)
-extension SuggestionQuery: Sendable {}
-#endif
 
 
 extension SuggestionQuery: Equatable, Hashable {
@@ -2054,7 +2013,6 @@ extension SuggestionQuery: Equatable, Hashable {
         hasher.combine(limit)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -2116,10 +2074,6 @@ public enum AmpMatchingStrategy {
 }
 
 
-#if compiler(>=6)
-extension AmpMatchingStrategy: Sendable {}
-#endif
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -2175,6 +2129,7 @@ public func FfiConverterTypeAmpMatchingStrategy_lower(_ value: AmpMatchingStrate
 }
 
 
+
 extension AmpMatchingStrategy: Equatable, Hashable {}
 
 
@@ -2195,10 +2150,6 @@ public enum GeonameMatchType {
     case name
 }
 
-
-#if compiler(>=6)
-extension GeonameMatchType: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2255,6 +2206,7 @@ public func FfiConverterTypeGeonameMatchType_lower(_ value: GeonameMatchType) ->
 }
 
 
+
 extension GeonameMatchType: Equatable, Hashable {}
 
 
@@ -2271,10 +2223,6 @@ public enum GeonameType {
     case region
 }
 
-
-#if compiler(>=6)
-extension GeonameType: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2325,6 +2273,7 @@ public func FfiConverterTypeGeonameType_lower(_ value: GeonameType) -> RustBuffe
 }
 
 
+
 extension GeonameType: Equatable, Hashable {}
 
 
@@ -2352,10 +2301,6 @@ public enum InterruptKind {
     case readWrite
 }
 
-
-#if compiler(>=6)
-extension InterruptKind: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2410,6 +2355,7 @@ public func FfiConverterTypeInterruptKind_lift(_ buf: RustBuffer) throws -> Inte
 public func FfiConverterTypeInterruptKind_lower(_ value: InterruptKind) -> RustBuffer {
     return FfiConverterTypeInterruptKind.lower(value)
 }
+
 
 
 extension InterruptKind: Equatable, Hashable {}
@@ -2499,31 +2445,13 @@ public struct FfiConverterTypeSuggestApiError: FfiConverterRustBuffer {
 }
 
 
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeSuggestApiError_lift(_ buf: RustBuffer) throws -> SuggestApiError {
-    return try FfiConverterTypeSuggestApiError.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeSuggestApiError_lower(_ value: SuggestApiError) -> RustBuffer {
-    return FfiConverterTypeSuggestApiError.lower(value)
-}
-
-
 extension SuggestApiError: Equatable, Hashable {}
-
-
 
 extension SuggestApiError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -2548,10 +2476,6 @@ public enum SuggestProviderConfig {
     )
 }
 
-
-#if compiler(>=6)
-extension SuggestProviderConfig: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2599,6 +2523,7 @@ public func FfiConverterTypeSuggestProviderConfig_lower(_ value: SuggestProvider
 }
 
 
+
 extension SuggestProviderConfig: Equatable, Hashable {}
 
 
@@ -2631,10 +2556,6 @@ public enum Suggestion {
     )
 }
 
-
-#if compiler(>=6)
-extension Suggestion: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2797,6 +2718,7 @@ public func FfiConverterTypeSuggestion_lower(_ value: Suggestion) -> RustBuffer 
 }
 
 
+
 extension Suggestion: Equatable, Hashable {}
 
 
@@ -2820,10 +2742,6 @@ public enum SuggestionProvider : UInt8 {
     case exposure = 9
 }
 
-
-#if compiler(>=6)
-extension SuggestionProvider: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2914,6 +2832,7 @@ public func FfiConverterTypeSuggestionProvider_lift(_ buf: RustBuffer) throws ->
 public func FfiConverterTypeSuggestionProvider_lower(_ value: SuggestionProvider) -> RustBuffer {
     return FfiConverterTypeSuggestionProvider.lower(value)
 }
+
 
 
 extension SuggestionProvider: Equatable, Hashable {}
@@ -3381,12 +3300,16 @@ fileprivate struct FfiConverterSequenceTypeSuggestionProvider: FfiConverterRustB
         return seq
     }
 }
+
+
+
+
 /**
  * Determines whether a "raw" sponsored suggestion URL is equivalent to a
  * "cooked" URL. The two URLs are equivalent if they are identical except for
  * their replaced template parameters, which can be different.
  */
-public func rawSuggestionUrlMatches(rawUrl: String, cookedUrl: String) -> Bool  {
+public func rawSuggestionUrlMatches(rawUrl: String, cookedUrl: String) -> Bool {
     return try!  FfiConverterBool.lift(try! rustCall() {
     uniffi_suggest_fn_func_raw_suggestion_url_matches(
         FfiConverterString.lower(rawUrl),
@@ -3402,9 +3325,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private let initializationResult: InitializationResult = {
+private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 29
+    let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_suggest_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -3471,13 +3394,10 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
 
-    uniffiEnsureRemoteSettingsInitialized()
     return InitializationResult.ok
 }()
 
-// Make the ensure init function public so that other modules which have external type references to
-// our types can call it.
-public func uniffiEnsureSuggestInitialized() {
+private func uniffiEnsureInitialized() {
     switch initializationResult {
     case .ok:
         break

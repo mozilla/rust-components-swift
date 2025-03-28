@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureLoginsInitialized()
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,10 +352,9 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
-    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-    private let lock = NSLock()
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
+    private let lock = NSLock()
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -392,7 +391,6 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
         }
     }
 }
-
 
 // Public interface members begin here.
 
@@ -499,14 +497,15 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
-public protocol EncryptorDecryptor: AnyObject {
+public protocol EncryptorDecryptor : AnyObject {
     
     func decrypt(ciphertext: Data) throws  -> Data
     
     func encrypt(cleartext: Data) throws  -> Data
     
 }
-open class EncryptorDecryptorImpl: EncryptorDecryptor, @unchecked Sendable {
+open class EncryptorDecryptorImpl:
+    EncryptorDecryptor {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -555,16 +554,16 @@ open class EncryptorDecryptorImpl: EncryptorDecryptor, @unchecked Sendable {
     
 
     
-open func decrypt(ciphertext: Data)throws  -> Data  {
-    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func decrypt(ciphertext: Data)throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_encryptordecryptor_decrypt(self.uniffiClonePointer(),
         FfiConverterData.lower(ciphertext),$0
     )
 })
 }
     
-open func encrypt(cleartext: Data)throws  -> Data  {
-    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func encrypt(cleartext: Data)throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_encryptordecryptor_encrypt(self.uniffiClonePointer(),
         FfiConverterData.lower(cleartext),$0
     )
@@ -586,10 +585,7 @@ fileprivate struct UniffiCallbackInterfaceEncryptorDecryptor {
 
     // Create the VTable using a series of closures.
     // Swift automatically converts these into C callback functions.
-    //
-    // This creates 1-element array, since this seems to be the only way to construct a const
-    // pointer that we can pass to the Rust code.
-    static let vtable: [UniffiVTableCallbackInterfaceEncryptorDecryptor] = [UniffiVTableCallbackInterfaceEncryptorDecryptor(
+    static var vtable: UniffiVTableCallbackInterfaceEncryptorDecryptor = UniffiVTableCallbackInterfaceEncryptorDecryptor(
         decrypt: { (
             uniffiHandle: UInt64,
             ciphertext: RustBuffer,
@@ -612,7 +608,7 @@ fileprivate struct UniffiCallbackInterfaceEncryptorDecryptor {
                 callStatus: uniffiCallStatus,
                 makeCall: makeCall,
                 writeReturn: writeReturn,
-                lowerError: FfiConverterTypeLoginsApiError_lower
+                lowerError: FfiConverterTypeLoginsApiError.lower
             )
         },
         encrypt: { (
@@ -637,7 +633,7 @@ fileprivate struct UniffiCallbackInterfaceEncryptorDecryptor {
                 callStatus: uniffiCallStatus,
                 makeCall: makeCall,
                 writeReturn: writeReturn,
-                lowerError: FfiConverterTypeLoginsApiError_lower
+                lowerError: FfiConverterTypeLoginsApiError.lower
             )
         },
         uniffiFree: { (uniffiHandle: UInt64) -> () in
@@ -646,19 +642,18 @@ fileprivate struct UniffiCallbackInterfaceEncryptorDecryptor {
                 print("Uniffi callback interface EncryptorDecryptor: handle missing in uniffiFree")
             }
         }
-    )]
+    )
 }
 
 private func uniffiCallbackInitEncryptorDecryptor() {
-    uniffi_logins_fn_init_callback_vtable_encryptordecryptor(UniffiCallbackInterfaceEncryptorDecryptor.vtable)
+    uniffi_logins_fn_init_callback_vtable_encryptordecryptor(&UniffiCallbackInterfaceEncryptorDecryptor.vtable)
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeEncryptorDecryptor: FfiConverter {
-    fileprivate static let handleMap = UniffiHandleMap<EncryptorDecryptor>()
+    fileprivate static var handleMap = UniffiHandleMap<EncryptorDecryptor>()
 
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = EncryptorDecryptor
@@ -693,6 +688,8 @@ public struct FfiConverterTypeEncryptorDecryptor: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -710,14 +707,13 @@ public func FfiConverterTypeEncryptorDecryptor_lower(_ value: EncryptorDecryptor
 
 
 
-
-
-public protocol KeyManager: AnyObject {
+public protocol KeyManager : AnyObject {
     
     func getKey() throws  -> Data
     
 }
-open class KeyManagerImpl: KeyManager, @unchecked Sendable {
+open class KeyManagerImpl:
+    KeyManager {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -766,8 +762,8 @@ open class KeyManagerImpl: KeyManager, @unchecked Sendable {
     
 
     
-open func getKey()throws  -> Data  {
-    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func getKey()throws  -> Data {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_keymanager_get_key(self.uniffiClonePointer(),$0
     )
 })
@@ -782,10 +778,7 @@ fileprivate struct UniffiCallbackInterfaceKeyManager {
 
     // Create the VTable using a series of closures.
     // Swift automatically converts these into C callback functions.
-    //
-    // This creates 1-element array, since this seems to be the only way to construct a const
-    // pointer that we can pass to the Rust code.
-    static let vtable: [UniffiVTableCallbackInterfaceKeyManager] = [UniffiVTableCallbackInterfaceKeyManager(
+    static var vtable: UniffiVTableCallbackInterfaceKeyManager = UniffiVTableCallbackInterfaceKeyManager(
         getKey: { (
             uniffiHandle: UInt64,
             uniffiOutReturn: UnsafeMutablePointer<RustBuffer>,
@@ -806,7 +799,7 @@ fileprivate struct UniffiCallbackInterfaceKeyManager {
                 callStatus: uniffiCallStatus,
                 makeCall: makeCall,
                 writeReturn: writeReturn,
-                lowerError: FfiConverterTypeLoginsApiError_lower
+                lowerError: FfiConverterTypeLoginsApiError.lower
             )
         },
         uniffiFree: { (uniffiHandle: UInt64) -> () in
@@ -815,19 +808,18 @@ fileprivate struct UniffiCallbackInterfaceKeyManager {
                 print("Uniffi callback interface KeyManager: handle missing in uniffiFree")
             }
         }
-    )]
+    )
 }
 
 private func uniffiCallbackInitKeyManager() {
-    uniffi_logins_fn_init_callback_vtable_keymanager(UniffiCallbackInterfaceKeyManager.vtable)
+    uniffi_logins_fn_init_callback_vtable_keymanager(&UniffiCallbackInterfaceKeyManager.vtable)
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
 public struct FfiConverterTypeKeyManager: FfiConverter {
-    fileprivate static let handleMap = UniffiHandleMap<KeyManager>()
+    fileprivate static var handleMap = UniffiHandleMap<KeyManager>()
 
     typealias FfiType = UnsafeMutableRawPointer
     typealias SwiftType = KeyManager
@@ -862,6 +854,8 @@ public struct FfiConverterTypeKeyManager: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -879,9 +873,7 @@ public func FfiConverterTypeKeyManager_lower(_ value: KeyManager) -> UnsafeMutab
 
 
 
-
-
-public protocol LoginStoreProtocol: AnyObject {
+public protocol LoginStoreProtocol : AnyObject {
     
     func add(login: LoginEntry) throws  -> Login
     
@@ -912,7 +904,8 @@ public protocol LoginStoreProtocol: AnyObject {
     func wipeLocal() throws 
     
 }
-open class LoginStore: LoginStoreProtocol, @unchecked Sendable {
+open class LoginStore:
+    LoginStoreProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -950,10 +943,10 @@ open class LoginStore: LoginStoreProtocol, @unchecked Sendable {
     }
 public convenience init(path: String, encdec: EncryptorDecryptor)throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+        try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_constructor_loginstore_new(
         FfiConverterString.lower(path),
-        FfiConverterTypeEncryptorDecryptor_lower(encdec),$0
+        FfiConverterTypeEncryptorDecryptor.lower(encdec),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -970,105 +963,105 @@ public convenience init(path: String, encdec: EncryptorDecryptor)throws  {
     
 
     
-open func add(login: LoginEntry)throws  -> Login  {
-    return try  FfiConverterTypeLogin_lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func add(login: LoginEntry)throws  -> Login {
+    return try  FfiConverterTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_add(self.uniffiClonePointer(),
-        FfiConverterTypeLoginEntry_lower(login),$0
+        FfiConverterTypeLoginEntry.lower(login),$0
     )
 })
 }
     
-open func addOrUpdate(login: LoginEntry)throws  -> Login  {
-    return try  FfiConverterTypeLogin_lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func addOrUpdate(login: LoginEntry)throws  -> Login {
+    return try  FfiConverterTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_add_or_update(self.uniffiClonePointer(),
-        FfiConverterTypeLoginEntry_lower(login),$0
+        FfiConverterTypeLoginEntry.lower(login),$0
     )
 })
 }
     
-open func delete(id: String)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func delete(id: String)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_delete(self.uniffiClonePointer(),
         FfiConverterString.lower(id),$0
     )
 })
 }
     
-open func findLoginToUpdate(look: LoginEntry)throws  -> Login?  {
-    return try  FfiConverterOptionTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func findLoginToUpdate(look: LoginEntry)throws  -> Login? {
+    return try  FfiConverterOptionTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_find_login_to_update(self.uniffiClonePointer(),
-        FfiConverterTypeLoginEntry_lower(look),$0
+        FfiConverterTypeLoginEntry.lower(look),$0
     )
 })
 }
     
-open func get(id: String)throws  -> Login?  {
-    return try  FfiConverterOptionTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func get(id: String)throws  -> Login? {
+    return try  FfiConverterOptionTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_get(self.uniffiClonePointer(),
         FfiConverterString.lower(id),$0
     )
 })
 }
     
-open func getByBaseDomain(baseDomain: String)throws  -> [Login]  {
-    return try  FfiConverterSequenceTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func getByBaseDomain(baseDomain: String)throws  -> [Login] {
+    return try  FfiConverterSequenceTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_get_by_base_domain(self.uniffiClonePointer(),
         FfiConverterString.lower(baseDomain),$0
     )
 })
 }
     
-open func hasLoginsByBaseDomain(baseDomain: String)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func hasLoginsByBaseDomain(baseDomain: String)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_has_logins_by_base_domain(self.uniffiClonePointer(),
         FfiConverterString.lower(baseDomain),$0
     )
 })
 }
     
-open func isEmpty()throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func isEmpty()throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_is_empty(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func list()throws  -> [Login]  {
-    return try  FfiConverterSequenceTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func list()throws  -> [Login] {
+    return try  FfiConverterSequenceTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_list(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func registerWithSyncManager()  {try! rustCall() {
+open func registerWithSyncManager() {try! rustCall() {
     uniffi_logins_fn_method_loginstore_register_with_sync_manager(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func reset()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func reset()throws  {try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_reset(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func touch(id: String)throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func touch(id: String)throws  {try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_touch(self.uniffiClonePointer(),
         FfiConverterString.lower(id),$0
     )
 }
 }
     
-open func update(id: String, login: LoginEntry)throws  -> Login  {
-    return try  FfiConverterTypeLogin_lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func update(id: String, login: LoginEntry)throws  -> Login {
+    return try  FfiConverterTypeLogin.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_update(self.uniffiClonePointer(),
         FfiConverterString.lower(id),
-        FfiConverterTypeLoginEntry_lower(login),$0
+        FfiConverterTypeLoginEntry.lower(login),$0
     )
 })
 }
     
-open func wipeLocal()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+open func wipeLocal()throws  {try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_method_loginstore_wipe_local(self.uniffiClonePointer(),$0
     )
 }
@@ -1076,7 +1069,6 @@ open func wipeLocal()throws   {try rustCallWithError(FfiConverterTypeLoginsApiEr
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1113,6 +1105,8 @@ public struct FfiConverterTypeLoginStore: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1130,12 +1124,11 @@ public func FfiConverterTypeLoginStore_lower(_ value: LoginStore) -> UnsafeMutab
 
 
 
-
-
-public protocol ManagedEncryptorDecryptorProtocol: AnyObject {
+public protocol ManagedEncryptorDecryptorProtocol : AnyObject {
     
 }
-open class ManagedEncryptorDecryptor: ManagedEncryptorDecryptorProtocol, @unchecked Sendable {
+open class ManagedEncryptorDecryptor:
+    ManagedEncryptorDecryptorProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -1175,7 +1168,7 @@ public convenience init(keyManager: KeyManager) {
     let pointer =
         try! rustCall() {
     uniffi_logins_fn_constructor_managedencryptordecryptor_new(
-        FfiConverterTypeKeyManager_lower(keyManager),$0
+        FfiConverterTypeKeyManager.lower(keyManager),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -1194,7 +1187,6 @@ public convenience init(keyManager: KeyManager) {
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1231,6 +1223,8 @@ public struct FfiConverterTypeManagedEncryptorDecryptor: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1248,12 +1242,11 @@ public func FfiConverterTypeManagedEncryptorDecryptor_lower(_ value: ManagedEncr
 
 
 
-
-
-public protocol StaticKeyManagerProtocol: AnyObject {
+public protocol StaticKeyManagerProtocol : AnyObject {
     
 }
-open class StaticKeyManager: StaticKeyManagerProtocol, @unchecked Sendable {
+open class StaticKeyManager:
+    StaticKeyManagerProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -1313,7 +1306,6 @@ public convenience init(key: String) {
 
 }
 
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1349,6 +1341,8 @@ public struct FfiConverterTypeStaticKeyManager: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1362,8 +1356,6 @@ public func FfiConverterTypeStaticKeyManager_lift(_ pointer: UnsafeMutableRawPoi
 public func FfiConverterTypeStaticKeyManager_lower(_ value: StaticKeyManager) -> UnsafeMutableRawPointer {
     return FfiConverterTypeStaticKeyManager.lower(value)
 }
-
-
 
 
 /**
@@ -1401,9 +1393,6 @@ public struct Login {
     }
 }
 
-#if compiler(>=6)
-extension Login: Sendable {}
-#endif
 
 
 extension Login: Equatable, Hashable {
@@ -1462,7 +1451,6 @@ extension Login: Equatable, Hashable {
         hasher.combine(username)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1545,9 +1533,6 @@ public struct LoginEntry {
     }
 }
 
-#if compiler(>=6)
-extension LoginEntry: Sendable {}
-#endif
 
 
 extension LoginEntry: Equatable, Hashable {
@@ -1586,7 +1571,6 @@ extension LoginEntry: Equatable, Hashable {
         hasher.combine(username)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1784,31 +1768,13 @@ public struct FfiConverterTypeLoginsApiError: FfiConverterRustBuffer {
 }
 
 
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLoginsApiError_lift(_ buf: RustBuffer) throws -> LoginsApiError {
-    return try FfiConverterTypeLoginsApiError.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeLoginsApiError_lower(_ value: LoginsApiError) -> RustBuffer {
-    return FfiConverterTypeLoginsApiError.lower(value)
-}
-
-
 extension LoginsApiError: Equatable, Hashable {}
-
-
 
 extension LoginsApiError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1885,8 +1851,8 @@ fileprivate struct FfiConverterSequenceTypeLogin: FfiConverterRustBuffer {
 /**
  * Check that key is still valid using the output of `create_canary`.
  */
-public func checkCanary(canary: String, text: String, encryptionKey: String)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+public func checkCanary(canary: String, text: String, encryptionKey: String)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_func_check_canary(
         FfiConverterString.lower(canary),
         FfiConverterString.lower(text),
@@ -1897,8 +1863,8 @@ public func checkCanary(canary: String, text: String, encryptionKey: String)thro
 /**
  * Create a "canary" string, which can be used to test if the encryption
  */
-public func createCanary(text: String, encryptionKey: String)throws  -> String  {
-    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+public func createCanary(text: String, encryptionKey: String)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_func_create_canary(
         FfiConverterString.lower(text),
         FfiConverterString.lower(encryptionKey),$0
@@ -1909,8 +1875,8 @@ public func createCanary(text: String, encryptionKey: String)throws  -> String  
  * We expose the crypto primitives on the namespace
  * Create a new, random, encryption key.
  */
-public func createKey()throws  -> String  {
-    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+public func createKey()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeLoginsApiError.lift) {
     uniffi_logins_fn_func_create_key($0
     )
 })
@@ -1919,10 +1885,10 @@ public func createKey()throws  -> String  {
  * Similar to create_static_key_manager above, create a
  * ManagedEncryptorDecryptor by passing in a KeyManager
  */
-public func createManagedEncdec(keyManager: KeyManager) -> EncryptorDecryptor  {
-    return try!  FfiConverterTypeEncryptorDecryptor_lift(try! rustCall() {
+public func createManagedEncdec(keyManager: KeyManager) -> EncryptorDecryptor {
+    return try!  FfiConverterTypeEncryptorDecryptor.lift(try! rustCall() {
     uniffi_logins_fn_func_create_managed_encdec(
-        FfiConverterTypeKeyManager_lower(keyManager),$0
+        FfiConverterTypeKeyManager.lower(keyManager),$0
     )
 })
 }
@@ -1932,8 +1898,8 @@ public func createManagedEncdec(keyManager: KeyManager) -> EncryptorDecryptor  {
  * interface](https://mozilla.github.io/uniffi-rs/next/proc_macro/index.html#structs-implementing-traits)
  * in UniFFI. 
  */
-public func createStaticKeyManager(key: String) -> KeyManager  {
-    return try!  FfiConverterTypeKeyManager_lift(try! rustCall() {
+public func createStaticKeyManager(key: String) -> KeyManager {
+    return try!  FfiConverterTypeKeyManager.lift(try! rustCall() {
     uniffi_logins_fn_func_create_static_key_manager(
         FfiConverterString.lower(key),$0
     )
@@ -1947,9 +1913,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private let initializationResult: InitializationResult = {
+private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 29
+    let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_logins_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -2021,13 +1987,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_logins_checksum_method_loginstore_wipe_local() != 2650) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_logins_checksum_constructor_loginstore_new() != 9176) {
+    if (uniffi_logins_checksum_constructor_loginstore_new() != 19342) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_logins_checksum_constructor_managedencryptordecryptor_new() != 21280) {
+    if (uniffi_logins_checksum_constructor_managedencryptordecryptor_new() != 48653) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_logins_checksum_constructor_statickeymanager_new() != 3408) {
+    if (uniffi_logins_checksum_constructor_statickeymanager_new() != 4490) {
         return InitializationResult.apiChecksumMismatch
     }
 
@@ -2036,9 +2002,7 @@ private let initializationResult: InitializationResult = {
     return InitializationResult.ok
 }()
 
-// Make the ensure init function public so that other modules which have external type references to
-// our types can call it.
-public func uniffiEnsureLoginsInitialized() {
+private func uniffiEnsureInitialized() {
     switch initializationResult {
     case .ok:
         break

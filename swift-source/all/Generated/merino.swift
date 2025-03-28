@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureMerinoInitialized()
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,10 +352,9 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
-    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-    private let lock = NSLock()
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
+    private let lock = NSLock()
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -392,7 +391,6 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
         }
     }
 }
-
 
 // Public interface members begin here.
 
@@ -513,12 +511,13 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol CuratedRecommendationsClientProtocol: AnyObject {
+public protocol CuratedRecommendationsClientProtocol : AnyObject {
     
     func getCuratedRecommendations(request: CuratedRecommendationsRequest) throws  -> CuratedRecommendationsResponse
     
 }
-open class CuratedRecommendationsClient: CuratedRecommendationsClientProtocol, @unchecked Sendable {
+open class CuratedRecommendationsClient:
+    CuratedRecommendationsClientProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -556,7 +555,7 @@ open class CuratedRecommendationsClient: CuratedRecommendationsClientProtocol, @
     }
 public convenience init(baseHost: String?, userAgentHeader: String)throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypeCuratedRecommendationsApiError_lift) {
+        try rustCallWithError(FfiConverterTypeCuratedRecommendationsApiError.lift) {
     uniffi_merino_fn_constructor_curatedrecommendationsclient_new(
         FfiConverterOptionString.lower(baseHost),
         FfiConverterString.lower(userAgentHeader),$0
@@ -576,17 +575,16 @@ public convenience init(baseHost: String?, userAgentHeader: String)throws  {
     
 
     
-open func getCuratedRecommendations(request: CuratedRecommendationsRequest)throws  -> CuratedRecommendationsResponse  {
-    return try  FfiConverterTypeCuratedRecommendationsResponse_lift(try rustCallWithError(FfiConverterTypeCuratedRecommendationsApiError_lift) {
+open func getCuratedRecommendations(request: CuratedRecommendationsRequest)throws  -> CuratedRecommendationsResponse {
+    return try  FfiConverterTypeCuratedRecommendationsResponse.lift(try rustCallWithError(FfiConverterTypeCuratedRecommendationsApiError.lift) {
     uniffi_merino_fn_method_curatedrecommendationsclient_get_curated_recommendations(self.uniffiClonePointer(),
-        FfiConverterTypeCuratedRecommendationsRequest_lower(request),$0
+        FfiConverterTypeCuratedRecommendationsRequest.lower(request),$0
     )
 })
 }
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -623,6 +621,8 @@ public struct FfiConverterTypeCuratedRecommendationsClient: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -638,8 +638,6 @@ public func FfiConverterTypeCuratedRecommendationsClient_lower(_ value: CuratedR
 }
 
 
-
-
 public struct CuratedRecommendationsBucket {
     public var recommendations: [RecommendationDataItem]
     public var title: String?
@@ -652,9 +650,6 @@ public struct CuratedRecommendationsBucket {
     }
 }
 
-#if compiler(>=6)
-extension CuratedRecommendationsBucket: Sendable {}
-#endif
 
 
 extension CuratedRecommendationsBucket: Equatable, Hashable {
@@ -673,7 +668,6 @@ extension CuratedRecommendationsBucket: Equatable, Hashable {
         hasher.combine(title)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -736,9 +730,6 @@ public struct CuratedRecommendationsRequest {
     }
 }
 
-#if compiler(>=6)
-extension CuratedRecommendationsRequest: Sendable {}
-#endif
 
 
 extension CuratedRecommendationsRequest: Equatable, Hashable {
@@ -785,7 +776,6 @@ extension CuratedRecommendationsRequest: Equatable, Hashable {
         hasher.combine(enableInterestPicker)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -852,9 +842,6 @@ public struct CuratedRecommendationsResponse {
     }
 }
 
-#if compiler(>=6)
-extension CuratedRecommendationsResponse: Sendable {}
-#endif
 
 
 extension CuratedRecommendationsResponse: Equatable, Hashable {
@@ -881,7 +868,6 @@ extension CuratedRecommendationsResponse: Equatable, Hashable {
         hasher.combine(interestPicker)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -934,9 +920,6 @@ public struct FakespotCta {
     }
 }
 
-#if compiler(>=6)
-extension FakespotCta: Sendable {}
-#endif
 
 
 extension FakespotCta: Equatable, Hashable {
@@ -955,7 +938,6 @@ extension FakespotCta: Equatable, Hashable {
         hasher.combine(url)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1010,9 +992,6 @@ public struct FakespotFeed {
     }
 }
 
-#if compiler(>=6)
-extension FakespotFeed: Sendable {}
-#endif
 
 
 extension FakespotFeed: Equatable, Hashable {
@@ -1043,7 +1022,6 @@ extension FakespotFeed: Equatable, Hashable {
         hasher.combine(cta)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1104,9 +1082,6 @@ public struct FakespotProduct {
     }
 }
 
-#if compiler(>=6)
-extension FakespotProduct: Sendable {}
-#endif
 
 
 extension FakespotProduct: Equatable, Hashable {
@@ -1137,7 +1112,6 @@ extension FakespotProduct: Equatable, Hashable {
         hasher.combine(url)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1202,9 +1176,6 @@ public struct FeedSection {
     }
 }
 
-#if compiler(>=6)
-extension FeedSection: Sendable {}
-#endif
 
 
 extension FeedSection: Equatable, Hashable {
@@ -1243,7 +1214,6 @@ extension FeedSection: Equatable, Hashable {
         hasher.combine(isBlocked)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1336,9 +1306,6 @@ public struct Feeds {
     }
 }
 
-#if compiler(>=6)
-extension Feeds: Sendable {}
-#endif
 
 
 extension Feeds: Equatable, Hashable {
@@ -1427,7 +1394,6 @@ extension Feeds: Equatable, Hashable {
 }
 
 
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1512,9 +1478,6 @@ public struct InterestPicker {
     }
 }
 
-#if compiler(>=6)
-extension InterestPicker: Sendable {}
-#endif
 
 
 extension InterestPicker: Equatable, Hashable {
@@ -1541,7 +1504,6 @@ extension InterestPicker: Equatable, Hashable {
         hasher.combine(sections)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1592,9 +1554,6 @@ public struct InterestPickerSection {
     }
 }
 
-#if compiler(>=6)
-extension InterestPickerSection: Sendable {}
-#endif
 
 
 extension InterestPickerSection: Equatable, Hashable {
@@ -1609,7 +1568,6 @@ extension InterestPickerSection: Equatable, Hashable {
         hasher.combine(sectionId)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1656,9 +1614,6 @@ public struct Layout {
     }
 }
 
-#if compiler(>=6)
-extension Layout: Sendable {}
-#endif
 
 
 extension Layout: Equatable, Hashable {
@@ -1677,7 +1632,6 @@ extension Layout: Equatable, Hashable {
         hasher.combine(responsiveLayouts)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1746,9 +1700,6 @@ public struct RecommendationDataItem {
     }
 }
 
-#if compiler(>=6)
-extension RecommendationDataItem: Sendable {}
-#endif
 
 
 extension RecommendationDataItem: Equatable, Hashable {
@@ -1807,7 +1758,6 @@ extension RecommendationDataItem: Equatable, Hashable {
         hasher.combine(receivedRank)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1876,9 +1826,6 @@ public struct ResponsiveLayout {
     }
 }
 
-#if compiler(>=6)
-extension ResponsiveLayout: Sendable {}
-#endif
 
 
 extension ResponsiveLayout: Equatable, Hashable {
@@ -1897,7 +1844,6 @@ extension ResponsiveLayout: Equatable, Hashable {
         hasher.combine(tiles)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1948,9 +1894,6 @@ public struct SectionSettings {
     }
 }
 
-#if compiler(>=6)
-extension SectionSettings: Sendable {}
-#endif
 
 
 extension SectionSettings: Equatable, Hashable {
@@ -1973,7 +1916,6 @@ extension SectionSettings: Equatable, Hashable {
         hasher.combine(isBlocked)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -2028,9 +1970,6 @@ public struct Tile {
     }
 }
 
-#if compiler(>=6)
-extension Tile: Sendable {}
-#endif
 
 
 extension Tile: Equatable, Hashable {
@@ -2057,7 +1996,6 @@ extension Tile: Equatable, Hashable {
         hasher.combine(hasExcerpt)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -2118,10 +2056,6 @@ public enum CuratedRecommendationLocale {
     case deCh
 }
 
-
-#if compiler(>=6)
-extension CuratedRecommendationLocale: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2244,6 +2178,7 @@ public func FfiConverterTypeCuratedRecommendationLocale_lower(_ value: CuratedRe
 }
 
 
+
 extension CuratedRecommendationLocale: Equatable, Hashable {}
 
 
@@ -2307,31 +2242,13 @@ public struct FfiConverterTypeCuratedRecommendationsApiError: FfiConverterRustBu
 }
 
 
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeCuratedRecommendationsApiError_lift(_ buf: RustBuffer) throws -> CuratedRecommendationsApiError {
-    return try FfiConverterTypeCuratedRecommendationsApiError.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeCuratedRecommendationsApiError_lower(_ value: CuratedRecommendationsApiError) -> RustBuffer {
-    return FfiConverterTypeCuratedRecommendationsApiError.lower(value)
-}
-
-
 extension CuratedRecommendationsApiError: Equatable, Hashable {}
-
-
 
 extension CuratedRecommendationsApiError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2755,9 +2672,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private let initializationResult: InitializationResult = {
+private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 29
+    let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_merino_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -2773,9 +2690,7 @@ private let initializationResult: InitializationResult = {
     return InitializationResult.ok
 }()
 
-// Make the ensure init function public so that other modules which have external type references to
-// our types can call it.
-public func uniffiEnsureMerinoInitialized() {
+private func uniffiEnsureInitialized() {
     switch initializationResult {
     case .ok:
         break

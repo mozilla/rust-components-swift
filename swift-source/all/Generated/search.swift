@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureSearchInitialized()
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,10 +352,9 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
-    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-    private let lock = NSLock()
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
+    private let lock = NSLock()
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -392,7 +391,6 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
         }
     }
 }
-
 
 // Public interface members begin here.
 
@@ -486,7 +484,7 @@ fileprivate struct FfiConverterString: FfiConverter {
  * search engines and returns the applicable engines depending
  * on their region + locale.
  */
-public protocol SearchEngineSelectorProtocol: AnyObject {
+public protocol SearchEngineSelectorProtocol : AnyObject {
     
     /**
      * Clears the search configuration from memory if it is known that it is
@@ -533,7 +531,8 @@ public protocol SearchEngineSelectorProtocol: AnyObject {
  * search engines and returns the applicable engines depending
  * on their region + locale.
  */
-open class SearchEngineSelector: SearchEngineSelectorProtocol, @unchecked Sendable {
+open class SearchEngineSelector:
+    SearchEngineSelectorProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -594,7 +593,7 @@ public convenience init() {
      * not required for a time, e.g. if the configuration will only be re-filtered
      * after an app/environment update.
      */
-open func clearSearchConfig()  {try! rustCall() {
+open func clearSearchConfig() {try! rustCall() {
     uniffi_search_fn_method_searchengineselector_clear_search_config(self.uniffiClonePointer(),$0
     )
 }
@@ -605,15 +604,15 @@ open func clearSearchConfig()  {try! rustCall() {
      * and returns the set of engines and parameters that should be presented
      * to the user.
      */
-open func filterEngineConfiguration(userEnvironment: SearchUserEnvironment)throws  -> RefinedSearchConfig  {
-    return try  FfiConverterTypeRefinedSearchConfig_lift(try rustCallWithError(FfiConverterTypeSearchApiError_lift) {
+open func filterEngineConfiguration(userEnvironment: SearchUserEnvironment)throws  -> RefinedSearchConfig {
+    return try  FfiConverterTypeRefinedSearchConfig.lift(try rustCallWithError(FfiConverterTypeSearchApiError.lift) {
     uniffi_search_fn_method_searchengineselector_filter_engine_configuration(self.uniffiClonePointer(),
-        FfiConverterTypeSearchUserEnvironment_lower(userEnvironment),$0
+        FfiConverterTypeSearchUserEnvironment.lower(userEnvironment),$0
     )
 })
 }
     
-open func setConfigOverrides(overrides: String)throws   {try rustCallWithError(FfiConverterTypeSearchApiError_lift) {
+open func setConfigOverrides(overrides: String)throws  {try rustCallWithError(FfiConverterTypeSearchApiError.lift) {
     uniffi_search_fn_method_searchengineselector_set_config_overrides(self.uniffiClonePointer(),
         FfiConverterString.lower(overrides),$0
     )
@@ -627,7 +626,7 @@ open func setConfigOverrides(overrides: String)throws   {try rustCallWithError(F
      * particularly during test runs where the same configuration may be used
      * repeatedly.
      */
-open func setSearchConfig(configuration: String)throws   {try rustCallWithError(FfiConverterTypeSearchApiError_lift) {
+open func setSearchConfig(configuration: String)throws  {try rustCallWithError(FfiConverterTypeSearchApiError.lift) {
     uniffi_search_fn_method_searchengineselector_set_search_config(self.uniffiClonePointer(),
         FfiConverterString.lower(configuration),$0
     )
@@ -646,7 +645,7 @@ open func setSearchConfig(configuration: String)throws   {try rustCallWithError(
      * engines. Should be false unless the application
      * supports the click URL feature.
      */
-open func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool)throws   {try rustCallWithError(FfiConverterTypeSearchApiError_lift) {
+open func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool)throws  {try rustCallWithError(FfiConverterTypeSearchApiError.lift) {
     uniffi_search_fn_method_searchengineselector_use_remote_settings_server(self.uniffiClonePointer(),
         FfiConverterTypeRemoteSettingsService_lower(service),
         FfiConverterBool.lower(applyEngineOverrides),$0
@@ -656,7 +655,6 @@ open func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOve
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -693,6 +691,8 @@ public struct FfiConverterTypeSearchEngineSelector: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -706,8 +706,6 @@ public func FfiConverterTypeSearchEngineSelector_lift(_ pointer: UnsafeMutableRa
 public func FfiConverterTypeSearchEngineSelector_lower(_ value: SearchEngineSelector) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSearchEngineSelector.lower(value)
 }
-
-
 
 
 /**
@@ -765,9 +763,6 @@ public struct JsonEngineUrl {
     }
 }
 
-#if compiler(>=6)
-extension JsonEngineUrl: Sendable {}
-#endif
 
 
 extension JsonEngineUrl: Equatable, Hashable {
@@ -794,7 +789,6 @@ extension JsonEngineUrl: Equatable, Hashable {
         hasher.combine(searchTermParamName)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -878,9 +872,6 @@ public struct JsonEngineUrls {
     }
 }
 
-#if compiler(>=6)
-extension JsonEngineUrls: Sendable {}
-#endif
 
 
 extension JsonEngineUrls: Equatable, Hashable {
@@ -907,7 +898,6 @@ extension JsonEngineUrls: Equatable, Hashable {
         hasher.combine(searchForm)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1018,9 +1008,6 @@ public struct RefinedSearchConfig {
     }
 }
 
-#if compiler(>=6)
-extension RefinedSearchConfig: Sendable {}
-#endif
 
 
 extension RefinedSearchConfig: Equatable, Hashable {
@@ -1043,7 +1030,6 @@ extension RefinedSearchConfig: Equatable, Hashable {
         hasher.combine(appPrivateDefaultEngineId)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1211,9 +1197,6 @@ public struct SearchEngineDefinition {
     }
 }
 
-#if compiler(>=6)
-extension SearchEngineDefinition: Sendable {}
-#endif
 
 
 extension SearchEngineDefinition: Equatable, Hashable {
@@ -1268,7 +1251,6 @@ extension SearchEngineDefinition: Equatable, Hashable {
         hasher.combine(clickUrl)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1376,9 +1358,6 @@ public struct SearchEngineUrl {
     }
 }
 
-#if compiler(>=6)
-extension SearchEngineUrl: Sendable {}
-#endif
 
 
 extension SearchEngineUrl: Equatable, Hashable {
@@ -1405,7 +1384,6 @@ extension SearchEngineUrl: Equatable, Hashable {
         hasher.combine(searchTermParamName)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1489,9 +1467,6 @@ public struct SearchEngineUrls {
     }
 }
 
-#if compiler(>=6)
-extension SearchEngineUrls: Sendable {}
-#endif
 
 
 extension SearchEngineUrls: Equatable, Hashable {
@@ -1518,7 +1493,6 @@ extension SearchEngineUrls: Equatable, Hashable {
         hasher.combine(searchForm)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1611,9 +1585,6 @@ public struct SearchUrlParam {
     }
 }
 
-#if compiler(>=6)
-extension SearchUrlParam: Sendable {}
-#endif
 
 
 extension SearchUrlParam: Equatable, Hashable {
@@ -1640,7 +1611,6 @@ extension SearchUrlParam: Equatable, Hashable {
         hasher.combine(experimentConfig)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1762,9 +1732,6 @@ public struct SearchUserEnvironment {
     }
 }
 
-#if compiler(>=6)
-extension SearchUserEnvironment: Sendable {}
-#endif
 
 
 extension SearchUserEnvironment: Equatable, Hashable {
@@ -1807,7 +1774,6 @@ extension SearchUserEnvironment: Equatable, Hashable {
         hasher.combine(deviceType)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1868,10 +1834,6 @@ public enum JsonEngineMethod {
 }
 
 
-#if compiler(>=6)
-extension JsonEngineMethod: Sendable {}
-#endif
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1919,6 +1881,7 @@ public func FfiConverterTypeJSONEngineMethod_lift(_ buf: RustBuffer) throws -> J
 public func FfiConverterTypeJSONEngineMethod_lower(_ value: JsonEngineMethod) -> RustBuffer {
     return FfiConverterTypeJSONEngineMethod.lower(value)
 }
+
 
 
 extension JsonEngineMethod: Equatable, Hashable {}
@@ -1972,31 +1935,13 @@ public struct FfiConverterTypeSearchApiError: FfiConverterRustBuffer {
 }
 
 
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeSearchApiError_lift(_ buf: RustBuffer) throws -> SearchApiError {
-    return try FfiConverterTypeSearchApiError.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeSearchApiError_lower(_ value: SearchApiError) -> RustBuffer {
-    return FfiConverterTypeSearchApiError.lower(value)
-}
-
-
 extension SearchApiError: Equatable, Hashable {}
-
-
 
 extension SearchApiError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
-
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -2013,10 +1958,6 @@ public enum SearchApplicationName {
     case firefox
 }
 
-
-#if compiler(>=6)
-extension SearchApplicationName: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2085,6 +2026,7 @@ public func FfiConverterTypeSearchApplicationName_lower(_ value: SearchApplicati
 }
 
 
+
 extension SearchApplicationName: Equatable, Hashable {}
 
 
@@ -2099,10 +2041,6 @@ public enum SearchDeviceType {
     case none
 }
 
-
-#if compiler(>=6)
-extension SearchDeviceType: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2159,6 +2097,7 @@ public func FfiConverterTypeSearchDeviceType_lower(_ value: SearchDeviceType) ->
 }
 
 
+
 extension SearchDeviceType: Equatable, Hashable {}
 
 
@@ -2175,10 +2114,6 @@ public enum SearchEngineClassification {
     case unknown
 }
 
-
-#if compiler(>=6)
-extension SearchEngineClassification: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2229,6 +2164,7 @@ public func FfiConverterTypeSearchEngineClassification_lower(_ value: SearchEngi
 }
 
 
+
 extension SearchEngineClassification: Equatable, Hashable {}
 
 
@@ -2250,10 +2186,6 @@ public enum SearchUpdateChannel {
     case `default`
 }
 
-
-#if compiler(>=6)
-extension SearchUpdateChannel: Sendable {}
-#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -2326,6 +2258,7 @@ public func FfiConverterTypeSearchUpdateChannel_lift(_ buf: RustBuffer) throws -
 public func FfiConverterTypeSearchUpdateChannel_lower(_ value: SearchUpdateChannel) -> RustBuffer {
     return FfiConverterTypeSearchUpdateChannel.lower(value)
 }
+
 
 
 extension SearchUpdateChannel: Equatable, Hashable {}
@@ -2551,6 +2484,8 @@ fileprivate struct FfiConverterSequenceTypeSearchUrlParam: FfiConverterRustBuffe
     }
 }
 
+
+
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -2558,9 +2493,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private let initializationResult: InitializationResult = {
+private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 29
+    let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_search_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -2585,13 +2520,10 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
 
-    uniffiEnsureRemoteSettingsInitialized()
     return InitializationResult.ok
 }()
 
-// Make the ensure init function public so that other modules which have external type references to
-// our types can call it.
-public func uniffiEnsureSearchInitialized() {
+private func uniffiEnsureInitialized() {
     switch initializationResult {
     case .ok:
         break

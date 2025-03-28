@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureTabsInitialized()
+    uniffiEnsureInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,10 +352,9 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
-    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
-    private let lock = NSLock()
+fileprivate class UniffiHandleMap<T> {
     private var map: [UInt64: T] = [:]
+    private let lock = NSLock()
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -392,7 +391,6 @@ fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
         }
     }
 }
-
 
 // Public interface members begin here.
 
@@ -481,7 +479,7 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol RemoteCommandStoreProtocol: AnyObject {
+public protocol RemoteCommandStoreProtocol : AnyObject {
     
     /**
      * Add a new command, after which it will be pending. Returns false if the command is already active.
@@ -510,7 +508,8 @@ public protocol RemoteCommandStoreProtocol: AnyObject {
     func setPendingCommandSent(command: PendingCommand) throws  -> Bool
     
 }
-open class RemoteCommandStore: RemoteCommandStoreProtocol, @unchecked Sendable {
+open class RemoteCommandStore:
+    RemoteCommandStoreProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -562,11 +561,11 @@ open class RemoteCommandStore: RemoteCommandStoreProtocol, @unchecked Sendable {
     /**
      * Add a new command, after which it will be pending. Returns false if the command is already active.
      */
-open func addRemoteCommand(deviceId: String, command: RemoteCommand)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func addRemoteCommand(deviceId: String, command: RemoteCommand)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_remotecommandstore_add_remote_command(self.uniffiClonePointer(),
         FfiConverterString.lower(deviceId),
-        FfiConverterTypeRemoteCommand_lower(command),$0
+        FfiConverterTypeRemoteCommand.lower(command),$0
     )
 })
 }
@@ -574,12 +573,12 @@ open func addRemoteCommand(deviceId: String, command: RemoteCommand)throws  -> B
     /**
      * Add a new command with an explicit timestamp. Primarily used by tests.
      */
-open func addRemoteCommandAt(deviceId: String, command: RemoteCommand, when: Timestamp)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func addRemoteCommandAt(deviceId: String, command: RemoteCommand, when: Timestamp)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_remotecommandstore_add_remote_command_at(self.uniffiClonePointer(),
         FfiConverterString.lower(deviceId),
-        FfiConverterTypeRemoteCommand_lower(command),
-        FfiConverterTypeTimestamp_lower(when),$0
+        FfiConverterTypeRemoteCommand.lower(command),
+        FfiConverterTypeTimestamp.lower(when),$0
     )
 })
 }
@@ -587,8 +586,8 @@ open func addRemoteCommandAt(deviceId: String, command: RemoteCommand, when: Tim
     /**
      * Return all unsent commands. This is for the code sending the commands, result is sorted by time_requested.
      */
-open func getUnsentCommands()throws  -> [PendingCommand]  {
-    return try  FfiConverterSequenceTypePendingCommand.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func getUnsentCommands()throws  -> [PendingCommand] {
+    return try  FfiConverterSequenceTypePendingCommand.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_remotecommandstore_get_unsent_commands(self.uniffiClonePointer(),$0
     )
 })
@@ -598,11 +597,11 @@ open func getUnsentCommands()throws  -> [PendingCommand]  {
      * Removes the remote command. Typically used to implement "undo" but may also be used by the queue
      * processor when it gives up trying to send a command.
      */
-open func removeRemoteCommand(deviceId: String, command: RemoteCommand)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func removeRemoteCommand(deviceId: String, command: RemoteCommand)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_remotecommandstore_remove_remote_command(self.uniffiClonePointer(),
         FfiConverterString.lower(deviceId),
-        FfiConverterTypeRemoteCommand_lower(command),$0
+        FfiConverterTypeRemoteCommand.lower(command),$0
     )
 })
 }
@@ -610,17 +609,16 @@ open func removeRemoteCommand(deviceId: String, command: RemoteCommand)throws  -
     /**
      * Flag a command as sent.
      */
-open func setPendingCommandSent(command: PendingCommand)throws  -> Bool  {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func setPendingCommandSent(command: PendingCommand)throws  -> Bool {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_remotecommandstore_set_pending_command_sent(self.uniffiClonePointer(),
-        FfiConverterTypePendingCommand_lower(command),$0
+        FfiConverterTypePendingCommand.lower(command),$0
     )
 })
 }
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -657,6 +655,8 @@ public struct FfiConverterTypeRemoteCommandStore: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -674,14 +674,12 @@ public func FfiConverterTypeRemoteCommandStore_lower(_ value: RemoteCommandStore
 
 
 
-
-
 /**
  * Note the canonical docs for this are in https://searchfox.org/mozilla-central/source/services/interfaces/mozIBridgedSyncEngine.idl
  * It's only actually used in desktop, but it's fine to expose this everywhere.
  * NOTE: all timestamps here are milliseconds.
  */
-public protocol TabsBridgedEngineProtocol: AnyObject {
+public protocol TabsBridgedEngineProtocol : AnyObject {
     
     func apply() throws  -> [String]
     
@@ -715,7 +713,8 @@ public protocol TabsBridgedEngineProtocol: AnyObject {
  * It's only actually used in desktop, but it's fine to expose this everywhere.
  * NOTE: all timestamps here are milliseconds.
  */
-open class TabsBridgedEngine: TabsBridgedEngineProtocol, @unchecked Sendable {
+open class TabsBridgedEngine:
+    TabsBridgedEngineProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -764,56 +763,56 @@ open class TabsBridgedEngine: TabsBridgedEngineProtocol, @unchecked Sendable {
     
 
     
-open func apply()throws  -> [String]  {
-    return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func apply()throws  -> [String] {
+    return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_apply(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func ensureCurrentSyncId(newSyncId: String)throws  -> String  {
-    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func ensureCurrentSyncId(newSyncId: String)throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_ensure_current_sync_id(self.uniffiClonePointer(),
         FfiConverterString.lower(newSyncId),$0
     )
 })
 }
     
-open func lastSync()throws  -> Int64  {
-    return try  FfiConverterInt64.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func lastSync()throws  -> Int64 {
+    return try  FfiConverterInt64.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_last_sync(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func prepareForSync(clientData: String)throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func prepareForSync(clientData: String)throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_prepare_for_sync(self.uniffiClonePointer(),
         FfiConverterString.lower(clientData),$0
     )
 }
 }
     
-open func reset()throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func reset()throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_reset(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func resetSyncId()throws  -> String  {
-    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func resetSyncId()throws  -> String {
+    return try  FfiConverterString.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_reset_sync_id(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func setLastSync(lastSync: Int64)throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func setLastSync(lastSync: Int64)throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_set_last_sync(self.uniffiClonePointer(),
         FfiConverterInt64.lower(lastSync),$0
     )
 }
 }
     
-open func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid])throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid])throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_set_uploaded(self.uniffiClonePointer(),
         FfiConverterInt64.lower(newTimestamp),
         FfiConverterSequenceTypeTabsGuid.lower(uploadedIds),$0
@@ -821,33 +820,33 @@ open func setUploaded(newTimestamp: Int64, uploadedIds: [TabsGuid])throws   {try
 }
 }
     
-open func storeIncoming(incomingEnvelopesAsJson: [String])throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func storeIncoming(incomingEnvelopesAsJson: [String])throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_store_incoming(self.uniffiClonePointer(),
         FfiConverterSequenceString.lower(incomingEnvelopesAsJson),$0
     )
 }
 }
     
-open func syncFinished()throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func syncFinished()throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_sync_finished(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func syncId()throws  -> String?  {
-    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func syncId()throws  -> String? {
+    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_sync_id(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func syncStarted()throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func syncStarted()throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_sync_started(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func wipe()throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lift) {
+open func wipe()throws  {try rustCallWithError(FfiConverterTypeTabsApiError.lift) {
     uniffi_tabs_fn_method_tabsbridgedengine_wipe(self.uniffiClonePointer(),$0
     )
 }
@@ -855,7 +854,6 @@ open func wipe()throws   {try rustCallWithError(FfiConverterTypeTabsApiError_lif
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -892,6 +890,8 @@ public struct FfiConverterTypeTabsBridgedEngine: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -909,9 +909,7 @@ public func FfiConverterTypeTabsBridgedEngine_lower(_ value: TabsBridgedEngine) 
 
 
 
-
-
-public protocol TabsStoreProtocol: AnyObject {
+public protocol TabsStoreProtocol : AnyObject {
     
     func bridgedEngine()  -> TabsBridgedEngine
     
@@ -926,7 +924,8 @@ public protocol TabsStoreProtocol: AnyObject {
     func setLocalTabs(remoteTabs: [RemoteTabRecord]) 
     
 }
-open class TabsStore: TabsStoreProtocol, @unchecked Sendable {
+open class TabsStore:
+    TabsStoreProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -983,40 +982,40 @@ public convenience init(path: String) {
     
 
     
-open func bridgedEngine() -> TabsBridgedEngine  {
-    return try!  FfiConverterTypeTabsBridgedEngine_lift(try! rustCall() {
+open func bridgedEngine() -> TabsBridgedEngine {
+    return try!  FfiConverterTypeTabsBridgedEngine.lift(try! rustCall() {
     uniffi_tabs_fn_method_tabsstore_bridged_engine(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func closeConnection()  {try! rustCall() {
+open func closeConnection() {try! rustCall() {
     uniffi_tabs_fn_method_tabsstore_close_connection(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func getAll() -> [ClientRemoteTabs]  {
+open func getAll() -> [ClientRemoteTabs] {
     return try!  FfiConverterSequenceTypeClientRemoteTabs.lift(try! rustCall() {
     uniffi_tabs_fn_method_tabsstore_get_all(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func newRemoteCommandStore() -> RemoteCommandStore  {
-    return try!  FfiConverterTypeRemoteCommandStore_lift(try! rustCall() {
+open func newRemoteCommandStore() -> RemoteCommandStore {
+    return try!  FfiConverterTypeRemoteCommandStore.lift(try! rustCall() {
     uniffi_tabs_fn_method_tabsstore_new_remote_command_store(self.uniffiClonePointer(),$0
     )
 })
 }
     
-open func registerWithSyncManager()  {try! rustCall() {
+open func registerWithSyncManager() {try! rustCall() {
     uniffi_tabs_fn_method_tabsstore_register_with_sync_manager(self.uniffiClonePointer(),$0
     )
 }
 }
     
-open func setLocalTabs(remoteTabs: [RemoteTabRecord])  {try! rustCall() {
+open func setLocalTabs(remoteTabs: [RemoteTabRecord]) {try! rustCall() {
     uniffi_tabs_fn_method_tabsstore_set_local_tabs(self.uniffiClonePointer(),
         FfiConverterSequenceTypeRemoteTabRecord.lower(remoteTabs),$0
     )
@@ -1025,7 +1024,6 @@ open func setLocalTabs(remoteTabs: [RemoteTabRecord])  {try! rustCall() {
     
 
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1062,6 +1060,8 @@ public struct FfiConverterTypeTabsStore: FfiConverter {
 }
 
 
+
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1075,8 +1075,6 @@ public func FfiConverterTypeTabsStore_lift(_ pointer: UnsafeMutableRawPointer) t
 public func FfiConverterTypeTabsStore_lower(_ value: TabsStore) -> UnsafeMutableRawPointer {
     return FfiConverterTypeTabsStore.lower(value)
 }
-
-
 
 
 public struct ClientRemoteTabs {
@@ -1103,9 +1101,6 @@ public struct ClientRemoteTabs {
     }
 }
 
-#if compiler(>=6)
-extension ClientRemoteTabs: Sendable {}
-#endif
 
 
 extension ClientRemoteTabs: Equatable, Hashable {
@@ -1136,7 +1131,6 @@ extension ClientRemoteTabs: Equatable, Hashable {
         hasher.combine(remoteTabs)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1198,9 +1192,6 @@ public struct PendingCommand {
     }
 }
 
-#if compiler(>=6)
-extension PendingCommand: Sendable {}
-#endif
 
 
 extension PendingCommand: Equatable, Hashable {
@@ -1227,7 +1218,6 @@ extension PendingCommand: Equatable, Hashable {
         hasher.combine(timeSent)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1292,9 +1282,6 @@ public struct RemoteTabRecord {
     }
 }
 
-#if compiler(>=6)
-extension RemoteTabRecord: Sendable {}
-#endif
 
 
 extension RemoteTabRecord: Equatable, Hashable {
@@ -1325,7 +1312,6 @@ extension RemoteTabRecord: Equatable, Hashable {
         hasher.combine(inactive)
     }
 }
-
 
 
 #if swift(>=5.8)
@@ -1380,10 +1366,6 @@ public enum RemoteCommand {
 }
 
 
-#if compiler(>=6)
-extension RemoteCommand: Sendable {}
-#endif
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1427,6 +1409,7 @@ public func FfiConverterTypeRemoteCommand_lift(_ buf: RustBuffer) throws -> Remo
 public func FfiConverterTypeRemoteCommand_lower(_ value: RemoteCommand) -> RustBuffer {
     return FfiConverterTypeRemoteCommand.lower(value)
 }
+
 
 
 extension RemoteCommand: Equatable, Hashable {}
@@ -1500,31 +1483,13 @@ public struct FfiConverterTypeTabsApiError: FfiConverterRustBuffer {
 }
 
 
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeTabsApiError_lift(_ buf: RustBuffer) throws -> TabsApiError {
-    return try FfiConverterTypeTabsApiError.lift(buf)
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
-public func FfiConverterTypeTabsApiError_lower(_ value: TabsApiError) -> RustBuffer {
-    return FfiConverterTypeTabsApiError.lower(value)
-}
-
-
 extension TabsApiError: Equatable, Hashable {}
-
-
 
 extension TabsApiError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
-
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1700,6 +1665,8 @@ fileprivate struct FfiConverterSequenceTypeTabsGuid: FfiConverterRustBuffer {
 }
 
 
+
+
 /**
  * Typealias from the type name used in the UDL file to the builtin type.  This
  * is needed because the UDL type name is used in function/method signatures.
@@ -1741,7 +1708,6 @@ public func FfiConverterTypeTabsGuid_lift(_ value: RustBuffer) throws -> TabsGui
 public func FfiConverterTypeTabsGuid_lower(_ value: TabsGuid) -> RustBuffer {
     return FfiConverterTypeTabsGuid.lower(value)
 }
-
 
 
 /**
@@ -1786,7 +1752,6 @@ public func FfiConverterTypeTimestamp_lower(_ value: Timestamp) -> Int64 {
     return FfiConverterTypeTimestamp.lower(value)
 }
 
-
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -1794,9 +1759,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private let initializationResult: InitializationResult = {
+private var initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 29
+    let bindings_contract_version = 26
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_tabs_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -1805,7 +1770,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_tabs_checksum_method_remotecommandstore_add_remote_command() != 11837) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_tabs_checksum_method_remotecommandstore_add_remote_command_at() != 62435) {
+    if (uniffi_tabs_checksum_method_remotecommandstore_add_remote_command_at() != 49793) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_tabs_checksum_method_remotecommandstore_get_unsent_commands() != 62092) {
@@ -1838,7 +1803,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_tabs_checksum_method_tabsbridgedengine_set_last_sync() != 64083) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_tabs_checksum_method_tabsbridgedengine_set_uploaded() != 24434) {
+    if (uniffi_tabs_checksum_method_tabsbridgedengine_set_uploaded() != 1599) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_tabs_checksum_method_tabsbridgedengine_store_incoming() != 49801) {
@@ -1874,17 +1839,14 @@ private let initializationResult: InitializationResult = {
     if (uniffi_tabs_checksum_method_tabsstore_set_local_tabs() != 10534) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_tabs_checksum_constructor_tabsstore_new() != 24843) {
+    if (uniffi_tabs_checksum_constructor_tabsstore_new() != 15515) {
         return InitializationResult.apiChecksumMismatch
     }
 
-    uniffiEnsureSync15Initialized()
     return InitializationResult.ok
 }()
 
-// Make the ensure init function public so that other modules which have external type references to
-// our types can call it.
-public func uniffiEnsureTabsInitialized() {
+private func uniffiEnsureInitialized() {
     switch initializationResult {
     case .ok:
         break
