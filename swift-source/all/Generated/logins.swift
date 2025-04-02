@@ -1625,6 +1625,24 @@ public enum LoginsApiError {
     
     
     /**
+     * NSS not initialized.
+     */
+    case NssUninitialized
+    /**
+     * NSS error during authentication
+     */
+    case NssAuthenticationError(reason: String
+    )
+    /**
+     * error during authentication (in PrimaryPasswordAuthenticator)
+     */
+    case AuthenticationError(reason: String
+    )
+    /**
+     * authentication has been cancelled.
+     */
+    case AuthenticationCanceled
+    /**
      * The login data supplied is invalid. The reason will indicate what's wrong with it.
      */
     case InvalidRecord(reason: String
@@ -1686,27 +1704,35 @@ public struct FfiConverterTypeLoginsApiError: FfiConverterRustBuffer {
         
 
         
-        case 1: return .InvalidRecord(
+        case 1: return .NssUninitialized
+        case 2: return .NssAuthenticationError(
             reason: try FfiConverterString.read(from: &buf)
             )
-        case 2: return .NoSuchRecord(
+        case 3: return .AuthenticationError(
             reason: try FfiConverterString.read(from: &buf)
             )
-        case 3: return .MissingKey
-        case 4: return .InvalidKey
-        case 5: return .EncryptionFailed(
+        case 4: return .AuthenticationCanceled
+        case 5: return .InvalidRecord(
             reason: try FfiConverterString.read(from: &buf)
             )
-        case 6: return .DecryptionFailed(
+        case 6: return .NoSuchRecord(
             reason: try FfiConverterString.read(from: &buf)
             )
-        case 7: return .Interrupted(
+        case 7: return .MissingKey
+        case 8: return .InvalidKey
+        case 9: return .EncryptionFailed(
             reason: try FfiConverterString.read(from: &buf)
             )
-        case 8: return .SyncAuthInvalid(
+        case 10: return .DecryptionFailed(
             reason: try FfiConverterString.read(from: &buf)
             )
-        case 9: return .UnexpectedLoginsApiError(
+        case 11: return .Interrupted(
+            reason: try FfiConverterString.read(from: &buf)
+            )
+        case 12: return .SyncAuthInvalid(
+            reason: try FfiConverterString.read(from: &buf)
+            )
+        case 13: return .UnexpectedLoginsApiError(
             reason: try FfiConverterString.read(from: &buf)
             )
 
@@ -1721,46 +1747,64 @@ public struct FfiConverterTypeLoginsApiError: FfiConverterRustBuffer {
 
         
         
-        case let .InvalidRecord(reason):
+        case .NssUninitialized:
             writeInt(&buf, Int32(1))
-            FfiConverterString.write(reason, into: &buf)
-            
         
-        case let .NoSuchRecord(reason):
+        
+        case let .NssAuthenticationError(reason):
             writeInt(&buf, Int32(2))
             FfiConverterString.write(reason, into: &buf)
             
         
-        case .MissingKey:
+        case let .AuthenticationError(reason):
             writeInt(&buf, Int32(3))
+            FfiConverterString.write(reason, into: &buf)
+            
         
-        
-        case .InvalidKey:
+        case .AuthenticationCanceled:
             writeInt(&buf, Int32(4))
         
         
-        case let .EncryptionFailed(reason):
+        case let .InvalidRecord(reason):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(reason, into: &buf)
             
         
-        case let .DecryptionFailed(reason):
+        case let .NoSuchRecord(reason):
             writeInt(&buf, Int32(6))
             FfiConverterString.write(reason, into: &buf)
             
         
-        case let .Interrupted(reason):
+        case .MissingKey:
             writeInt(&buf, Int32(7))
+        
+        
+        case .InvalidKey:
+            writeInt(&buf, Int32(8))
+        
+        
+        case let .EncryptionFailed(reason):
+            writeInt(&buf, Int32(9))
+            FfiConverterString.write(reason, into: &buf)
+            
+        
+        case let .DecryptionFailed(reason):
+            writeInt(&buf, Int32(10))
+            FfiConverterString.write(reason, into: &buf)
+            
+        
+        case let .Interrupted(reason):
+            writeInt(&buf, Int32(11))
             FfiConverterString.write(reason, into: &buf)
             
         
         case let .SyncAuthInvalid(reason):
-            writeInt(&buf, Int32(8))
+            writeInt(&buf, Int32(12))
             FfiConverterString.write(reason, into: &buf)
             
         
         case let .UnexpectedLoginsApiError(reason):
-            writeInt(&buf, Int32(9))
+            writeInt(&buf, Int32(13))
             FfiConverterString.write(reason, into: &buf)
             
         }
