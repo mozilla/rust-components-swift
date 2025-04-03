@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureInitialized()
+    uniffiEnsureRemoteSettingsInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,9 +352,10 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate class UniffiHandleMap<T> {
-    private var map: [UInt64: T] = [:]
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
     private let lock = NSLock()
+    private var map: [UInt64: T] = [:]
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -391,6 +392,7 @@ fileprivate class UniffiHandleMap<T> {
         }
     }
 }
+
 
 // Public interface members begin here.
 
@@ -497,7 +499,7 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 
 
 
-public protocol RemoteSettingsProtocol : AnyObject {
+public protocol RemoteSettingsProtocol: AnyObject {
     
     /**
      * Download an attachment with the provided id to the provided path.
@@ -516,8 +518,7 @@ public protocol RemoteSettingsProtocol : AnyObject {
     func getRecordsSince(timestamp: UInt64) throws  -> RemoteSettingsResponse
     
 }
-open class RemoteSettings:
-    RemoteSettingsProtocol {
+open class RemoteSettings: RemoteSettingsProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -558,9 +559,9 @@ open class RemoteSettings:
      */
 public convenience init(remoteSettingsConfig: RemoteSettingsConfig)throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+        try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_constructor_remotesettings_new(
-        FfiConverterTypeRemoteSettingsConfig.lower(remoteSettingsConfig),$0
+        FfiConverterTypeRemoteSettingsConfig_lower(remoteSettingsConfig),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -580,7 +581,7 @@ public convenience init(remoteSettingsConfig: RemoteSettingsConfig)throws  {
     /**
      * Download an attachment with the provided id to the provided path.
      */
-open func downloadAttachmentToPath(attachmentId: String, path: String)throws  {try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func downloadAttachmentToPath(attachmentId: String, path: String)throws   {try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettings_download_attachment_to_path(self.uniffiClonePointer(),
         FfiConverterString.lower(attachmentId),
         FfiConverterString.lower(path),$0
@@ -591,8 +592,8 @@ open func downloadAttachmentToPath(attachmentId: String, path: String)throws  {t
     /**
      * Fetch all records for the configuration this client was initialized with.
      */
-open func getRecords()throws  -> RemoteSettingsResponse {
-    return try  FfiConverterTypeRemoteSettingsResponse.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func getRecords()throws  -> RemoteSettingsResponse  {
+    return try  FfiConverterTypeRemoteSettingsResponse_lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettings_get_records(self.uniffiClonePointer(),$0
     )
 })
@@ -602,8 +603,8 @@ open func getRecords()throws  -> RemoteSettingsResponse {
      * Fetch all records added to the server since the provided timestamp,
      * using the configuration this client was initialized with.
      */
-open func getRecordsSince(timestamp: UInt64)throws  -> RemoteSettingsResponse {
-    return try  FfiConverterTypeRemoteSettingsResponse.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func getRecordsSince(timestamp: UInt64)throws  -> RemoteSettingsResponse  {
+    return try  FfiConverterTypeRemoteSettingsResponse_lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettings_get_records_since(self.uniffiClonePointer(),
         FfiConverterUInt64.lower(timestamp),$0
     )
@@ -612,6 +613,7 @@ open func getRecordsSince(timestamp: UInt64)throws  -> RemoteSettingsResponse {
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -648,8 +650,6 @@ public struct FfiConverterTypeRemoteSettings: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -667,12 +667,14 @@ public func FfiConverterTypeRemoteSettings_lower(_ value: RemoteSettings) -> Uns
 
 
 
+
+
 /**
  * Client for a single Remote Settings collection
  *
  * Use [RemoteSettingsService::make_client] to create these.
  */
-public protocol RemoteSettingsClientProtocol : AnyObject {
+public protocol RemoteSettingsClientProtocol: AnyObject {
     
     /**
      * Collection this client is for
@@ -728,8 +730,7 @@ public protocol RemoteSettingsClientProtocol : AnyObject {
  *
  * Use [RemoteSettingsService::make_client] to create these.
  */
-open class RemoteSettingsClient:
-    RemoteSettingsClientProtocol {
+open class RemoteSettingsClient: RemoteSettingsClientProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -781,7 +782,7 @@ open class RemoteSettingsClient:
     /**
      * Collection this client is for
      */
-open func collectionName() -> String {
+open func collectionName() -> String  {
     return try!  FfiConverterString.lift(try! rustCall() {
     uniffi_remote_settings_fn_method_remotesettingsclient_collection_name(self.uniffiClonePointer(),$0
     )
@@ -799,10 +800,10 @@ open func collectionName() -> String {
      * - This method will throw if there is a network or other error when fetching the
      * attachment data.
      */
-open func getAttachment(record: RemoteSettingsRecord)throws  -> Data {
-    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func getAttachment(record: RemoteSettingsRecord)throws  -> Data  {
+    return try  FfiConverterData.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettingsclient_get_attachment(self.uniffiClonePointer(),
-        FfiConverterTypeRemoteSettingsRecord.lower(record),$0
+        FfiConverterTypeRemoteSettingsRecord_lower(record),$0
     )
 })
 }
@@ -825,7 +826,7 @@ open func getAttachment(record: RemoteSettingsRecord)throws  -> Data {
      * For these collections, `get_records` will never return None.  If you would like to add your
      * collection to this list, please reach out to the DISCO team.
      */
-open func getRecords(syncIfEmpty: Bool = false) -> [RemoteSettingsRecord]? {
+open func getRecords(syncIfEmpty: Bool = false) -> [RemoteSettingsRecord]?  {
     return try!  FfiConverterOptionSequenceTypeRemoteSettingsRecord.lift(try! rustCall() {
     uniffi_remote_settings_fn_method_remotesettingsclient_get_records(self.uniffiClonePointer(),
         FfiConverterBool.lower(syncIfEmpty),$0
@@ -839,7 +840,7 @@ open func getRecords(syncIfEmpty: Bool = false) -> [RemoteSettingsRecord]? {
      * See [Self::get_records] for an explanation of when this makes network requests, error
      * handling, and how the `sync_if_empty` param works.
      */
-open func getRecordsMap(syncIfEmpty: Bool = false) -> [String: RemoteSettingsRecord]? {
+open func getRecordsMap(syncIfEmpty: Bool = false) -> [String: RemoteSettingsRecord]?  {
     return try!  FfiConverterOptionDictionaryStringTypeRemoteSettingsRecord.lift(try! rustCall() {
     uniffi_remote_settings_fn_method_remotesettingsclient_get_records_map(self.uniffiClonePointer(),
         FfiConverterBool.lower(syncIfEmpty),$0
@@ -847,7 +848,7 @@ open func getRecordsMap(syncIfEmpty: Bool = false) -> [String: RemoteSettingsRec
 })
 }
     
-open func sync()throws  {try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func sync()throws   {try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettingsclient_sync(self.uniffiClonePointer(),$0
     )
 }
@@ -855,6 +856,7 @@ open func sync()throws  {try rustCallWithError(FfiConverterTypeRemoteSettingsErr
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -891,8 +893,6 @@ public struct FfiConverterTypeRemoteSettingsClient: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -910,13 +910,15 @@ public func FfiConverterTypeRemoteSettingsClient_lower(_ value: RemoteSettingsCl
 
 
 
+
+
 /**
  * Application-level Remote Settings manager.
  *
  * This handles application-level operations, like syncing all the collections, and acts as a
  * factory for creating clients.
  */
-public protocol RemoteSettingsServiceProtocol : AnyObject {
+public protocol RemoteSettingsServiceProtocol: AnyObject {
     
     /**
      * Create a new Remote Settings client
@@ -946,8 +948,7 @@ public protocol RemoteSettingsServiceProtocol : AnyObject {
  * This handles application-level operations, like syncing all the collections, and acts as a
  * factory for creating clients.
  */
-open class RemoteSettingsService:
-    RemoteSettingsServiceProtocol {
+open class RemoteSettingsService: RemoteSettingsServiceProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -990,10 +991,10 @@ open class RemoteSettingsService:
      */
 public convenience init(storageDir: String, config: RemoteSettingsConfig2)throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+        try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_constructor_remotesettingsservice_new(
         FfiConverterString.lower(storageDir),
-        FfiConverterTypeRemoteSettingsConfig2.lower(config),$0
+        FfiConverterTypeRemoteSettingsConfig2_lower(config),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -1013,8 +1014,8 @@ public convenience init(storageDir: String, config: RemoteSettingsConfig2)throws
     /**
      * Create a new Remote Settings client
      */
-open func makeClient(collectionName: String)throws  -> RemoteSettingsClient {
-    return try  FfiConverterTypeRemoteSettingsClient.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func makeClient(collectionName: String)throws  -> RemoteSettingsClient  {
+    return try  FfiConverterTypeRemoteSettingsClient_lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettingsservice_make_client(self.uniffiClonePointer(),
         FfiConverterString.lower(collectionName),$0
     )
@@ -1024,8 +1025,8 @@ open func makeClient(collectionName: String)throws  -> RemoteSettingsClient {
     /**
      * Sync collections for all active clients
      */
-open func sync()throws  -> [String] {
-    return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func sync()throws  -> [String]  {
+    return try  FfiConverterSequenceString.lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettingsservice_sync(self.uniffiClonePointer(),$0
     )
 })
@@ -1040,15 +1041,16 @@ open func sync()throws  -> [String] {
      * Only intended for QA/debugging.  Swapping the remote settings server in the middle of
      * execution can cause weird effects.
      */
-open func updateConfig(config: RemoteSettingsConfig2)throws  {try rustCallWithError(FfiConverterTypeRemoteSettingsError.lift) {
+open func updateConfig(config: RemoteSettingsConfig2)throws   {try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettingsservice_update_config(self.uniffiClonePointer(),
-        FfiConverterTypeRemoteSettingsConfig2.lower(config),$0
+        FfiConverterTypeRemoteSettingsConfig2_lower(config),$0
     )
 }
 }
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1085,8 +1087,6 @@ public struct FfiConverterTypeRemoteSettingsService: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1100,6 +1100,8 @@ public func FfiConverterTypeRemoteSettingsService_lift(_ pointer: UnsafeMutableR
 public func FfiConverterTypeRemoteSettingsService_lower(_ value: RemoteSettingsService) -> UnsafeMutableRawPointer {
     return FfiConverterTypeRemoteSettingsService.lower(value)
 }
+
+
 
 
 /**
@@ -1124,6 +1126,9 @@ public struct Attachment {
     }
 }
 
+#if compiler(>=6)
+extension Attachment: Sendable {}
+#endif
 
 
 extension Attachment: Equatable, Hashable {
@@ -1154,6 +1159,7 @@ extension Attachment: Equatable, Hashable {
         hasher.combine(size)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1220,6 +1226,9 @@ public struct RemoteSettingsConfig {
     }
 }
 
+#if compiler(>=6)
+extension RemoteSettingsConfig: Sendable {}
+#endif
 
 
 extension RemoteSettingsConfig: Equatable, Hashable {
@@ -1246,6 +1255,7 @@ extension RemoteSettingsConfig: Equatable, Hashable {
         hasher.combine(server)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1325,6 +1335,9 @@ public struct RemoteSettingsConfig2 {
     }
 }
 
+#if compiler(>=6)
+extension RemoteSettingsConfig2: Sendable {}
+#endif
 
 
 extension RemoteSettingsConfig2: Equatable, Hashable {
@@ -1347,6 +1360,7 @@ extension RemoteSettingsConfig2: Equatable, Hashable {
         hasher.combine(appContext)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1493,6 +1507,9 @@ public struct RemoteSettingsContext {
     }
 }
 
+#if compiler(>=6)
+extension RemoteSettingsContext: Sendable {}
+#endif
 
 
 extension RemoteSettingsContext: Equatable, Hashable {
@@ -1539,6 +1556,7 @@ extension RemoteSettingsContext: Equatable, Hashable {
         hasher.combine(customTargettingAttributes)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1617,6 +1635,9 @@ public struct RemoteSettingsRecord {
     }
 }
 
+#if compiler(>=6)
+extension RemoteSettingsRecord: Sendable {}
+#endif
 
 
 extension RemoteSettingsRecord: Equatable, Hashable {
@@ -1647,6 +1668,7 @@ extension RemoteSettingsRecord: Equatable, Hashable {
         hasher.combine(fields)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1705,6 +1727,9 @@ public struct RemoteSettingsResponse {
     }
 }
 
+#if compiler(>=6)
+extension RemoteSettingsResponse: Sendable {}
+#endif
 
 
 extension RemoteSettingsResponse: Equatable, Hashable {
@@ -1723,6 +1748,7 @@ extension RemoteSettingsResponse: Equatable, Hashable {
         hasher.combine(lastModified)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1834,13 +1860,31 @@ public struct FfiConverterTypeRemoteSettingsError: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteSettingsError_lift(_ buf: RustBuffer) throws -> RemoteSettingsError {
+    return try FfiConverterTypeRemoteSettingsError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeRemoteSettingsError_lower(_ value: RemoteSettingsError) -> RustBuffer {
+    return FfiConverterTypeRemoteSettingsError.lower(value)
+}
+
+
 extension RemoteSettingsError: Equatable, Hashable {}
+
+
 
 extension RemoteSettingsError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -1857,6 +1901,10 @@ public enum RemoteSettingsServer {
     )
 }
 
+
+#if compiler(>=6)
+extension RemoteSettingsServer: Sendable {}
+#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1919,7 +1967,6 @@ public func FfiConverterTypeRemoteSettingsServer_lift(_ buf: RustBuffer) throws 
 public func FfiConverterTypeRemoteSettingsServer_lower(_ value: RemoteSettingsServer) -> RustBuffer {
     return FfiConverterTypeRemoteSettingsServer.lower(value)
 }
-
 
 
 extension RemoteSettingsServer: Equatable, Hashable {}
@@ -2239,6 +2286,7 @@ public func FfiConverterTypeRsJsonObject_lower(_ value: RsJsonObject) -> RustBuf
     return FfiConverterTypeRsJsonObject.lower(value)
 }
 
+
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -2246,9 +2294,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private var initializationResult: InitializationResult = {
+private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 26
+    let bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_remote_settings_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -2297,7 +2345,9 @@ private var initializationResult: InitializationResult = {
     return InitializationResult.ok
 }()
 
-private func uniffiEnsureInitialized() {
+// Make the ensure init function public so that other modules which have external type references to
+// our types can call it.
+public func uniffiEnsureRemoteSettingsInitialized() {
     switch initializationResult {
     case .ok:
         break

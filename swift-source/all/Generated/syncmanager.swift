@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureInitialized()
+    uniffiEnsureSyncManagerInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,9 +352,10 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate class UniffiHandleMap<T> {
-    private var map: [UInt64: T] = [:]
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
     private let lock = NSLock()
+    private var map: [UInt64: T] = [:]
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -391,6 +392,7 @@ fileprivate class UniffiHandleMap<T> {
         }
     }
 }
+
 
 // Public interface members begin here.
 
@@ -501,7 +503,7 @@ fileprivate struct FfiConverterTimestamp: FfiConverterRustBuffer {
 
 
 
-public protocol SyncManagerProtocol : AnyObject {
+public protocol SyncManagerProtocol: AnyObject {
     
     /**
      * Disconnect engines from sync, deleting/resetting the sync-related data
@@ -519,8 +521,7 @@ public protocol SyncManagerProtocol : AnyObject {
     func sync(params: SyncParams) throws  -> SyncResult
     
 }
-open class SyncManager:
-    SyncManagerProtocol {
+open class SyncManager: SyncManagerProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -579,7 +580,7 @@ public convenience init() {
     /**
      * Disconnect engines from sync, deleting/resetting the sync-related data
      */
-open func disconnect() {try! rustCall() {
+open func disconnect()  {try! rustCall() {
     uniffi_sync_manager_fn_method_syncmanager_disconnect(self.uniffiClonePointer(),$0
     )
 }
@@ -588,7 +589,7 @@ open func disconnect() {try! rustCall() {
     /**
      * Get a list of engine names available for syncing
      */
-open func getAvailableEngines() -> [String] {
+open func getAvailableEngines() -> [String]  {
     return try!  FfiConverterSequenceString.lift(try! rustCall() {
     uniffi_sync_manager_fn_method_syncmanager_get_available_engines(self.uniffiClonePointer(),$0
     )
@@ -598,16 +599,17 @@ open func getAvailableEngines() -> [String] {
     /**
      * Perform a sync.  See [SyncParams] and [SyncResult] for details on how this works
      */
-open func sync(params: SyncParams)throws  -> SyncResult {
-    return try  FfiConverterTypeSyncResult.lift(try rustCallWithError(FfiConverterTypeSyncManagerError.lift) {
+open func sync(params: SyncParams)throws  -> SyncResult  {
+    return try  FfiConverterTypeSyncResult_lift(try rustCallWithError(FfiConverterTypeSyncManagerError_lift) {
     uniffi_sync_manager_fn_method_syncmanager_sync(self.uniffiClonePointer(),
-        FfiConverterTypeSyncParams.lower(params),$0
+        FfiConverterTypeSyncParams_lower(params),$0
     )
 })
 }
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -644,8 +646,6 @@ public struct FfiConverterTypeSyncManager: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -659,6 +659,8 @@ public func FfiConverterTypeSyncManager_lift(_ pointer: UnsafeMutableRawPointer)
 public func FfiConverterTypeSyncManager_lower(_ value: SyncManager) -> UnsafeMutableRawPointer {
     return FfiConverterTypeSyncManager.lower(value)
 }
+
+
 
 
 public struct DeviceSettings {
@@ -675,6 +677,9 @@ public struct DeviceSettings {
     }
 }
 
+#if compiler(>=6)
+extension DeviceSettings: Sendable {}
+#endif
 
 
 extension DeviceSettings: Equatable, Hashable {
@@ -697,6 +702,7 @@ extension DeviceSettings: Equatable, Hashable {
         hasher.combine(kind)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -751,6 +757,9 @@ public struct SyncAuthInfo {
     }
 }
 
+#if compiler(>=6)
+extension SyncAuthInfo: Sendable {}
+#endif
 
 
 extension SyncAuthInfo: Equatable, Hashable {
@@ -777,6 +786,7 @@ extension SyncAuthInfo: Equatable, Hashable {
         hasher.combine(tokenserverUrl)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -897,6 +907,9 @@ public struct SyncParams {
     }
 }
 
+#if compiler(>=6)
+extension SyncParams: Sendable {}
+#endif
 
 
 extension SyncParams: Equatable, Hashable {
@@ -935,6 +948,7 @@ extension SyncParams: Equatable, Hashable {
         hasher.combine(deviceSettings)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1057,6 +1071,9 @@ public struct SyncResult {
     }
 }
 
+#if compiler(>=6)
+extension SyncResult: Sendable {}
+#endif
 
 
 extension SyncResult: Equatable, Hashable {
@@ -1095,6 +1112,7 @@ extension SyncResult: Equatable, Hashable {
         hasher.combine(telemetryJson)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1153,6 +1171,10 @@ public enum ServiceStatus {
     case otherError
 }
 
+
+#if compiler(>=6)
+extension ServiceStatus: Sendable {}
+#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1227,7 +1249,6 @@ public func FfiConverterTypeServiceStatus_lower(_ value: ServiceStatus) -> RustB
 }
 
 
-
 extension ServiceStatus: Equatable, Hashable {}
 
 
@@ -1242,6 +1263,10 @@ public enum SyncEngineSelection {
     )
 }
 
+
+#if compiler(>=6)
+extension SyncEngineSelection: Sendable {}
+#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1292,7 +1317,6 @@ public func FfiConverterTypeSyncEngineSelection_lift(_ buf: RustBuffer) throws -
 public func FfiConverterTypeSyncEngineSelection_lower(_ value: SyncEngineSelection) -> RustBuffer {
     return FfiConverterTypeSyncEngineSelection.lower(value)
 }
-
 
 
 extension SyncEngineSelection: Equatable, Hashable {}
@@ -1410,13 +1434,31 @@ public struct FfiConverterTypeSyncManagerError: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSyncManagerError_lift(_ buf: RustBuffer) throws -> SyncManagerError {
+    return try FfiConverterTypeSyncManagerError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSyncManagerError_lower(_ value: SyncManagerError) -> RustBuffer {
+    return FfiConverterTypeSyncManagerError.lower(value)
+}
+
+
 extension SyncManagerError: Equatable, Hashable {}
+
+
 
 extension SyncManagerError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -1431,6 +1473,10 @@ public enum SyncReason {
     case backgrounded
 }
 
+
+#if compiler(>=6)
+extension SyncReason: Sendable {}
+#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1503,7 +1549,6 @@ public func FfiConverterTypeSyncReason_lift(_ buf: RustBuffer) throws -> SyncRea
 public func FfiConverterTypeSyncReason_lower(_ value: SyncReason) -> RustBuffer {
     return FfiConverterTypeSyncReason.lower(value)
 }
-
 
 
 extension SyncReason: Equatable, Hashable {}
@@ -1659,8 +1704,6 @@ fileprivate struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
     }
 }
 
-
-
 private enum InitializationResult {
     case ok
     case contractVersionMismatch
@@ -1668,9 +1711,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private var initializationResult: InitializationResult = {
+private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 26
+    let bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_sync_manager_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -1685,14 +1728,17 @@ private var initializationResult: InitializationResult = {
     if (uniffi_sync_manager_checksum_method_syncmanager_sync() != 25300) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_sync_manager_checksum_constructor_syncmanager_new() != 6292) {
+    if (uniffi_sync_manager_checksum_constructor_syncmanager_new() != 14797) {
         return InitializationResult.apiChecksumMismatch
     }
 
+    uniffiEnsureSync15Initialized()
     return InitializationResult.ok
 }()
 
-private func uniffiEnsureInitialized() {
+// Make the ensure init function public so that other modules which have external type references to
+// our types can call it.
+public func uniffiEnsureSyncManagerInitialized() {
     switch initializationResult {
     case .ok:
         break

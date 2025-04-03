@@ -281,7 +281,7 @@ private func makeRustCall<T, E: Swift.Error>(
     _ callback: (UnsafeMutablePointer<RustCallStatus>) -> T,
     errorHandler: ((RustBuffer) throws -> E)?
 ) throws -> T {
-    uniffiEnsureInitialized()
+    uniffiEnsurePushInitialized()
     var callStatus = RustCallStatus.init()
     let returnedVal = callback(&callStatus)
     try uniffiCheckCallStatus(callStatus: callStatus, errorHandler: errorHandler)
@@ -352,9 +352,10 @@ private func uniffiTraitInterfaceCallWithError<T, E>(
         callStatus.pointee.errorBuf = FfiConverterString.lower(String(describing: error))
     }
 }
-fileprivate class UniffiHandleMap<T> {
-    private var map: [UInt64: T] = [:]
+fileprivate final class UniffiHandleMap<T>: @unchecked Sendable {
+    // All mutation happens with this lock held, which is why we implement @unchecked Sendable.
     private let lock = NSLock()
+    private var map: [UInt64: T] = [:]
     private var currentHandle: UInt64 = 1
 
     func insert(obj: T) -> UInt64 {
@@ -391,6 +392,7 @@ fileprivate class UniffiHandleMap<T> {
         }
     }
 }
+
 
 // Public interface members begin here.
 
@@ -503,7 +505,7 @@ fileprivate struct FfiConverterString: FfiConverter {
  * interact with the [`autopush server`](https:///autopush.readthedocs.io/en/latest/)
  * and persists state representing subscriptions.
  */
-public protocol PushManagerProtocol : AnyObject {
+public protocol PushManagerProtocol: AnyObject {
     
     /**
      * Decrypts a raw push message.
@@ -636,8 +638,7 @@ public protocol PushManagerProtocol : AnyObject {
  * interact with the [`autopush server`](https:///autopush.readthedocs.io/en/latest/)
  * and persists state representing subscriptions.
  */
-open class PushManager:
-    PushManagerProtocol {
+open class PushManager: PushManagerProtocol, @unchecked Sendable {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -687,9 +688,9 @@ open class PushManager:
      */
 public convenience init(config: PushConfiguration)throws  {
     let pointer =
-        try rustCallWithError(FfiConverterTypePushApiError.lift) {
+        try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_constructor_pushmanager_new(
-        FfiConverterTypePushConfiguration.lower(config),$0
+        FfiConverterTypePushConfiguration_lower(config),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -723,8 +724,8 @@ public convenience init(config: PushConfiguration)throws  {
      *   - An error occurred while decrypting the message
      *   - An error occurred accessing the PushManager's persisted storage
      */
-open func decrypt(payload: [String: String])throws  -> DecryptResponse {
-    return try  FfiConverterTypeDecryptResponse.lift(try rustCallWithError(FfiConverterTypePushApiError.lift) {
+open func decrypt(payload: [String: String])throws  -> DecryptResponse  {
+    return try  FfiConverterTypeDecryptResponse_lift(try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_method_pushmanager_decrypt(self.uniffiClonePointer(),
         FfiConverterDictionaryStringString.lower(payload),$0
     )
@@ -748,8 +749,8 @@ open func decrypt(payload: [String: String])throws  -> DecryptResponse {
      *   - PushManager was unable to access its persisted storage
      *   - An error occurred generating or deserializing the cryptographic keys
      */
-open func getSubscription(scope: String)throws  -> SubscriptionResponse? {
-    return try  FfiConverterOptionTypeSubscriptionResponse.lift(try rustCallWithError(FfiConverterTypePushApiError.lift) {
+open func getSubscription(scope: String)throws  -> SubscriptionResponse?  {
+    return try  FfiConverterOptionTypeSubscriptionResponse.lift(try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_method_pushmanager_get_subscription(self.uniffiClonePointer(),
         FfiConverterString.lower(scope),$0
     )
@@ -775,8 +776,8 @@ open func getSubscription(scope: String)throws  -> SubscriptionResponse? {
      *   - An error occurred sending a subscription request to the autopush server
      *   - An error occurred generating or deserializing the cryptographic keys
      */
-open func subscribe(scope: String, appServerSey: String? = nil)throws  -> SubscriptionResponse {
-    return try  FfiConverterTypeSubscriptionResponse.lift(try rustCallWithError(FfiConverterTypePushApiError.lift) {
+open func subscribe(scope: String, appServerSey: String? = nil)throws  -> SubscriptionResponse  {
+    return try  FfiConverterTypeSubscriptionResponse_lift(try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_method_pushmanager_subscribe(self.uniffiClonePointer(),
         FfiConverterString.lower(scope),
         FfiConverterOptionString.lower(appServerSey),$0
@@ -799,8 +800,8 @@ open func subscribe(scope: String, appServerSey: String? = nil)throws  -> Subscr
      *   - An error occurred sending an unsubscribe request to the autopush server
      *   - An error occurred accessing the PushManager's persisted storage
      */
-open func unsubscribe(scope: String)throws  -> Bool {
-    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypePushApiError.lift) {
+open func unsubscribe(scope: String)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_method_pushmanager_unsubscribe(self.uniffiClonePointer(),
         FfiConverterString.lower(scope),$0
     )
@@ -816,7 +817,7 @@ open func unsubscribe(scope: String)throws  -> Bool {
      *   - An error occurred sending an unsubscribe request to the autopush server
      *   - An error occurred accessing the PushManager's persisted storage
      */
-open func unsubscribeAll()throws  {try rustCallWithError(FfiConverterTypePushApiError.lift) {
+open func unsubscribeAll()throws   {try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_method_pushmanager_unsubscribe_all(self.uniffiClonePointer(),$0
     )
 }
@@ -834,7 +835,7 @@ open func unsubscribeAll()throws  {try rustCallWithError(FfiConverterTypePushApi
      *   - An error occurred sending an update request to the autopush server
      *   - An error occurred accessing the PushManager's persisted storage
      */
-open func update(registrationToken: String)throws  {try rustCallWithError(FfiConverterTypePushApiError.lift) {
+open func update(registrationToken: String)throws   {try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_method_pushmanager_update(self.uniffiClonePointer(),
         FfiConverterString.lower(registrationToken),$0
     )
@@ -860,8 +861,8 @@ open func update(registrationToken: String)throws  {try rustCallWithError(FfiCon
      *   - An error occurred sending an channel list retrieval request to the autopush server
      *   - An error occurred accessing the PushManager's persisted storage
      */
-open func verifyConnection(forceVerify: Bool = false)throws  -> [PushSubscriptionChanged] {
-    return try  FfiConverterSequenceTypePushSubscriptionChanged.lift(try rustCallWithError(FfiConverterTypePushApiError.lift) {
+open func verifyConnection(forceVerify: Bool = false)throws  -> [PushSubscriptionChanged]  {
+    return try  FfiConverterSequenceTypePushSubscriptionChanged.lift(try rustCallWithError(FfiConverterTypePushApiError_lift) {
     uniffi_push_fn_method_pushmanager_verify_connection(self.uniffiClonePointer(),
         FfiConverterBool.lower(forceVerify),$0
     )
@@ -870,6 +871,7 @@ open func verifyConnection(forceVerify: Bool = false)throws  -> [PushSubscriptio
     
 
 }
+
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -906,8 +908,6 @@ public struct FfiConverterTypePushManager: FfiConverter {
 }
 
 
-
-
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -923,6 +923,8 @@ public func FfiConverterTypePushManager_lower(_ value: PushManager) -> UnsafeMut
 }
 
 
+
+
 public struct DecryptResponse {
     public var result: [Int8]
     public var scope: String
@@ -935,6 +937,9 @@ public struct DecryptResponse {
     }
 }
 
+#if compiler(>=6)
+extension DecryptResponse: Sendable {}
+#endif
 
 
 extension DecryptResponse: Equatable, Hashable {
@@ -953,6 +958,7 @@ extension DecryptResponse: Equatable, Hashable {
         hasher.combine(scope)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1004,6 +1010,9 @@ public struct KeyInfo {
     }
 }
 
+#if compiler(>=6)
+extension KeyInfo: Sendable {}
+#endif
 
 
 extension KeyInfo: Equatable, Hashable {
@@ -1022,6 +1031,7 @@ extension KeyInfo: Equatable, Hashable {
         hasher.combine(p256dh)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1078,6 +1088,9 @@ public struct PushConfiguration {
     }
 }
 
+#if compiler(>=6)
+extension PushConfiguration: Sendable {}
+#endif
 
 
 extension PushConfiguration: Equatable, Hashable {
@@ -1112,6 +1125,7 @@ extension PushConfiguration: Equatable, Hashable {
         hasher.combine(verifyConnectionRateLimiter)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1174,6 +1188,9 @@ public struct PushSubscriptionChanged {
     }
 }
 
+#if compiler(>=6)
+extension PushSubscriptionChanged: Sendable {}
+#endif
 
 
 extension PushSubscriptionChanged: Equatable, Hashable {
@@ -1192,6 +1209,7 @@ extension PushSubscriptionChanged: Equatable, Hashable {
         hasher.combine(scope)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1244,6 +1262,9 @@ public struct SubscriptionInfo {
     }
 }
 
+#if compiler(>=6)
+extension SubscriptionInfo: Sendable {}
+#endif
 
 
 extension SubscriptionInfo: Equatable, Hashable {
@@ -1262,6 +1283,7 @@ extension SubscriptionInfo: Equatable, Hashable {
         hasher.combine(keys)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1313,6 +1335,9 @@ public struct SubscriptionResponse {
     }
 }
 
+#if compiler(>=6)
+extension SubscriptionResponse: Sendable {}
+#endif
 
 
 extension SubscriptionResponse: Equatable, Hashable {
@@ -1331,6 +1356,7 @@ extension SubscriptionResponse: Equatable, Hashable {
         hasher.combine(subscriptionInfo)
     }
 }
+
 
 
 #if swift(>=5.8)
@@ -1387,6 +1413,10 @@ public enum BridgeType {
 }
 
 
+#if compiler(>=6)
+extension BridgeType: Sendable {}
+#endif
+
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
@@ -1440,7 +1470,6 @@ public func FfiConverterTypeBridgeType_lift(_ buf: RustBuffer) throws -> BridgeT
 public func FfiConverterTypeBridgeType_lower(_ value: BridgeType) -> RustBuffer {
     return FfiConverterTypeBridgeType.lower(value)
 }
-
 
 
 extension BridgeType: Equatable, Hashable {}
@@ -1514,13 +1543,31 @@ public struct FfiConverterTypePushApiError: FfiConverterRustBuffer {
 }
 
 
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePushApiError_lift(_ buf: RustBuffer) throws -> PushApiError {
+    return try FfiConverterTypePushApiError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypePushApiError_lower(_ value: PushApiError) -> RustBuffer {
+    return FfiConverterTypePushApiError.lower(value)
+}
+
+
 extension PushApiError: Equatable, Hashable {}
+
+
 
 extension PushApiError: Foundation.LocalizedError {
     public var errorDescription: String? {
         String(reflecting: self)
     }
 }
+
 
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
@@ -1536,6 +1583,10 @@ public enum PushHttpProtocol {
     case http
 }
 
+
+#if compiler(>=6)
+extension PushHttpProtocol: Sendable {}
+#endif
 
 #if swift(>=5.8)
 @_documentation(visibility: private)
@@ -1584,7 +1635,6 @@ public func FfiConverterTypePushHttpProtocol_lift(_ buf: RustBuffer) throws -> P
 public func FfiConverterTypePushHttpProtocol_lower(_ value: PushHttpProtocol) -> RustBuffer {
     return FfiConverterTypePushHttpProtocol.lower(value)
 }
-
 
 
 extension PushHttpProtocol: Equatable, Hashable {}
@@ -1746,9 +1796,9 @@ private enum InitializationResult {
 }
 // Use a global variable to perform the versioning checks. Swift ensures that
 // the code inside is only computed once.
-private var initializationResult: InitializationResult = {
+private let initializationResult: InitializationResult = {
     // Get the bindings contract version from our ComponentInterface
-    let bindings_contract_version = 26
+    let bindings_contract_version = 29
     // Get the scaffolding contract version by calling the into the dylib
     let scaffolding_contract_version = ffi_push_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
@@ -1775,14 +1825,16 @@ private var initializationResult: InitializationResult = {
     if (uniffi_push_checksum_method_pushmanager_verify_connection() != 64398) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_push_checksum_constructor_pushmanager_new() != 21368) {
+    if (uniffi_push_checksum_constructor_pushmanager_new() != 17838) {
         return InitializationResult.apiChecksumMismatch
     }
 
     return InitializationResult.ok
 }()
 
-private func uniffiEnsureInitialized() {
+// Make the ensure init function public so that other modules which have external type references to
+// our types can call it.
+public func uniffiEnsurePushInitialized() {
     switch initializationResult {
     case .ok:
         break
