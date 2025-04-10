@@ -889,6 +889,16 @@ public protocol LoginStoreProtocol: AnyObject {
     
     func delete(id: String) throws  -> Bool
     
+    /**
+     * The `delete_undecryptable_records_for_remote_replacement` function locally deletes stored logins
+     * that cannot be decrypted and sets the last sync time to 0 so any existing server records can be downloaded
+     * and overwrite the locally deleted records.
+     *
+     * NB: This function was created to unblock iOS logins users who are unable to sync logins and should not be used
+     * outside of this use case.
+     */
+    func deleteUndecryptableRecordsForRemoteReplacement() throws 
+    
     func findLoginToUpdate(look: LoginEntry) throws  -> Login?
     
     func get(id: String) throws  -> Login?
@@ -992,6 +1002,20 @@ open func delete(id: String)throws  -> Bool  {
         FfiConverterString.lower(id),$0
     )
 })
+}
+    
+    /**
+     * The `delete_undecryptable_records_for_remote_replacement` function locally deletes stored logins
+     * that cannot be decrypted and sets the last sync time to 0 so any existing server records can be downloaded
+     * and overwrite the locally deleted records.
+     *
+     * NB: This function was created to unblock iOS logins users who are unable to sync logins and should not be used
+     * outside of this use case.
+     */
+open func deleteUndecryptableRecordsForRemoteReplacement()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_delete_undecryptable_records_for_remote_replacement(self.uniffiClonePointer(),$0
+    )
+}
 }
     
 open func findLoginToUpdate(look: LoginEntry)throws  -> Login?  {
@@ -2030,6 +2054,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_delete() != 44678) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_delete_undecryptable_records_for_remote_replacement() != 23503) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_find_login_to_update() != 62416) {
