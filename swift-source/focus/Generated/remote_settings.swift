@@ -922,6 +922,8 @@ public protocol RemoteSettingsServiceProtocol: AnyObject {
     
     /**
      * Create a new Remote Settings client
+     *
+     * This method performs no IO or network requests and is safe to run in a main thread that can't be blocked.
      */
     func makeClient(collectionName: String) throws  -> RemoteSettingsClient
     
@@ -987,11 +989,18 @@ open class RemoteSettingsService: RemoteSettingsServiceProtocol, @unchecked Send
     /**
      * Construct a [RemoteSettingsService]
      *
-     * This is typically done early in the application-startup process
+     * This is typically done early in the application-startup process.
+     *
+     * This method performs no IO or network requests and is safe to run in a main thread that
+     * can't be blocked.
+     *
+     * `storage_dir` is a directory to store SQLite files in -- one per collection. If the
+     * directory does not exist, it will be created when the storage is first used. Only the
+     * directory and the SQLite files will be created, any parent directories must already exist.
      */
-public convenience init(storageDir: String, config: RemoteSettingsConfig2)throws  {
+public convenience init(storageDir: String, config: RemoteSettingsConfig2) {
     let pointer =
-        try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
+        try! rustCall() {
     uniffi_remote_settings_fn_constructor_remotesettingsservice_new(
         FfiConverterString.lower(storageDir),
         FfiConverterTypeRemoteSettingsConfig2_lower(config),$0
@@ -1013,6 +1022,8 @@ public convenience init(storageDir: String, config: RemoteSettingsConfig2)throws
     
     /**
      * Create a new Remote Settings client
+     *
+     * This method performs no IO or network requests and is safe to run in a main thread that can't be blocked.
      */
 open func makeClient(collectionName: String)throws  -> RemoteSettingsClient  {
     return try  FfiConverterTypeRemoteSettingsClient_lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
@@ -2326,7 +2337,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_sync() != 29749) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettingsservice_make_client() != 50814) {
+    if (uniffi_remote_settings_checksum_method_remotesettingsservice_make_client() != 34042) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_remote_settings_checksum_method_remotesettingsservice_sync() != 61379) {
@@ -2338,7 +2349,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_remote_settings_checksum_constructor_remotesettings_new() != 52961) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_constructor_remotesettingsservice_new() != 32864) {
+    if (uniffi_remote_settings_checksum_constructor_remotesettingsservice_new() != 25399) {
         return InitializationResult.apiChecksumMismatch
     }
 
