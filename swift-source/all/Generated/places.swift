@@ -773,6 +773,8 @@ public protocol PlacesConnectionProtocol: AnyObject {
     
     func getVisitCount(excludeTypes: VisitTransitionSet) throws  -> Int64
     
+    func getVisitCountForHost(host: String, before: PlacesTimestamp, excludeTypes: VisitTransitionSet) throws  -> Int64
+    
     func getVisitInfos(startDate: PlacesTimestamp, endDate: PlacesTimestamp, excludeTypes: VisitTransitionSet) throws  -> [HistoryVisitInfo]
     
     func getVisitPage(offset: Int64, count: Int64, excludeTypes: VisitTransitionSet) throws  -> [HistoryVisitInfo]
@@ -1081,6 +1083,16 @@ open func getTopFrecentSiteInfos(numItems: Int32, thresholdOption: FrecencyThres
 open func getVisitCount(excludeTypes: VisitTransitionSet)throws  -> Int64  {
     return try  FfiConverterInt64.lift(try rustCallWithError(FfiConverterTypePlacesApiError_lift) {
     uniffi_places_fn_method_placesconnection_get_visit_count(self.uniffiClonePointer(),
+        FfiConverterTypeVisitTransitionSet_lower(excludeTypes),$0
+    )
+})
+}
+    
+open func getVisitCountForHost(host: String, before: PlacesTimestamp, excludeTypes: VisitTransitionSet)throws  -> Int64  {
+    return try  FfiConverterInt64.lift(try rustCallWithError(FfiConverterTypePlacesApiError_lift) {
+    uniffi_places_fn_method_placesconnection_get_visit_count_for_host(self.uniffiClonePointer(),
+        FfiConverterString.lower(host),
+        FfiConverterTypePlacesTimestamp_lower(before),
         FfiConverterTypeVisitTransitionSet_lower(excludeTypes),$0
     )
 })
@@ -5027,6 +5039,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_places_checksum_method_placesconnection_get_visit_count() != 5900) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_places_checksum_method_placesconnection_get_visit_count_for_host() != 44234) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_places_checksum_method_placesconnection_get_visit_infos() != 53292) {

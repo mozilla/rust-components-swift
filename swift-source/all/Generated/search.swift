@@ -525,7 +525,7 @@ public protocol SearchEngineSelectorProtocol: AnyObject {
      * engines. Should be false unless the application
      * supports the click URL feature.
      */
-    func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool) throws 
+    func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool) 
     
 }
 /**
@@ -646,7 +646,7 @@ open func setSearchConfig(configuration: String)throws   {try rustCallWithError(
      * engines. Should be false unless the application
      * supports the click URL feature.
      */
-open func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool)throws   {try rustCallWithError(FfiConverterTypeSearchApiError_lift) {
+open func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool)  {try! rustCall() {
     uniffi_search_fn_method_searchengineselector_use_remote_settings_server(self.uniffiClonePointer(),
         FfiConverterTypeRemoteSettingsService_lower(service),
         FfiConverterBool.lower(applyEngineOverrides),$0
@@ -2578,7 +2578,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_search_checksum_method_searchengineselector_set_search_config() != 35713) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_search_checksum_method_searchengineselector_use_remote_settings_server() != 15330) {
+    if (uniffi_search_checksum_method_searchengineselector_use_remote_settings_server() != 14364) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_search_checksum_constructor_searchengineselector_new() != 2296) {

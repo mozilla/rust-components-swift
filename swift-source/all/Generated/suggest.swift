@@ -580,6 +580,11 @@ fileprivate struct FfiConverterData: FfiConverterRustBuffer {
 public protocol SuggestStoreProtocol: AnyObject {
     
     /**
+     * Return whether any suggestions have been dismissed.
+     */
+    func anyDismissedSuggestions() throws  -> Bool
+    
+    /**
      * Removes all content from the database.
      */
     func clear() throws 
@@ -590,11 +595,30 @@ public protocol SuggestStoreProtocol: AnyObject {
     func clearDismissedSuggestions() throws 
     
     /**
+     * Dismiss a suggestion by its dismissal key.
+     *
+     * Dismissed suggestions cannot be fetched again.
+     *
+     * Prefer [SuggestStore::dismiss_by_suggestion] if you have a
+     * `crate::Suggestion`. This method is intended for cases where a
+     * suggestion originates outside this component.
+     */
+    func dismissByKey(key: String) throws 
+    
+    /**
+     * Dismiss a suggestion.
+     *
+     * Dismissed suggestions cannot be fetched again.
+     */
+    func dismissBySuggestion(suggestion: Suggestion) throws 
+    
+    /**
+     * Deprecated, use [SuggestStore::dismiss_by_suggestion] or
+     * [SuggestStore::dismiss_by_key] instead.
+     *
      * Dismiss a suggestion
      *
      * Dismissed suggestions will not be returned again
-     *
-     * In the case of AMP suggestions this should be the raw URL.
      */
     func dismissSuggestion(suggestionUrl: String) throws 
     
@@ -648,6 +672,25 @@ public protocol SuggestStoreProtocol: AnyObject {
      * method does not interrupt any ongoing ingests.
      */
     func interrupt(kind: InterruptKind?) 
+    
+    /**
+     * Return whether a suggestion has been dismissed given its dismissal key.
+     *
+     * [SuggestStore::query] will never return dismissed suggestions, so
+     * normally you never need to know whether a suggestion has been dismissed.
+     * This method is intended for cases where a dismissal key originates
+     * outside this component.
+     */
+    func isDismissedByKey(key: String) throws  -> Bool
+    
+    /**
+     * Return whether a suggestion has been dismissed.
+     *
+     * [SuggestStore::query] will never return dismissed suggestions, so
+     * normally you never need to know whether a `Suggestion` has been
+     * dismissed, but this method can be used to do so.
+     */
+    func isDismissedBySuggestion(suggestion: Suggestion) throws  -> Bool
     
     /**
      * Queries the database for suggestions.
@@ -729,9 +772,9 @@ open class SuggestStore: SuggestStoreProtocol, @unchecked Sendable {
     /**
      * Creates a Suggest store.
      */
-public convenience init(path: String, remoteSettingsService: RemoteSettingsService)throws  {
+public convenience init(path: String, remoteSettingsService: RemoteSettingsService) {
     let pointer =
-        try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+        try! rustCall() {
     uniffi_suggest_fn_constructor_suggeststore_new(
         FfiConverterString.lower(path),
         FfiConverterTypeRemoteSettingsService_lower(remoteSettingsService),$0
@@ -752,6 +795,16 @@ public convenience init(path: String, remoteSettingsService: RemoteSettingsServi
 
     
     /**
+     * Return whether any suggestions have been dismissed.
+     */
+open func anyDismissedSuggestions()throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+    uniffi_suggest_fn_method_suggeststore_any_dismissed_suggestions(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+    /**
      * Removes all content from the database.
      */
 open func clear()throws   {try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
@@ -770,11 +823,40 @@ open func clearDismissedSuggestions()throws   {try rustCallWithError(FfiConverte
 }
     
     /**
+     * Dismiss a suggestion by its dismissal key.
+     *
+     * Dismissed suggestions cannot be fetched again.
+     *
+     * Prefer [SuggestStore::dismiss_by_suggestion] if you have a
+     * `crate::Suggestion`. This method is intended for cases where a
+     * suggestion originates outside this component.
+     */
+open func dismissByKey(key: String)throws   {try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+    uniffi_suggest_fn_method_suggeststore_dismiss_by_key(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
+    )
+}
+}
+    
+    /**
+     * Dismiss a suggestion.
+     *
+     * Dismissed suggestions cannot be fetched again.
+     */
+open func dismissBySuggestion(suggestion: Suggestion)throws   {try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+    uniffi_suggest_fn_method_suggeststore_dismiss_by_suggestion(self.uniffiClonePointer(),
+        FfiConverterTypeSuggestion_lower(suggestion),$0
+    )
+}
+}
+    
+    /**
+     * Deprecated, use [SuggestStore::dismiss_by_suggestion] or
+     * [SuggestStore::dismiss_by_key] instead.
+     *
      * Dismiss a suggestion
      *
      * Dismissed suggestions will not be returned again
-     *
-     * In the case of AMP suggestions this should be the raw URL.
      */
 open func dismissSuggestion(suggestionUrl: String)throws   {try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
     uniffi_suggest_fn_method_suggeststore_dismiss_suggestion(self.uniffiClonePointer(),
@@ -863,6 +945,37 @@ open func interrupt(kind: InterruptKind? = nil)  {try! rustCall() {
         FfiConverterOptionTypeInterruptKind.lower(kind),$0
     )
 }
+}
+    
+    /**
+     * Return whether a suggestion has been dismissed given its dismissal key.
+     *
+     * [SuggestStore::query] will never return dismissed suggestions, so
+     * normally you never need to know whether a suggestion has been dismissed.
+     * This method is intended for cases where a dismissal key originates
+     * outside this component.
+     */
+open func isDismissedByKey(key: String)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+    uniffi_suggest_fn_method_suggeststore_is_dismissed_by_key(self.uniffiClonePointer(),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+    
+    /**
+     * Return whether a suggestion has been dismissed.
+     *
+     * [SuggestStore::query] will never return dismissed suggestions, so
+     * normally you never need to know whether a `Suggestion` has been
+     * dismissed, but this method can be used to do so.
+     */
+open func isDismissedBySuggestion(suggestion: Suggestion)throws  -> Bool  {
+    return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeSuggestApiError_lift) {
+    uniffi_suggest_fn_method_suggeststore_is_dismissed_by_suggestion(self.uniffiClonePointer(),
+        FfiConverterTypeSuggestion_lower(suggestion),$0
+    )
+})
 }
     
     /**
@@ -2341,7 +2454,7 @@ public enum InterruptKind {
     case read
     /**
      * Interrupt write operations.  This mostly means [SuggestStore::ingest], but
-     * [SuggestStore::dismiss_suggestion] may also be interrupted.
+     * other operations may also be interrupted.
      */
     case write
     /**
@@ -3487,13 +3600,22 @@ private let initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_func_raw_suggestion_url_matches() != 23311) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_suggest_checksum_method_suggeststore_any_dismissed_suggestions() != 57138) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_suggest_checksum_method_suggeststore_clear() != 24590) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_clear_dismissed_suggestions() != 39430) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion() != 43014) {
+    if (uniffi_suggest_checksum_method_suggeststore_dismiss_by_key() != 48043) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_dismiss_by_suggestion() != 22306) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion() != 47056) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_fetch_geonames() != 22569) {
@@ -3509,6 +3631,12 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_interrupt() != 26986) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_is_dismissed_by_key() != 29440) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_suggest_checksum_method_suggeststore_is_dismissed_by_suggestion() != 6416) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_method_suggeststore_query() != 856) {
@@ -3538,7 +3666,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_suggest_checksum_method_suggeststorebuilder_remote_settings_service() != 25201) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 27588) {
+    if (uniffi_suggest_checksum_constructor_suggeststore_new() != 7882) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_suggest_checksum_constructor_suggeststorebuilder_new() != 1218) {

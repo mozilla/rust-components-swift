@@ -266,6 +266,11 @@ void uniffi_suggest_fn_free_suggeststore(void*_Nonnull ptr, RustCallStatus *_Non
 void*_Nonnull uniffi_suggest_fn_constructor_suggeststore_new(RustBuffer path, void*_Nonnull remote_settings_service, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_ANY_DISMISSED_SUGGESTIONS
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_ANY_DISMISSED_SUGGESTIONS
+int8_t uniffi_suggest_fn_method_suggeststore_any_dismissed_suggestions(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_CLEAR
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_CLEAR
 void uniffi_suggest_fn_method_suggeststore_clear(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -274,6 +279,16 @@ void uniffi_suggest_fn_method_suggeststore_clear(void*_Nonnull ptr, RustCallStat
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_CLEAR_DISMISSED_SUGGESTIONS
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_CLEAR_DISMISSED_SUGGESTIONS
 void uniffi_suggest_fn_method_suggeststore_clear_dismissed_suggestions(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_DISMISS_BY_KEY
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_DISMISS_BY_KEY
+void uniffi_suggest_fn_method_suggeststore_dismiss_by_key(void*_Nonnull ptr, RustBuffer key, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_DISMISS_BY_SUGGESTION
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_DISMISS_BY_SUGGESTION
+void uniffi_suggest_fn_method_suggeststore_dismiss_by_suggestion(void*_Nonnull ptr, RustBuffer suggestion, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_DISMISS_SUGGESTION
@@ -304,6 +319,16 @@ RustBuffer uniffi_suggest_fn_method_suggeststore_ingest(void*_Nonnull ptr, RustB
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_INTERRUPT
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_INTERRUPT
 void uniffi_suggest_fn_method_suggeststore_interrupt(void*_Nonnull ptr, RustBuffer kind, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_KEY
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_KEY
+int8_t uniffi_suggest_fn_method_suggeststore_is_dismissed_by_key(void*_Nonnull ptr, RustBuffer key, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_SUGGESTION
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_SUGGESTION
+int8_t uniffi_suggest_fn_method_suggeststore_is_dismissed_by_suggestion(void*_Nonnull ptr, RustBuffer suggestion, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_QUERY
@@ -658,6 +683,12 @@ uint16_t uniffi_suggest_checksum_func_raw_suggestion_url_matches(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_ANY_DISMISSED_SUGGESTIONS
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_ANY_DISMISSED_SUGGESTIONS
+uint16_t uniffi_suggest_checksum_method_suggeststore_any_dismissed_suggestions(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_CLEAR
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_CLEAR
 uint16_t uniffi_suggest_checksum_method_suggeststore_clear(void
@@ -667,6 +698,18 @@ uint16_t uniffi_suggest_checksum_method_suggeststore_clear(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_CLEAR_DISMISSED_SUGGESTIONS
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_CLEAR_DISMISSED_SUGGESTIONS
 uint16_t uniffi_suggest_checksum_method_suggeststore_clear_dismissed_suggestions(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_DISMISS_BY_KEY
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_DISMISS_BY_KEY
+uint16_t uniffi_suggest_checksum_method_suggeststore_dismiss_by_key(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_DISMISS_BY_SUGGESTION
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_DISMISS_BY_SUGGESTION
+uint16_t uniffi_suggest_checksum_method_suggeststore_dismiss_by_suggestion(void
     
 );
 #endif
@@ -703,6 +746,18 @@ uint16_t uniffi_suggest_checksum_method_suggeststore_ingest(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_INTERRUPT
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_INTERRUPT
 uint16_t uniffi_suggest_checksum_method_suggeststore_interrupt(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_KEY
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_KEY
+uint16_t uniffi_suggest_checksum_method_suggeststore_is_dismissed_by_key(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_SUGGESTION
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_IS_DISMISSED_BY_SUGGESTION
+uint16_t uniffi_suggest_checksum_method_suggeststore_is_dismissed_by_suggestion(void
     
 );
 #endif
