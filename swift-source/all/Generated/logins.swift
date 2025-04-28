@@ -1984,6 +1984,17 @@ public func createKey()throws  -> String  {
 })
 }
 /**
+ * Create a LoginStore by passing in a db path and a static key
+ */
+public func createLoginStoreWithStaticKeyManager(path: String, key: String) -> LoginStore  {
+    return try!  FfiConverterTypeLoginStore_lift(try! rustCall() {
+    uniffi_logins_fn_func_create_login_store_with_static_key_manager(
+        FfiConverterString.lower(path),
+        FfiConverterString.lower(key),$0
+    )
+})
+}
+/**
  * Similar to create_static_key_manager above, create a
  * ManagedEncryptorDecryptor by passing in a KeyManager
  */
@@ -2030,6 +2041,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_func_create_key() != 22260) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_func_create_login_store_with_static_key_manager() != 36971) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_func_create_managed_encdec() != 15704) {

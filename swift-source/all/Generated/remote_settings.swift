@@ -722,6 +722,11 @@ public protocol RemoteSettingsClientProtocol: AnyObject {
      */
     func getRecordsMap(syncIfEmpty: Bool)  -> [String: RemoteSettingsRecord]?
     
+    /**
+     * Shutdown the client, releasing the SQLite connection used to cache records.
+     */
+    func shutdown() 
+    
     func sync() throws 
     
 }
@@ -848,6 +853,15 @@ open func getRecordsMap(syncIfEmpty: Bool = false) -> [String: RemoteSettingsRec
 })
 }
     
+    /**
+     * Shutdown the client, releasing the SQLite connection used to cache records.
+     */
+open func shutdown()  {try! rustCall() {
+    uniffi_remote_settings_fn_method_remotesettingsclient_shutdown(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
 open func sync()throws   {try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
     uniffi_remote_settings_fn_method_remotesettingsclient_sync(self.uniffiClonePointer(),$0
     )
@@ -925,7 +939,7 @@ public protocol RemoteSettingsServiceProtocol: AnyObject {
      *
      * This method performs no IO or network requests and is safe to run in a main thread that can't be blocked.
      */
-    func makeClient(collectionName: String) throws  -> RemoteSettingsClient
+    func makeClient(collectionName: String)  -> RemoteSettingsClient
     
     /**
      * Sync collections for all active clients
@@ -1025,8 +1039,8 @@ public convenience init(storageDir: String, config: RemoteSettingsConfig2) {
      *
      * This method performs no IO or network requests and is safe to run in a main thread that can't be blocked.
      */
-open func makeClient(collectionName: String)throws  -> RemoteSettingsClient  {
-    return try  FfiConverterTypeRemoteSettingsClient_lift(try rustCallWithError(FfiConverterTypeRemoteSettingsError_lift) {
+open func makeClient(collectionName: String) -> RemoteSettingsClient  {
+    return try!  FfiConverterTypeRemoteSettingsClient_lift(try! rustCall() {
     uniffi_remote_settings_fn_method_remotesettingsservice_make_client(self.uniffiClonePointer(),
         FfiConverterString.lower(collectionName),$0
     )
@@ -2334,10 +2348,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_get_records_map() != 32665) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_remote_settings_checksum_method_remotesettingsclient_shutdown() != 43691) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_remote_settings_checksum_method_remotesettingsclient_sync() != 29749) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_remote_settings_checksum_method_remotesettingsservice_make_client() != 34042) {
+    if (uniffi_remote_settings_checksum_method_remotesettingsservice_make_client() != 46337) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_remote_settings_checksum_method_remotesettingsservice_sync() != 61379) {

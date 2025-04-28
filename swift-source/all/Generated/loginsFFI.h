@@ -470,6 +470,11 @@ RustBuffer uniffi_logins_fn_func_create_key(RustCallStatus *_Nonnull out_status
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_LOGIN_STORE_WITH_STATIC_KEY_MANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_LOGIN_STORE_WITH_STATIC_KEY_MANAGER
+void*_Nonnull uniffi_logins_fn_func_create_login_store_with_static_key_manager(RustBuffer path, RustBuffer key, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_MANAGED_ENCDEC
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_FUNC_CREATE_MANAGED_ENCDEC
 void*_Nonnull uniffi_logins_fn_func_create_managed_encdec(void*_Nonnull key_manager, RustCallStatus *_Nonnull out_status
@@ -775,6 +780,12 @@ uint16_t uniffi_logins_checksum_func_create_canary(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_KEY
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_KEY
 uint16_t uniffi_logins_checksum_func_create_key(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_LOGIN_STORE_WITH_STATIC_KEY_MANAGER
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_FUNC_CREATE_LOGIN_STORE_WITH_STATIC_KEY_MANAGER
+uint16_t uniffi_logins_checksum_func_create_login_store_with_static_key_manager(void
     
 );
 #endif

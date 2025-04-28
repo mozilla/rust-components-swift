@@ -1,5 +1,4 @@
 module MozillaRustComponents {
-    header "as_ohttp_clientFFI.h"
     header "autofillFFI.h"
     header "crashtestFFI.h"
     header "errorFFI.h"
