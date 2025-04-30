@@ -554,12 +554,11 @@ open class CuratedRecommendationsClient: CuratedRecommendationsClientProtocol, @
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
         return try! rustCall { uniffi_merino_fn_clone_curatedrecommendationsclient(self.pointer, $0) }
     }
-public convenience init(baseHost: String?, userAgentHeader: String)throws  {
+public convenience init(config: CuratedRecommendationsConfig)throws  {
     let pointer =
         try rustCallWithError(FfiConverterTypeCuratedRecommendationsApiError_lift) {
     uniffi_merino_fn_constructor_curatedrecommendationsclient_new(
-        FfiConverterOptionString.lower(baseHost),
-        FfiConverterString.lower(userAgentHeader),$0
+        FfiConverterTypeCuratedRecommendationsConfig_lower(config),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -707,6 +706,76 @@ public func FfiConverterTypeCuratedRecommendationsBucket_lift(_ buf: RustBuffer)
 #endif
 public func FfiConverterTypeCuratedRecommendationsBucket_lower(_ value: CuratedRecommendationsBucket) -> RustBuffer {
     return FfiConverterTypeCuratedRecommendationsBucket.lower(value)
+}
+
+
+public struct CuratedRecommendationsConfig {
+    public var baseHost: String?
+    public var userAgentHeader: String
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(baseHost: String?, userAgentHeader: String) {
+        self.baseHost = baseHost
+        self.userAgentHeader = userAgentHeader
+    }
+}
+
+#if compiler(>=6)
+extension CuratedRecommendationsConfig: Sendable {}
+#endif
+
+
+extension CuratedRecommendationsConfig: Equatable, Hashable {
+    public static func ==(lhs: CuratedRecommendationsConfig, rhs: CuratedRecommendationsConfig) -> Bool {
+        if lhs.baseHost != rhs.baseHost {
+            return false
+        }
+        if lhs.userAgentHeader != rhs.userAgentHeader {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(baseHost)
+        hasher.combine(userAgentHeader)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeCuratedRecommendationsConfig: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> CuratedRecommendationsConfig {
+        return
+            try CuratedRecommendationsConfig(
+                baseHost: FfiConverterOptionString.read(from: &buf), 
+                userAgentHeader: FfiConverterString.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: CuratedRecommendationsConfig, into buf: inout [UInt8]) {
+        FfiConverterOptionString.write(value.baseHost, into: &buf)
+        FfiConverterString.write(value.userAgentHeader, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCuratedRecommendationsConfig_lift(_ buf: RustBuffer) throws -> CuratedRecommendationsConfig {
+    return try FfiConverterTypeCuratedRecommendationsConfig.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeCuratedRecommendationsConfig_lower(_ value: CuratedRecommendationsConfig) -> RustBuffer {
+    return FfiConverterTypeCuratedRecommendationsConfig.lower(value)
 }
 
 
@@ -2766,7 +2835,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_merino_checksum_method_curatedrecommendationsclient_get_curated_recommendations() != 49968) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_merino_checksum_constructor_curatedrecommendationsclient_new() != 17990) {
+    if (uniffi_merino_checksum_constructor_curatedrecommendationsclient_new() != 14537) {
         return InitializationResult.apiChecksumMismatch
     }
 
