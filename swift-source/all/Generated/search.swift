@@ -718,7 +718,7 @@ public func FfiConverterTypeSearchEngineSelector_lower(_ value: SearchEngineSele
 public struct JsonEngineUrl {
     /**
      * The PrePath and FilePath of the URL. May include variables for engines
-     * which have a variable FilePath, e.g. `{searchTerm}` for when a search
+     * which have a variable FilePath, e.g. `{searchTerms}` for when a search
      * term is within the path of the url.
      */
     public var base: String?
@@ -733,7 +733,7 @@ public struct JsonEngineUrl {
     public var params: [SearchUrlParam]?
     /**
      * The name of the query parameter for the search term. Automatically
-     * appended to the end of the query. This may be skipped if `{searchTerm}`
+     * appended to the end of the query. This may be skipped if `{searchTerms}`
      * is included in the base.
      */
     public var searchTermParamName: String?
@@ -743,7 +743,7 @@ public struct JsonEngineUrl {
     public init(
         /**
          * The PrePath and FilePath of the URL. May include variables for engines
-         * which have a variable FilePath, e.g. `{searchTerm}` for when a search
+         * which have a variable FilePath, e.g. `{searchTerms}` for when a search
          * term is within the path of the url.
          */base: String?, 
         /**
@@ -755,7 +755,7 @@ public struct JsonEngineUrl {
          */params: [SearchUrlParam]?, 
         /**
          * The name of the query parameter for the search term. Automatically
-         * appended to the end of the query. This may be skipped if `{searchTerm}`
+         * appended to the end of the query. This may be skipped if `{searchTerms}`
          * is included in the base.
          */searchTermParamName: String?) {
         self.base = base
@@ -1329,7 +1329,7 @@ public func FfiConverterTypeSearchEngineDefinition_lower(_ value: SearchEngineDe
 public struct SearchEngineUrl {
     /**
      * The PrePath and FilePath of the URL. May include variables for engines
-     * which have a variable FilePath, e.g. `{searchTerm}` for when a search
+     * which have a variable FilePath, e.g. `{searchTerms}` for when a search
      * term is within the path of the url.
      */
     public var base: String
@@ -1344,7 +1344,7 @@ public struct SearchEngineUrl {
     public var params: [SearchUrlParam]
     /**
      * The name of the query parameter for the search term. Automatically
-     * appended to the end of the query. This may be skipped if `{searchTerm}`
+     * appended to the end of the query. This may be skipped if `{searchTerms}`
      * is included in the base.
      */
     public var searchTermParamName: String?
@@ -1354,7 +1354,7 @@ public struct SearchEngineUrl {
     public init(
         /**
          * The PrePath and FilePath of the URL. May include variables for engines
-         * which have a variable FilePath, e.g. `{searchTerm}` for when a search
+         * which have a variable FilePath, e.g. `{searchTerms}` for when a search
          * term is within the path of the url.
          */base: String, 
         /**
@@ -1366,7 +1366,7 @@ public struct SearchEngineUrl {
          */params: [SearchUrlParam], 
         /**
          * The name of the query parameter for the search term. Automatically
-         * appended to the end of the query. This may be skipped if `{searchTerm}`
+         * appended to the end of the query. This may be skipped if `{searchTerms}`
          * is included in the base.
          */searchTermParamName: String?) {
         self.base = base
