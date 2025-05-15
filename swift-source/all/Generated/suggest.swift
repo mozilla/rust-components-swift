@@ -2730,7 +2730,7 @@ public enum Suggestion {
     )
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double
     )
-    case yelp(url: String, title: String, icon: Data?, iconMimetype: String?, score: Double, hasLocationSign: Bool, subjectExactMatch: Bool, locationParam: String
+    case yelp(url: String, title: String, icon: Data?, iconMimetype: String?, score: Double, hasLocationSign: Bool, subjectExactMatch: Bool, subjectType: YelpSubjectType, locationParam: String
     )
     case mdn(title: String, url: String, description: String, score: Double
     )
@@ -2775,7 +2775,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 4: return .amo(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), iconUrl: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), rating: try FfiConverterOptionString.read(from: &buf), numberOfRatings: try FfiConverterInt64.read(from: &buf), guid: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 5: return .yelp(url: try FfiConverterString.read(from: &buf), title: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), hasLocationSign: try FfiConverterBool.read(from: &buf), subjectExactMatch: try FfiConverterBool.read(from: &buf), locationParam: try FfiConverterString.read(from: &buf)
+        case 5: return .yelp(url: try FfiConverterString.read(from: &buf), title: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), hasLocationSign: try FfiConverterBool.read(from: &buf), subjectExactMatch: try FfiConverterBool.read(from: &buf), subjectType: try FfiConverterTypeYelpSubjectType.read(from: &buf), locationParam: try FfiConverterString.read(from: &buf)
         )
         
         case 6: return .mdn(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
@@ -2845,7 +2845,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             
         
-        case let .yelp(url,title,icon,iconMimetype,score,hasLocationSign,subjectExactMatch,locationParam):
+        case let .yelp(url,title,icon,iconMimetype,score,hasLocationSign,subjectExactMatch,subjectType,locationParam):
             writeInt(&buf, Int32(5))
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
@@ -2854,6 +2854,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterDouble.write(score, into: &buf)
             FfiConverterBool.write(hasLocationSign, into: &buf)
             FfiConverterBool.write(subjectExactMatch, into: &buf)
+            FfiConverterTypeYelpSubjectType.write(subjectType, into: &buf)
             FfiConverterString.write(locationParam, into: &buf)
             
         
@@ -3036,6 +3037,76 @@ public func FfiConverterTypeSuggestionProvider_lower(_ value: SuggestionProvider
 
 
 extension SuggestionProvider: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * Subject type for Yelp suggestion.
+ */
+
+public enum YelpSubjectType : UInt8 {
+    
+    case service = 0
+    case business = 1
+}
+
+
+#if compiler(>=6)
+extension YelpSubjectType: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeYelpSubjectType: FfiConverterRustBuffer {
+    typealias SwiftType = YelpSubjectType
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> YelpSubjectType {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .service
+        
+        case 2: return .business
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: YelpSubjectType, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .service:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .business:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeYelpSubjectType_lift(_ buf: RustBuffer) throws -> YelpSubjectType {
+    return try FfiConverterTypeYelpSubjectType.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeYelpSubjectType_lower(_ value: YelpSubjectType) -> RustBuffer {
+    return FfiConverterTypeYelpSubjectType.lower(value)
+}
+
+
+extension YelpSubjectType: Equatable, Hashable {}
 
 
 
