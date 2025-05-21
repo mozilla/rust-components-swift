@@ -16,5 +16,6 @@ module MozillaRustComponents {
     header "sync15FFI.h"
     header "syncmanagerFFI.h"
     header "tabsFFI.h"
+    header "tracingFFI.h"
     export *
 }

@@ -457,10 +457,25 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
+/**
+ * Application error reporting trait
+ *
+ * The application that's consuming application-services implements this via a UniFFI callback
+ * interface, then calls `set_application_error_reporter()` to setup a global
+ * ApplicationErrorReporter.
+ */
 public protocol ApplicationErrorReporter: AnyObject {
     
+    /**
+     * Send an error report to a Sentry-like error reporting system
+     *
+     * type_name should be used to group errors together
+     */
     func reportError(typeName: String, message: String) 
     
+    /**
+     * Send a breadcrumb to a Sentry-like error reporting system
+     */
     func reportBreadcrumb(message: String, module: String, line: UInt32, column: UInt32) 
     
 }
@@ -643,16 +658,16 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_error_support_checksum_func_set_application_error_reporter() != 33757) {
+    if (uniffi_error_support_checksum_func_set_application_error_reporter() != 5026) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_error_support_checksum_func_unset_application_error_reporter() != 11689) {
+    if (uniffi_error_support_checksum_func_unset_application_error_reporter() != 48726) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_error_support_checksum_method_applicationerrorreporter_report_error() != 40350) {
+    if (uniffi_error_support_checksum_method_applicationerrorreporter_report_error() != 35278) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_error_support_checksum_method_applicationerrorreporter_report_breadcrumb() != 34686) {
+    if (uniffi_error_support_checksum_method_applicationerrorreporter_report_breadcrumb() != 15136) {
         return InitializationResult.apiChecksumMismatch
     }
 

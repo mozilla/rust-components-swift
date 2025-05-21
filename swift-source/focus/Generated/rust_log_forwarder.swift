@@ -441,18 +441,12 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 public struct Record {
     public var level: Level
-    /**
-     * The target field from the Rust log crate.  Usually the Rust module name, however log! calls can manually override the target name.
-     */
     public var target: String
     public var message: String
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(level: Level, 
-        /**
-         * The target field from the Rust log crate.  Usually the Rust module name, however log! calls can manually override the target name.
-         */target: String, message: String) {
+    public init(level: Level, target: String, message: String) {
         self.level = level
         self.target = target
         self.message = message
@@ -758,7 +752,7 @@ fileprivate struct FfiConverterOptionCallbackInterfaceAppServicesLogger: FfiConv
 /**
  * Set the logger to forward to.
  *
- * Pass in null to disable logging.
+ * Pass in None to disable logging.
  */
 public func setLogger(logger: AppServicesLogger?)  {try! rustCall() {
     uniffi_rust_log_forwarder_fn_func_set_logger(
@@ -768,6 +762,7 @@ public func setLogger(logger: AppServicesLogger?)  {try! rustCall() {
 }
 /**
  * Set the maximum log level filter.  Records below this level will not be sent to the logger.
+ * You must set this exactly once, before you call `set_logger()`
  */
 public func setMaxLevel(level: Level)  {try! rustCall() {
     uniffi_rust_log_forwarder_fn_func_set_max_level(
@@ -791,13 +786,13 @@ private let initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_rust_log_forwarder_checksum_func_set_logger() != 4525) {
+    if (uniffi_rust_log_forwarder_checksum_func_set_logger() != 8393) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_rust_log_forwarder_checksum_func_set_max_level() != 753) {
+    if (uniffi_rust_log_forwarder_checksum_func_set_max_level() != 57087) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_rust_log_forwarder_checksum_method_appserviceslogger_log() != 39206) {
+    if (uniffi_rust_log_forwarder_checksum_method_appserviceslogger_log() != 59046) {
         return InitializationResult.apiChecksumMismatch
     }
 
