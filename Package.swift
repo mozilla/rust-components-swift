@@ -1,13 +1,13 @@
 // swift-tools-version:5.4
 import PackageDescription
 
-let checksum = "7fa3d59be83256b085066d7b3c3b3c2ffa674254b456d264cce56c941cfe48e1"
-let version = "140.0.20250523050350"
-let url = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/project.application-services.v2.swift.140.20250523050350/artifacts/public/build/MozillaRustComponents.xcframework.zip"
+let checksum = "be89f7f9f7217b56aff17e7519a880814d0bbc1ed856dc5e4791719600a2a02b"
+let version = "140.0.20250523140405"
+let url = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/project.application-services.v2.swift.140.20250523140405/artifacts/public/build/MozillaRustComponents.xcframework.zip"
 
 // Focus xcframework
-let focusChecksum = "f0826a5c39e7bac1523a86401f85e49c4416b78a99865f3b2b1659d4ca40b961"
-let focusUrl = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/project.application-services.v2.swift.140.20250523050350/artifacts/public/build/FocusRustComponents.xcframework.zip"
+let focusChecksum = "6209d57a893b1e6f6d6d28ca5cc022d875ceb3eb97853cc1a120842b422068d3"
+let focusUrl = "https://firefox-ci-tc.services.mozilla.com/api/index/v1/task/project.application-services.v2.swift.140.20250523140405/artifacts/public/build/FocusRustComponents.xcframework.zip"
 let package = Package(
     name: "MozillaRustComponentsSwift",
     platforms: [.iOS(.v14)],
