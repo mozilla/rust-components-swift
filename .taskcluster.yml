@@ -11,7 +11,7 @@ policy:
     pullRequests: public
 tasks:
     - $let:
-          trustDomain: "mozilla"
+          trustDomain: app-services
           ownerEmail:
               $switch:
                   'tasks_for == "github-push"': '${event.pusher.email}'

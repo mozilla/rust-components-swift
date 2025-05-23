@@ -1,9 +1,9 @@
 ---
-trust-domain: "mozilla"
+trust-domain: app-services
 task-priority: low
 
 taskgraph:
-  cached-task-prefix: "mozilla.v2.rust-components-swift"
+  cached-task-prefix: "app-services.v2.rust-components-swift"
   repositories:
     rust_components_swift:
       name: "rust-components-swift"
