@@ -354,9 +354,24 @@ void*_Nonnull uniffi_logins_fn_constructor_loginstore_new(RustBuffer path, void*
 RustBuffer uniffi_logins_fn_method_loginstore_add(void*_Nonnull ptr, RustBuffer login, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_MANY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_MANY
+RustBuffer uniffi_logins_fn_method_loginstore_add_many(void*_Nonnull ptr, RustBuffer logins, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_MANY_WITH_META
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_MANY_WITH_META
+RustBuffer uniffi_logins_fn_method_loginstore_add_many_with_meta(void*_Nonnull ptr, RustBuffer entries_with_meta, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_OR_UPDATE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_OR_UPDATE
 RustBuffer uniffi_logins_fn_method_loginstore_add_or_update(void*_Nonnull ptr, RustBuffer login, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_WITH_META
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_ADD_WITH_META
+RustBuffer uniffi_logins_fn_method_loginstore_add_with_meta(void*_Nonnull ptr, RustBuffer entry_with_meta, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE
@@ -825,9 +840,27 @@ uint16_t uniffi_logins_checksum_method_loginstore_add(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_MANY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_MANY
+uint16_t uniffi_logins_checksum_method_loginstore_add_many(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_MANY_WITH_META
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_MANY_WITH_META
+uint16_t uniffi_logins_checksum_method_loginstore_add_many_with_meta(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_OR_UPDATE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_OR_UPDATE
 uint16_t uniffi_logins_checksum_method_loginstore_add_or_update(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_WITH_META
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_WITH_META
+uint16_t uniffi_logins_checksum_method_loginstore_add_with_meta(void
     
 );
 #endif

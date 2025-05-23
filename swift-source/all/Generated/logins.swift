@@ -885,7 +885,13 @@ public protocol LoginStoreProtocol: AnyObject {
     
     func add(login: LoginEntry) throws  -> Login
     
+    func addMany(logins: [LoginEntry]) throws  -> [BulkResultEntry]
+    
+    func addManyWithMeta(entriesWithMeta: [LoginEntryWithMeta]) throws  -> [BulkResultEntry]
+    
     func addOrUpdate(login: LoginEntry) throws  -> Login
+    
+    func addWithMeta(entryWithMeta: LoginEntryWithMeta) throws  -> Login
     
     func delete(id: String) throws  -> Bool
     
@@ -988,10 +994,34 @@ open func add(login: LoginEntry)throws  -> Login  {
 })
 }
     
+open func addMany(logins: [LoginEntry])throws  -> [BulkResultEntry]  {
+    return try  FfiConverterSequenceTypeBulkResultEntry.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_add_many(self.uniffiClonePointer(),
+        FfiConverterSequenceTypeLoginEntry.lower(logins),$0
+    )
+})
+}
+    
+open func addManyWithMeta(entriesWithMeta: [LoginEntryWithMeta])throws  -> [BulkResultEntry]  {
+    return try  FfiConverterSequenceTypeBulkResultEntry.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_add_many_with_meta(self.uniffiClonePointer(),
+        FfiConverterSequenceTypeLoginEntryWithMeta.lower(entriesWithMeta),$0
+    )
+})
+}
+    
 open func addOrUpdate(login: LoginEntry)throws  -> Login  {
     return try  FfiConverterTypeLogin_lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
     uniffi_logins_fn_method_loginstore_add_or_update(self.uniffiClonePointer(),
         FfiConverterTypeLoginEntry_lower(login),$0
+    )
+})
+}
+    
+open func addWithMeta(entryWithMeta: LoginEntryWithMeta)throws  -> Login  {
+    return try  FfiConverterTypeLogin_lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_add_with_meta(self.uniffiClonePointer(),
+        FfiConverterTypeLoginEntryWithMeta_lower(entryWithMeta),$0
     )
 })
 }
@@ -1658,6 +1688,321 @@ public func FfiConverterTypeLoginEntry_lower(_ value: LoginEntry) -> RustBuffer 
 
 
 /**
+ * A login together with record fields, handed over to the store API; ie a login persisted
+ * elsewhere, useful for migrations
+ */
+public struct LoginEntryWithMeta {
+    public var entry: LoginEntry
+    public var meta: LoginMeta
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(entry: LoginEntry, meta: LoginMeta) {
+        self.entry = entry
+        self.meta = meta
+    }
+}
+
+#if compiler(>=6)
+extension LoginEntryWithMeta: Sendable {}
+#endif
+
+
+extension LoginEntryWithMeta: Equatable, Hashable {
+    public static func ==(lhs: LoginEntryWithMeta, rhs: LoginEntryWithMeta) -> Bool {
+        if lhs.entry != rhs.entry {
+            return false
+        }
+        if lhs.meta != rhs.meta {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(entry)
+        hasher.combine(meta)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLoginEntryWithMeta: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LoginEntryWithMeta {
+        return
+            try LoginEntryWithMeta(
+                entry: FfiConverterTypeLoginEntry.read(from: &buf), 
+                meta: FfiConverterTypeLoginMeta.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LoginEntryWithMeta, into buf: inout [UInt8]) {
+        FfiConverterTypeLoginEntry.write(value.entry, into: &buf)
+        FfiConverterTypeLoginMeta.write(value.meta, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLoginEntryWithMeta_lift(_ buf: RustBuffer) throws -> LoginEntryWithMeta {
+    return try FfiConverterTypeLoginEntryWithMeta.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLoginEntryWithMeta_lower(_ value: LoginEntryWithMeta) -> RustBuffer {
+    return FfiConverterTypeLoginEntryWithMeta.lower(value)
+}
+
+
+/**
+ * Login data specific to database records.
+ * The add_with_record API inputs this.
+ */
+public struct LoginMeta {
+    public var id: String
+    public var timesUsed: Int64
+    public var timeCreated: Int64
+    public var timeLastUsed: Int64
+    public var timePasswordChanged: Int64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(id: String, timesUsed: Int64, timeCreated: Int64, timeLastUsed: Int64, timePasswordChanged: Int64) {
+        self.id = id
+        self.timesUsed = timesUsed
+        self.timeCreated = timeCreated
+        self.timeLastUsed = timeLastUsed
+        self.timePasswordChanged = timePasswordChanged
+    }
+}
+
+#if compiler(>=6)
+extension LoginMeta: Sendable {}
+#endif
+
+
+extension LoginMeta: Equatable, Hashable {
+    public static func ==(lhs: LoginMeta, rhs: LoginMeta) -> Bool {
+        if lhs.id != rhs.id {
+            return false
+        }
+        if lhs.timesUsed != rhs.timesUsed {
+            return false
+        }
+        if lhs.timeCreated != rhs.timeCreated {
+            return false
+        }
+        if lhs.timeLastUsed != rhs.timeLastUsed {
+            return false
+        }
+        if lhs.timePasswordChanged != rhs.timePasswordChanged {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(timesUsed)
+        hasher.combine(timeCreated)
+        hasher.combine(timeLastUsed)
+        hasher.combine(timePasswordChanged)
+    }
+}
+
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLoginMeta: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LoginMeta {
+        return
+            try LoginMeta(
+                id: FfiConverterString.read(from: &buf), 
+                timesUsed: FfiConverterInt64.read(from: &buf), 
+                timeCreated: FfiConverterInt64.read(from: &buf), 
+                timeLastUsed: FfiConverterInt64.read(from: &buf), 
+                timePasswordChanged: FfiConverterInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: LoginMeta, into buf: inout [UInt8]) {
+        FfiConverterString.write(value.id, into: &buf)
+        FfiConverterInt64.write(value.timesUsed, into: &buf)
+        FfiConverterInt64.write(value.timeCreated, into: &buf)
+        FfiConverterInt64.write(value.timeLastUsed, into: &buf)
+        FfiConverterInt64.write(value.timePasswordChanged, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLoginMeta_lift(_ buf: RustBuffer) throws -> LoginMeta {
+    return try FfiConverterTypeLoginMeta.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLoginMeta_lower(_ value: LoginMeta) -> RustBuffer {
+    return FfiConverterTypeLoginMeta.lower(value)
+}
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+/**
+ * A bulk insert result entry, returned by `add_many` and `add_many_with_meta`
+ */
+
+public enum BulkResultEntry {
+    
+    case success(login: Login
+    )
+    case error(message: String
+    )
+}
+
+
+#if compiler(>=6)
+extension BulkResultEntry: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeBulkResultEntry: FfiConverterRustBuffer {
+    typealias SwiftType = BulkResultEntry
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> BulkResultEntry {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .success(login: try FfiConverterTypeLogin.read(from: &buf)
+        )
+        
+        case 2: return .error(message: try FfiConverterString.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: BulkResultEntry, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .success(login):
+            writeInt(&buf, Int32(1))
+            FfiConverterTypeLogin.write(login, into: &buf)
+            
+        
+        case let .error(message):
+            writeInt(&buf, Int32(2))
+            FfiConverterString.write(message, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBulkResultEntry_lift(_ buf: RustBuffer) throws -> BulkResultEntry {
+    return try FfiConverterTypeBulkResultEntry.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeBulkResultEntry_lower(_ value: BulkResultEntry) -> RustBuffer {
+    return FfiConverterTypeBulkResultEntry.lower(value)
+}
+
+
+extension BulkResultEntry: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum LoginOrErrorMessage {
+    
+    case login
+    case string
+}
+
+
+#if compiler(>=6)
+extension LoginOrErrorMessage: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeLoginOrErrorMessage: FfiConverterRustBuffer {
+    typealias SwiftType = LoginOrErrorMessage
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> LoginOrErrorMessage {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .login
+        
+        case 2: return .string
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: LoginOrErrorMessage, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .login:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .string:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLoginOrErrorMessage_lift(_ buf: RustBuffer) throws -> LoginOrErrorMessage {
+    return try FfiConverterTypeLoginOrErrorMessage.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeLoginOrErrorMessage_lower(_ value: LoginOrErrorMessage) -> RustBuffer {
+    return FfiConverterTypeLoginOrErrorMessage.lower(value)
+}
+
+
+extension LoginOrErrorMessage: Equatable, Hashable {}
+
+
+
+
+/**
  * These are the errors returned by our public API.
  */
 public enum LoginsApiError {
@@ -1950,6 +2295,81 @@ fileprivate struct FfiConverterSequenceTypeLogin: FfiConverterRustBuffer {
         return seq
     }
 }
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeLoginEntry: FfiConverterRustBuffer {
+    typealias SwiftType = [LoginEntry]
+
+    public static func write(_ value: [LoginEntry], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeLoginEntry.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [LoginEntry] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [LoginEntry]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeLoginEntry.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeLoginEntryWithMeta: FfiConverterRustBuffer {
+    typealias SwiftType = [LoginEntryWithMeta]
+
+    public static func write(_ value: [LoginEntryWithMeta], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeLoginEntryWithMeta.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [LoginEntryWithMeta] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [LoginEntryWithMeta]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeLoginEntryWithMeta.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeBulkResultEntry: FfiConverterRustBuffer {
+    typealias SwiftType = [BulkResultEntry]
+
+    public static func write(_ value: [BulkResultEntry], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeBulkResultEntry.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [BulkResultEntry] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [BulkResultEntry]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeBulkResultEntry.read(from: &buf))
+        }
+        return seq
+    }
+}
 /**
  * Check that key is still valid using the output of `create_canary`.
  */
@@ -2064,7 +2484,16 @@ private let initializationResult: InitializationResult = {
     if (uniffi_logins_checksum_method_loginstore_add() != 62811) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_logins_checksum_method_loginstore_add_many() != 3267) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_add_many_with_meta() != 37365) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_logins_checksum_method_loginstore_add_or_update() != 37950) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_add_with_meta() != 34738) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_delete() != 44678) {

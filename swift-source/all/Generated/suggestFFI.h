@@ -296,9 +296,14 @@ void uniffi_suggest_fn_method_suggeststore_dismiss_by_suggestion(void*_Nonnull p
 void uniffi_suggest_fn_method_suggeststore_dismiss_suggestion(void*_Nonnull ptr, RustBuffer suggestion_url, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_FETCH_GEONAME_ALTERNATES
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_FETCH_GEONAME_ALTERNATES
+RustBuffer uniffi_suggest_fn_method_suggeststore_fetch_geoname_alternates(void*_Nonnull ptr, RustBuffer geoname, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_FETCH_GEONAMES
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_FETCH_GEONAMES
-RustBuffer uniffi_suggest_fn_method_suggeststore_fetch_geonames(void*_Nonnull ptr, RustBuffer query, int8_t match_name_prefix, RustBuffer geoname_type, RustBuffer filter, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_suggest_fn_method_suggeststore_fetch_geonames(void*_Nonnull ptr, RustBuffer query, int8_t match_name_prefix, RustBuffer filter, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_FN_METHOD_SUGGESTSTORE_FETCH_GLOBAL_CONFIG
@@ -716,6 +721,12 @@ uint16_t uniffi_suggest_checksum_method_suggeststore_dismiss_by_suggestion(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_DISMISS_SUGGESTION
 #define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_DISMISS_SUGGESTION
 uint16_t uniffi_suggest_checksum_method_suggeststore_dismiss_suggestion(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_FETCH_GEONAME_ALTERNATES
+#define UNIFFI_FFIDEF_UNIFFI_SUGGEST_CHECKSUM_METHOD_SUGGESTSTORE_FETCH_GEONAME_ALTERNATES
+uint16_t uniffi_suggest_checksum_method_suggeststore_fetch_geoname_alternates(void
     
 );
 #endif
