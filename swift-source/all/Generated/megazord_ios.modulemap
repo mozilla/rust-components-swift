@@ -1,5 +1,6 @@
 module MozillaRustComponents {
     header "autofillFFI.h"
+    header "contextIDFFI.h"
     header "crashtestFFI.h"
     header "errorFFI.h"
     header "fxa_clientFFI.h"
