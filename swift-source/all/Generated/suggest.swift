@@ -3008,8 +3008,6 @@ public enum Suggestion {
     
     case amp(title: String, url: String, rawUrl: String, icon: Data?, iconMimetype: String?, fullKeyword: String, blockId: Int64, advertiser: String, iabCategory: String, impressionUrl: String, clickUrl: String, rawClickUrl: String, score: Double, ftsMatchInfo: FtsMatchInfo?
     )
-    case pocket(title: String, url: String, score: Double, isTopPick: Bool
-    )
     case wikipedia(title: String, url: String, icon: Data?, iconMimetype: String?, fullKeyword: String
     )
     case amo(title: String, url: String, iconUrl: String, description: String, rating: String?, numberOfRatings: Int64, guid: String, score: Double
@@ -3050,28 +3048,25 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
         case 1: return .amp(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), rawUrl: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf), blockId: try FfiConverterInt64.read(from: &buf), advertiser: try FfiConverterString.read(from: &buf), iabCategory: try FfiConverterString.read(from: &buf), impressionUrl: try FfiConverterString.read(from: &buf), clickUrl: try FfiConverterString.read(from: &buf), rawClickUrl: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), ftsMatchInfo: try FfiConverterOptionTypeFtsMatchInfo.read(from: &buf)
         )
         
-        case 2: return .pocket(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), isTopPick: try FfiConverterBool.read(from: &buf)
+        case 2: return .wikipedia(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf)
         )
         
-        case 3: return .wikipedia(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), fullKeyword: try FfiConverterString.read(from: &buf)
+        case 3: return .amo(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), iconUrl: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), rating: try FfiConverterOptionString.read(from: &buf), numberOfRatings: try FfiConverterInt64.read(from: &buf), guid: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 4: return .amo(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), iconUrl: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), rating: try FfiConverterOptionString.read(from: &buf), numberOfRatings: try FfiConverterInt64.read(from: &buf), guid: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 4: return .yelp(url: try FfiConverterString.read(from: &buf), title: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), hasLocationSign: try FfiConverterBool.read(from: &buf), subjectExactMatch: try FfiConverterBool.read(from: &buf), subjectType: try FfiConverterTypeYelpSubjectType.read(from: &buf), locationParam: try FfiConverterString.read(from: &buf)
         )
         
-        case 5: return .yelp(url: try FfiConverterString.read(from: &buf), title: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), hasLocationSign: try FfiConverterBool.read(from: &buf), subjectExactMatch: try FfiConverterBool.read(from: &buf), subjectType: try FfiConverterTypeYelpSubjectType.read(from: &buf), locationParam: try FfiConverterString.read(from: &buf)
+        case 5: return .mdn(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 6: return .mdn(title: try FfiConverterString.read(from: &buf), url: try FfiConverterString.read(from: &buf), description: try FfiConverterString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 6: return .weather(city: try FfiConverterOptionTypeGeoname.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
-        case 7: return .weather(city: try FfiConverterOptionTypeGeoname.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 7: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), matchInfo: try FfiConverterOptionTypeFtsMatchInfo.read(from: &buf)
         )
         
-        case 8: return .fakespot(fakespotGrade: try FfiConverterString.read(from: &buf), productId: try FfiConverterString.read(from: &buf), rating: try FfiConverterDouble.read(from: &buf), title: try FfiConverterString.read(from: &buf), totalReviews: try FfiConverterInt64.read(from: &buf), url: try FfiConverterString.read(from: &buf), icon: try FfiConverterOptionData.read(from: &buf), iconMimetype: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf), matchInfo: try FfiConverterOptionTypeFtsMatchInfo.read(from: &buf)
-        )
-        
-        case 9: return .dynamic(suggestionType: try FfiConverterString.read(from: &buf), data: try FfiConverterOptionTypeJsonValue.read(from: &buf), dismissalKey: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
+        case 8: return .dynamic(suggestionType: try FfiConverterString.read(from: &buf), data: try FfiConverterOptionTypeJsonValue.read(from: &buf), dismissalKey: try FfiConverterOptionString.read(from: &buf), score: try FfiConverterDouble.read(from: &buf)
         )
         
         default: throw UniffiInternalError.unexpectedEnumCase
@@ -3100,16 +3095,8 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             FfiConverterOptionTypeFtsMatchInfo.write(ftsMatchInfo, into: &buf)
             
         
-        case let .pocket(title,url,score,isTopPick):
-            writeInt(&buf, Int32(2))
-            FfiConverterString.write(title, into: &buf)
-            FfiConverterString.write(url, into: &buf)
-            FfiConverterDouble.write(score, into: &buf)
-            FfiConverterBool.write(isTopPick, into: &buf)
-            
-        
         case let .wikipedia(title,url,icon,iconMimetype,fullKeyword):
-            writeInt(&buf, Int32(3))
+            writeInt(&buf, Int32(2))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
             FfiConverterOptionData.write(icon, into: &buf)
@@ -3118,7 +3105,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             
         
         case let .amo(title,url,iconUrl,description,rating,numberOfRatings,guid,score):
-            writeInt(&buf, Int32(4))
+            writeInt(&buf, Int32(3))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(iconUrl, into: &buf)
@@ -3130,7 +3117,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             
         
         case let .yelp(url,title,icon,iconMimetype,score,hasLocationSign,subjectExactMatch,subjectType,locationParam):
-            writeInt(&buf, Int32(5))
+            writeInt(&buf, Int32(4))
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(title, into: &buf)
             FfiConverterOptionData.write(icon, into: &buf)
@@ -3143,7 +3130,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             
         
         case let .mdn(title,url,description,score):
-            writeInt(&buf, Int32(6))
+            writeInt(&buf, Int32(5))
             FfiConverterString.write(title, into: &buf)
             FfiConverterString.write(url, into: &buf)
             FfiConverterString.write(description, into: &buf)
@@ -3151,13 +3138,13 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             
         
         case let .weather(city,score):
-            writeInt(&buf, Int32(7))
+            writeInt(&buf, Int32(6))
             FfiConverterOptionTypeGeoname.write(city, into: &buf)
             FfiConverterDouble.write(score, into: &buf)
             
         
         case let .fakespot(fakespotGrade,productId,rating,title,totalReviews,url,icon,iconMimetype,score,matchInfo):
-            writeInt(&buf, Int32(8))
+            writeInt(&buf, Int32(7))
             FfiConverterString.write(fakespotGrade, into: &buf)
             FfiConverterString.write(productId, into: &buf)
             FfiConverterDouble.write(rating, into: &buf)
@@ -3171,7 +3158,7 @@ public struct FfiConverterTypeSuggestion: FfiConverterRustBuffer {
             
         
         case let .dynamic(suggestionType,data,dismissalKey,score):
-            writeInt(&buf, Int32(9))
+            writeInt(&buf, Int32(8))
             FfiConverterString.write(suggestionType, into: &buf)
             FfiConverterOptionTypeJsonValue.write(data, into: &buf)
             FfiConverterOptionString.write(dismissalKey, into: &buf)
@@ -3205,6 +3192,8 @@ extension Suggestion: Equatable, Hashable {}
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 /**
  * A provider is a source of search suggestions.
+ * Please preserve the integer values after removing or adding providers.
+ * Provider configs are associated with integer keys stored in the database.
  */
 
 public enum SuggestionProvider : UInt8 {
@@ -3212,7 +3201,6 @@ public enum SuggestionProvider : UInt8 {
     case amp = 1
     case wikipedia = 2
     case amo = 3
-    case pocket = 4
     case yelp = 5
     case mdn = 6
     case weather = 7
@@ -3241,17 +3229,15 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
         
         case 3: return .amo
         
-        case 4: return .pocket
+        case 4: return .yelp
         
-        case 5: return .yelp
+        case 5: return .mdn
         
-        case 6: return .mdn
+        case 6: return .weather
         
-        case 7: return .weather
+        case 7: return .fakespot
         
-        case 8: return .fakespot
-        
-        case 9: return .dynamic
+        case 8: return .dynamic
         
         default: throw UniffiInternalError.unexpectedEnumCase
         }
@@ -3273,28 +3259,24 @@ public struct FfiConverterTypeSuggestionProvider: FfiConverterRustBuffer {
             writeInt(&buf, Int32(3))
         
         
-        case .pocket:
+        case .yelp:
             writeInt(&buf, Int32(4))
         
         
-        case .yelp:
+        case .mdn:
             writeInt(&buf, Int32(5))
         
         
-        case .mdn:
+        case .weather:
             writeInt(&buf, Int32(6))
         
         
-        case .weather:
+        case .fakespot:
             writeInt(&buf, Int32(7))
         
         
-        case .fakespot:
-            writeInt(&buf, Int32(8))
-        
-        
         case .dynamic:
-            writeInt(&buf, Int32(9))
+            writeInt(&buf, Int32(8))
         
         }
     }
