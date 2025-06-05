@@ -925,6 +925,19 @@ public protocol LoginStoreProtocol: AnyObject {
     
     func update(id: String, login: LoginEntry) throws  -> Login
     
+    /**
+     * Clear out locally stored logins data
+     *
+     * If sync is enabled, then we will try to recover the data on the next sync.
+     *
+     * The main reason to call this is when regenerating a new encryption key.
+     * In that case, there's no reason to keep around the local data since it can't be decrypted.
+     * Calling `wipe_local` is better than keeping around these un-decryptable logins, since we
+     * might be able to recover the data via sync.
+     *
+     * This is a no-op for freshly created databases, so it's safe to call this whenever a key is
+     * generated.
+     */
     func wipeLocal() throws 
     
 }
@@ -1122,6 +1135,19 @@ open func update(id: String, login: LoginEntry)throws  -> Login  {
 })
 }
     
+    /**
+     * Clear out locally stored logins data
+     *
+     * If sync is enabled, then we will try to recover the data on the next sync.
+     *
+     * The main reason to call this is when regenerating a new encryption key.
+     * In that case, there's no reason to keep around the local data since it can't be decrypted.
+     * Calling `wipe_local` is better than keeping around these un-decryptable logins, since we
+     * might be able to recover the data via sync.
+     *
+     * This is a no-op for freshly created databases, so it's safe to call this whenever a key is
+     * generated.
+     */
 open func wipeLocal()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
     uniffi_logins_fn_method_loginstore_wipe_local(self.uniffiClonePointer(),$0
     )
