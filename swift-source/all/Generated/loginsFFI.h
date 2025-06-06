@@ -399,6 +399,11 @@ RustBuffer uniffi_logins_fn_method_loginstore_get(void*_Nonnull ptr, RustBuffer 
 RustBuffer uniffi_logins_fn_method_loginstore_get_by_base_domain(void*_Nonnull ptr, RustBuffer base_domain, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_GET_CHECKPOINT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_GET_CHECKPOINT
+RustBuffer uniffi_logins_fn_method_loginstore_get_checkpoint(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
 int8_t uniffi_logins_fn_method_loginstore_has_logins_by_base_domain(void*_Nonnull ptr, RustBuffer base_domain, RustCallStatus *_Nonnull out_status
@@ -422,6 +427,11 @@ void uniffi_logins_fn_method_loginstore_register_with_sync_manager(void*_Nonnull
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_RESET
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_RESET
 void uniffi_logins_fn_method_loginstore_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_SET_CHECKPOINT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_SET_CHECKPOINT
+void uniffi_logins_fn_method_loginstore_set_checkpoint(void*_Nonnull ptr, RustBuffer checkpoint, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_TOUCH
@@ -894,6 +904,12 @@ uint16_t uniffi_logins_checksum_method_loginstore_get_by_base_domain(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_GET_CHECKPOINT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_GET_CHECKPOINT
+uint16_t uniffi_logins_checksum_method_loginstore_get_checkpoint(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_HAS_LOGINS_BY_BASE_DOMAIN
 uint16_t uniffi_logins_checksum_method_loginstore_has_logins_by_base_domain(void
@@ -921,6 +937,12 @@ uint16_t uniffi_logins_checksum_method_loginstore_register_with_sync_manager(voi
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_RESET
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_RESET
 uint16_t uniffi_logins_checksum_method_loginstore_reset(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_SET_CHECKPOINT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_SET_CHECKPOINT
+uint16_t uniffi_logins_checksum_method_loginstore_set_checkpoint(void
     
 );
 #endif

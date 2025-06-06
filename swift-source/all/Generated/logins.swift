@@ -911,6 +911,8 @@ public protocol LoginStoreProtocol: AnyObject {
     
     func getByBaseDomain(baseDomain: String) throws  -> [Login]
     
+    func getCheckpoint() throws  -> String?
+    
     func hasLoginsByBaseDomain(baseDomain: String) throws  -> Bool
     
     func isEmpty() throws  -> Bool
@@ -920,6 +922,8 @@ public protocol LoginStoreProtocol: AnyObject {
     func registerWithSyncManager() 
     
     func reset() throws 
+    
+    func setCheckpoint(checkpoint: String) throws 
     
     func touch(id: String) throws 
     
@@ -1085,6 +1089,13 @@ open func getByBaseDomain(baseDomain: String)throws  -> [Login]  {
 })
 }
     
+open func getCheckpoint()throws  -> String?  {
+    return try  FfiConverterOptionString.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_get_checkpoint(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
 open func hasLoginsByBaseDomain(baseDomain: String)throws  -> Bool  {
     return try  FfiConverterBool.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
     uniffi_logins_fn_method_loginstore_has_logins_by_base_domain(self.uniffiClonePointer(),
@@ -1115,6 +1126,13 @@ open func registerWithSyncManager()  {try! rustCall() {
     
 open func reset()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
     uniffi_logins_fn_method_loginstore_reset(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+open func setCheckpoint(checkpoint: String)throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_set_checkpoint(self.uniffiClonePointer(),
+        FfiConverterString.lower(checkpoint),$0
     )
 }
 }
@@ -2537,6 +2555,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_logins_checksum_method_loginstore_get_by_base_domain() != 29790) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_logins_checksum_method_loginstore_get_checkpoint() != 4346) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_logins_checksum_method_loginstore_has_logins_by_base_domain() != 20011) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -2550,6 +2571,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_reset() != 63814) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_set_checkpoint() != 62504) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_touch() != 37362) {
