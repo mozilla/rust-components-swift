@@ -563,9 +563,9 @@ open class ContextIdComponent: ContextIdComponentProtocol, @unchecked Sendable {
      *
      * If no creation timestamp is provided, the current time will be used.
      */
-public convenience init(initContextId: String, creationTimestampS: Int64, runningInTestAutomation: Bool, callback: ContextIdCallback)throws  {
+public convenience init(initContextId: String, creationTimestampS: Int64, runningInTestAutomation: Bool, callback: ContextIdCallback) {
     let pointer =
-        try rustCallWithError(FfiConverterTypeApiError_lift) {
+        try! rustCall() {
     uniffi_context_id_fn_constructor_contextidcomponent_new(
         FfiConverterString.lower(initContextId),
         FfiConverterInt64.lower(creationTimestampS),
@@ -919,7 +919,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_context_id_checksum_method_contextidcomponent_unset_callback() != 21655) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_context_id_checksum_constructor_contextidcomponent_new() != 25931) {
+    if (uniffi_context_id_checksum_constructor_contextidcomponent_new() != 28490) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_context_id_checksum_method_contextidcallback_persist() != 51609) {
