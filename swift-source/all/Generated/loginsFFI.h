@@ -379,6 +379,11 @@ RustBuffer uniffi_logins_fn_method_loginstore_add_with_meta(void*_Nonnull ptr, R
 int8_t uniffi_logins_fn_method_loginstore_delete(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE_MANY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE_MANY
+RustBuffer uniffi_logins_fn_method_loginstore_delete_many(void*_Nonnull ptr, RustBuffer ids, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE_UNDECRYPTABLE_RECORDS_FOR_REMOTE_REPLACEMENT
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE_UNDECRYPTABLE_RECORDS_FOR_REMOTE_REPLACEMENT
 void uniffi_logins_fn_method_loginstore_delete_undecryptable_records_for_remote_replacement(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -877,6 +882,12 @@ uint16_t uniffi_logins_checksum_method_loginstore_add_with_meta(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_DELETE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_DELETE
 uint16_t uniffi_logins_checksum_method_loginstore_delete(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_DELETE_MANY
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_DELETE_MANY
+uint16_t uniffi_logins_checksum_method_loginstore_delete_many(void
     
 );
 #endif
