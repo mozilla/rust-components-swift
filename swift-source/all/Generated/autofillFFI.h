@@ -311,6 +311,11 @@ RustBuffer uniffi_autofill_fn_method_store_get_credit_card(void*_Nonnull ptr, Ru
 void uniffi_autofill_fn_method_store_register_with_sync_manager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AUTOFILL_FN_METHOD_STORE_RUN_MAINTENANCE
+#define UNIFFI_FFIDEF_UNIFFI_AUTOFILL_FN_METHOD_STORE_RUN_MAINTENANCE
+void uniffi_autofill_fn_method_store_run_maintenance(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_AUTOFILL_FN_METHOD_STORE_SCRUB_ENCRYPTED_DATA
 #define UNIFFI_FFIDEF_UNIFFI_AUTOFILL_FN_METHOD_STORE_SCRUB_ENCRYPTED_DATA
 void uniffi_autofill_fn_method_store_scrub_encrypted_data(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -701,6 +706,12 @@ uint16_t uniffi_autofill_checksum_method_store_get_credit_card(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_AUTOFILL_CHECKSUM_METHOD_STORE_REGISTER_WITH_SYNC_MANAGER
 #define UNIFFI_FFIDEF_UNIFFI_AUTOFILL_CHECKSUM_METHOD_STORE_REGISTER_WITH_SYNC_MANAGER
 uint16_t uniffi_autofill_checksum_method_store_register_with_sync_manager(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_AUTOFILL_CHECKSUM_METHOD_STORE_RUN_MAINTENANCE
+#define UNIFFI_FFIDEF_UNIFFI_AUTOFILL_CHECKSUM_METHOD_STORE_RUN_MAINTENANCE
+uint16_t uniffi_autofill_checksum_method_store_run_maintenance(void
     
 );
 #endif

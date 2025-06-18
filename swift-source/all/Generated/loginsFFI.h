@@ -434,6 +434,11 @@ void uniffi_logins_fn_method_loginstore_register_with_sync_manager(void*_Nonnull
 void uniffi_logins_fn_method_loginstore_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_RUN_MAINTENANCE
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_RUN_MAINTENANCE
+void uniffi_logins_fn_method_loginstore_run_maintenance(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_SET_CHECKPOINT
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_SET_CHECKPOINT
 void uniffi_logins_fn_method_loginstore_set_checkpoint(void*_Nonnull ptr, RustBuffer checkpoint, RustCallStatus *_Nonnull out_status
@@ -948,6 +953,12 @@ uint16_t uniffi_logins_checksum_method_loginstore_register_with_sync_manager(voi
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_RESET
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_RESET
 uint16_t uniffi_logins_checksum_method_loginstore_reset(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_RUN_MAINTENANCE
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_RUN_MAINTENANCE
+uint16_t uniffi_logins_checksum_method_loginstore_run_maintenance(void
     
 );
 #endif

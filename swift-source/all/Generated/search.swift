@@ -521,9 +521,8 @@ public protocol SearchEngineSelectorProtocol: AnyObject {
      * - `service`: The remote settings service instance for the application.
      * - `options`: The remote settings options to be passed to the client(s).
      * - `apply_engine_overrides`: Whether or not to apply overrides from
-     * `search-config-v2-overrides` to the selected
-     * engines. Should be false unless the application
-     * supports the click URL feature.
+     * `search-config-v2-overrides` to the selected engines. Should be false unless the
+     * application supports the click URL feature.
      */
     func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool) 
     
@@ -642,9 +641,8 @@ open func setSearchConfig(configuration: String)throws   {try rustCallWithError(
      * - `service`: The remote settings service instance for the application.
      * - `options`: The remote settings options to be passed to the client(s).
      * - `apply_engine_overrides`: Whether or not to apply overrides from
-     * `search-config-v2-overrides` to the selected
-     * engines. Should be false unless the application
-     * supports the click URL feature.
+     * `search-config-v2-overrides` to the selected engines. Should be false unless the
+     * application supports the click URL feature.
      */
 open func useRemoteSettingsServer(service: RemoteSettingsService, applyEngineOverrides: Bool)  {try! rustCall() {
     uniffi_search_fn_method_searchengineselector_use_remote_settings_server(self.uniffiClonePointer(),
@@ -2578,7 +2576,7 @@ private let initializationResult: InitializationResult = {
     if (uniffi_search_checksum_method_searchengineselector_set_search_config() != 35713) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_search_checksum_method_searchengineselector_use_remote_settings_server() != 14364) {
+    if (uniffi_search_checksum_method_searchengineselector_use_remote_settings_server() != 47504) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_search_checksum_constructor_searchengineselector_new() != 2296) {

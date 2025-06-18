@@ -501,6 +501,14 @@ public protocol StoreProtocol: AnyObject {
     
     func registerWithSyncManager() 
     
+    /**
+     * Run maintenance on the DB
+     *
+     * This is intended to be run during idle time and will take steps / to clean up / shrink the
+     * database.
+     */
+    func runMaintenance() throws 
+    
     func scrubEncryptedData() throws 
     
     func touchAddress(guid: String) throws 
@@ -633,6 +641,18 @@ open func getCreditCard(guid: String)throws  -> CreditCard  {
     
 open func registerWithSyncManager()  {try! rustCall() {
     uniffi_autofill_fn_method_store_register_with_sync_manager(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
+     * Run maintenance on the DB
+     *
+     * This is intended to be run during idle time and will take steps / to clean up / shrink the
+     * database.
+     */
+open func runMaintenance()throws   {try rustCallWithError(FfiConverterTypeAutofillApiError_lift) {
+    uniffi_autofill_fn_method_store_run_maintenance(self.uniffiClonePointer(),$0
     )
 }
 }
@@ -1556,6 +1576,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_autofill_checksum_method_store_register_with_sync_manager() != 24273) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_autofill_checksum_method_store_run_maintenance() != 51990) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_autofill_checksum_method_store_scrub_encrypted_data() != 8431) {

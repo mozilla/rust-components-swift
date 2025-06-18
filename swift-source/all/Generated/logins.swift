@@ -925,6 +925,14 @@ public protocol LoginStoreProtocol: AnyObject {
     
     func reset() throws 
     
+    /**
+     * Run maintenance on the DB
+     *
+     * This is intended to be run during idle time and will take steps / to clean up / shrink the
+     * database.
+     */
+    func runMaintenance() throws 
+    
     func setCheckpoint(checkpoint: String) throws 
     
     func touch(id: String) throws 
@@ -1136,6 +1144,18 @@ open func registerWithSyncManager()  {try! rustCall() {
     
 open func reset()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
     uniffi_logins_fn_method_loginstore_reset(self.uniffiClonePointer(),$0
+    )
+}
+}
+    
+    /**
+     * Run maintenance on the DB
+     *
+     * This is intended to be run during idle time and will take steps / to clean up / shrink the
+     * database.
+     */
+open func runMaintenance()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_run_maintenance(self.uniffiClonePointer(),$0
     )
 }
 }
@@ -2634,6 +2654,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_reset() != 63814) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_run_maintenance() != 64480) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_set_checkpoint() != 62504) {
