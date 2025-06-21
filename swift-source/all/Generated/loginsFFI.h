@@ -374,6 +374,21 @@ RustBuffer uniffi_logins_fn_method_loginstore_add_or_update(void*_Nonnull ptr, R
 RustBuffer uniffi_logins_fn_method_loginstore_add_with_meta(void*_Nonnull ptr, RustBuffer entry_with_meta, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_COUNT
+int64_t uniffi_logins_fn_method_loginstore_count(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_COUNT_BY_FORM_ACTION_ORIGIN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_COUNT_BY_FORM_ACTION_ORIGIN
+int64_t uniffi_logins_fn_method_loginstore_count_by_form_action_origin(void*_Nonnull ptr, RustBuffer form_action_origin, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_COUNT_BY_ORIGIN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_COUNT_BY_ORIGIN
+int64_t uniffi_logins_fn_method_loginstore_count_by_origin(void*_Nonnull ptr, RustBuffer origin, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_DELETE
 int8_t uniffi_logins_fn_method_loginstore_delete(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
@@ -881,6 +896,24 @@ uint16_t uniffi_logins_checksum_method_loginstore_add_or_update(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_WITH_META
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_ADD_WITH_META
 uint16_t uniffi_logins_checksum_method_loginstore_add_with_meta(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_COUNT
+uint16_t uniffi_logins_checksum_method_loginstore_count(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_COUNT_BY_FORM_ACTION_ORIGIN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_COUNT_BY_FORM_ACTION_ORIGIN
+uint16_t uniffi_logins_checksum_method_loginstore_count_by_form_action_origin(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_COUNT_BY_ORIGIN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_COUNT_BY_ORIGIN
+uint16_t uniffi_logins_checksum_method_loginstore_count_by_origin(void
     
 );
 #endif

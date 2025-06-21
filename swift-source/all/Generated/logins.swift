@@ -893,6 +893,12 @@ public protocol LoginStoreProtocol: AnyObject {
     
     func addWithMeta(entryWithMeta: LoginEntryWithMeta) throws  -> Login
     
+    func count() throws  -> Int64
+    
+    func countByFormActionOrigin(formActionOrigin: String) throws  -> Int64
+    
+    func countByOrigin(origin: String) throws  -> Int64
+    
     func delete(id: String) throws  -> Bool
     
     func deleteMany(ids: [String]) throws  -> [Bool]
@@ -1049,6 +1055,29 @@ open func addWithMeta(entryWithMeta: LoginEntryWithMeta)throws  -> Login  {
     return try  FfiConverterTypeLogin_lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
     uniffi_logins_fn_method_loginstore_add_with_meta(self.uniffiClonePointer(),
         FfiConverterTypeLoginEntryWithMeta_lower(entryWithMeta),$0
+    )
+})
+}
+    
+open func count()throws  -> Int64  {
+    return try  FfiConverterInt64.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_count(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func countByFormActionOrigin(formActionOrigin: String)throws  -> Int64  {
+    return try  FfiConverterInt64.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_count_by_form_action_origin(self.uniffiClonePointer(),
+        FfiConverterString.lower(formActionOrigin),$0
+    )
+})
+}
+    
+open func countByOrigin(origin: String)throws  -> Int64  {
+    return try  FfiConverterInt64.lift(try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_count_by_origin(self.uniffiClonePointer(),
+        FfiConverterString.lower(origin),$0
     )
 })
 }
@@ -2618,6 +2647,15 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_add_with_meta() != 34738) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_count() != 59175) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_count_by_form_action_origin() != 11815) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_count_by_origin() != 37630) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_delete() != 44678) {
