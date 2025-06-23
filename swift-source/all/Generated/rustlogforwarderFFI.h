@@ -24,24 +24,10 @@
 
 typedef struct RustBuffer
 {
-    int32_t capacity;
-    int32_t len;
+    uint64_t capacity;
+    uint64_t len;
     uint8_t *_Nullable data;
 } RustBuffer;
-
-typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
-
-// Task defined in Rust that Swift executes
-typedef void (*UniFfiRustTaskCallback)(const void * _Nullable, int8_t);
-
-// Callback to execute Rust tasks using a Swift Task
-//
-// Args:
-//   executor: ForeignExecutor lowered into a size_t value
-//   delay: Delay in MS
-//   task: UniFfiRustTaskCallback to call
-//   task_data: data to pass the task callback
-typedef int8_t (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -58,141 +44,545 @@ typedef struct RustCallStatus {
 // ⚠️ Attention: If you change this #else block (ending in `#endif // def UNIFFI_SHARED_H`) you *must* ⚠️
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
+#ifndef UNIFFI_FFIDEF_RUST_FUTURE_CONTINUATION_CALLBACK
+#define UNIFFI_FFIDEF_RUST_FUTURE_CONTINUATION_CALLBACK
+typedef void (*UniffiRustFutureContinuationCallback)(uint64_t, int8_t
+    );
 
-// Continuation callback for UniFFI Futures
-typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
+typedef void (*UniffiForeignFutureFree)(uint64_t
+    );
 
-// Scaffolding functions
-void uniffi_rust_log_forwarder_fn_init_callback_appserviceslogger(ForeignCallback _Nonnull callback_stub, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_FREE
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_FREE
+typedef void (*UniffiCallbackInterfaceFree)(uint64_t
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE
+typedef struct UniffiForeignFuture {
+    uint64_t handle;
+    UniffiForeignFutureFree _Nonnull free;
+} UniffiForeignFuture;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
+typedef struct UniffiForeignFutureStructU8 {
+    uint8_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU8;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
+typedef void (*UniffiForeignFutureCompleteU8)(uint64_t, UniffiForeignFutureStructU8
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
+typedef struct UniffiForeignFutureStructI8 {
+    int8_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI8;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
+typedef void (*UniffiForeignFutureCompleteI8)(uint64_t, UniffiForeignFutureStructI8
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
+typedef struct UniffiForeignFutureStructU16 {
+    uint16_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU16;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
+typedef void (*UniffiForeignFutureCompleteU16)(uint64_t, UniffiForeignFutureStructU16
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
+typedef struct UniffiForeignFutureStructI16 {
+    int16_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI16;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
+typedef void (*UniffiForeignFutureCompleteI16)(uint64_t, UniffiForeignFutureStructI16
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
+typedef struct UniffiForeignFutureStructU32 {
+    uint32_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
+typedef void (*UniffiForeignFutureCompleteU32)(uint64_t, UniffiForeignFutureStructU32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
+typedef struct UniffiForeignFutureStructI32 {
+    int32_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
+typedef void (*UniffiForeignFutureCompleteI32)(uint64_t, UniffiForeignFutureStructI32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
+typedef struct UniffiForeignFutureStructU64 {
+    uint64_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
+typedef void (*UniffiForeignFutureCompleteU64)(uint64_t, UniffiForeignFutureStructU64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
+typedef struct UniffiForeignFutureStructI64 {
+    int64_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
+typedef void (*UniffiForeignFutureCompleteI64)(uint64_t, UniffiForeignFutureStructI64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
+typedef struct UniffiForeignFutureStructF32 {
+    float returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructF32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
+typedef void (*UniffiForeignFutureCompleteF32)(uint64_t, UniffiForeignFutureStructF32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
+typedef struct UniffiForeignFutureStructF64 {
+    double returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructF64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
+typedef void (*UniffiForeignFutureCompleteF64)(uint64_t, UniffiForeignFutureStructF64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
+typedef struct UniffiForeignFutureStructPointer {
+    void*_Nonnull returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructPointer;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
+typedef void (*UniffiForeignFutureCompletePointer)(uint64_t, UniffiForeignFutureStructPointer
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
+typedef struct UniffiForeignFutureStructRustBuffer {
+    RustBuffer returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructRustBuffer;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
+typedef void (*UniffiForeignFutureCompleteRustBuffer)(uint64_t, UniffiForeignFutureStructRustBuffer
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
+typedef struct UniffiForeignFutureStructVoid {
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructVoid;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
+typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStructVoid
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_APP_SERVICES_LOGGER_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_APP_SERVICES_LOGGER_METHOD0
+typedef void (*UniffiCallbackInterfaceAppServicesLoggerMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_APP_SERVICES_LOGGER
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_APP_SERVICES_LOGGER
+typedef struct UniffiVTableCallbackInterfaceAppServicesLogger {
+    UniffiCallbackInterfaceAppServicesLoggerMethod0 _Nonnull log;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfaceAppServicesLogger;
+
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_FN_INIT_CALLBACK_VTABLE_APPSERVICESLOGGER
+#define UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_FN_INIT_CALLBACK_VTABLE_APPSERVICESLOGGER
+void uniffi_rust_log_forwarder_fn_init_callback_vtable_appserviceslogger(const UniffiVTableCallbackInterfaceAppServicesLogger* _Nonnull vtable
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_FN_FUNC_SET_LOGGER
+#define UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_FN_FUNC_SET_LOGGER
 void uniffi_rust_log_forwarder_fn_func_set_logger(RustBuffer logger, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_FN_FUNC_SET_MAX_LEVEL
+#define UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_FN_FUNC_SET_MAX_LEVEL
 void uniffi_rust_log_forwarder_fn_func_set_max_level(RustBuffer level, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_rust_log_forwarder_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_ALLOC
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_ALLOC
+RustBuffer ffi_rust_log_forwarder_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_FROM_BYTES
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_FROM_BYTES
 RustBuffer ffi_rust_log_forwarder_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_FREE
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_FREE
 void ffi_rust_log_forwarder_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_rust_log_forwarder_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_RESERVE
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUSTBUFFER_RESERVE
+RustBuffer ffi_rust_log_forwarder_rustbuffer_reserve(RustBuffer buf, uint64_t additional, RustCallStatus *_Nonnull out_status
 );
-void ffi_rust_log_forwarder_rust_future_continuation_callback_set(UniFfiRustFutureContinuation _Nonnull callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U8
+void ffi_rust_log_forwarder_rust_future_poll_u8(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_u8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U8
+void ffi_rust_log_forwarder_rust_future_cancel_u8(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_u8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U8
+void ffi_rust_log_forwarder_rust_future_free_u8(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_u8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U8
+uint8_t ffi_rust_log_forwarder_rust_future_complete_u8(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint8_t ffi_rust_log_forwarder_rust_future_complete_u8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I8
+void ffi_rust_log_forwarder_rust_future_poll_i8(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_i8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I8
+void ffi_rust_log_forwarder_rust_future_cancel_i8(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_i8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I8
+void ffi_rust_log_forwarder_rust_future_free_i8(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_i8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I8
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I8
+int8_t ffi_rust_log_forwarder_rust_future_complete_i8(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int8_t ffi_rust_log_forwarder_rust_future_complete_i8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U16
+void ffi_rust_log_forwarder_rust_future_poll_u16(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_u16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U16
+void ffi_rust_log_forwarder_rust_future_cancel_u16(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_u16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U16
+void ffi_rust_log_forwarder_rust_future_free_u16(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_u16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U16
+uint16_t ffi_rust_log_forwarder_rust_future_complete_u16(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint16_t ffi_rust_log_forwarder_rust_future_complete_u16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I16
+void ffi_rust_log_forwarder_rust_future_poll_i16(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_i16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I16
+void ffi_rust_log_forwarder_rust_future_cancel_i16(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_i16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I16
+void ffi_rust_log_forwarder_rust_future_free_i16(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_i16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I16
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I16
+int16_t ffi_rust_log_forwarder_rust_future_complete_i16(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int16_t ffi_rust_log_forwarder_rust_future_complete_i16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U32
+void ffi_rust_log_forwarder_rust_future_poll_u32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_u32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U32
+void ffi_rust_log_forwarder_rust_future_cancel_u32(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_u32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U32
+void ffi_rust_log_forwarder_rust_future_free_u32(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_u32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U32
+uint32_t ffi_rust_log_forwarder_rust_future_complete_u32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint32_t ffi_rust_log_forwarder_rust_future_complete_u32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I32
+void ffi_rust_log_forwarder_rust_future_poll_i32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_i32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I32
+void ffi_rust_log_forwarder_rust_future_cancel_i32(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_i32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I32
+void ffi_rust_log_forwarder_rust_future_free_i32(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_i32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I32
+int32_t ffi_rust_log_forwarder_rust_future_complete_i32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int32_t ffi_rust_log_forwarder_rust_future_complete_i32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_U64
+void ffi_rust_log_forwarder_rust_future_poll_u64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_u64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_U64
+void ffi_rust_log_forwarder_rust_future_cancel_u64(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_u64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_U64
+void ffi_rust_log_forwarder_rust_future_free_u64(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_u64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_U64
+uint64_t ffi_rust_log_forwarder_rust_future_complete_u64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint64_t ffi_rust_log_forwarder_rust_future_complete_u64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_I64
+void ffi_rust_log_forwarder_rust_future_poll_i64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_i64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_I64
+void ffi_rust_log_forwarder_rust_future_cancel_i64(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_i64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_I64
+void ffi_rust_log_forwarder_rust_future_free_i64(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_i64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_I64
+int64_t ffi_rust_log_forwarder_rust_future_complete_i64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int64_t ffi_rust_log_forwarder_rust_future_complete_i64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_F32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_F32
+void ffi_rust_log_forwarder_rust_future_poll_f32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_f32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_F32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_F32
+void ffi_rust_log_forwarder_rust_future_cancel_f32(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_f32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_F32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_F32
+void ffi_rust_log_forwarder_rust_future_free_f32(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_f32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_F32
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_F32
+float ffi_rust_log_forwarder_rust_future_complete_f32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-float ffi_rust_log_forwarder_rust_future_complete_f32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_F64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_F64
+void ffi_rust_log_forwarder_rust_future_poll_f64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_f64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_F64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_F64
+void ffi_rust_log_forwarder_rust_future_cancel_f64(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_f64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_F64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_F64
+void ffi_rust_log_forwarder_rust_future_free_f64(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_f64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_F64
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_F64
+double ffi_rust_log_forwarder_rust_future_complete_f64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-double ffi_rust_log_forwarder_rust_future_complete_f64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_POINTER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_POINTER
+void ffi_rust_log_forwarder_rust_future_poll_pointer(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_pointer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_POINTER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_POINTER
+void ffi_rust_log_forwarder_rust_future_cancel_pointer(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_pointer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_POINTER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_POINTER
+void ffi_rust_log_forwarder_rust_future_free_pointer(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_pointer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_POINTER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_POINTER
+void*_Nonnull ffi_rust_log_forwarder_rust_future_complete_pointer(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull ffi_rust_log_forwarder_rust_future_complete_pointer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_RUST_BUFFER
+void ffi_rust_log_forwarder_rust_future_poll_rust_buffer(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_rust_buffer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_RUST_BUFFER
+void ffi_rust_log_forwarder_rust_future_cancel_rust_buffer(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_rust_buffer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_RUST_BUFFER
+void ffi_rust_log_forwarder_rust_future_free_rust_buffer(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_rust_buffer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_RUST_BUFFER
+RustBuffer ffi_rust_log_forwarder_rust_future_complete_rust_buffer(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_rust_log_forwarder_rust_future_complete_rust_buffer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_VOID
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_POLL_VOID
+void ffi_rust_log_forwarder_rust_future_poll_void(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_rust_log_forwarder_rust_future_poll_void(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_VOID
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_CANCEL_VOID
+void ffi_rust_log_forwarder_rust_future_cancel_void(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_cancel_void(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_VOID
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_FREE_VOID
+void ffi_rust_log_forwarder_rust_future_free_void(uint64_t handle
 );
-void ffi_rust_log_forwarder_rust_future_free_void(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_VOID
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_RUST_FUTURE_COMPLETE_VOID
+void ffi_rust_log_forwarder_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-void ffi_rust_log_forwarder_rust_future_complete_void(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
-);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_CHECKSUM_FUNC_SET_LOGGER
+#define UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_CHECKSUM_FUNC_SET_LOGGER
 uint16_t uniffi_rust_log_forwarder_checksum_func_set_logger(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_CHECKSUM_FUNC_SET_MAX_LEVEL
+#define UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_CHECKSUM_FUNC_SET_MAX_LEVEL
 uint16_t uniffi_rust_log_forwarder_checksum_func_set_max_level(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_CHECKSUM_METHOD_APPSERVICESLOGGER_LOG
+#define UNIFFI_FFIDEF_UNIFFI_RUST_LOG_FORWARDER_CHECKSUM_METHOD_APPSERVICESLOGGER_LOG
 uint16_t uniffi_rust_log_forwarder_checksum_method_appserviceslogger_log(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_UNIFFI_CONTRACT_VERSION
+#define UNIFFI_FFIDEF_FFI_RUST_LOG_FORWARDER_UNIFFI_CONTRACT_VERSION
 uint32_t ffi_rust_log_forwarder_uniffi_contract_version(void
     
 );
+#endif
 

@@ -1,0 +1,8 @@
+module MozillaRustComponents {
+    header "errorFFI.h"
+    header "nimbusFFI.h"
+    header "remote_settingsFFI.h"
+    header "rustlogforwarderFFI.h"
+    header "tracingFFI.h"
+    export *
+}

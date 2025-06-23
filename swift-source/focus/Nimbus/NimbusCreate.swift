@@ -84,7 +84,8 @@ public extension Nimbus {
         resourceBundles: [Bundle] = [Bundle.main],
         enabled: Bool = true,
         userDefaults: UserDefaults? = nil,
-        errorReporter: @escaping NimbusErrorReporter = defaultErrorReporter
+        errorReporter: @escaping NimbusErrorReporter = defaultErrorReporter,
+        recordedContext: RecordedContext? = nil
     ) throws -> NimbusInterface {
         guard enabled else {
             return NimbusDisabled.shared
@@ -94,11 +95,12 @@ public extension Nimbus {
         let remoteSettings = server.map { server -> RemoteSettingsConfig in
             RemoteSettingsConfig(
                 collectionName: server.collection,
-                serverUrl: server.url.absoluteString
+                server: .custom(url: server.url.absoluteString)
             )
         }
         let nimbusClient = try NimbusClient(
             appCtx: context,
+            recordedContext: recordedContext,
             coenrollingFeatureIds: coenrollingFeatureIds,
             dbpath: dbPath,
             remoteSettingsConfig: remoteSettings,

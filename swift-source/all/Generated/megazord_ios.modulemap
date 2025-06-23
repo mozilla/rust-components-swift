@@ -1,0 +1,22 @@
+module MozillaRustComponents {
+    header "autofillFFI.h"
+    header "contextIDFFI.h"
+    header "crashtestFFI.h"
+    header "errorFFI.h"
+    header "fxa_clientFFI.h"
+    header "init_rust_componentsFFI.h"
+    header "loginsFFI.h"
+    header "merinoFFI.h"
+    header "nimbusFFI.h"
+    header "placesFFI.h"
+    header "pushFFI.h"
+    header "remote_settingsFFI.h"
+    header "rustlogforwarderFFI.h"
+    header "searchFFI.h"
+    header "suggestFFI.h"
+    header "sync15FFI.h"
+    header "syncmanagerFFI.h"
+    header "tabsFFI.h"
+    header "tracingFFI.h"
+    export *
+}

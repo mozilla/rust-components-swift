@@ -24,24 +24,10 @@
 
 typedef struct RustBuffer
 {
-    int32_t capacity;
-    int32_t len;
+    uint64_t capacity;
+    uint64_t len;
     uint8_t *_Nullable data;
 } RustBuffer;
-
-typedef int32_t (*ForeignCallback)(uint64_t, int32_t, const uint8_t *_Nonnull, int32_t, RustBuffer *_Nonnull);
-
-// Task defined in Rust that Swift executes
-typedef void (*UniFfiRustTaskCallback)(const void * _Nullable, int8_t);
-
-// Callback to execute Rust tasks using a Swift Task
-//
-// Args:
-//   executor: ForeignExecutor lowered into a size_t value
-//   delay: Delay in MS
-//   task: UniFfiRustTaskCallback to call
-//   task_data: data to pass the task callback
-typedef int8_t (*UniFfiForeignExecutorCallback)(size_t, uint32_t, UniFfiRustTaskCallback _Nullable, const void * _Nullable);
 
 typedef struct ForeignBytes
 {
@@ -58,372 +44,1066 @@ typedef struct RustCallStatus {
 // ⚠️ Attention: If you change this #else block (ending in `#endif // def UNIFFI_SHARED_H`) you *must* ⚠️
 // ⚠️ increment the version suffix in all instances of UNIFFI_SHARED_HEADER_V4 in this file.           ⚠️
 #endif // def UNIFFI_SHARED_H
+#ifndef UNIFFI_FFIDEF_RUST_FUTURE_CONTINUATION_CALLBACK
+#define UNIFFI_FFIDEF_RUST_FUTURE_CONTINUATION_CALLBACK
+typedef void (*UniffiRustFutureContinuationCallback)(uint64_t, int8_t
+    );
 
-// Continuation callback for UniFFI Futures
-typedef void (*UniFfiRustFutureContinuation)(void * _Nonnull, int8_t);
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_FREE
+typedef void (*UniffiForeignFutureFree)(uint64_t
+    );
 
-// Scaffolding functions
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_FREE
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_FREE
+typedef void (*UniffiCallbackInterfaceFree)(uint64_t
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE
+typedef struct UniffiForeignFuture {
+    uint64_t handle;
+    UniffiForeignFutureFree _Nonnull free;
+} UniffiForeignFuture;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U8
+typedef struct UniffiForeignFutureStructU8 {
+    uint8_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU8;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U8
+typedef void (*UniffiForeignFutureCompleteU8)(uint64_t, UniffiForeignFutureStructU8
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I8
+typedef struct UniffiForeignFutureStructI8 {
+    int8_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI8;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I8
+typedef void (*UniffiForeignFutureCompleteI8)(uint64_t, UniffiForeignFutureStructI8
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U16
+typedef struct UniffiForeignFutureStructU16 {
+    uint16_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU16;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U16
+typedef void (*UniffiForeignFutureCompleteU16)(uint64_t, UniffiForeignFutureStructU16
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I16
+typedef struct UniffiForeignFutureStructI16 {
+    int16_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI16;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I16
+typedef void (*UniffiForeignFutureCompleteI16)(uint64_t, UniffiForeignFutureStructI16
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U32
+typedef struct UniffiForeignFutureStructU32 {
+    uint32_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U32
+typedef void (*UniffiForeignFutureCompleteU32)(uint64_t, UniffiForeignFutureStructU32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I32
+typedef struct UniffiForeignFutureStructI32 {
+    int32_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I32
+typedef void (*UniffiForeignFutureCompleteI32)(uint64_t, UniffiForeignFutureStructI32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_U64
+typedef struct UniffiForeignFutureStructU64 {
+    uint64_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructU64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_U64
+typedef void (*UniffiForeignFutureCompleteU64)(uint64_t, UniffiForeignFutureStructU64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_I64
+typedef struct UniffiForeignFutureStructI64 {
+    int64_t returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructI64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_I64
+typedef void (*UniffiForeignFutureCompleteI64)(uint64_t, UniffiForeignFutureStructI64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F32
+typedef struct UniffiForeignFutureStructF32 {
+    float returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructF32;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F32
+typedef void (*UniffiForeignFutureCompleteF32)(uint64_t, UniffiForeignFutureStructF32
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_F64
+typedef struct UniffiForeignFutureStructF64 {
+    double returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructF64;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_F64
+typedef void (*UniffiForeignFutureCompleteF64)(uint64_t, UniffiForeignFutureStructF64
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_POINTER
+typedef struct UniffiForeignFutureStructPointer {
+    void*_Nonnull returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructPointer;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_POINTER
+typedef void (*UniffiForeignFutureCompletePointer)(uint64_t, UniffiForeignFutureStructPointer
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_RUST_BUFFER
+typedef struct UniffiForeignFutureStructRustBuffer {
+    RustBuffer returnValue;
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructRustBuffer;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_RUST_BUFFER
+typedef void (*UniffiForeignFutureCompleteRustBuffer)(uint64_t, UniffiForeignFutureStructRustBuffer
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_STRUCT_VOID
+typedef struct UniffiForeignFutureStructVoid {
+    RustCallStatus callStatus;
+} UniffiForeignFutureStructVoid;
+
+#endif
+#ifndef UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
+#define UNIFFI_FFIDEF_FOREIGN_FUTURE_COMPLETE_VOID
+typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStructVoid
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_CLONE_PLACESAPI
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_CLONE_PLACESAPI
+void*_Nonnull uniffi_places_fn_clone_placesapi(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FREE_PLACESAPI
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FREE_PLACESAPI
 void uniffi_places_fn_free_placesapi(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_BOOKMARKS_RESET
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_BOOKMARKS_RESET
 void uniffi_places_fn_method_placesapi_bookmarks_reset(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_BOOKMARKS_SYNC
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_BOOKMARKS_SYNC
 RustBuffer uniffi_places_fn_method_placesapi_bookmarks_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_HISTORY_SYNC
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_HISTORY_SYNC
 RustBuffer uniffi_places_fn_method_placesapi_history_sync(void*_Nonnull ptr, RustBuffer key_id, RustBuffer access_token, RustBuffer sync_key, RustBuffer tokenserver_url, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_NEW_CONNECTION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_NEW_CONNECTION
 void*_Nonnull uniffi_places_fn_method_placesapi_new_connection(void*_Nonnull ptr, RustBuffer conn_type, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_REGISTER_WITH_SYNC_MANAGER
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_REGISTER_WITH_SYNC_MANAGER
 void uniffi_places_fn_method_placesapi_register_with_sync_manager(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_RESET_HISTORY
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESAPI_RESET_HISTORY
 void uniffi_places_fn_method_placesapi_reset_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_CLONE_PLACESCONNECTION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_CLONE_PLACESCONNECTION
+void*_Nonnull uniffi_places_fn_clone_placesconnection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FREE_PLACESCONNECTION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FREE_PLACESCONNECTION
 void uniffi_places_fn_free_placesconnection(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_ACCEPT_RESULT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_ACCEPT_RESULT
 void uniffi_places_fn_method_placesconnection_accept_result(void*_Nonnull ptr, RustBuffer search_string, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_APPLY_OBSERVATION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_APPLY_OBSERVATION
 void uniffi_places_fn_method_placesconnection_apply_observation(void*_Nonnull ptr, RustBuffer visit, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_COUNT_BOOKMARKS_IN_TREES
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_COUNT_BOOKMARKS_IN_TREES
 uint32_t uniffi_places_fn_method_placesconnection_bookmarks_count_bookmarks_in_trees(void*_Nonnull ptr, RustBuffer folder_guids, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE
 int8_t uniffi_places_fn_method_placesconnection_bookmarks_delete(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE_EVERYTHING
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE_EVERYTHING
 void uniffi_places_fn_method_placesconnection_bookmarks_delete_everything(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_ALL_WITH_URL
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_ALL_WITH_URL
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_all_with_url(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_BY_GUID
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_BY_GUID
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_by_guid(void*_Nonnull ptr, RustBuffer guid, int8_t get_direct_children, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_RECENT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_RECENT
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_recent(void*_Nonnull ptr, int32_t limit, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_TREE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_TREE
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_tree(void*_Nonnull ptr, RustBuffer item_guid, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_URL_FOR_KEYWORD
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_GET_URL_FOR_KEYWORD
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_get_url_for_keyword(void*_Nonnull ptr, RustBuffer keyword, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_INSERT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_INSERT
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_insert(void*_Nonnull ptr, RustBuffer bookmark, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_SEARCH
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_SEARCH
 RustBuffer uniffi_places_fn_method_placesconnection_bookmarks_search(void*_Nonnull ptr, RustBuffer query, int32_t limit, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_UPDATE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_BOOKMARKS_UPDATE
 void uniffi_places_fn_method_placesconnection_bookmarks_update(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_EVERYTHING_HISTORY
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_EVERYTHING_HISTORY
 void uniffi_places_fn_method_placesconnection_delete_everything_history(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_VISIT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_VISIT
 void uniffi_places_fn_method_placesconnection_delete_visit(void*_Nonnull ptr, RustBuffer url, int64_t timestamp, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_VISITS_BETWEEN
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_VISITS_BETWEEN
 void uniffi_places_fn_method_placesconnection_delete_visits_between(void*_Nonnull ptr, int64_t start, int64_t end, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_VISITS_FOR
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_DELETE_VISITS_FOR
 void uniffi_places_fn_method_placesconnection_delete_visits_for(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_HISTORY_HIGHLIGHTS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_HISTORY_HIGHLIGHTS
 RustBuffer uniffi_places_fn_method_placesconnection_get_history_highlights(void*_Nonnull ptr, RustBuffer weights, int32_t limit, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_BETWEEN
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_BETWEEN
 RustBuffer uniffi_places_fn_method_placesconnection_get_history_metadata_between(void*_Nonnull ptr, int64_t start, int64_t end, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_SINCE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_SINCE
 RustBuffer uniffi_places_fn_method_placesconnection_get_history_metadata_since(void*_Nonnull ptr, int64_t since, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_LATEST_HISTORY_METADATA_FOR_URL
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_LATEST_HISTORY_METADATA_FOR_URL
 RustBuffer uniffi_places_fn_method_placesconnection_get_latest_history_metadata_for_url(void*_Nonnull ptr, RustBuffer url, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_TOP_FRECENT_SITE_INFOS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_TOP_FRECENT_SITE_INFOS
 RustBuffer uniffi_places_fn_method_placesconnection_get_top_frecent_site_infos(void*_Nonnull ptr, int32_t num_items, RustBuffer threshold_option, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_COUNT
 int64_t uniffi_places_fn_method_placesconnection_get_visit_count(void*_Nonnull ptr, int32_t exclude_types, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_COUNT_FOR_HOST
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_COUNT_FOR_HOST
+int64_t uniffi_places_fn_method_placesconnection_get_visit_count_for_host(void*_Nonnull ptr, RustBuffer host, int64_t before, int32_t exclude_types, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_INFOS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_INFOS
 RustBuffer uniffi_places_fn_method_placesconnection_get_visit_infos(void*_Nonnull ptr, int64_t start_date, int64_t end_date, int32_t exclude_types, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_PAGE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_PAGE
 RustBuffer uniffi_places_fn_method_placesconnection_get_visit_page(void*_Nonnull ptr, int64_t offset, int64_t count, int32_t exclude_types, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_PAGE_WITH_BOUND
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISIT_PAGE_WITH_BOUND
 RustBuffer uniffi_places_fn_method_placesconnection_get_visit_page_with_bound(void*_Nonnull ptr, int64_t bound, int64_t offset, int64_t count, int32_t exclude_types, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISITED
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISITED
 RustBuffer uniffi_places_fn_method_placesconnection_get_visited(void*_Nonnull ptr, RustBuffer urls, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISITED_URLS_IN_RANGE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_GET_VISITED_URLS_IN_RANGE
 RustBuffer uniffi_places_fn_method_placesconnection_get_visited_urls_in_range(void*_Nonnull ptr, int64_t start, int64_t end, int8_t include_remote, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_MATCH_URL
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_MATCH_URL
 RustBuffer uniffi_places_fn_method_placesconnection_match_url(void*_Nonnull ptr, RustBuffer query, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_METADATA_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_METADATA_DELETE
 void uniffi_places_fn_method_placesconnection_metadata_delete(void*_Nonnull ptr, RustBuffer url, RustBuffer referrer_url, RustBuffer search_term, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_METADATA_DELETE_OLDER_THAN
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_METADATA_DELETE_OLDER_THAN
 void uniffi_places_fn_method_placesconnection_metadata_delete_older_than(void*_Nonnull ptr, int64_t older_than, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_NEW_INTERRUPT_HANDLE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_NEW_INTERRUPT_HANDLE
 void*_Nonnull uniffi_places_fn_method_placesconnection_new_interrupt_handle(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
-void uniffi_places_fn_method_placesconnection_note_history_metadata_observation(void*_Nonnull ptr, RustBuffer data, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_NOTE_HISTORY_METADATA_OBSERVATION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_NOTE_HISTORY_METADATA_OBSERVATION
+void uniffi_places_fn_method_placesconnection_note_history_metadata_observation(void*_Nonnull ptr, RustBuffer data, RustBuffer options, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_PLACES_HISTORY_IMPORT_FROM_IOS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_PLACES_HISTORY_IMPORT_FROM_IOS
 RustBuffer uniffi_places_fn_method_placesconnection_places_history_import_from_ios(void*_Nonnull ptr, RustBuffer db_path, int64_t last_sync_timestamp, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_QUERY_AUTOCOMPLETE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_QUERY_AUTOCOMPLETE
 RustBuffer uniffi_places_fn_method_placesconnection_query_autocomplete(void*_Nonnull ptr, RustBuffer search, int32_t limit, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_QUERY_HISTORY_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_QUERY_HISTORY_METADATA
 RustBuffer uniffi_places_fn_method_placesconnection_query_history_metadata(void*_Nonnull ptr, RustBuffer query, int32_t limit, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_CHECKPOINT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_CHECKPOINT
 void uniffi_places_fn_method_placesconnection_run_maintenance_checkpoint(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_OPTIMIZE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_OPTIMIZE
 void uniffi_places_fn_method_placesconnection_run_maintenance_optimize(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_PRUNE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_PRUNE
 RustBuffer uniffi_places_fn_method_placesconnection_run_maintenance_prune(void*_Nonnull ptr, uint32_t db_size_limit, uint32_t prune_limit, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_VACUUM
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_VACUUM
 void uniffi_places_fn_method_placesconnection_run_maintenance_vacuum(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_CLONE_SQLINTERRUPTHANDLE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_CLONE_SQLINTERRUPTHANDLE
+void*_Nonnull uniffi_places_fn_clone_sqlinterrupthandle(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FREE_SQLINTERRUPTHANDLE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FREE_SQLINTERRUPTHANDLE
 void uniffi_places_fn_free_sqlinterrupthandle(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_SQLINTERRUPTHANDLE_INTERRUPT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_METHOD_SQLINTERRUPTHANDLE_INTERRUPT
 void uniffi_places_fn_method_sqlinterrupthandle_interrupt(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FUNC_PLACES_API_NEW
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_FN_FUNC_PLACES_API_NEW
 void*_Nonnull uniffi_places_fn_func_places_api_new(RustBuffer db_path, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_places_rustbuffer_alloc(int32_t size, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_ALLOC
+#define UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_ALLOC
+RustBuffer ffi_places_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_FROM_BYTES
+#define UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_FROM_BYTES
 RustBuffer ffi_places_rustbuffer_from_bytes(ForeignBytes bytes, RustCallStatus *_Nonnull out_status
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_FREE
+#define UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_FREE
 void ffi_places_rustbuffer_free(RustBuffer buf, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_places_rustbuffer_reserve(RustBuffer buf, int32_t additional, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_RESERVE
+#define UNIFFI_FFIDEF_FFI_PLACES_RUSTBUFFER_RESERVE
+RustBuffer ffi_places_rustbuffer_reserve(RustBuffer buf, uint64_t additional, RustCallStatus *_Nonnull out_status
 );
-void ffi_places_rust_future_continuation_callback_set(UniFfiRustFutureContinuation _Nonnull callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U8
+void ffi_places_rust_future_poll_u8(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_u8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U8
+void ffi_places_rust_future_cancel_u8(uint64_t handle
 );
-void ffi_places_rust_future_cancel_u8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U8
+void ffi_places_rust_future_free_u8(uint64_t handle
 );
-void ffi_places_rust_future_free_u8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U8
+uint8_t ffi_places_rust_future_complete_u8(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint8_t ffi_places_rust_future_complete_u8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I8
+void ffi_places_rust_future_poll_i8(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_i8(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I8
+void ffi_places_rust_future_cancel_i8(uint64_t handle
 );
-void ffi_places_rust_future_cancel_i8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I8
+void ffi_places_rust_future_free_i8(uint64_t handle
 );
-void ffi_places_rust_future_free_i8(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I8
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I8
+int8_t ffi_places_rust_future_complete_i8(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int8_t ffi_places_rust_future_complete_i8(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U16
+void ffi_places_rust_future_poll_u16(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_u16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U16
+void ffi_places_rust_future_cancel_u16(uint64_t handle
 );
-void ffi_places_rust_future_cancel_u16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U16
+void ffi_places_rust_future_free_u16(uint64_t handle
 );
-void ffi_places_rust_future_free_u16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U16
+uint16_t ffi_places_rust_future_complete_u16(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint16_t ffi_places_rust_future_complete_u16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I16
+void ffi_places_rust_future_poll_i16(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_i16(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I16
+void ffi_places_rust_future_cancel_i16(uint64_t handle
 );
-void ffi_places_rust_future_cancel_i16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I16
+void ffi_places_rust_future_free_i16(uint64_t handle
 );
-void ffi_places_rust_future_free_i16(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I16
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I16
+int16_t ffi_places_rust_future_complete_i16(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int16_t ffi_places_rust_future_complete_i16(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U32
+void ffi_places_rust_future_poll_u32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_u32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U32
+void ffi_places_rust_future_cancel_u32(uint64_t handle
 );
-void ffi_places_rust_future_cancel_u32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U32
+void ffi_places_rust_future_free_u32(uint64_t handle
 );
-void ffi_places_rust_future_free_u32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U32
+uint32_t ffi_places_rust_future_complete_u32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint32_t ffi_places_rust_future_complete_u32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I32
+void ffi_places_rust_future_poll_i32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_i32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I32
+void ffi_places_rust_future_cancel_i32(uint64_t handle
 );
-void ffi_places_rust_future_cancel_i32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I32
+void ffi_places_rust_future_free_i32(uint64_t handle
 );
-void ffi_places_rust_future_free_i32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I32
+int32_t ffi_places_rust_future_complete_i32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int32_t ffi_places_rust_future_complete_i32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_U64
+void ffi_places_rust_future_poll_u64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_u64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_U64
+void ffi_places_rust_future_cancel_u64(uint64_t handle
 );
-void ffi_places_rust_future_cancel_u64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_U64
+void ffi_places_rust_future_free_u64(uint64_t handle
 );
-void ffi_places_rust_future_free_u64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_U64
+uint64_t ffi_places_rust_future_complete_u64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-uint64_t ffi_places_rust_future_complete_u64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_I64
+void ffi_places_rust_future_poll_i64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_i64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_I64
+void ffi_places_rust_future_cancel_i64(uint64_t handle
 );
-void ffi_places_rust_future_cancel_i64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_I64
+void ffi_places_rust_future_free_i64(uint64_t handle
 );
-void ffi_places_rust_future_free_i64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_I64
+int64_t ffi_places_rust_future_complete_i64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-int64_t ffi_places_rust_future_complete_i64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_F32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_F32
+void ffi_places_rust_future_poll_f32(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_f32(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_F32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_F32
+void ffi_places_rust_future_cancel_f32(uint64_t handle
 );
-void ffi_places_rust_future_cancel_f32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_F32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_F32
+void ffi_places_rust_future_free_f32(uint64_t handle
 );
-void ffi_places_rust_future_free_f32(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_F32
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_F32
+float ffi_places_rust_future_complete_f32(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-float ffi_places_rust_future_complete_f32(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_F64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_F64
+void ffi_places_rust_future_poll_f64(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_f64(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_F64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_F64
+void ffi_places_rust_future_cancel_f64(uint64_t handle
 );
-void ffi_places_rust_future_cancel_f64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_F64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_F64
+void ffi_places_rust_future_free_f64(uint64_t handle
 );
-void ffi_places_rust_future_free_f64(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_F64
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_F64
+double ffi_places_rust_future_complete_f64(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-double ffi_places_rust_future_complete_f64(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_POINTER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_POINTER
+void ffi_places_rust_future_poll_pointer(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_pointer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_POINTER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_POINTER
+void ffi_places_rust_future_cancel_pointer(uint64_t handle
 );
-void ffi_places_rust_future_cancel_pointer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_POINTER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_POINTER
+void ffi_places_rust_future_free_pointer(uint64_t handle
 );
-void ffi_places_rust_future_free_pointer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_POINTER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_POINTER
+void*_Nonnull ffi_places_rust_future_complete_pointer(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-void*_Nonnull ffi_places_rust_future_complete_pointer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_RUST_BUFFER
+void ffi_places_rust_future_poll_rust_buffer(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_rust_buffer(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_RUST_BUFFER
+void ffi_places_rust_future_cancel_rust_buffer(uint64_t handle
 );
-void ffi_places_rust_future_cancel_rust_buffer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_RUST_BUFFER
+void ffi_places_rust_future_free_rust_buffer(uint64_t handle
 );
-void ffi_places_rust_future_free_rust_buffer(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_RUST_BUFFER
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_RUST_BUFFER
+RustBuffer ffi_places_rust_future_complete_rust_buffer(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-RustBuffer ffi_places_rust_future_complete_rust_buffer(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_VOID
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_POLL_VOID
+void ffi_places_rust_future_poll_void(uint64_t handle, UniffiRustFutureContinuationCallback _Nonnull callback, uint64_t callback_data
 );
-void ffi_places_rust_future_poll_void(void* _Nonnull handle, void* _Nonnull uniffi_callback
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_VOID
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_CANCEL_VOID
+void ffi_places_rust_future_cancel_void(uint64_t handle
 );
-void ffi_places_rust_future_cancel_void(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_VOID
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_FREE_VOID
+void ffi_places_rust_future_free_void(uint64_t handle
 );
-void ffi_places_rust_future_free_void(void* _Nonnull handle
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_VOID
+#define UNIFFI_FFIDEF_FFI_PLACES_RUST_FUTURE_COMPLETE_VOID
+void ffi_places_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
-void ffi_places_rust_future_complete_void(void* _Nonnull handle, RustCallStatus *_Nonnull out_status
-);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_FUNC_PLACES_API_NEW
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_FUNC_PLACES_API_NEW
 uint16_t uniffi_places_checksum_func_places_api_new(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_BOOKMARKS_RESET
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_BOOKMARKS_RESET
 uint16_t uniffi_places_checksum_method_placesapi_bookmarks_reset(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_BOOKMARKS_SYNC
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_BOOKMARKS_SYNC
 uint16_t uniffi_places_checksum_method_placesapi_bookmarks_sync(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_HISTORY_SYNC
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_HISTORY_SYNC
 uint16_t uniffi_places_checksum_method_placesapi_history_sync(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_NEW_CONNECTION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_NEW_CONNECTION
 uint16_t uniffi_places_checksum_method_placesapi_new_connection(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_REGISTER_WITH_SYNC_MANAGER
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_REGISTER_WITH_SYNC_MANAGER
 uint16_t uniffi_places_checksum_method_placesapi_register_with_sync_manager(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_RESET_HISTORY
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESAPI_RESET_HISTORY
 uint16_t uniffi_places_checksum_method_placesapi_reset_history(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_ACCEPT_RESULT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_ACCEPT_RESULT
 uint16_t uniffi_places_checksum_method_placesconnection_accept_result(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_APPLY_OBSERVATION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_APPLY_OBSERVATION
 uint16_t uniffi_places_checksum_method_placesconnection_apply_observation(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_COUNT_BOOKMARKS_IN_TREES
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_COUNT_BOOKMARKS_IN_TREES
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_count_bookmarks_in_trees(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_delete(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE_EVERYTHING
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_DELETE_EVERYTHING
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_delete_everything(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_ALL_WITH_URL
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_ALL_WITH_URL
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_all_with_url(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_BY_GUID
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_BY_GUID
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_by_guid(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_RECENT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_RECENT
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_recent(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_TREE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_TREE
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_tree(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_URL_FOR_KEYWORD
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_GET_URL_FOR_KEYWORD
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_get_url_for_keyword(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_INSERT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_INSERT
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_insert(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_SEARCH
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_SEARCH
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_search(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_UPDATE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_BOOKMARKS_UPDATE
 uint16_t uniffi_places_checksum_method_placesconnection_bookmarks_update(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_EVERYTHING_HISTORY
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_EVERYTHING_HISTORY
 uint16_t uniffi_places_checksum_method_placesconnection_delete_everything_history(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_VISIT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_VISIT
 uint16_t uniffi_places_checksum_method_placesconnection_delete_visit(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_VISITS_BETWEEN
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_VISITS_BETWEEN
 uint16_t uniffi_places_checksum_method_placesconnection_delete_visits_between(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_VISITS_FOR
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_DELETE_VISITS_FOR
 uint16_t uniffi_places_checksum_method_placesconnection_delete_visits_for(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_HISTORY_HIGHLIGHTS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_HISTORY_HIGHLIGHTS
 uint16_t uniffi_places_checksum_method_placesconnection_get_history_highlights(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_BETWEEN
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_BETWEEN
 uint16_t uniffi_places_checksum_method_placesconnection_get_history_metadata_between(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_SINCE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_HISTORY_METADATA_SINCE
 uint16_t uniffi_places_checksum_method_placesconnection_get_history_metadata_since(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_LATEST_HISTORY_METADATA_FOR_URL
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_LATEST_HISTORY_METADATA_FOR_URL
 uint16_t uniffi_places_checksum_method_placesconnection_get_latest_history_metadata_for_url(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_TOP_FRECENT_SITE_INFOS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_TOP_FRECENT_SITE_INFOS
 uint16_t uniffi_places_checksum_method_placesconnection_get_top_frecent_site_infos(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_COUNT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_COUNT
 uint16_t uniffi_places_checksum_method_placesconnection_get_visit_count(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_COUNT_FOR_HOST
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_COUNT_FOR_HOST
+uint16_t uniffi_places_checksum_method_placesconnection_get_visit_count_for_host(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_INFOS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_INFOS
 uint16_t uniffi_places_checksum_method_placesconnection_get_visit_infos(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_PAGE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_PAGE
 uint16_t uniffi_places_checksum_method_placesconnection_get_visit_page(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_PAGE_WITH_BOUND
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISIT_PAGE_WITH_BOUND
 uint16_t uniffi_places_checksum_method_placesconnection_get_visit_page_with_bound(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISITED
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISITED
 uint16_t uniffi_places_checksum_method_placesconnection_get_visited(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISITED_URLS_IN_RANGE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_GET_VISITED_URLS_IN_RANGE
 uint16_t uniffi_places_checksum_method_placesconnection_get_visited_urls_in_range(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_MATCH_URL
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_MATCH_URL
 uint16_t uniffi_places_checksum_method_placesconnection_match_url(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_METADATA_DELETE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_METADATA_DELETE
 uint16_t uniffi_places_checksum_method_placesconnection_metadata_delete(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_METADATA_DELETE_OLDER_THAN
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_METADATA_DELETE_OLDER_THAN
 uint16_t uniffi_places_checksum_method_placesconnection_metadata_delete_older_than(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_NEW_INTERRUPT_HANDLE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_NEW_INTERRUPT_HANDLE
 uint16_t uniffi_places_checksum_method_placesconnection_new_interrupt_handle(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_NOTE_HISTORY_METADATA_OBSERVATION
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_NOTE_HISTORY_METADATA_OBSERVATION
 uint16_t uniffi_places_checksum_method_placesconnection_note_history_metadata_observation(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_PLACES_HISTORY_IMPORT_FROM_IOS
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_PLACES_HISTORY_IMPORT_FROM_IOS
 uint16_t uniffi_places_checksum_method_placesconnection_places_history_import_from_ios(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_QUERY_AUTOCOMPLETE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_QUERY_AUTOCOMPLETE
 uint16_t uniffi_places_checksum_method_placesconnection_query_autocomplete(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_QUERY_HISTORY_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_QUERY_HISTORY_METADATA
 uint16_t uniffi_places_checksum_method_placesconnection_query_history_metadata(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_CHECKPOINT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_CHECKPOINT
 uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_checkpoint(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_OPTIMIZE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_OPTIMIZE
 uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_optimize(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_PRUNE
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_PRUNE
 uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_prune(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_VACUUM
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_PLACESCONNECTION_RUN_MAINTENANCE_VACUUM
 uint16_t uniffi_places_checksum_method_placesconnection_run_maintenance_vacuum(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_SQLINTERRUPTHANDLE_INTERRUPT
+#define UNIFFI_FFIDEF_UNIFFI_PLACES_CHECKSUM_METHOD_SQLINTERRUPTHANDLE_INTERRUPT
 uint16_t uniffi_places_checksum_method_sqlinterrupthandle_interrupt(void
     
 );
+#endif
+#ifndef UNIFFI_FFIDEF_FFI_PLACES_UNIFFI_CONTRACT_VERSION
+#define UNIFFI_FFIDEF_FFI_PLACES_UNIFFI_CONTRACT_VERSION
 uint32_t ffi_places_uniffi_contract_version(void
     
 );
+#endif
 

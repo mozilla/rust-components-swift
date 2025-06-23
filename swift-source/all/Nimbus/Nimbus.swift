@@ -120,7 +120,7 @@ extension Nimbus: FeaturesInterface {
 
     func postEnrollmentCalculation(_ events: [EnrollmentChangeEvent]) {
         // We need to update the experiment enrollment annotations in Glean
-        // regardless of whether we recieved any events. Calling the
+        // regardless of whether we received any events. Calling the
         // `setExperimentActive` function multiple times with the same
         // experiment id is safe so nothing bad should happen in case we do.
         let experiments = getActiveExperiments()
@@ -161,7 +161,6 @@ extension Nimbus: FeaturesInterface {
                     branch: event.branchSlug,
                     experiment: event.experimentSlug
                 ))
-
             case .enrollFailed:
                 GleanMetrics.NimbusEvents.enrollFailed.record(GleanMetrics.NimbusEvents.EnrollFailedExtra(
                     branch: event.branchSlug,
