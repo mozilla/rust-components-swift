@@ -10,6 +10,7 @@ module MozillaRustComponents {
     header "nimbusFFI.h"
     header "placesFFI.h"
     header "pushFFI.h"
+    header "relayFFI.h"
     header "remote_settingsFFI.h"
     header "rustlogforwarderFFI.h"
     header "searchFFI.h"
