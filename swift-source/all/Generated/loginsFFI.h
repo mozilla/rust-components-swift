@@ -459,6 +459,11 @@ void uniffi_logins_fn_method_loginstore_run_maintenance(void*_Nonnull ptr, RustC
 void uniffi_logins_fn_method_loginstore_set_checkpoint(void*_Nonnull ptr, RustBuffer checkpoint, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_SHUTDOWN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_SHUTDOWN
+void uniffi_logins_fn_method_loginstore_shutdown(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_TOUCH
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_FN_METHOD_LOGINSTORE_TOUCH
 void uniffi_logins_fn_method_loginstore_touch(void*_Nonnull ptr, RustBuffer id, RustCallStatus *_Nonnull out_status
@@ -998,6 +1003,12 @@ uint16_t uniffi_logins_checksum_method_loginstore_run_maintenance(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_SET_CHECKPOINT
 #define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_SET_CHECKPOINT
 uint16_t uniffi_logins_checksum_method_loginstore_set_checkpoint(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_SHUTDOWN
+#define UNIFFI_FFIDEF_UNIFFI_LOGINS_CHECKSUM_METHOD_LOGINSTORE_SHUTDOWN
+uint16_t uniffi_logins_checksum_method_loginstore_shutdown(void
     
 );
 #endif

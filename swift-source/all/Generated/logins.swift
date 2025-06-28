@@ -941,6 +941,8 @@ public protocol LoginStoreProtocol: AnyObject {
     
     func setCheckpoint(checkpoint: String) throws 
     
+    func shutdown() throws 
+    
     func touch(id: String) throws 
     
     func update(id: String, login: LoginEntry) throws  -> Login
@@ -1192,6 +1194,12 @@ open func runMaintenance()throws   {try rustCallWithError(FfiConverterTypeLogins
 open func setCheckpoint(checkpoint: String)throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
     uniffi_logins_fn_method_loginstore_set_checkpoint(self.uniffiClonePointer(),
         FfiConverterString.lower(checkpoint),$0
+    )
+}
+}
+    
+open func shutdown()throws   {try rustCallWithError(FfiConverterTypeLoginsApiError_lift) {
+    uniffi_logins_fn_method_loginstore_shutdown(self.uniffiClonePointer(),$0
     )
 }
 }
@@ -2699,6 +2707,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_set_checkpoint() != 62504) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_logins_checksum_method_loginstore_shutdown() != 24418) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_logins_checksum_method_loginstore_touch() != 37362) {
