@@ -1107,6 +1107,11 @@ public struct SearchEngineDefinition {
      */
     public var identifier: String
     /**
+     * Indicates the date until which the engine variant or subvariant is considered new
+     * (format: YYYY-MM-DD).
+     */
+    public var isNewUntil: String?
+    /**
      * The user visible name of the search engine.
      */
     public var name: String
@@ -1166,6 +1171,10 @@ public struct SearchEngineDefinition {
          * also used to form the base telemetry id and may be extended by telemetrySuffix.
          */identifier: String, 
         /**
+         * Indicates the date until which the engine variant or subvariant is considered new
+         * (format: YYYY-MM-DD).
+         */isNewUntil: String?, 
+        /**
          * The user visible name of the search engine.
          */name: String, 
         /**
@@ -1199,6 +1208,7 @@ public struct SearchEngineDefinition {
         self.charset = charset
         self.classification = classification
         self.identifier = identifier
+        self.isNewUntil = isNewUntil
         self.name = name
         self.optional = optional
         self.partnerCode = partnerCode
@@ -1226,6 +1236,9 @@ extension SearchEngineDefinition: Equatable, Hashable {
             return false
         }
         if lhs.identifier != rhs.identifier {
+            return false
+        }
+        if lhs.isNewUntil != rhs.isNewUntil {
             return false
         }
         if lhs.name != rhs.name {
@@ -1257,6 +1270,7 @@ extension SearchEngineDefinition: Equatable, Hashable {
         hasher.combine(charset)
         hasher.combine(classification)
         hasher.combine(identifier)
+        hasher.combine(isNewUntil)
         hasher.combine(name)
         hasher.combine(optional)
         hasher.combine(partnerCode)
@@ -1280,6 +1294,7 @@ public struct FfiConverterTypeSearchEngineDefinition: FfiConverterRustBuffer {
                 charset: FfiConverterString.read(from: &buf), 
                 classification: FfiConverterTypeSearchEngineClassification.read(from: &buf), 
                 identifier: FfiConverterString.read(from: &buf), 
+                isNewUntil: FfiConverterOptionString.read(from: &buf), 
                 name: FfiConverterString.read(from: &buf), 
                 optional: FfiConverterBool.read(from: &buf), 
                 partnerCode: FfiConverterString.read(from: &buf), 
@@ -1295,6 +1310,7 @@ public struct FfiConverterTypeSearchEngineDefinition: FfiConverterRustBuffer {
         FfiConverterString.write(value.charset, into: &buf)
         FfiConverterTypeSearchEngineClassification.write(value.classification, into: &buf)
         FfiConverterString.write(value.identifier, into: &buf)
+        FfiConverterOptionString.write(value.isNewUntil, into: &buf)
         FfiConverterString.write(value.name, into: &buf)
         FfiConverterBool.write(value.optional, into: &buf)
         FfiConverterString.write(value.partnerCode, into: &buf)
