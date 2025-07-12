@@ -251,6 +251,20 @@ typedef void (*UniffiForeignFutureCompleteVoid)(uint64_t, UniffiForeignFutureStr
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_GECKO_PREF_HANDLER_METHOD0
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_GECKO_PREF_HANDLER_METHOD0
+typedef void (*UniffiCallbackInterfaceGeckoPrefHandlerMethod0)(uint64_t, RustBuffer* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
+#ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_GECKO_PREF_HANDLER_METHOD1
+#define UNIFFI_FFIDEF_CALLBACK_INTERFACE_GECKO_PREF_HANDLER_METHOD1
+typedef void (*UniffiCallbackInterfaceGeckoPrefHandlerMethod1)(uint64_t, RustBuffer, void* _Nonnull, 
+        RustCallStatus *_Nonnull uniffiCallStatus
+    );
+
+#endif
 #ifndef UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD0
 #define UNIFFI_FFIDEF_CALLBACK_INTERFACE_METRICS_HANDLER_METHOD0
 typedef void (*UniffiCallbackInterfaceMetricsHandlerMethod0)(uint64_t, RustBuffer, void* _Nonnull, 
@@ -307,6 +321,15 @@ typedef void (*UniffiCallbackInterfaceRecordedContextMethod3)(uint64_t, RustBuff
     );
 
 #endif
+#ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_GECKO_PREF_HANDLER
+#define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_GECKO_PREF_HANDLER
+typedef struct UniffiVTableCallbackInterfaceGeckoPrefHandler {
+    UniffiCallbackInterfaceGeckoPrefHandlerMethod0 _Nonnull getPrefsWithState;
+    UniffiCallbackInterfaceGeckoPrefHandlerMethod1 _Nonnull setGeckoPrefsState;
+    UniffiCallbackInterfaceFree _Nonnull uniffiFree;
+} UniffiVTableCallbackInterfaceGeckoPrefHandler;
+
+#endif
 #ifndef UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_METRICS_HANDLER
 #define UNIFFI_FFIDEF_V_TABLE_CALLBACK_INTERFACE_METRICS_HANDLER
 typedef struct UniffiVTableCallbackInterfaceMetricsHandler {
@@ -341,7 +364,7 @@ void uniffi_nimbus_fn_free_nimbusclient(void*_Nonnull ptr, RustCallStatus *_Nonn
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
-void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer recorded_context, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, uint64_t metrics_handler, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer recorded_context, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, uint64_t metrics_handler, RustBuffer gecko_pref_handler, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
@@ -474,6 +497,11 @@ void uniffi_nimbus_fn_method_nimbusclient_set_fetch_enabled(void*_Nonnull ptr, i
 RustBuffer uniffi_nimbus_fn_method_nimbusclient_set_global_user_participation(void*_Nonnull ptr, int8_t opt_in, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_UNENROLL_FOR_GECKO_PREF
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_UNENROLL_FOR_GECKO_PREF
+RustBuffer uniffi_nimbus_fn_method_nimbusclient_unenroll_for_gecko_pref(void*_Nonnull ptr, RustBuffer pref_state, RustBuffer pref_unenroll_reason, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSSTRINGHELPER
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CLONE_NIMBUSSTRINGHELPER
 void*_Nonnull uniffi_nimbus_fn_clone_nimbusstringhelper(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
@@ -542,6 +570,11 @@ void uniffi_nimbus_fn_method_recordedcontext_set_event_query_values(void*_Nonnul
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_TO_JSON
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_RECORDEDCONTEXT_TO_JSON
 RustBuffer uniffi_nimbus_fn_method_recordedcontext_to_json(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_GECKOPREFHANDLER
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_GECKOPREFHANDLER
+void uniffi_nimbus_fn_init_callback_vtable_geckoprefhandler(const UniffiVTableCallbackInterfaceGeckoPrefHandler* _Nonnull vtable
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_INIT_CALLBACK_VTABLE_METRICSHANDLER
@@ -1007,6 +1040,12 @@ uint16_t uniffi_nimbus_checksum_method_nimbusclient_set_global_user_participatio
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_UNENROLL_FOR_GECKO_PREF
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSCLIENT_UNENROLL_FOR_GECKO_PREF
+uint16_t uniffi_nimbus_checksum_method_nimbusclient_unenroll_for_gecko_pref(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSSTRINGHELPER_GET_UUID
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_NIMBUSSTRINGHELPER_GET_UUID
 uint16_t uniffi_nimbus_checksum_method_nimbusstringhelper_get_uuid(void
@@ -1052,6 +1091,18 @@ uint16_t uniffi_nimbus_checksum_method_recordedcontext_to_json(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_CONSTRUCTOR_NIMBUSCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_CONSTRUCTOR_NIMBUSCLIENT_NEW
 uint16_t uniffi_nimbus_checksum_constructor_nimbusclient_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_GECKOPREFHANDLER_GET_PREFS_WITH_STATE
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_GECKOPREFHANDLER_GET_PREFS_WITH_STATE
+uint16_t uniffi_nimbus_checksum_method_geckoprefhandler_get_prefs_with_state(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_GECKOPREFHANDLER_SET_GECKO_PREFS_STATE
+#define UNIFFI_FFIDEF_UNIFFI_NIMBUS_CHECKSUM_METHOD_GECKOPREFHANDLER_SET_GECKO_PREFS_STATE
+uint16_t uniffi_nimbus_checksum_method_geckoprefhandler_set_gecko_prefs_state(void
     
 );
 #endif
