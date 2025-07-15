@@ -735,6 +735,11 @@ public struct JsonEngineUrl {
      * is included in the base.
      */
     public var searchTermParamName: String?
+    /**
+     * The display name of the URL, if any. This is useful if the URL
+     * corresponds to a brand name distinct from the engine's brand name.
+     */
+    public var displayName: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -755,11 +760,16 @@ public struct JsonEngineUrl {
          * The name of the query parameter for the search term. Automatically
          * appended to the end of the query. This may be skipped if `{searchTerms}`
          * is included in the base.
-         */searchTermParamName: String?) {
+         */searchTermParamName: String?, 
+        /**
+         * The display name of the URL, if any. This is useful if the URL
+         * corresponds to a brand name distinct from the engine's brand name.
+         */displayName: String?) {
         self.base = base
         self.method = method
         self.params = params
         self.searchTermParamName = searchTermParamName
+        self.displayName = displayName
     }
 }
 
@@ -782,6 +792,9 @@ extension JsonEngineUrl: Equatable, Hashable {
         if lhs.searchTermParamName != rhs.searchTermParamName {
             return false
         }
+        if lhs.displayName != rhs.displayName {
+            return false
+        }
         return true
     }
 
@@ -790,6 +803,7 @@ extension JsonEngineUrl: Equatable, Hashable {
         hasher.combine(method)
         hasher.combine(params)
         hasher.combine(searchTermParamName)
+        hasher.combine(displayName)
     }
 }
 
@@ -805,7 +819,8 @@ public struct FfiConverterTypeJSONEngineUrl: FfiConverterRustBuffer {
                 base: FfiConverterOptionString.read(from: &buf), 
                 method: FfiConverterOptionTypeJSONEngineMethod.read(from: &buf), 
                 params: FfiConverterOptionSequenceTypeSearchUrlParam.read(from: &buf), 
-                searchTermParamName: FfiConverterOptionString.read(from: &buf)
+                searchTermParamName: FfiConverterOptionString.read(from: &buf), 
+                displayName: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -814,6 +829,7 @@ public struct FfiConverterTypeJSONEngineUrl: FfiConverterRustBuffer {
         FfiConverterOptionTypeJSONEngineMethod.write(value.method, into: &buf)
         FfiConverterOptionSequenceTypeSearchUrlParam.write(value.params, into: &buf)
         FfiConverterOptionString.write(value.searchTermParamName, into: &buf)
+        FfiConverterOptionString.write(value.displayName, into: &buf)
     }
 }
 
@@ -853,6 +869,10 @@ public struct JsonEngineUrls {
      * The URL of the search engine homepage.
      */
     public var searchForm: JsonEngineUrl?
+    /**
+     * The URL to use for visual searches.
+     */
+    public var visualSearch: JsonEngineUrl?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -868,11 +888,15 @@ public struct JsonEngineUrls {
          */trending: JsonEngineUrl?, 
         /**
          * The URL of the search engine homepage.
-         */searchForm: JsonEngineUrl?) {
+         */searchForm: JsonEngineUrl?, 
+        /**
+         * The URL to use for visual searches.
+         */visualSearch: JsonEngineUrl?) {
         self.search = search
         self.suggestions = suggestions
         self.trending = trending
         self.searchForm = searchForm
+        self.visualSearch = visualSearch
     }
 }
 
@@ -895,6 +919,9 @@ extension JsonEngineUrls: Equatable, Hashable {
         if lhs.searchForm != rhs.searchForm {
             return false
         }
+        if lhs.visualSearch != rhs.visualSearch {
+            return false
+        }
         return true
     }
 
@@ -903,6 +930,7 @@ extension JsonEngineUrls: Equatable, Hashable {
         hasher.combine(suggestions)
         hasher.combine(trending)
         hasher.combine(searchForm)
+        hasher.combine(visualSearch)
     }
 }
 
@@ -918,7 +946,8 @@ public struct FfiConverterTypeJSONEngineUrls: FfiConverterRustBuffer {
                 search: FfiConverterOptionTypeJSONEngineUrl.read(from: &buf), 
                 suggestions: FfiConverterOptionTypeJSONEngineUrl.read(from: &buf), 
                 trending: FfiConverterOptionTypeJSONEngineUrl.read(from: &buf), 
-                searchForm: FfiConverterOptionTypeJSONEngineUrl.read(from: &buf)
+                searchForm: FfiConverterOptionTypeJSONEngineUrl.read(from: &buf), 
+                visualSearch: FfiConverterOptionTypeJSONEngineUrl.read(from: &buf)
         )
     }
 
@@ -927,6 +956,7 @@ public struct FfiConverterTypeJSONEngineUrls: FfiConverterRustBuffer {
         FfiConverterOptionTypeJSONEngineUrl.write(value.suggestions, into: &buf)
         FfiConverterOptionTypeJSONEngineUrl.write(value.trending, into: &buf)
         FfiConverterOptionTypeJSONEngineUrl.write(value.searchForm, into: &buf)
+        FfiConverterOptionTypeJSONEngineUrl.write(value.visualSearch, into: &buf)
     }
 }
 
@@ -1362,6 +1392,11 @@ public struct SearchEngineUrl {
      * is included in the base.
      */
     public var searchTermParamName: String?
+    /**
+     * The display name of the URL, if any. This is useful if the URL
+     * corresponds to a brand name distinct from the engine's brand name.
+     */
+    public var displayName: String?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1382,11 +1417,16 @@ public struct SearchEngineUrl {
          * The name of the query parameter for the search term. Automatically
          * appended to the end of the query. This may be skipped if `{searchTerms}`
          * is included in the base.
-         */searchTermParamName: String?) {
+         */searchTermParamName: String?, 
+        /**
+         * The display name of the URL, if any. This is useful if the URL
+         * corresponds to a brand name distinct from the engine's brand name.
+         */displayName: String?) {
         self.base = base
         self.method = method
         self.params = params
         self.searchTermParamName = searchTermParamName
+        self.displayName = displayName
     }
 }
 
@@ -1409,6 +1449,9 @@ extension SearchEngineUrl: Equatable, Hashable {
         if lhs.searchTermParamName != rhs.searchTermParamName {
             return false
         }
+        if lhs.displayName != rhs.displayName {
+            return false
+        }
         return true
     }
 
@@ -1417,6 +1460,7 @@ extension SearchEngineUrl: Equatable, Hashable {
         hasher.combine(method)
         hasher.combine(params)
         hasher.combine(searchTermParamName)
+        hasher.combine(displayName)
     }
 }
 
@@ -1432,7 +1476,8 @@ public struct FfiConverterTypeSearchEngineUrl: FfiConverterRustBuffer {
                 base: FfiConverterString.read(from: &buf), 
                 method: FfiConverterString.read(from: &buf), 
                 params: FfiConverterSequenceTypeSearchUrlParam.read(from: &buf), 
-                searchTermParamName: FfiConverterOptionString.read(from: &buf)
+                searchTermParamName: FfiConverterOptionString.read(from: &buf), 
+                displayName: FfiConverterOptionString.read(from: &buf)
         )
     }
 
@@ -1441,6 +1486,7 @@ public struct FfiConverterTypeSearchEngineUrl: FfiConverterRustBuffer {
         FfiConverterString.write(value.method, into: &buf)
         FfiConverterSequenceTypeSearchUrlParam.write(value.params, into: &buf)
         FfiConverterOptionString.write(value.searchTermParamName, into: &buf)
+        FfiConverterOptionString.write(value.displayName, into: &buf)
     }
 }
 
@@ -1480,6 +1526,10 @@ public struct SearchEngineUrls {
      * The URL of the search engine homepage.
      */
     public var searchForm: SearchEngineUrl?
+    /**
+     * The URL to use for visual searches.
+     */
+    public var visualSearch: SearchEngineUrl?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -1495,11 +1545,15 @@ public struct SearchEngineUrls {
          */trending: SearchEngineUrl?, 
         /**
          * The URL of the search engine homepage.
-         */searchForm: SearchEngineUrl?) {
+         */searchForm: SearchEngineUrl?, 
+        /**
+         * The URL to use for visual searches.
+         */visualSearch: SearchEngineUrl?) {
         self.search = search
         self.suggestions = suggestions
         self.trending = trending
         self.searchForm = searchForm
+        self.visualSearch = visualSearch
     }
 }
 
@@ -1522,6 +1576,9 @@ extension SearchEngineUrls: Equatable, Hashable {
         if lhs.searchForm != rhs.searchForm {
             return false
         }
+        if lhs.visualSearch != rhs.visualSearch {
+            return false
+        }
         return true
     }
 
@@ -1530,6 +1587,7 @@ extension SearchEngineUrls: Equatable, Hashable {
         hasher.combine(suggestions)
         hasher.combine(trending)
         hasher.combine(searchForm)
+        hasher.combine(visualSearch)
     }
 }
 
@@ -1545,7 +1603,8 @@ public struct FfiConverterTypeSearchEngineUrls: FfiConverterRustBuffer {
                 search: FfiConverterTypeSearchEngineUrl.read(from: &buf), 
                 suggestions: FfiConverterOptionTypeSearchEngineUrl.read(from: &buf), 
                 trending: FfiConverterOptionTypeSearchEngineUrl.read(from: &buf), 
-                searchForm: FfiConverterOptionTypeSearchEngineUrl.read(from: &buf)
+                searchForm: FfiConverterOptionTypeSearchEngineUrl.read(from: &buf), 
+                visualSearch: FfiConverterOptionTypeSearchEngineUrl.read(from: &buf)
         )
     }
 
@@ -1554,6 +1613,7 @@ public struct FfiConverterTypeSearchEngineUrls: FfiConverterRustBuffer {
         FfiConverterOptionTypeSearchEngineUrl.write(value.suggestions, into: &buf)
         FfiConverterOptionTypeSearchEngineUrl.write(value.trending, into: &buf)
         FfiConverterOptionTypeSearchEngineUrl.write(value.searchForm, into: &buf)
+        FfiConverterOptionTypeSearchEngineUrl.write(value.visualSearch, into: &buf)
     }
 }
 
