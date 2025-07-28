@@ -736,10 +736,13 @@ public struct JsonEngineUrl {
      */
     public var searchTermParamName: String?
     /**
-     * The display name of the URL, if any. This is useful if the URL
-     * corresponds to a brand name distinct from the engine's brand name.
+     * A map from locale codes to display names of the URL. This is useful if
+     * the URL corresponds to a brand name distinct from the engine's brand
+     * name. Since brand names can be localized, this is a map rather than a
+     * URL. The client will fall back to the special locale code "default" when
+     * its locale is not present in the map.
      */
-    public var displayName: String?
+    public var displayNameMap: [String: String]?
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
@@ -762,14 +765,17 @@ public struct JsonEngineUrl {
          * is included in the base.
          */searchTermParamName: String?, 
         /**
-         * The display name of the URL, if any. This is useful if the URL
-         * corresponds to a brand name distinct from the engine's brand name.
-         */displayName: String?) {
+         * A map from locale codes to display names of the URL. This is useful if
+         * the URL corresponds to a brand name distinct from the engine's brand
+         * name. Since brand names can be localized, this is a map rather than a
+         * URL. The client will fall back to the special locale code "default" when
+         * its locale is not present in the map.
+         */displayNameMap: [String: String]?) {
         self.base = base
         self.method = method
         self.params = params
         self.searchTermParamName = searchTermParamName
-        self.displayName = displayName
+        self.displayNameMap = displayNameMap
     }
 }
 
@@ -792,7 +798,7 @@ extension JsonEngineUrl: Equatable, Hashable {
         if lhs.searchTermParamName != rhs.searchTermParamName {
             return false
         }
-        if lhs.displayName != rhs.displayName {
+        if lhs.displayNameMap != rhs.displayNameMap {
             return false
         }
         return true
@@ -803,7 +809,7 @@ extension JsonEngineUrl: Equatable, Hashable {
         hasher.combine(method)
         hasher.combine(params)
         hasher.combine(searchTermParamName)
-        hasher.combine(displayName)
+        hasher.combine(displayNameMap)
     }
 }
 
@@ -820,7 +826,7 @@ public struct FfiConverterTypeJSONEngineUrl: FfiConverterRustBuffer {
                 method: FfiConverterOptionTypeJSONEngineMethod.read(from: &buf), 
                 params: FfiConverterOptionSequenceTypeSearchUrlParam.read(from: &buf), 
                 searchTermParamName: FfiConverterOptionString.read(from: &buf), 
-                displayName: FfiConverterOptionString.read(from: &buf)
+                displayNameMap: FfiConverterOptionDictionaryStringString.read(from: &buf)
         )
     }
 
@@ -829,7 +835,7 @@ public struct FfiConverterTypeJSONEngineUrl: FfiConverterRustBuffer {
         FfiConverterOptionTypeJSONEngineMethod.write(value.method, into: &buf)
         FfiConverterOptionSequenceTypeSearchUrlParam.write(value.params, into: &buf)
         FfiConverterOptionString.write(value.searchTermParamName, into: &buf)
-        FfiConverterOptionString.write(value.displayName, into: &buf)
+        FfiConverterOptionDictionaryStringString.write(value.displayNameMap, into: &buf)
     }
 }
 
@@ -1421,7 +1427,7 @@ public struct SearchEngineUrl {
         /**
          * The display name of the URL, if any. This is useful if the URL
          * corresponds to a brand name distinct from the engine's brand name.
-         */displayName: String?) {
+         */displayName: String? = nil) {
         self.base = base
         self.method = method
         self.params = params
@@ -2553,6 +2559,30 @@ fileprivate struct FfiConverterOptionSequenceTypeSearchUrlParam: FfiConverterRus
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionDictionaryStringString: FfiConverterRustBuffer {
+    typealias SwiftType = [String: String]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterDictionaryStringString.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterDictionaryStringString.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
     typealias SwiftType = [String]
 
@@ -2622,6 +2652,32 @@ fileprivate struct FfiConverterSequenceTypeSearchUrlParam: FfiConverterRustBuffe
             seq.append(try FfiConverterTypeSearchUrlParam.read(from: &buf))
         }
         return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringString: FfiConverterRustBuffer {
+    public static func write(_ value: [String: String], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterString.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: String] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: String]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterString.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
     }
 }
 
