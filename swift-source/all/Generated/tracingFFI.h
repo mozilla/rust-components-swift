@@ -266,19 +266,45 @@ typedef struct UniffiVTableCallbackInterfaceEventSink {
 } UniffiVTableCallbackInterfaceEventSink;
 
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_CLONE_EVENTSINK
+#define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_CLONE_EVENTSINK
+void*_Nonnull uniffi_tracing_support_fn_clone_eventsink(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FREE_EVENTSINK
+#define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FREE_EVENTSINK
+void uniffi_tracing_support_fn_free_eventsink(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_INIT_CALLBACK_VTABLE_EVENTSINK
 #define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_INIT_CALLBACK_VTABLE_EVENTSINK
 void uniffi_tracing_support_fn_init_callback_vtable_eventsink(const UniffiVTableCallbackInterfaceEventSink* _Nonnull vtable
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_METHOD_EVENTSINK_ON_EVENT
+#define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_METHOD_EVENTSINK_ON_EVENT
+void uniffi_tracing_support_fn_method_eventsink_on_event(void*_Nonnull ptr, RustBuffer event, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_REGISTER_EVENT_SINK
 #define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_REGISTER_EVENT_SINK
-void uniffi_tracing_support_fn_func_register_event_sink(RustBuffer target, RustBuffer level, uint64_t sink, RustCallStatus *_Nonnull out_status
+void uniffi_tracing_support_fn_func_register_event_sink(RustBuffer target, RustBuffer level, void*_Nonnull sink, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_REGISTER_MIN_LEVEL_EVENT_SINK
+#define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_REGISTER_MIN_LEVEL_EVENT_SINK
+void uniffi_tracing_support_fn_func_register_min_level_event_sink(RustBuffer level, void*_Nonnull sink, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_UNREGISTER_EVENT_SINK
 #define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_UNREGISTER_EVENT_SINK
 void uniffi_tracing_support_fn_func_unregister_event_sink(RustBuffer target, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_UNREGISTER_MIN_LEVEL_EVENT_SINK
+#define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_FN_FUNC_UNREGISTER_MIN_LEVEL_EVENT_SINK
+void uniffi_tracing_support_fn_func_unregister_min_level_event_sink(RustCallStatus *_Nonnull out_status
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_TRACING_SUPPORT_RUSTBUFFER_ALLOC
@@ -567,9 +593,21 @@ uint16_t uniffi_tracing_support_checksum_func_register_event_sink(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_CHECKSUM_FUNC_REGISTER_MIN_LEVEL_EVENT_SINK
+#define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_CHECKSUM_FUNC_REGISTER_MIN_LEVEL_EVENT_SINK
+uint16_t uniffi_tracing_support_checksum_func_register_min_level_event_sink(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_CHECKSUM_FUNC_UNREGISTER_EVENT_SINK
 #define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_CHECKSUM_FUNC_UNREGISTER_EVENT_SINK
 uint16_t uniffi_tracing_support_checksum_func_unregister_event_sink(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_CHECKSUM_FUNC_UNREGISTER_MIN_LEVEL_EVENT_SINK
+#define UNIFFI_FFIDEF_UNIFFI_TRACING_SUPPORT_CHECKSUM_FUNC_UNREGISTER_MIN_LEVEL_EVENT_SINK
+uint16_t uniffi_tracing_support_checksum_func_unregister_min_level_event_sink(void
     
 );
 #endif
