@@ -5,4 +5,7 @@ module MozillaRustComponents {
     header "rustlogforwarderFFI.h"
     header "tracingFFI.h"
     export *
+    use "Darwin"
+    use "_Builtin_stdbool"
+    use "_Builtin_stdint"
 }
