@@ -4,6 +4,7 @@ module MozillaRustComponents {
     header "remote_settingsFFI.h"
     header "rustlogforwarderFFI.h"
     header "tracingFFI.h"
+    header "viaductFFI.h"
     export *
     use "Darwin"
     use "_Builtin_stdbool"

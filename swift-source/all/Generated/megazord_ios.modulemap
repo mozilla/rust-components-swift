@@ -20,6 +20,7 @@ module MozillaRustComponents {
     header "syncmanagerFFI.h"
     header "tabsFFI.h"
     header "tracingFFI.h"
+    header "viaductFFI.h"
     export *
     use "Darwin"
     use "_Builtin_stdbool"
