@@ -1,4 +1,5 @@
 module MozillaRustComponents {
+    header "ads_clientFFI.h"
     header "as_ohttp_clientFFI.h"
     header "autofillFFI.h"
     header "contextIDFFI.h"
