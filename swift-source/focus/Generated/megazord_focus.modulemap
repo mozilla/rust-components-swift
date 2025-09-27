@@ -1,5 +1,6 @@
 module MozillaRustComponents {
     header "ads_clientFFI.h"
+    header "contextIDFFI.h"
     header "errorFFI.h"
     header "nimbusFFI.h"
     header "remote_settingsFFI.h"
