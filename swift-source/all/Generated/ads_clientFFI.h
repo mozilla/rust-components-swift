@@ -263,8 +263,7 @@ void uniffi_ads_client_fn_free_mozadsclient(void*_Nonnull ptr, RustCallStatus *_
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_CONSTRUCTOR_MOZADSCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_CONSTRUCTOR_MOZADSCLIENT_NEW
-void*_Nonnull uniffi_ads_client_fn_constructor_mozadsclient_new(RustCallStatus *_Nonnull out_status
-    
+void*_Nonnull uniffi_ads_client_fn_constructor_mozadsclient_new(RustBuffer db_path, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_METHOD_MOZADSCLIENT_CLEAR_CACHE
