@@ -291,9 +291,32 @@ void uniffi_viaduct_fn_func_allow_android_emulator_loopback(RustCallStatus *_Non
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_CLEAR_OHTTP_CHANNELS
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_CLEAR_OHTTP_CHANNELS
+void uniffi_viaduct_fn_func_clear_ohttp_channels(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_CONFIGURE_DEFAULT_OHTTP_CHANNELS
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_CONFIGURE_DEFAULT_OHTTP_CHANNELS
+void uniffi_viaduct_fn_func_configure_default_ohttp_channels(RustCallStatus *_Nonnull out_status
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_CONFIGURE_OHTTP_CHANNEL
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_CONFIGURE_OHTTP_CHANNEL
+void uniffi_viaduct_fn_func_configure_ohttp_channel(RustBuffer channel, RustBuffer config, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_INIT_BACKEND
 #define UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_INIT_BACKEND
 void uniffi_viaduct_fn_func_init_backend(void*_Nonnull backend, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_LIST_OHTTP_CHANNELS
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_FN_FUNC_LIST_OHTTP_CHANNELS
+RustBuffer uniffi_viaduct_fn_func_list_ohttp_channels(RustCallStatus *_Nonnull out_status
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_VIADUCT_RUSTBUFFER_ALLOC
@@ -582,9 +605,33 @@ uint16_t uniffi_viaduct_checksum_func_allow_android_emulator_loopback(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_CLEAR_OHTTP_CHANNELS
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_CLEAR_OHTTP_CHANNELS
+uint16_t uniffi_viaduct_checksum_func_clear_ohttp_channels(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_CONFIGURE_DEFAULT_OHTTP_CHANNELS
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_CONFIGURE_DEFAULT_OHTTP_CHANNELS
+uint16_t uniffi_viaduct_checksum_func_configure_default_ohttp_channels(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_CONFIGURE_OHTTP_CHANNEL
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_CONFIGURE_OHTTP_CHANNEL
+uint16_t uniffi_viaduct_checksum_func_configure_ohttp_channel(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_INIT_BACKEND
 #define UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_INIT_BACKEND
 uint16_t uniffi_viaduct_checksum_func_init_backend(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_LIST_OHTTP_CHANNELS
+#define UNIFFI_FFIDEF_UNIFFI_VIADUCT_CHECKSUM_FUNC_LIST_OHTTP_CHANNELS
+uint16_t uniffi_viaduct_checksum_func_list_ohttp_channels(void
     
 );
 #endif
