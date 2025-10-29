@@ -263,7 +263,7 @@ void uniffi_ads_client_fn_free_mozadsclient(void*_Nonnull ptr, RustCallStatus *_
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_CONSTRUCTOR_MOZADSCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_CONSTRUCTOR_MOZADSCLIENT_NEW
-void*_Nonnull uniffi_ads_client_fn_constructor_mozadsclient_new(RustBuffer db_path, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_ads_client_fn_constructor_mozadsclient_new(RustBuffer client_config, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_METHOD_MOZADSCLIENT_CLEAR_CACHE
@@ -293,7 +293,7 @@ void uniffi_ads_client_fn_method_mozadsclient_report_ad(void*_Nonnull ptr, RustB
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_METHOD_MOZADSCLIENT_REQUEST_ADS
 #define UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_METHOD_MOZADSCLIENT_REQUEST_ADS
-RustBuffer uniffi_ads_client_fn_method_mozadsclient_request_ads(void*_Nonnull ptr, RustBuffer moz_ad_configs, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_ads_client_fn_method_mozadsclient_request_ads(void*_Nonnull ptr, RustBuffer moz_ad_requests, RustBuffer options, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_FFI_ADS_CLIENT_RUSTBUFFER_ALLOC
