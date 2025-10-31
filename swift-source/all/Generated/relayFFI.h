@@ -281,6 +281,26 @@ RustBuffer uniffi_relay_fn_method_relayclient_create_address(void*_Nonnull ptr, 
 RustBuffer uniffi_relay_fn_method_relayclient_fetch_addresses(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RELAY_FN_CLONE_RELAYREMOTESETTINGSCLIENT
+#define UNIFFI_FFIDEF_UNIFFI_RELAY_FN_CLONE_RELAYREMOTESETTINGSCLIENT
+void*_Nonnull uniffi_relay_fn_clone_relayremotesettingsclient(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RELAY_FN_FREE_RELAYREMOTESETTINGSCLIENT
+#define UNIFFI_FFIDEF_UNIFFI_RELAY_FN_FREE_RELAYREMOTESETTINGSCLIENT
+void uniffi_relay_fn_free_relayremotesettingsclient(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RELAY_FN_CONSTRUCTOR_RELAYREMOTESETTINGSCLIENT_NEW
+#define UNIFFI_FFIDEF_UNIFFI_RELAY_FN_CONSTRUCTOR_RELAYREMOTESETTINGSCLIENT_NEW
+void*_Nonnull uniffi_relay_fn_constructor_relayremotesettingsclient_new(void*_Nonnull rs_service, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RELAY_FN_METHOD_RELAYREMOTESETTINGSCLIENT_SHOULD_SHOW_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_RELAY_FN_METHOD_RELAYREMOTESETTINGSCLIENT_SHOULD_SHOW_RELAY
+int8_t uniffi_relay_fn_method_relayremotesettingsclient_should_show_relay(void*_Nonnull ptr, RustBuffer host, RustBuffer domain, int8_t is_relay_user, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_FFI_RELAY_RUSTBUFFER_ALLOC
 #define UNIFFI_FFIDEF_FFI_RELAY_RUSTBUFFER_ALLOC
 RustBuffer ffi_relay_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
@@ -579,9 +599,21 @@ uint16_t uniffi_relay_checksum_method_relayclient_fetch_addresses(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RELAY_CHECKSUM_METHOD_RELAYREMOTESETTINGSCLIENT_SHOULD_SHOW_RELAY
+#define UNIFFI_FFIDEF_UNIFFI_RELAY_CHECKSUM_METHOD_RELAYREMOTESETTINGSCLIENT_SHOULD_SHOW_RELAY
+uint16_t uniffi_relay_checksum_method_relayremotesettingsclient_should_show_relay(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_RELAY_CHECKSUM_CONSTRUCTOR_RELAYCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_RELAY_CHECKSUM_CONSTRUCTOR_RELAYCLIENT_NEW
 uint16_t uniffi_relay_checksum_constructor_relayclient_new(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_RELAY_CHECKSUM_CONSTRUCTOR_RELAYREMOTESETTINGSCLIENT_NEW
+#define UNIFFI_FFIDEF_UNIFFI_RELAY_CHECKSUM_CONSTRUCTOR_RELAYREMOTESETTINGSCLIENT_NEW
+uint16_t uniffi_relay_checksum_constructor_relayremotesettingsclient_new(void
     
 );
 #endif
