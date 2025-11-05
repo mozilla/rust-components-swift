@@ -296,6 +296,11 @@ void uniffi_ads_client_fn_method_mozadsclient_report_ad(void*_Nonnull ptr, RustB
 RustBuffer uniffi_ads_client_fn_method_mozadsclient_request_ads(void*_Nonnull ptr, RustBuffer moz_ad_requests, RustBuffer options, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_METHOD_MOZADSCLIENT_REQUEST_ADS_MULTISET
+#define UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_FN_METHOD_MOZADSCLIENT_REQUEST_ADS_MULTISET
+RustBuffer uniffi_ads_client_fn_method_mozadsclient_request_ads_multiset(void*_Nonnull ptr, RustBuffer moz_ad_requests, RustBuffer options, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_FFI_ADS_CLIENT_RUSTBUFFER_ALLOC
 #define UNIFFI_FFIDEF_FFI_ADS_CLIENT_RUSTBUFFER_ALLOC
 RustBuffer ffi_ads_client_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
@@ -609,6 +614,12 @@ uint16_t uniffi_ads_client_checksum_method_mozadsclient_report_ad(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_CHECKSUM_METHOD_MOZADSCLIENT_REQUEST_ADS
 #define UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_CHECKSUM_METHOD_MOZADSCLIENT_REQUEST_ADS
 uint16_t uniffi_ads_client_checksum_method_mozadsclient_request_ads(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_CHECKSUM_METHOD_MOZADSCLIENT_REQUEST_ADS_MULTISET
+#define UNIFFI_FFIDEF_UNIFFI_ADS_CLIENT_CHECKSUM_METHOD_MOZADSCLIENT_REQUEST_ADS_MULTISET
+uint16_t uniffi_ads_client_checksum_method_mozadsclient_request_ads_multiset(void
     
 );
 #endif
