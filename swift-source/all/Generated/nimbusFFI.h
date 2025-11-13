@@ -364,7 +364,7 @@ void uniffi_nimbus_fn_free_nimbusclient(void*_Nonnull ptr, RustCallStatus *_Nonn
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
 #define UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_CONSTRUCTOR_NIMBUSCLIENT_NEW
-void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer recorded_context, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, RustBuffer remote_settings_config, uint64_t metrics_handler, RustBuffer gecko_pref_handler, RustCallStatus *_Nonnull out_status
+void*_Nonnull uniffi_nimbus_fn_constructor_nimbusclient_new(RustBuffer app_ctx, RustBuffer recorded_context, RustBuffer coenrolling_feature_ids, RustBuffer dbpath, uint64_t metrics_handler, RustBuffer gecko_pref_handler, RustBuffer remote_settings_service, RustBuffer collection_name, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_NIMBUS_FN_METHOD_NIMBUSCLIENT_ADVANCE_EVENT_TIME
