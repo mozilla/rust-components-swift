@@ -406,6 +406,11 @@ void uniffi_tabs_fn_method_tabsstore_register_with_sync_manager(void*_Nonnull pt
 void uniffi_tabs_fn_method_tabsstore_set_local_tabs(void*_Nonnull ptr, RustBuffer remote_tabs, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_SET_LOCAL_TABS_INFO
+#define UNIFFI_FFIDEF_UNIFFI_TABS_FN_METHOD_TABSSTORE_SET_LOCAL_TABS_INFO
+void uniffi_tabs_fn_method_tabsstore_set_local_tabs_info(void*_Nonnull ptr, RustBuffer info, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_FFI_TABS_RUSTBUFFER_ALLOC
 #define UNIFFI_FFIDEF_FFI_TABS_RUSTBUFFER_ALLOC
 RustBuffer ffi_tabs_rustbuffer_alloc(uint64_t size, RustCallStatus *_Nonnull out_status
@@ -827,6 +832,12 @@ uint16_t uniffi_tabs_checksum_method_tabsstore_register_with_sync_manager(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_SET_LOCAL_TABS
 #define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_SET_LOCAL_TABS
 uint16_t uniffi_tabs_checksum_method_tabsstore_set_local_tabs(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_SET_LOCAL_TABS_INFO
+#define UNIFFI_FFIDEF_UNIFFI_TABS_CHECKSUM_METHOD_TABSSTORE_SET_LOCAL_TABS_INFO
+uint16_t uniffi_tabs_checksum_method_tabsstore_set_local_tabs_info(void
     
 );
 #endif
