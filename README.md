@@ -1,3 +1,13 @@
+# NOTE: This repository is now deprecated
+This repo is now deprecated and should not be used to publish application-services to firefox-ios. firefox-ios gets releases directly from application-services now. Please read:
+
+- https://github.com/mozilla/application-services/blob/main/docs/howtos/releases.md
+and
+- https://github.com/mozilla/application-services/blob/main/docs/howtos/locally-published-components-in-firefox-ios.md
+
+for more information on the new develop/test/release workflows.
+
+
 # Swift Package for Mozilla's Rust Components
 
 This repository is a Swift Package for distributing releases of Mozilla's various
